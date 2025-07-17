@@ -64,17 +64,13 @@ export default function Sidebar() {
   return (
     <div className="w-64 bg-white border-r border-gray-200 h-screen flex flex-col">
       <div className="p-6">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 flex items-center justify-center">
+        <div className="flex items-center justify-center">
+          <div className="w-full h-20 flex items-center justify-center">
             <img 
-              src="/LOGO1.svg" 
+              src="/LOGO1-hires.png" 
               alt="Hotel Porec Logo" 
-              className="w-8 h-8 object-contain"
+              className="w-full h-full object-contain"
             />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-gray-900">Hotel Porec</h2>
-            <p className="text-sm text-gray-600">Management System</p>
           </div>
         </div>
       </div>

@@ -57,7 +57,7 @@ export default function LocationDetail() {
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [filteredInventory, setFilteredInventory] = useState<InventoryItem[]>([])
   const [searchTerm, setSearchTerm] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState<string>('')
+  const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [loading, setLoading] = useState(true)
   const [showAddDialog, setShowAddDialog] = useState(false)
 
@@ -73,7 +73,7 @@ export default function LocationDetail() {
       item.item.category.name.toLowerCase().includes(searchTerm.toLowerCase())
     )
     
-    if (selectedCategory) {
+    if (selectedCategory !== 'all') {
       filtered = filtered.filter(item => item.item.category.name === selectedCategory)
     }
     
@@ -253,17 +253,17 @@ export default function LocationDetail() {
                   <SelectValue placeholder="All Categories" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Categories</SelectItem>
+                  <SelectItem value="all">All Categories</SelectItem>
                   {Array.from(new Set(inventory.map(item => item.item.category.name))).map(category => (
                     <SelectItem key={category} value={category}>{category}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              {selectedCategory && (
+              {selectedCategory !== 'all' && (
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={() => setSelectedCategory('')}
+                  onClick={() => setSelectedCategory('all')}
                 >
                   Clear Filter
                 </Button>

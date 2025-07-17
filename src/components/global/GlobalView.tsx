@@ -46,8 +46,8 @@ export default function GlobalView() {
   const [inventory, setInventory] = useState<GlobalInventoryItem[]>([])
   const [filteredInventory, setFilteredInventory] = useState<GlobalInventoryItem[]>([])
   const [searchTerm, setSearchTerm] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState<string>('')
-  const [selectedLocation, setSelectedLocation] = useState<string>('')
+  const [selectedCategory, setSelectedCategory] = useState<string>('all')
+  const [selectedLocation, setSelectedLocation] = useState<string>('all')
   const [showWithExpiration, setShowWithExpiration] = useState(false)
   const [loading, setLoading] = useState(true)
 
@@ -61,8 +61,8 @@ export default function GlobalView() {
         item.item.category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.location.name.toLowerCase().includes(searchTerm.toLowerCase())
       
-      const matchesCategory = selectedCategory ? item.item.category.name === selectedCategory : true
-      const matchesLocation = selectedLocation ? item.location.name === selectedLocation : true
+      const matchesCategory = selectedCategory === 'all' ? true : item.item.category.name === selectedCategory
+      const matchesLocation = selectedLocation === 'all' ? true : item.location.name === selectedLocation
       
       // Filter by expiration preference
       const matchesExpiration = showWithExpiration ? 
@@ -77,7 +77,7 @@ export default function GlobalView() {
 
   const fetchGlobalInventory = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error, count } = await supabase
         .from('inventory')
         .select(`
           *,
@@ -90,10 +90,11 @@ export default function GlobalView() {
             category:categories(id, name, requires_expiration)
           ),
           location:locations(id, name, type, is_refrigerated)
-        `)
+        `, { count: 'exact' })
         .order('item(name)')
 
       if (error) throw error
+      console.log('Global inventory fetched:', data?.length, 'items, total count:', count)
       setInventory(data || [])
     } catch (error) {
       console.error('Error fetching global inventory:', error)
@@ -131,7 +132,7 @@ export default function GlobalView() {
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Package className="h-5 w-5" />
-            <span>All Items ({filteredInventory.length})</span>
+            <span>All Items ({filteredInventory.length} of {inventory.length} total)</span>
           </CardTitle>
           <CardDescription>
             Complete inventory overview across all storage locations
@@ -155,7 +156,7 @@ export default function GlobalView() {
                   <SelectValue placeholder="All Categories" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Categories</SelectItem>
+                  <SelectItem value="all">All Categories</SelectItem>
                   {getUniqueCategories().map(category => (
                     <SelectItem key={category} value={category}>{category}</SelectItem>
                   ))}
@@ -167,7 +168,7 @@ export default function GlobalView() {
                   <SelectValue placeholder="All Locations" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Locations</SelectItem>
+                  <SelectItem value="all">All Locations</SelectItem>
                   {getUniqueLocations().map(location => (
                     <SelectItem key={location} value={location}>{location}</SelectItem>
                   ))}

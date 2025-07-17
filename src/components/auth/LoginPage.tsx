@@ -68,29 +68,28 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4 relative overflow-hidden">
-      {/* Background decorative images */}
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Full-screen background image */}
       <div className="absolute inset-0 pointer-events-none">
         <img 
-          src="/zemlja_gp copy.png" 
-          alt="Decorative background" 
-          className="absolute bottom-0 left-0 w-full h-64 object-cover opacity-30"
+          src="/mozaik_gp1 copy.png" 
+          alt="Hotel Porec Background" 
+          className="absolute inset-0 w-full h-full object-cover opacity-40"
         />
+        {/* Overlay for better readability */}
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50/60 to-indigo-100/60"></div>
       </div>
       
       <div className="w-full max-w-md relative z-10">
         <Card className="shadow-2xl border-0 bg-white/80 backdrop-blur-sm">
-          <CardHeader className="space-y-4 text-center">
-            <div className="mx-auto w-32 h-32 flex items-center justify-center">
+          <CardHeader className="space-y-2 text-center py-4">
+            <div className="mx-auto w-48 h-32 flex items-center justify-center">
               <img 
-                src="/LOGO1.svg" 
+                src="/LOGO1-hires.png" 
                 alt="Hotel Porec Logo" 
                 className="w-full h-full object-contain"
               />
             </div>
-            <CardDescription className="text-gray-600 text-lg">
-              Welcome to your inventory management system
-            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-4">
@@ -182,7 +181,7 @@ export default function LoginPage() {
         
         <div className="mt-8 text-center">
           <p className="text-sm text-gray-600">
-            Need help? Contact your system administrator
+            Made by Matija Sokol for Mara with <span className="text-red-500">♥</span>
           </p>
         </div>
       </div>
