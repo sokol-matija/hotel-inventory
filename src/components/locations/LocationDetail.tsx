@@ -1,0 +1,338 @@
+import React, { useState, useEffect } from 'react'
+import { useParams, Link } from 'react-router-dom'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
+import { Button } from '../ui/button'
+import { Input } from '../ui/input'
+import { supabase } from '@/lib/supabase'
+import { useAuth } from '../auth/AuthProvider'
+import { 
+  ArrowLeft, 
+  Refrigerator, 
+  Warehouse, 
+  Package, 
+  AlertTriangle,
+  Clock,
+  Plus,
+  Minus,
+  Search,
+  Calendar,
+  DollarSign
+} from 'lucide-react'
+
+interface InventoryItem {
+  id: number
+  quantity: number
+  expiration_date: string | null
+  cost_per_unit: number | null
+  created_at: string
+  updated_at: string
+  item: {
+    id: number
+    name: string
+    description: string | null
+    unit: string
+    minimum_stock: number
+    category: {
+      id: number
+      name: string
+      requires_expiration: boolean
+    }
+  }
+}
+
+interface Location {
+  id: number
+  name: string
+  type: string
+  description: string | null
+  is_refrigerated: boolean
+}
+
+export default function LocationDetail() {
+  const { id } = useParams<{ id: string }>()
+  const { userProfile } = useAuth()
+  const [location, setLocation] = useState<Location | null>(null)
+  const [inventory, setInventory] = useState<InventoryItem[]>([])
+  const [filteredInventory, setFilteredInventory] = useState<InventoryItem[]>([])
+  const [searchTerm, setSearchTerm] = useState('')
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (id) {
+      fetchLocationData()
+    }
+  }, [id])
+
+  useEffect(() => {
+    const filtered = inventory.filter(item =>
+      item.item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.item.category.name.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    setFilteredInventory(filtered)
+  }, [inventory, searchTerm])
+
+  const fetchLocationData = async () => {
+    try {
+      // Fetch location details
+      const { data: locationData, error: locationError } = await supabase
+        .from('locations')
+        .select('*')
+        .eq('id', id)
+        .single()
+
+      if (locationError) throw locationError
+
+      // Fetch inventory for this location
+      const { data: inventoryData, error: inventoryError } = await supabase
+        .from('inventory')
+        .select(`
+          *,
+          item:items(
+            id,
+            name,
+            description,
+            unit,
+            minimum_stock,
+            category:categories(id, name, requires_expiration)
+          )
+        `)
+        .eq('location_id', id)
+        .order('item(name)')
+
+      if (inventoryError) throw inventoryError
+
+      setLocation(locationData)
+      setInventory(inventoryData || [])
+    } catch (error) {
+      console.error('Error fetching location data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const updateQuantity = async (inventoryId: number, newQuantity: number) => {
+    if (newQuantity < 0) return
+
+    try {
+      const { error } = await supabase
+        .from('inventory')
+        .update({ quantity: newQuantity })
+        .eq('id', inventoryId)
+
+      if (error) throw error
+      
+      // Update local state
+      setInventory(prev => prev.map(item => 
+        item.id === inventoryId ? { ...item, quantity: newQuantity } : item
+      ))
+    } catch (error) {
+      console.error('Error updating quantity:', error)
+    }
+  }
+
+  const getExpirationStatus = (expirationDate: string | null, requiresExpiration: boolean) => {
+    if (!expirationDate || !requiresExpiration) return 'none'
+    
+    const expDate = new Date(expirationDate)
+    const today = new Date()
+    const diffDays = Math.ceil((expDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+    
+    if (diffDays < 0) return 'expired'
+    if (diffDays <= 3) return 'critical'
+    if (diffDays <= 7) return 'warning'
+    return 'good'
+  }
+
+  const getExpirationBadge = (status: string) => {
+    switch (status) {
+      case 'expired':
+        return <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">Expired</span>
+      case 'critical':
+        return <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">Critical</span>
+      case 'warning':
+        return <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">Warning</span>
+      default:
+        return null
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  if (!location) {
+    return (
+      <div className="text-center">
+        <p className="text-gray-600">Location not found</p>
+        <Link to="/locations">
+          <Button className="mt-4">Back to Locations</Button>
+        </Link>
+      </div>
+    )
+  }
+
+  const canModifyInventory = ['admin', 'cooking'].includes(userProfile?.role.name || '')
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <Link to="/locations">
+            <Button variant="outline" size="sm">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
+            </Button>
+          </Link>
+          <div className="flex items-center space-x-3">
+            {location.is_refrigerated ? (
+              <Refrigerator className="h-8 w-8 text-blue-600" />
+            ) : (
+              <Warehouse className="h-8 w-8 text-gray-600" />
+            )}
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">{location.name}</h1>
+              <p className="text-gray-600">
+                {location.type} • {location.is_refrigerated ? 'Refrigerated' : 'Regular Storage'}
+              </p>
+            </div>
+          </div>
+        </div>
+        {canModifyInventory && (
+          <Button>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Item
+          </Button>
+        )}
+      </div>
+
+      {location.description && (
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-gray-700">{location.description}</p>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Package className="h-5 w-5" />
+            <span>Inventory ({filteredInventory.length} items)</span>
+          </CardTitle>
+          <CardDescription>
+            Current stock levels and expiration dates
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="mb-6">
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search items..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {filteredInventory.map((item) => {
+              const expirationStatus = getExpirationStatus(
+                item.expiration_date, 
+                item.item.category.requires_expiration
+              )
+              const isLowStock = item.quantity <= item.item.minimum_stock
+              
+              return (
+                <div key={item.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center space-x-4">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2">
+                        <p className="font-medium text-gray-900">{item.item.name}</p>
+                        {isLowStock && (
+                          <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full">
+                            Low Stock
+                          </span>
+                        )}
+                        {getExpirationBadge(expirationStatus)}
+                      </div>
+                      <div className="flex items-center space-x-4 mt-1">
+                        <p className="text-sm text-gray-600">{item.item.category.name}</p>
+                        <p className="text-sm text-gray-600">Unit: {item.item.unit}</p>
+                        <p className="text-sm text-gray-600">Min: {item.item.minimum_stock}</p>
+                      </div>
+                      {item.item.description && (
+                        <p className="text-sm text-gray-500 mt-1">{item.item.description}</p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-6">
+                    <div className="text-right">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-2xl font-bold text-gray-900">{item.quantity}</span>
+                        <span className="text-sm text-gray-600">{item.item.unit}</span>
+                      </div>
+                      {item.expiration_date && (
+                        <div className="flex items-center space-x-1 text-sm text-gray-600">
+                          <Calendar className="h-3 w-3" />
+                          <span>{new Date(item.expiration_date).toLocaleDateString()}</span>
+                        </div>
+                      )}
+                      {item.cost_per_unit && (
+                        <div className="flex items-center space-x-1 text-sm text-gray-600">
+                          <DollarSign className="h-3 w-3" />
+                          <span>{item.cost_per_unit}</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {canModifyInventory && (
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                          disabled={item.quantity <= 0}
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {filteredInventory.length === 0 && (
+            <div className="text-center py-8">
+              <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-600">
+                {searchTerm ? 'No items found matching your search.' : 'No items in this location yet.'}
+              </p>
+              {canModifyInventory && (
+                <Button className="mt-4">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add First Item
+                </Button>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
