@@ -83,11 +83,11 @@ export default function Dashboard() {
       if (locationsError) throw locationsError
 
       const inventoryItems = inventoryData || []
-      const totalItems = inventoryItems.reduce((sum, item) => sum + item.quantity, 0)
+      const totalItems = inventoryItems.reduce((sum, item) => sum + (item.quantity || 0), 0)
       
-      // Calculate low stock items
+      // Calculate low stock items (with null checks)
       const lowStockItems = inventoryItems.filter(item => 
-        item.quantity <= item.item.minimum_stock
+        item.item && item.quantity <= item.item.minimum_stock
       ).length
       
       // Calculate expiring items (within 7 days)
@@ -108,6 +108,14 @@ export default function Dashboard() {
       })
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
+      // Set default values on error
+      setInventory([])
+      setStats({
+        totalItems: 0,
+        lowStockItems: 0,
+        expiringItems: 0,
+        locations: 0
+      })
     } finally {
       setLoading(false)
     }
@@ -125,12 +133,34 @@ export default function Dashboard() {
       if (error) throw error
       
       // Update local state
-      setInventory(prev => prev.map(item => 
-        item.id === inventoryId ? { ...item, quantity: newQuantity } : item
-      ))
-      
-      // Recalculate stats
-      fetchDashboardData()
+      setInventory(prev => {
+        const updatedInventory = prev.map(item => 
+          item.id === inventoryId ? { ...item, quantity: newQuantity } : item
+        )
+        
+        // Recalculate stats locally instead of refetching everything
+        const totalItems = updatedInventory.reduce((sum, item) => sum + (item.quantity || 0), 0)
+        const lowStockItems = updatedInventory.filter(item => 
+          item.item && item.quantity <= item.item.minimum_stock
+        ).length
+        
+        const sevenDaysFromNow = new Date()
+        sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7)
+        const expiringItems = updatedInventory.filter(item => 
+          item.expiration_date && 
+          new Date(item.expiration_date) <= sevenDaysFromNow &&
+          new Date(item.expiration_date) >= new Date()
+        ).length
+        
+        setStats(prevStats => ({
+          ...prevStats,
+          totalItems,
+          lowStockItems,
+          expiringItems
+        }))
+        
+        return updatedInventory
+      })
     } catch (error) {
       console.error('Error updating quantity:', error)
     }

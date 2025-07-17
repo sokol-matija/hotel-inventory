@@ -27,7 +27,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (!userProfile) {
-    return <RoleSelection user={user} onRoleSelected={() => {}} />;
+    const handleRoleSelected = () => {
+      // Force a re-render by reloading the page
+      window.location.reload();
+    };
+    return <RoleSelection user={user} onRoleSelected={handleRoleSelected} />;
   }
 
   return <>{children}</>;

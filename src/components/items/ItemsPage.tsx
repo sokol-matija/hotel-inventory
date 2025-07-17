@@ -95,33 +95,31 @@ export default function ItemsPage() {
 
       if (itemsError) throw itemsError
 
-      // Get inventory counts for each item
-      const itemsWithCounts = await Promise.all(
-        (itemsData || []).map(async (item) => {
-          const { count: inventoryCount } = await supabase
-            .from('inventory')
-            .select('*', { count: 'exact', head: true })
-            .eq('item_id', item.id)
-
-          const { data: inventoryData } = await supabase
-            .from('inventory')
-            .select('quantity')
-            .eq('item_id', item.id)
-
-          const totalQuantity = inventoryData?.reduce((sum, inv) => sum + inv.quantity, 0) || 0
-
-          return {
-            ...item,
-            inventory_count: inventoryCount || 0,
-            total_quantity: totalQuantity
-          }
-        })
-      )
+      // Get inventory counts efficiently with a single query
+      const { data: inventoryData } = await supabase
+        .from('inventory')
+        .select('item_id, quantity')
+      
+      // Calculate counts locally to avoid N+1 query problem
+      const itemsWithCounts = (itemsData || []).map(item => {
+        const itemInventory = inventoryData?.filter(inv => inv.item_id === item.id) || []
+        const totalQuantity = itemInventory.reduce((sum, inv) => sum + inv.quantity, 0)
+        const inventoryCount = itemInventory.length
+        
+        return {
+          ...item,
+          inventory_count: inventoryCount,
+          total_quantity: totalQuantity
+        }
+      })
 
       setCategories(categoriesData || [])
       setItems(itemsWithCounts)
     } catch (error) {
       console.error('Error fetching data:', error)
+      // Still set empty arrays on error
+      setCategories([])
+      setItems([])
     } finally {
       setLoading(false)
     }

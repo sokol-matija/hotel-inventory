@@ -5,6 +5,7 @@ import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '../auth/AuthProvider'
+import AddInventoryDialog from './AddInventoryDialog'
 import { 
   ArrowLeft, 
   Refrigerator, 
@@ -56,6 +57,7 @@ export default function LocationDetail() {
   const [filteredInventory, setFilteredInventory] = useState<InventoryItem[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [loading, setLoading] = useState(true)
+  const [showAddDialog, setShowAddDialog] = useState(false)
 
   useEffect(() => {
     if (id) {
@@ -202,7 +204,7 @@ export default function LocationDetail() {
           </div>
         </div>
         {canModifyInventory && (
-          <Button>
+          <Button onClick={() => setShowAddDialog(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Add Item
           </Button>
@@ -324,7 +326,7 @@ export default function LocationDetail() {
                 {searchTerm ? 'No items found matching your search.' : 'No items in this location yet.'}
               </p>
               {canModifyInventory && (
-                <Button className="mt-4">
+                <Button className="mt-4" onClick={() => setShowAddDialog(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   Add First Item
                 </Button>
@@ -333,6 +335,14 @@ export default function LocationDetail() {
           )}
         </CardContent>
       </Card>
+
+      {/* Add Inventory Dialog */}
+      <AddInventoryDialog
+        isOpen={showAddDialog}
+        onClose={() => setShowAddDialog(false)}
+        onInventoryAdded={fetchLocationData}
+        locationId={parseInt(id!)}
+      />
     </div>
   )
 }

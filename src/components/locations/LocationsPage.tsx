@@ -33,7 +33,7 @@ export default function LocationsPage() {
 
   useEffect(() => {
     fetchLocations()
-  }, [])
+  }, []) // Empty dependency array to run only once
 
   const fetchLocations = async () => {
     try {
@@ -46,16 +46,20 @@ export default function LocationsPage() {
       if (locationsError) throw locationsError
 
       // Get all inventory data in one query with proper joins
+      // Use left join instead of inner join to handle empty tables
       const { data: inventoryData, error: inventoryError } = await supabase
         .from('inventory')
         .select(`
           location_id,
           quantity,
           expiration_date,
-          item:items!inner(minimum_stock)
+          item:items(minimum_stock)
         `)
 
-      if (inventoryError) throw inventoryError
+      // Don't throw error if inventory is empty, just use empty array
+      if (inventoryError && inventoryError.code !== 'PGRST116') {
+        throw inventoryError
+      }
 
       // Calculate stats for each location
       const locationsWithStats = (locationsData || []).map(location => {
@@ -66,7 +70,7 @@ export default function LocationsPage() {
         
         // Calculate low stock
         const lowStockCount = locationInventory.filter(item => 
-          item.quantity <= (item.item as any).minimum_stock
+          item.item && item.quantity <= (item.item as any).minimum_stock
         ).length
 
         // Calculate expiring items (within 7 days)
@@ -91,6 +95,8 @@ export default function LocationsPage() {
       setLocations(locationsWithStats)
     } catch (error) {
       console.error('Error fetching locations:', error)
+      // Still show something even if there's an error
+      setLocations([])
     } finally {
       setLoading(false)
     }

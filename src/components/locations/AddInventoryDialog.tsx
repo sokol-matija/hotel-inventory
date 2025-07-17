@@ -25,11 +25,11 @@ interface Location {
 interface AddInventoryDialogProps {
   isOpen: boolean
   onClose: () => void
-  onItemAdded: () => void
-  location: Location
+  onInventoryAdded: () => void
+  locationId: number
 }
 
-export default function AddInventoryDialog({ isOpen, onClose, onItemAdded, location }: AddInventoryDialogProps) {
+export default function AddInventoryDialog({ isOpen, onClose, onInventoryAdded, locationId }: AddInventoryDialogProps) {
   const [formData, setFormData] = useState({
     item_id: '',
     quantity: '1',
@@ -118,7 +118,7 @@ export default function AddInventoryDialog({ isOpen, onClose, onItemAdded, locat
         .insert([
           {
             item_id: parseInt(formData.item_id),
-            location_id: location.id,
+            location_id: locationId,
             quantity: parseInt(formData.quantity),
             expiration_date: formData.expiration_date || null,
             cost_per_unit: formData.cost_per_unit ? parseFloat(formData.cost_per_unit) : null
@@ -137,7 +137,7 @@ export default function AddInventoryDialog({ isOpen, onClose, onItemAdded, locat
       setErrors({})
       setSelectedItem(null)
       
-      onItemAdded()
+      onInventoryAdded()
       onClose()
     } catch (error) {
       console.error('Error adding inventory:', error)
@@ -164,7 +164,7 @@ export default function AddInventoryDialog({ isOpen, onClose, onItemAdded, locat
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <Package className="h-5 w-5 text-blue-600" />
-              <CardTitle>Add Item to {location.name}</CardTitle>
+              <CardTitle>Add Item to Location</CardTitle>
             </div>
             <Button variant="ghost" size="sm" onClick={onClose}>
               <X className="h-4 w-4" />
