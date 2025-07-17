@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '../auth/AuthProvider'
 import AddInventoryDialog from './AddInventoryDialog'
@@ -56,6 +57,7 @@ export default function LocationDetail() {
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [filteredInventory, setFilteredInventory] = useState<InventoryItem[]>([])
   const [searchTerm, setSearchTerm] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [showAddDialog, setShowAddDialog] = useState(false)
 
@@ -66,12 +68,17 @@ export default function LocationDetail() {
   }, [id])
 
   useEffect(() => {
-    const filtered = inventory.filter(item =>
+    let filtered = inventory.filter(item =>
       item.item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.item.category.name.toLowerCase().includes(searchTerm.toLowerCase())
     )
+    
+    if (selectedCategory) {
+      filtered = filtered.filter(item => item.item.category.name === selectedCategory)
+    }
+    
     setFilteredInventory(filtered)
-  }, [inventory, searchTerm])
+  }, [inventory, searchTerm, selectedCategory])
 
   const fetchLocationData = async () => {
     try {
@@ -181,30 +188,30 @@ export default function LocationDetail() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0">
+        <div className="flex items-center space-x-4 w-full sm:w-auto">
           <Link to="/locations">
             <Button variant="outline" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back
             </Button>
           </Link>
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-3 flex-1 sm:flex-initial">
             {location.is_refrigerated ? (
-              <Refrigerator className="h-8 w-8 text-blue-600" />
+              <Refrigerator className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
             ) : (
-              <Warehouse className="h-8 w-8 text-gray-600" />
+              <Warehouse className="h-6 w-6 sm:h-8 sm:w-8 text-gray-600" />
             )}
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">{location.name}</h1>
-              <p className="text-gray-600">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-xl sm:text-3xl font-bold text-gray-900 break-words">{location.name}</h1>
+              <p className="text-sm sm:text-base text-gray-600">
                 {location.type} • {location.is_refrigerated ? 'Refrigerated' : 'Regular Storage'}
               </p>
             </div>
           </div>
         </div>
         {canModifyInventory && (
-          <Button onClick={() => setShowAddDialog(true)}>
+          <Button onClick={() => setShowAddDialog(true)} className="w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
             Add Item
           </Button>
@@ -230,7 +237,7 @@ export default function LocationDetail() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="mb-6">
+          <div className="mb-6 space-y-4">
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <Input
@@ -239,6 +246,28 @@ export default function LocationDetail() {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
               />
+            </div>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue placeholder="All Categories" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Categories</SelectItem>
+                  {Array.from(new Set(inventory.map(item => item.item.category.name))).map(category => (
+                    <SelectItem key={category} value={category}>{category}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedCategory && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setSelectedCategory('')}
+                >
+                  Clear Filter
+                </Button>
+              )}
             </div>
           </div>
 
@@ -251,31 +280,29 @@ export default function LocationDetail() {
               const isLowStock = item.quantity <= item.item.minimum_stock
               
               return (
-                <div key={item.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-center space-x-4">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2">
-                        <p className="font-medium text-gray-900">{item.item.name}</p>
-                        {isLowStock && (
-                          <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full">
-                            Low Stock
-                          </span>
-                        )}
-                        {getExpirationBadge(expirationStatus)}
-                      </div>
-                      <div className="flex items-center space-x-4 mt-1">
-                        <p className="text-sm text-gray-600">{item.item.category.name}</p>
-                        <p className="text-sm text-gray-600">Unit: {item.item.unit}</p>
-                        <p className="text-sm text-gray-600">Min: {item.item.minimum_stock}</p>
-                      </div>
-                      {item.item.description && (
-                        <p className="text-sm text-gray-500 mt-1">{item.item.description}</p>
+                <div key={item.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50 rounded-lg space-y-3 sm:space-y-0">
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center space-x-2 flex-wrap">
+                      <p className="font-medium text-gray-900">{item.item.name}</p>
+                      {isLowStock && (
+                        <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full">
+                          Low Stock
+                        </span>
                       )}
+                      {getExpirationBadge(expirationStatus)}
                     </div>
+                    <div className="flex items-center space-x-4 text-sm text-gray-600 flex-wrap">
+                      <p>{item.item.category.name}</p>
+                      <p>Unit: {item.item.unit}</p>
+                      <p>Min: {item.item.minimum_stock}</p>
+                    </div>
+                    {item.item.description && (
+                      <p className="text-sm text-gray-500">{item.item.description}</p>
+                    )}
                   </div>
                   
-                  <div className="flex items-center space-x-6">
-                    <div className="text-right">
+                  <div className="flex items-center justify-between sm:justify-end space-x-4 sm:space-x-6">
+                    <div className="text-center sm:text-right">
                       <div className="flex items-center space-x-2">
                         <span className="text-2xl font-bold text-gray-900">{item.quantity}</span>
                         <span className="text-sm text-gray-600">{item.item.unit}</span>

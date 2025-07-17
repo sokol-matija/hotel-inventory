@@ -6,14 +6,13 @@ import {
   Home, 
   Package, 
   MapPin, 
-  Users, 
-  Settings, 
   LogOut,
   ChefHat,
   UserCheck,
   Sparkles,
   Calculator,
-  ShieldCheck
+  ShieldCheck,
+  Globe
 } from 'lucide-react'
 
 const roleIcons = {
@@ -44,15 +43,9 @@ const sidebarItems = [
     roles: ['admin', 'cooking'] 
   },
   { 
-    name: 'Users', 
-    path: '/users', 
-    icon: Users, 
-    roles: ['admin'] 
-  },
-  { 
-    name: 'Settings', 
-    path: '/settings', 
-    icon: Settings, 
+    name: 'Global View', 
+    path: '/global', 
+    icon: Globe, 
     roles: ['admin', 'reception', 'cooking', 'room_cleaner', 'finance'] 
   },
 ]
@@ -72,11 +65,15 @@ export default function Sidebar() {
     <div className="w-64 bg-white border-r border-gray-200 h-screen flex flex-col">
       <div className="p-6">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold">
-            H
+          <div className="w-10 h-10 flex items-center justify-center">
+            <img 
+              src="/LOGO1.svg" 
+              alt="Hotel Porec Logo" 
+              className="w-8 h-8 object-contain"
+            />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-gray-900">Hotel Inventory</h2>
+            <h2 className="text-xl font-bold text-gray-900">Hotel Porec</h2>
             <p className="text-sm text-gray-600">Management System</p>
           </div>
         </div>

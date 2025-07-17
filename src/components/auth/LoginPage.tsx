@@ -15,10 +15,13 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     setIsLoading(true)
     try {
+      // Use the current origin for redirect, which will be correct for both development and production
+      const redirectUrl = `${window.location.origin}/dashboard`
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/dashboard`
+          redirectTo: redirectUrl
         }
       })
       
@@ -65,15 +68,33 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4 relative overflow-hidden">
+      {/* Background decorative images */}
+      <div className="absolute inset-0 pointer-events-none">
+        <img 
+          src="/mozaik_gp1 copy.png" 
+          alt="Decorative background" 
+          className="absolute top-0 left-0 w-96 h-96 object-contain opacity-20 -translate-x-1/2 -translate-y-1/4"
+        />
+        <img 
+          src="/zemlja_gp copy.png" 
+          alt="Decorative background" 
+          className="absolute bottom-0 right-0 w-96 h-96 object-contain opacity-20 translate-x-1/2 translate-y-1/4"
+        />
+      </div>
+      
+      <div className="w-full max-w-md relative z-10">
         <Card className="shadow-2xl border-0 bg-white/80 backdrop-blur-sm">
           <CardHeader className="space-y-4 text-center">
-            <div className="mx-auto w-20 h-20 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center text-white text-2xl font-bold">
-              H
+            <div className="mx-auto w-20 h-20 flex items-center justify-center">
+              <img 
+                src="/LOGO1.svg" 
+                alt="Hotel Porec Logo" 
+                className="w-16 h-16 object-contain"
+              />
             </div>
             <CardTitle className="text-3xl font-bold text-gray-900">
-              Hotel Inventory
+              Hotel Porec
             </CardTitle>
             <CardDescription className="text-gray-600 text-lg">
               Welcome to your inventory management system

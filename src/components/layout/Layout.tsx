@@ -29,10 +29,14 @@ export default function Layout() {
         <div className="lg:hidden bg-white border-b border-gray-200 p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold">
-                H
+              <div className="w-8 h-8 flex items-center justify-center">
+                <img 
+                  src="/LOGO1.svg" 
+                  alt="Hotel Porec Logo" 
+                  className="w-6 h-6 object-contain"
+                />
               </div>
-              <h1 className="text-xl font-bold text-gray-900">Hotel Inventory</h1>
+              <h1 className="text-xl font-bold text-gray-900">Hotel Porec</h1>
             </div>
             <button
               onClick={() => setIsMobileMenuOpen(true)}
