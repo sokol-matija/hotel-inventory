@@ -72,30 +72,22 @@ export default function LoginPage() {
       {/* Background decorative images */}
       <div className="absolute inset-0 pointer-events-none">
         <img 
-          src="/mozaik_gp1 copy.png" 
-          alt="Decorative background" 
-          className="absolute top-0 left-0 w-96 h-96 object-contain opacity-20 -translate-x-1/2 -translate-y-1/4"
-        />
-        <img 
           src="/zemlja_gp copy.png" 
           alt="Decorative background" 
-          className="absolute bottom-0 right-0 w-96 h-96 object-contain opacity-20 translate-x-1/2 translate-y-1/4"
+          className="absolute bottom-0 left-0 w-full h-64 object-cover opacity-30"
         />
       </div>
       
       <div className="w-full max-w-md relative z-10">
         <Card className="shadow-2xl border-0 bg-white/80 backdrop-blur-sm">
           <CardHeader className="space-y-4 text-center">
-            <div className="mx-auto w-20 h-20 flex items-center justify-center">
+            <div className="mx-auto w-32 h-32 flex items-center justify-center">
               <img 
                 src="/LOGO1.svg" 
                 alt="Hotel Porec Logo" 
-                className="w-16 h-16 object-contain"
+                className="w-full h-full object-contain"
               />
             </div>
-            <CardTitle className="text-3xl font-bold text-gray-900">
-              Hotel Porec
-            </CardTitle>
             <CardDescription className="text-gray-600 text-lg">
               Welcome to your inventory management system
             </CardDescription>
