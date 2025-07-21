@@ -198,6 +198,7 @@ export default function Dashboard() {
   }
 
   const handleCardClick = (cardType: string) => {
+    // Handle navigation when dashboard cards are clicked
     switch (cardType) {
       case 'total':
         navigate('/global')
