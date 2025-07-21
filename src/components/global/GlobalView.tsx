@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { Input } from '../ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
@@ -43,17 +44,28 @@ interface GlobalInventoryItem {
 
 export default function GlobalView() {
   const { userProfile } = useAuth()
+  const location = useLocation()
   const [inventory, setInventory] = useState<GlobalInventoryItem[]>([])
   const [filteredInventory, setFilteredInventory] = useState<GlobalInventoryItem[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [selectedLocation, setSelectedLocation] = useState<string>('all')
   const [showWithExpiration, setShowWithExpiration] = useState(false)
+  const [activeFilter, setActiveFilter] = useState<string>('all')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     fetchGlobalInventory()
   }, [])
+
+  useEffect(() => {
+    // Handle URL parameters for filtering
+    const searchParams = new URLSearchParams(location.search)
+    const filter = searchParams.get('filter')
+    if (filter) {
+      setActiveFilter(filter)
+    }
+  }, [location.search])
 
   useEffect(() => {
     let filtered = inventory.filter(item => {
@@ -68,12 +80,24 @@ export default function GlobalView() {
       const matchesExpiration = showWithExpiration ? 
         item.item.category.requires_expiration : 
         !item.item.category.requires_expiration
+
+      // Apply dashboard filter
+      let matchesActiveFilter = true
+      if (activeFilter === 'lowStock') {
+        matchesActiveFilter = item.quantity <= item.item.minimum_stock
+      } else if (activeFilter === 'expiring') {
+        const sevenDaysFromNow = new Date()
+        sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7)
+        matchesActiveFilter = !!(item.expiration_date && 
+          new Date(item.expiration_date) <= sevenDaysFromNow &&
+          new Date(item.expiration_date) >= new Date())
+      }
       
-      return matchesSearch && matchesCategory && matchesLocation && matchesExpiration
+      return matchesSearch && matchesCategory && matchesLocation && matchesExpiration && matchesActiveFilter
     })
     
     setFilteredInventory(filtered)
-  }, [inventory, searchTerm, selectedCategory, selectedLocation, showWithExpiration])
+  }, [inventory, searchTerm, selectedCategory, selectedLocation, showWithExpiration, activeFilter])
 
   const fetchGlobalInventory = async () => {
     try {
@@ -124,7 +148,19 @@ export default function GlobalView() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Global Inventory View</h1>
-          <p className="text-gray-600">View all items across all locations</p>
+          <div className="flex items-center space-x-2">
+            <p className="text-gray-600">View all items across all locations</p>
+            {activeFilter === 'lowStock' && (
+              <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full">
+                Low Stock Filter Active
+              </span>
+            )}
+            {activeFilter === 'expiring' && (
+              <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">
+                Expiring Soon Filter Active
+              </span>
+            )}
+          </div>
         </div>
       </div>
 

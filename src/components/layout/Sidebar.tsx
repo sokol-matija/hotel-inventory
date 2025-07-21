@@ -1,5 +1,5 @@
 import React from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '../ui/button'
 import { useAuth } from '../auth/AuthProvider'
 import { 
@@ -13,7 +13,8 @@ import {
   Calculator,
   ShieldCheck,
   Globe,
-  Settings
+  Settings,
+  History
 } from 'lucide-react'
 
 const roleIcons = {
@@ -55,11 +56,18 @@ const sidebarItems = [
     icon: Settings, 
     roles: ['admin'] 
   },
+  { 
+    name: 'Audit Logs', 
+    path: '/admin/audit', 
+    icon: History, 
+    roles: ['admin'] 
+  },
 ]
 
 export default function Sidebar() {
   const { userProfile, signOut } = useAuth()
   const location = useLocation()
+  const navigate = useNavigate()
 
   if (!userProfile) return null
 
@@ -72,7 +80,10 @@ export default function Sidebar() {
     <div className="w-64 bg-white border-r border-gray-200 h-screen flex flex-col">
       <div className="p-6">
         <div className="flex items-center justify-center">
-          <div className="w-full h-20 flex items-center justify-center">
+          <div 
+            className="w-full h-20 flex items-center justify-center cursor-pointer"
+            onClick={() => navigate('/dashboard')}
+          >
             <img 
               src="/LOGO1-hires.png" 
               alt="Hotel Porec Logo" 

@@ -4,6 +4,7 @@ import { Input } from '../ui/input'
 import { Label } from '../ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { supabase } from '@/lib/supabase'
+import { auditLog } from '@/lib/auditLog'
 import { X, Package, DollarSign, Hash, AlertCircle } from 'lucide-react'
 
 interface Category {
@@ -85,20 +86,26 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
 
     setLoading(true)
     try {
-      const { error } = await supabase
+      const itemData = {
+        name: formData.name.trim(),
+        description: formData.description.trim() || null,
+        category_id: parseInt(formData.category_id),
+        unit: formData.unit.trim(),
+        price: formData.price ? parseFloat(formData.price) : null,
+        minimum_stock: parseInt(formData.minimum_stock)
+      }
+
+      const { data, error } = await supabase
         .from('items')
-        .insert([
-          {
-            name: formData.name.trim(),
-            description: formData.description.trim() || null,
-            category_id: parseInt(formData.category_id),
-            unit: formData.unit.trim(),
-            price: formData.price ? parseFloat(formData.price) : null,
-            minimum_stock: parseInt(formData.minimum_stock)
-          }
-        ])
+        .insert([itemData])
+        .select()
 
       if (error) throw error
+
+      // Log the item creation
+      if (data && data[0]) {
+        await auditLog.itemCreated(data[0].id, itemData)
+      }
 
       // Reset form
       setFormData({
@@ -283,6 +290,16 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
                 </p>
               )}
             </div>
+
+            {/* Expiration Warning */}
+            {formData.category_id && categories.find(c => c.id === parseInt(formData.category_id))?.requires_expiration && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-md">
+                <p className="text-amber-800 text-sm flex items-center">
+                  <AlertCircle className="h-4 w-4 mr-2 text-amber-600" />
+                  This category requires expiration date tracking. You'll be prompted to enter expiration dates when adding inventory.
+                </p>
+              </div>
+            )}
 
             {/* Submit Error */}
             {errors.submit && (

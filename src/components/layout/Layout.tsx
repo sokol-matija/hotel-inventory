@@ -1,11 +1,12 @@
 import React, { useState } from 'react'
-import { Outlet } from 'react-router-dom'
+import { Outlet, useNavigate } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import MobileNav from './MobileNav'
 import { useAuth } from '../auth/AuthProvider'
 
 export default function Layout() {
   const { userProfile } = useAuth()
+  const navigate = useNavigate()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   if (!userProfile) return null
@@ -38,7 +39,10 @@ export default function Layout() {
         <div className="lg:hidden bg-white border-b border-gray-200 p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center justify-center flex-1">
-              <div className="w-32 h-12 flex items-center justify-center">
+              <div 
+                className="w-32 h-12 flex items-center justify-center cursor-pointer"
+                onClick={() => navigate('/dashboard')}
+              >
                 <img 
                   src="/LOGO1-hires.png" 
                   alt="Hotel Porec Logo" 

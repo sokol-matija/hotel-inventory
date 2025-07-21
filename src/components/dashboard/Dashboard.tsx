@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { Button } from '../ui/button'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '../auth/AuthProvider'
+import { auditLog } from '@/lib/auditLog'
 import { 
   Package, 
   AlertTriangle, 
@@ -43,6 +45,7 @@ interface DashboardStats {
 
 export default function Dashboard() {
   const { userProfile } = useAuth()
+  const navigate = useNavigate()
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [stats, setStats] = useState<DashboardStats>({
     totalItems: 0,
@@ -125,12 +128,27 @@ export default function Dashboard() {
     if (newQuantity < 0) return
 
     try {
+      // Find the item being updated for audit logging
+      const itemToUpdate = inventory.find(item => item.id === inventoryId)
+      if (!itemToUpdate) return
+
+      const oldQuantity = itemToUpdate.quantity
+
       const { error } = await supabase
         .from('inventory')
         .update({ quantity: newQuantity })
         .eq('id', inventoryId)
 
       if (error) throw error
+
+      // Log the quantity change
+      await auditLog.quantityUpdated(
+        inventoryId,
+        itemToUpdate.item.name,
+        oldQuantity,
+        newQuantity,
+        itemToUpdate.location.name
+      )
       
       // Update local state
       setInventory(prev => {
@@ -179,6 +197,23 @@ export default function Dashboard() {
     return 'good'
   }
 
+  const handleCardClick = (cardType: string) => {
+    switch (cardType) {
+      case 'total':
+        navigate('/global')
+        break
+      case 'lowStock':
+        navigate('/global?filter=lowStock')
+        break
+      case 'expiring':
+        navigate('/global?filter=expiring')
+        break
+      case 'locations':
+        navigate('/locations')
+        break
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -208,7 +243,10 @@ export default function Dashboard() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
-        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+        <Card 
+          className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => handleCardClick('total')}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs lg:text-sm font-medium text-blue-800">Total Items</CardTitle>
             <Package className="h-3 w-3 lg:h-4 lg:w-4 text-blue-600" />
@@ -219,7 +257,10 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
+        <Card 
+          className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => handleCardClick('lowStock')}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs lg:text-sm font-medium text-orange-800">Low Stock</CardTitle>
             <AlertTriangle className="h-3 w-3 lg:h-4 lg:w-4 text-orange-600" />
@@ -230,7 +271,10 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200">
+        <Card 
+          className="bg-gradient-to-br from-red-50 to-red-100 border-red-200 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => handleCardClick('expiring')}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs lg:text-sm font-medium text-red-800">Expiring Soon</CardTitle>
             <Clock className="h-3 w-3 lg:h-4 lg:w-4 text-red-600" />
@@ -241,7 +285,10 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+        <Card 
+          className="bg-gradient-to-br from-green-50 to-green-100 border-green-200 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => handleCardClick('locations')}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs lg:text-sm font-medium text-green-800">Locations</CardTitle>
             <Warehouse className="h-3 w-3 lg:h-4 lg:w-4 text-green-600" />
