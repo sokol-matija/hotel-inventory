@@ -36,10 +36,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null)
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
+  const [loadingTimeout, setLoadingTimeout] = useState<NodeJS.Timeout | null>(null)
 
   const fetchUserProfile = async (userId: string) => {
     try {
-      const { data, error } = await supabase
+      console.log('Fetching user profile for:', userId)
+      
+      // Create a timeout promise
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('User profile fetch timeout')), 10000)
+      )
+      
+      // Race between the query and timeout
+      const queryPromise = supabase
         .from('user_profiles')
         .select(`
           *,
@@ -48,13 +57,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('user_id', userId)
         .single()
 
+      const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any
+
       if (error) {
+        console.error('User profile fetch error:', error)
         if (error.code === 'PGRST116') {
+          console.log('No user profile found, setting to null')
           setUserProfile(null)
         } else {
           throw error
         }
       } else {
+        console.log('User profile fetched successfully:', data)
         setUserProfile(data)
       }
     } catch (error) {
@@ -70,9 +84,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   useEffect(() => {
+    console.log('AuthProvider useEffect called')
+    
+    // Set a maximum loading timeout of 15 seconds
+    const maxLoadingTimeout = setTimeout(() => {
+      console.error('Auth loading timeout reached - forcing loading to false')
+      setLoading(false)
+    }, 15000)
+    
+    setLoadingTimeout(maxLoadingTimeout)
+
     const getSession = async () => {
       try {
+        console.log('Getting session...')
         const { data: { session } } = await supabase.auth.getSession()
+        console.log('Session retrieved:', session?.user ? 'User found' : 'No user')
         setUser(session?.user ?? null)
         
         if (session?.user) {
@@ -81,6 +107,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch (error) {
         console.error('Error getting session:', error)
       } finally {
+        console.log('Setting loading to false')
+        clearTimeout(maxLoadingTimeout)
         setLoading(false)
       }
     }
@@ -89,6 +117,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state changed:', event, session?.user ? 'User present' : 'No user')
         setUser(session?.user ?? null)
         
         if (session?.user) {
@@ -97,11 +126,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUserProfile(null)
         }
         
+        clearTimeout(maxLoadingTimeout)
         setLoading(false)
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => {
+      console.log('Cleaning up auth subscription')
+      subscription.unsubscribe()
+      if (loadingTimeout) {
+        clearTimeout(loadingTimeout)
+      }
+    }
   }, [])
 
   const signOut = async () => {

@@ -13,7 +13,8 @@ import {
   Calculator,
   ShieldCheck,
   X,
-  Globe
+  Globe,
+  Settings
 } from 'lucide-react'
 
 const roleIcons = {
@@ -48,6 +49,12 @@ const sidebarItems = [
     path: '/global', 
     icon: Globe, 
     roles: ['admin', 'reception', 'cooking', 'room_cleaner', 'finance'] 
+  },
+  { 
+    name: 'Settings', 
+    path: '/admin/locations', 
+    icon: Settings, 
+    roles: ['admin'] 
   },
 ]
 

@@ -9,6 +9,7 @@ import LocationsPage from './components/locations/LocationsPage';
 import LocationDetail from './components/locations/LocationDetail';
 import ItemsPage from './components/items/ItemsPage';
 import GlobalView from './components/global/GlobalView';
+import LocationManagement from './components/admin/LocationManagement';
 import { ToastProvider } from './components/ui/toast';
 import { Toaster } from './components/Toaster';
 
@@ -39,16 +40,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function AppRoutes() {
-  const { user, userProfile, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
+  const { user } = useAuth();
+  
   return (
     <Routes>
       <Route path="/login" element={
@@ -66,6 +59,7 @@ function AppRoutes() {
         <Route path="locations/:id" element={<LocationDetail />} />
         <Route path="items" element={<ItemsPage />} />
         <Route path="global" element={<GlobalView />} />
+        <Route path="admin/locations" element={<LocationManagement />} />
       </Route>
       
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
