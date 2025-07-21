@@ -1,46 +1,167 @@
-# Getting Started with Create React App
+# Hotel Inventory Management System
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A comprehensive inventory management system built for hotel operations, featuring role-based access control, real-time tracking, and audit logging.
+
+## Features
+
+### Core Functionality
+- **Inventory Management**: Track items across multiple locations with quantity monitoring
+- **Location Management**: Support for different storage types including refrigerated and dry storage
+- **Item Categorization**: Organize inventory by categories with expiration tracking
+- **Dashboard Analytics**: Real-time overview with key metrics and alerts
+
+### Role-Based Access Control
+- **Admin**: Full system access including location and user management
+- **Cooking Staff**: Inventory updates and viewing permissions
+- **Viewing Staff**: Read-only access to inventory data
+
+### Smart Alerts
+- **Low Stock Warnings**: Automatic notifications when items fall below minimum thresholds
+- **Expiration Tracking**: Monitor items expiring within 7 days
+- **Quick Actions**: One-click quantity adjustments from the dashboard
+
+### Audit & Compliance
+- **Complete Audit Trail**: Track all inventory changes with user attribution
+- **Navigation Logging**: Monitor system usage and access patterns
+- **Data Integrity**: Comprehensive logging for compliance and troubleshooting
+
+## Tech Stack
+
+- **Frontend**: React 19 with TypeScript
+- **Styling**: Tailwind CSS with shadcn/ui components
+- **Backend**: Supabase (PostgreSQL + Auth)
+- **State Management**: React Context API
+- **Routing**: React Router DOM v7
+- **Build Tool**: Create React App with CRACO
+
+## Database Schema
+
+### Core Tables
+- `items` - Product catalog with categories and minimum stock levels
+- `locations` - Storage locations (refrigerated/dry storage)
+- `inventory` - Item quantities by location with expiration dates
+- `categories` - Item categorization with expiration requirements
+- `user_profiles` - User roles and permissions
+- `audit_logs` - Complete activity tracking
+
+## Quick Start
+
+### Prerequisites
+- Node.js 16+
+- npm or yarn
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd hotel-inventory
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Set up environment variables:
+```bash
+cp .env.example .env.local
+```
+
+4. Configure Supabase credentials in your environment file
+
+5. Start the development server:
+```bash
+npm start
+```
+
+The application will be available at `http://localhost:3000`
 
 ## Available Scripts
 
-In the project directory, you can run:
+- `npm start` - Start development server
+- `npm build` - Build for production
+- `npm test` - Run test suite
+- `npm eject` - Eject from Create React App (not recommended)
 
-### `npm start`
+## Project Structure
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+```
+src/
+├── components/
+│   ├── admin/          # Admin-only components
+│   ├── audit/          # Audit log viewing
+│   ├── auth/           # Authentication & authorization
+│   ├── dashboard/      # Main dashboard
+│   ├── global/         # Global inventory view
+│   ├── items/          # Item management
+│   ├── layout/         # Layout components
+│   ├── locations/      # Location management
+│   └── ui/             # Reusable UI components
+├── hooks/              # Custom React hooks
+├── lib/                # Utilities and configurations
+│   ├── auditLog.ts     # Audit logging functions
+│   ├── supabase.ts     # Database client & types
+│   └── utils.ts        # General utilities
+└── App.tsx             # Main application component
+```
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+## Key Features Explained
 
-### `npm test`
+### Dashboard
+The main dashboard provides:
+- Real-time inventory statistics
+- Quick quantity adjustments
+- Expiration and low-stock alerts
+- Clickable cards for detailed views
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### Location Management
+- Create and manage storage locations
+- Support for refrigerated and dry storage types
+- Inventory assignment and tracking per location
 
-### `npm run build`
+### Audit System
+- Comprehensive logging of all inventory changes
+- User attribution for all actions
+- Navigation tracking for usage analytics
+- Searchable audit history
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### Mobile Responsive
+- Optimized layouts for mobile and tablet devices
+- Touch-friendly interface elements
+- Responsive navigation and forms
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Authentication & Authorization
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+The system uses Supabase Auth with role-based permissions:
 
-### `npm run eject`
+1. **Google OAuth Integration** - Seamless login with Google accounts
+2. **Role Selection** - Users select their role after first login
+3. **Protected Routes** - Role-based access to different features
+4. **Session Management** - Automatic session handling and refresh
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+## Deployment
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+The application is configured for deployment on Vercel:
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+```bash
+npm run build
+```
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+Deploy to Vercel or any static hosting provider. Make sure to configure environment variables for your production Supabase instance.
 
-## Learn More
+## Contributing
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## Support
+
+For support or questions, please open an issue in the repository or contact the development team.
+
+## License
+
+This project is private and proprietary. All rights reserved.
