@@ -5,6 +5,7 @@ import { Label } from '../ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { supabase } from '@/lib/supabase'
 import { auditLog } from '@/lib/auditLog'
+import { useTranslation } from 'react-i18next'
 import { X, Package, DollarSign, Hash, AlertCircle } from 'lucide-react'
 
 interface Category {
@@ -20,6 +21,7 @@ interface AddItemDialogProps {
 }
 
 export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemDialogProps) {
+  const { t } = useTranslation()
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -56,23 +58,23 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
     const newErrors: Record<string, string> = {}
 
     if (!formData.name.trim()) {
-      newErrors.name = 'Item name is required'
+      newErrors.name = t('validation.nameRequired')
     }
 
     if (!formData.category_id) {
-      newErrors.category_id = 'Category is required'
+      newErrors.category_id = t('validation.categoryRequired')
     }
 
     if (!formData.unit.trim()) {
-      newErrors.unit = 'Unit is required'
+      newErrors.unit = t('validation.unitRequired')
     }
 
     if (formData.price && parseFloat(formData.price) < 0) {
-      newErrors.price = 'Price cannot be negative'
+      newErrors.price = t('validation.priceNegative')
     }
 
     if (parseInt(formData.minimum_stock) < 0) {
-      newErrors.minimum_stock = 'Minimum stock cannot be negative'
+      newErrors.minimum_stock = t('validation.minStockNegative')
     }
 
     setErrors(newErrors)
@@ -122,7 +124,7 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
       onClose()
     } catch (error) {
       console.error('Error adding item:', error)
-      setErrors({ submit: 'Failed to add item. Please try again.' })
+      setErrors({ submit: t('items.failedToAdd') })
     } finally {
       setLoading(false)
     }
@@ -145,14 +147,14 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <Package className="h-5 w-5 text-blue-600" />
-              <CardTitle>Add New Item</CardTitle>
+              <CardTitle>{t('items.addNewItem')}</CardTitle>
             </div>
             <Button variant="ghost" size="sm" onClick={onClose}>
               <X className="h-4 w-4" />
             </Button>
           </div>
           <CardDescription>
-            Add a new item to your inventory catalog
+            {t('items.addItemDescription')}
           </CardDescription>
         </CardHeader>
         
@@ -160,13 +162,13 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Item Name */}
             <div>
-              <Label htmlFor="name">Item Name *</Label>
+              <Label htmlFor="name">{t('items.itemName')} *</Label>
               <Input
                 id="name"
                 type="text"
                 value={formData.name}
                 onChange={(e) => handleInputChange('name', e.target.value)}
-                placeholder="Enter item name"
+                placeholder={t('items.enterItemName')}
                 className={errors.name ? 'border-red-500' : ''}
               />
               {errors.name && (
@@ -179,19 +181,19 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
 
             {/* Description */}
             <div>
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">{t('common.description')}</Label>
               <textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => handleInputChange('description', e.target.value)}
-                placeholder="Enter item description (optional)"
+                placeholder={t('items.enterDescription')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[80px]"
               />
             </div>
 
             {/* Category */}
             <div>
-              <Label htmlFor="category">Category *</Label>
+              <Label htmlFor="category">{t('common.category')} *</Label>
               <select
                 id="category"
                 value={formData.category_id}
@@ -200,7 +202,7 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
                   errors.category_id ? 'border-red-500' : 'border-gray-300'
                 }`}
               >
-                <option value="">Select a category</option>
+                <option value="">{t('common.selectCategory')}</option>
                 {categories.map(category => (
                   <option key={category.id} value={category.id}>
                     {category.name}
@@ -218,7 +220,7 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
             <div className="grid grid-cols-2 gap-4">
               {/* Unit */}
               <div>
-                <Label htmlFor="unit">Unit *</Label>
+                <Label htmlFor="unit">{t('common.unit')} *</Label>
                 <select
                   id="unit"
                   value={formData.unit}
@@ -227,13 +229,13 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
                     errors.unit ? 'border-red-500' : 'border-gray-300'
                   }`}
                 >
-                  <option value="pieces">Pieces</option>
-                  <option value="kg">Kilograms</option>
-                  <option value="liters">Liters</option>
-                  <option value="grams">Grams</option>
-                  <option value="bottles">Bottles</option>
-                  <option value="boxes">Boxes</option>
-                  <option value="packages">Packages</option>
+                  <option value="pieces">{t('units.pieces')}</option>
+                  <option value="kg">{t('units.kg')}</option>
+                  <option value="liters">{t('units.liters')}</option>
+                  <option value="grams">{t('units.grams')}</option>
+                  <option value="bottles">{t('units.bottles')}</option>
+                  <option value="boxes">{t('units.boxes')}</option>
+                  <option value="packages">{t('units.packages')}</option>
                 </select>
                 {errors.unit && (
                   <p className="text-red-500 text-sm mt-1 flex items-center">
@@ -245,7 +247,7 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
 
               {/* Minimum Stock */}
               <div>
-                <Label htmlFor="minimum_stock">Min Stock *</Label>
+                <Label htmlFor="minimum_stock">{t('common.minStock')} *</Label>
                 <div className="relative">
                   <Hash className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
@@ -269,7 +271,7 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
 
             {/* Price */}
             <div>
-              <Label htmlFor="price">Price (optional)</Label>
+              <Label htmlFor="price">{t('items.priceOptional')}</Label>
               <div className="relative">
                 <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                 <Input
@@ -296,7 +298,7 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
               <div className="p-3 bg-amber-50 border border-amber-200 rounded-md">
                 <p className="text-amber-800 text-sm flex items-center">
                   <AlertCircle className="h-4 w-4 mr-2 text-amber-600" />
-                  This category requires expiration date tracking. You'll be prompted to enter expiration dates when adding inventory.
+                  {t('items.expirationWarning')}
                 </p>
               </div>
             )}
@@ -314,16 +316,16 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
             {/* Buttons */}
             <div className="flex space-x-3 pt-4">
               <Button type="button" variant="outline" onClick={onClose} className="flex-1">
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={loading} className="flex-1">
                 {loading ? (
                   <div className="flex items-center space-x-2">
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Adding...</span>
+                    <span>{t('common.adding')}</span>
                   </div>
                 ) : (
-                  'Add Item'
+                  t('items.addItem')
                 )}
               </Button>
             </div>

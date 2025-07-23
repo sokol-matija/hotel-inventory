@@ -103,5 +103,37 @@
     "cooking": "Cooking",
     "room_cleaner": "Room Cleaner",
     "finance": "Finance"
+  },
+  "validation": {
+    "nameRequired": "Item name is required",
+    "categoryRequired": "Category is required",
+    "unitRequired": "Unit is required",
+    "priceNegative": "Price cannot be negative",
+    "minStockNegative": "Minimum stock cannot be negative",
+    "locationRequired": "Location is required",
+    "quantityRequired": "Quantity is required",
+    "quantityPositive": "Quantity must be positive"
+  },
+  "units": {
+    "pieces": "Pieces",
+    "kg": "Kilograms",
+    "liters": "Liters",
+    "grams": "Grams",
+    "bottles": "Bottles",
+    "boxes": "Boxes",
+    "packages": "Packages"
+  },
+  "global": {
+    "title": "Global View",
+    "subtitle": "Overview of all inventory across locations",
+    "inventoryOverview": "Inventory Overview",
+    "globalInventoryDescription": "Complete view of all items across all locations",
+    "searchInventory": "Search inventory...",
+    "itemType": "Item Type",
+    "filters": "Filters",
+    "lowStockFilter": "Low Stock Items",
+    "expiringFilter": "Expiring Items",
+    "noInventoryFound": "No inventory found matching your filters.",
+    "noInventoryYet": "No inventory in the system yet."
   }
 }

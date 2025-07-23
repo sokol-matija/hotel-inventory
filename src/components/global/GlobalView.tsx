@@ -5,6 +5,7 @@ import { Input } from '../ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '../auth/AuthProvider'
+import { useTranslation } from 'react-i18next'
 import { 
   Search,
   Package,
@@ -45,6 +46,7 @@ interface GlobalInventoryItem {
 export default function GlobalView() {
   const { userProfile } = useAuth()
   const location = useLocation()
+  const { t } = useTranslation()
   const [inventory, setInventory] = useState<GlobalInventoryItem[]>([])
   const [filteredInventory, setFilteredInventory] = useState<GlobalInventoryItem[]>([])
   const [searchTerm, setSearchTerm] = useState('')
@@ -147,17 +149,17 @@ export default function GlobalView() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Global Inventory View</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{t('global.title')}</h1>
           <div className="flex items-center space-x-2">
-            <p className="text-gray-600">View all items across all locations</p>
+            <p className="text-gray-600">{t('global.subtitle')}</p>
             {activeFilter === 'lowStock' && (
               <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full">
-                Low Stock Filter Active
+                {t('global.lowStockFilter')}
               </span>
             )}
             {activeFilter === 'expiring' && (
               <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">
-                Expiring Soon Filter Active
+                {t('global.expiringFilter')}
               </span>
             )}
           </div>
@@ -168,10 +170,10 @@ export default function GlobalView() {
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Package className="h-5 w-5" />
-            <span>All Items ({filteredInventory.length} of {inventory.length} total)</span>
+            <span>{t('global.inventoryOverview')} ({filteredInventory.length} of {inventory.length} total)</span>
           </CardTitle>
           <CardDescription>
-            Complete inventory overview across all storage locations
+            {t('global.globalInventoryDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -179,7 +181,7 @@ export default function GlobalView() {
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Search items, categories, or locations..."
+                placeholder={t('global.searchInventory')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -189,10 +191,10 @@ export default function GlobalView() {
             <div className="flex flex-col sm:flex-row gap-4">
               <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                 <SelectTrigger className="w-full sm:w-48">
-                  <SelectValue placeholder="All Categories" />
+                  <SelectValue placeholder={t('common.allCategories')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
+                  <SelectItem value="all">{t('common.allCategories')}</SelectItem>
                   {getUniqueCategories().map(category => (
                     <SelectItem key={category} value={category}>{category}</SelectItem>
                   ))}
@@ -201,10 +203,10 @@ export default function GlobalView() {
               
               <Select value={selectedLocation} onValueChange={setSelectedLocation}>
                 <SelectTrigger className="w-full sm:w-48">
-                  <SelectValue placeholder="All Locations" />
+                  <SelectValue placeholder={t('common.allLocations')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Locations</SelectItem>
+                  <SelectItem value="all">{t('common.allLocations')}</SelectItem>
                   {getUniqueLocations().map(location => (
                     <SelectItem key={location} value={location}>{location}</SelectItem>
                   ))}
@@ -213,7 +215,7 @@ export default function GlobalView() {
               
               <Select value={showWithExpiration.toString()} onValueChange={(value) => setShowWithExpiration(value === 'true')}>
                 <SelectTrigger className="w-full sm:w-48">
-                  <SelectValue placeholder="Item Type" />
+                  <SelectValue placeholder={t('global.itemType')} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="false">Non-Perishable</SelectItem>
@@ -234,7 +236,7 @@ export default function GlobalView() {
                       <p className="font-medium text-gray-900">{item.item.name}</p>
                       {isLowStock && (
                         <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full">
-                          Low Stock
+                          {t('items.lowStock')}
                         </span>
                       )}
                     </div>

@@ -40,6 +40,9 @@
     "title": "Artikel",
     "subtitle": "Verwalten Sie Ihren Inventar-Artikelkatalog",
     "addItem": "Artikel hinzufügen",
+    "editItem": "Artikel bearbeiten",
+    "addNewItem": "Neuen Artikel hinzufügen",
+    "editItemTitle": "Artikel bearbeiten",
     "itemsCatalog": "Artikelkatalog ({{count}} Artikel)",
     "allItemsDescription": "Alle in Ihrem Inventarsystem verfügbaren Artikel",
     "searchItems": "Artikel suchen...",
@@ -54,7 +57,16 @@
     "noItemsFound": "Keine Artikel gefunden, die Ihren Filtern entsprechen.",
     "noItemsYet": "Noch keine Artikel in Ihrem Katalog.",
     "addFirstItem": "Ersten Artikel hinzufügen",
-    "deleteConfirm": "Sind Sie sicher, dass Sie diesen Artikel löschen möchten?"
+    "deleteConfirm": "Sind Sie sicher, dass Sie diesen Artikel löschen möchten?",
+    "addItemDescription": "Fügen Sie einen neuen Artikel zu Ihrem Inventarkatalog hinzu",
+    "updateItemDescription": "Aktualisieren Sie Artikeldetails in Ihrem Inventarkatalog",
+    "itemName": "Artikelname",
+    "enterItemName": "Artikelname eingeben",
+    "enterDescription": "Artikelbeschreibung eingeben (optional)",
+    "priceOptional": "Preis (optional)",
+    "expirationWarning": "Diese Kategorie erfordert die Verfolgung von Ablaufdaten. Sie werden aufgefordert, Ablaufdaten einzugeben, wenn Sie Inventar hinzufügen.",
+    "failedToAdd": "Artikel konnte nicht hinzugefügt werden. Bitte versuchen Sie es erneut.",
+    "failedToUpdate": "Artikel konnte nicht aktualisiert werden. Bitte versuchen Sie es erneut."
   },
   "global": {
     "title": "Globale Ansicht",
@@ -95,7 +107,16 @@
     "price": "Preis",
     "totalStock": "Gesamtbestand",
     "locations": "Standorte",
-    "minStock": "Min. Bestand"
+    "minStock": "Min. Bestand",
+    "required": "erforderlich",
+    "optional": "optional",
+    "adding": "Hinzufügen...",
+    "updating": "Aktualisieren...",
+    "saving": "Speichern...",
+    "allCategories": "Alle Kategorien",
+    "allLocations": "Alle Standorte",
+    "selectCategory": "Wählen Sie eine Kategorie",
+    "selectLocation": "Wählen Sie einen Standort"
   },
   "roles": {
     "admin": "Administrator",
@@ -103,5 +124,37 @@
     "cooking": "Küche",
     "room_cleaner": "Zimmerreinigung",
     "finance": "Finanzen"
+  },
+  "validation": {
+    "nameRequired": "Artikelname ist erforderlich",
+    "categoryRequired": "Kategorie ist erforderlich",
+    "unitRequired": "Einheit ist erforderlich",
+    "priceNegative": "Preis kann nicht negativ sein",
+    "minStockNegative": "Mindestbestand kann nicht negativ sein",
+    "locationRequired": "Standort ist erforderlich",
+    "quantityRequired": "Menge ist erforderlich",
+    "quantityPositive": "Menge muss positiv sein"
+  },
+  "units": {
+    "pieces": "Stück",
+    "kg": "Kilogramm",
+    "liters": "Liter",
+    "grams": "Gramm",
+    "bottles": "Flaschen",
+    "boxes": "Kartons",
+    "packages": "Pakete"
+  },
+  "global": {
+    "title": "Globale Ansicht",
+    "subtitle": "Übersicht über das gesamte Inventar an allen Standorten",
+    "inventoryOverview": "Inventarübersicht",
+    "globalInventoryDescription": "Vollständige Ansicht aller Artikel an allen Standorten",
+    "searchInventory": "Inventar suchen...",
+    "itemType": "Artikeltyp",
+    "filters": "Filter",
+    "lowStockFilter": "Artikel mit niedrigem Bestand",
+    "expiringFilter": "Ablaufende Artikel",
+    "noInventoryFound": "Kein Inventar gefunden, das Ihren Filtern entspricht.",
+    "noInventoryYet": "Noch kein Inventar im System."
   }
 }

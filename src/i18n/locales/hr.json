@@ -40,6 +40,9 @@
     "title": "Artikli",
     "subtitle": "Upravljajte katalogom artikala inventara",
     "addItem": "Dodaj artikl",
+    "editItem": "Uredi artikl",
+    "addNewItem": "Dodaj novi artikl",
+    "editItemTitle": "Uredi artikl",
     "itemsCatalog": "Katalog artikala ({{count}} artikala)",
     "allItemsDescription": "Svi artikli dostupni u vašem sustavu inventara",
     "searchItems": "Pretraži artikle...",
@@ -54,7 +57,16 @@
     "noItemsFound": "Nema artikala koji odgovaraju vašim filtrima.",
     "noItemsYet": "Još nema artikala u vašem katalogu.",
     "addFirstItem": "Dodaj prvi artikl",
-    "deleteConfirm": "Jeste li sigurni da želite obrisati ovaj artikl?"
+    "deleteConfirm": "Jeste li sigurni da želite obrisati ovaj artikl?",
+    "addItemDescription": "Dodajte novi artikl u svoj katalog inventara",
+    "updateItemDescription": "Ažurirajte detalje artikla u svom katalogu inventara",
+    "itemName": "Naziv artikla",
+    "enterItemName": "Unesite naziv artikla",
+    "enterDescription": "Unesite opis artikla (opcionalno)",
+    "priceOptional": "Cijena (opcionalno)",
+    "expirationWarning": "Ova kategorija zahtijeva praćenje datuma isteka. Biti ćete upitani da unesete datume isteka prilikom dodavanja inventara.",
+    "failedToAdd": "Neuspješno dodavanje artikla. Molimo pokušajte ponovno.",
+    "failedToUpdate": "Neuspješno ažuriranje artikla. Molimo pokušajte ponovno."
   },
   "global": {
     "title": "Globalni pregled",
@@ -95,7 +107,16 @@
     "price": "Cijena",
     "totalStock": "Ukupno zaliha",
     "locations": "Lokacije",
-    "minStock": "Min. zalihe"
+    "minStock": "Min. zalihe",
+    "required": "obavezno",
+    "optional": "opcionalno",
+    "adding": "Dodavanje...",
+    "updating": "Ažuriranje...",
+    "saving": "Spremanje...",
+    "allCategories": "Sve kategorije",
+    "allLocations": "Sve lokacije",
+    "selectCategory": "Odaberite kategoriju",
+    "selectLocation": "Odaberite lokaciju"
   },
   "roles": {
     "admin": "Administrator",
@@ -103,5 +124,37 @@
     "cooking": "Kuharica",
     "room_cleaner": "Čistačica soba",
     "finance": "Financije"
+  },
+  "validation": {
+    "nameRequired": "Naziv artikla je obavezan",
+    "categoryRequired": "Kategorija je obavezna",
+    "unitRequired": "Jedinica je obavezna",
+    "priceNegative": "Cijena ne može biti negativna",
+    "minStockNegative": "Minimalne zalihe ne mogu biti negativne",
+    "locationRequired": "Lokacija je obavezna",
+    "quantityRequired": "Količina je obavezna",
+    "quantityPositive": "Količina mora biti pozitivna"
+  },
+  "units": {
+    "pieces": "Komadi",
+    "kg": "Kilogrami",
+    "liters": "Litri",
+    "grams": "Grami",
+    "bottles": "Boce",
+    "boxes": "Kutije",
+    "packages": "Paketi"
+  },
+  "global": {
+    "title": "Globalni pregled",
+    "subtitle": "Pregled sveg inventara u svim lokacijama",
+    "inventoryOverview": "Pregled inventara",
+    "globalInventoryDescription": "Potpuni pregled svih artikala u svim lokacijama",
+    "searchInventory": "Pretraži inventar...",
+    "itemType": "Tip artikla",
+    "filters": "Filtri",
+    "lowStockFilter": "Artikli s malo zaliha",
+    "expiringFilter": "Artikli koji istječu",
+    "noInventoryFound": "Nema inventara koji odgovara vašim filtrima.",
+    "noInventoryYet": "Još nema inventara u sustavu."
   }
 }
