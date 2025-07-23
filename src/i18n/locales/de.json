@@ -83,12 +83,36 @@
   "auth": {
     "login": "Anmelden",
     "logout": "Abmelden",
-    "signIn": "Anmelden",
-    "signOut": "Abmelden"
+    "signIn": "Anmelden", 
+    "signOut": "Abmelden",
+    "loginTitle": "Willkommen zum Hotel-Inventar",
+    "loginDescription": "Melden Sie sich an, um Ihr Hotel-Inventarsystem zu verwalten",
+    "signInWithGoogle": "Mit Google anmelden",
+    "orContinueWith": "oder fortfahren mit",
+    "email": "E-Mail",
+    "password": "Passwort",
+    "enterEmail": "Geben Sie Ihre E-Mail ein",
+    "enterPassword": "Geben Sie Ihr Passwort ein",
+    "signUp": "Registrieren",
+    "alreadyHaveAccount": "Haben Sie bereits ein Konto?",
+    "dontHaveAccount": "Haben Sie kein Konto?",
+    "createAccount": "Konto erstellen",
+    "googleNotConfigured": "Google OAuth ist noch nicht konfiguriert. Bitte verwenden Sie die E-Mail/Passwort-Anmeldung.",
+    "selectYourRole": "Wählen Sie Ihre Rolle",
+    "selectRoleDescription": "Wählen Sie Ihre Rolle, um auf die entsprechenden Funktionen zuzugreifen",
+    "enterAdminPassword": "Admin-Passwort eingeben",
+    "continueAsRole": "Als {{role}} fortfahren"
   },
   "admin": {
     "locationManagement": "Standortverwaltung",
-    "auditLogs": "Audit-Logs"
+    "auditLogs": "Audit-Logs",
+    "locationManagementDescription": "Verwalten und konfigurieren Sie alle Lagerstandorte",
+    "allLocationsInSystem": "Alle Standorte in Ihrem System",
+    "editLocation": "Standort bearbeiten",
+    "noLocationsYet": "Noch keine Standorte konfiguriert.",
+    "auditLogDescription": "Systemaktivität und Benutzeraktionen anzeigen",
+    "allSystemActivities": "Alle Systemaktivitäten und Benutzeraktionen",
+    "noAuditLogs": "Keine Audit-Logs gefunden."
   },
   "common": {
     "loading": "Lädt...",
@@ -173,5 +197,17 @@
     "bar": "Bar",
     "kitchen": "Küche",
     "office": "Büro"
+  },
+  "audit": {
+    "title": "Audit-Logs",
+    "subtitle": "Systemaktivität und Benutzeraktionen anzeigen",
+    "allActivities": "Alle Aktivitäten",
+    "allActivitiesDescription": "Vollständiges Protokoll aller Systemaktivitäten und Benutzeraktionen",
+    "searchLogs": "Logs suchen...",
+    "user": "Benutzer",
+    "action": "Aktion",
+    "details": "Details",
+    "timestamp": "Zeitstempel",
+    "noLogsFound": "Keine Audit-Logs gefunden."
   }
 }

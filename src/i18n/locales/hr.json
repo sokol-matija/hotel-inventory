@@ -84,11 +84,35 @@
     "login": "Prijava",
     "logout": "Odjava",
     "signIn": "Prijavite se",
-    "signOut": "Odjavite se"
+    "signOut": "Odjavite se",
+    "loginTitle": "Dobrodošli u hotelski inventar",
+    "loginDescription": "Prijavite se za upravljanje sustavom inventara hotela",
+    "signInWithGoogle": "Prijavite se s Google-om",
+    "orContinueWith": "ili nastavite s",
+    "email": "E-pošta",
+    "password": "Lozinka",
+    "enterEmail": "Unesite svoju e-poštu",
+    "enterPassword": "Unesite svoju lozinku",
+    "signUp": "Registracija",
+    "alreadyHaveAccount": "Već imate račun?",
+    "dontHaveAccount": "Nemate račun?",
+    "createAccount": "Stvori račun",
+    "googleNotConfigured": "Google OAuth još nije konfiguriran. Molimo koristite prijavu e-poštom/lozinkom.",
+    "selectYourRole": "Odaberite svoju ulogu",
+    "selectRoleDescription": "Odaberite svoju ulogu za pristup odgovarajućim značajkama",
+    "enterAdminPassword": "Unesite administratorsku lozinku",
+    "continueAsRole": "Nastavite kao {{role}}"
   },
   "admin": {
     "locationManagement": "Upravljanje lokacijama",
-    "auditLogs": "Zapisnici revizije"
+    "auditLogs": "Zapisnici revizije",
+    "locationManagementDescription": "Upravljajte i konfigurirajte sve lokacije skladištenja",
+    "allLocationsInSystem": "Sve lokacije u vašem sustavu",
+    "editLocation": "Uredi lokaciju",
+    "noLocationsYet": "Još nema konfiguriranih lokacija.",
+    "auditLogDescription": "Pregledajte aktivnost sustava i akcije korisnika",
+    "allSystemActivities": "Sve aktivnosti sustava i akcije korisnika",
+    "noAuditLogs": "Nema pronađenih zapisnika revizije."
   },
   "common": {
     "loading": "Učitava...",
@@ -173,5 +197,17 @@
     "bar": "Bar",
     "kitchen": "Kuhinja",
     "office": "Ured"
+  },
+  "audit": {
+    "title": "Zapisnici revizije",
+    "subtitle": "Pregledajte aktivnost sustava i akcije korisnika",
+    "allActivities": "Sve aktivnosti",
+    "allActivitiesDescription": "Potpuni zapisnik svih aktivnosti sustava i akcija korisnika",
+    "searchLogs": "Pretraži zapisnike...",
+    "user": "Korisnik",
+    "action": "Akcija",
+    "details": "Detalji",
+    "timestamp": "Vrijeme",
+    "noLogsFound": "Nema pronađenih zapisnika revizije."
   }
 }

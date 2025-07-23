@@ -6,6 +6,7 @@ import { Label } from '../ui/label'
 import { Textarea } from '../ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { supabase } from '@/lib/supabase'
+import { useTranslation } from 'react-i18next'
 import { MapPin, Loader2 } from 'lucide-react'
 
 interface AddLocationDialogProps {
@@ -15,16 +16,17 @@ interface AddLocationDialogProps {
 }
 
 const LOCATION_TYPES = [
-  { value: 'refrigerator', label: 'Refrigerator' },
-  { value: 'freezer', label: 'Freezer' },
-  { value: 'pantry', label: 'Pantry' },
-  { value: 'storage', label: 'Storage Room' },
-  { value: 'bar', label: 'Bar' },
-  { value: 'kitchen', label: 'Kitchen' },
-  { value: 'office', label: 'Office' }
+  'refrigerator',
+  'freezer', 
+  'pantry',
+  'storage',
+  'bar',
+  'kitchen',
+  'office'
 ]
 
 export default function AddLocationDialog({ isOpen, onClose, onLocationAdded }: AddLocationDialogProps) {
+  const { t } = useTranslation()
   const [formData, setFormData] = useState({
     name: '',
     type: '',
@@ -83,35 +85,35 @@ export default function AddLocationDialog({ isOpen, onClose, onLocationAdded }: 
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <MapPin className="h-5 w-5" />
-            <span>Add New Location</span>
+            <span>{t('locations.addNewLocation')}</span>
           </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label htmlFor="name">Location Name *</Label>
+            <Label htmlFor="name">{t('locations.locationName')} *</Label>
             <Input
               id="name"
               value={formData.name}
               onChange={(e) => handleChange('name', e.target.value)}
-              placeholder="Enter location name"
+              placeholder={t('locations.enterLocationName')}
               required
             />
           </div>
 
           <div>
-            <Label htmlFor="type">Location Type *</Label>
+            <Label htmlFor="type">{t('locations.locationType')} *</Label>
             <Select
               value={formData.type}
               onValueChange={handleTypeChange}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select location type" />
+                <SelectValue placeholder={t('locations.selectLocationType')} />
               </SelectTrigger>
               <SelectContent>
                 {LOCATION_TYPES.map((type) => (
-                  <SelectItem key={type.value} value={type.value}>
-                    {type.label}
+                  <SelectItem key={type} value={type}>
+                    {t(`locationTypes.${type}`)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -124,7 +126,7 @@ export default function AddLocationDialog({ isOpen, onClose, onLocationAdded }: 
               id="description"
               value={formData.description}
               onChange={(e) => handleChange('description', e.target.value)}
-              placeholder="Enter location description"
+              placeholder={t('locations.enterLocationDescription')}
               rows={3}
             />
           </div>

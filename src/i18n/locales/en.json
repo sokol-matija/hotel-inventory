@@ -72,11 +72,35 @@
     "login": "Login",
     "logout": "Logout",
     "signIn": "Sign In",
-    "signOut": "Sign Out"
+    "signOut": "Sign Out",
+    "loginTitle": "Welcome to Hotel Inventory",
+    "loginDescription": "Sign in to manage your hotel inventory system",
+    "signInWithGoogle": "Sign in with Google",
+    "orContinueWith": "or continue with",
+    "email": "Email",
+    "password": "Password",
+    "enterEmail": "Enter your email",
+    "enterPassword": "Enter your password",
+    "signUp": "Sign Up",
+    "alreadyHaveAccount": "Already have an account?",
+    "dontHaveAccount": "Don't have an account?",
+    "createAccount": "Create Account",
+    "googleNotConfigured": "Google OAuth is not configured yet. Please use email/password login.",
+    "selectYourRole": "Select Your Role",
+    "selectRoleDescription": "Choose your role to access the appropriate features",
+    "enterAdminPassword": "Enter admin password",
+    "continueAsRole": "Continue as {{role}}"
   },
   "admin": {
     "locationManagement": "Location Management",
-    "auditLogs": "Audit Logs"
+    "auditLogs": "Audit Logs",
+    "locationManagementDescription": "Manage and configure all storage locations",
+    "allLocationsInSystem": "All locations in your system",
+    "editLocation": "Edit Location",
+    "noLocationsYet": "No locations configured yet.",
+    "auditLogDescription": "View system activity and user actions",
+    "allSystemActivities": "All system activities and user actions",
+    "noAuditLogs": "No audit logs found."
   },
   "common": {
     "loading": "Loading...",
@@ -152,5 +176,17 @@
     "bar": "Bar",
     "kitchen": "Kitchen",
     "office": "Office"
+  },
+  "audit": {
+    "title": "Audit Logs",
+    "subtitle": "View system activity and user actions",
+    "allActivities": "All Activities",
+    "allActivitiesDescription": "Complete log of all system activities and user actions",
+    "searchLogs": "Search logs...",
+    "user": "User",
+    "action": "Action",
+    "details": "Details",
+    "timestamp": "Timestamp",
+    "noLogsFound": "No audit logs found."
   }
 }

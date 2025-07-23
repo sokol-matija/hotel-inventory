@@ -4,6 +4,7 @@ import { Input } from '../ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '../auth/AuthProvider'
+import { useTranslation } from 'react-i18next'
 import { 
   History,
   Search,
@@ -58,6 +59,7 @@ const tableDisplayNames = {
 
 export default function AuditLogPage() {
   const { userProfile } = useAuth()
+  const { t } = useTranslation()
   const [logs, setLogs] = useState<AuditLogEntry[]>([])
   const [filteredLogs, setFilteredLogs] = useState<AuditLogEntry[]>([])
   const [searchTerm, setSearchTerm] = useState('')

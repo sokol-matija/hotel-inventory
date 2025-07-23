@@ -5,6 +5,7 @@ import { Input } from '../ui/input'
 import { Label } from '../ui/label'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '../auth/AuthProvider'
+import { useTranslation } from 'react-i18next'
 import { 
   Settings,
   Edit,
@@ -25,6 +26,7 @@ interface Location {
 
 export default function LocationManagement() {
   const { userProfile } = useAuth()
+  const { t } = useTranslation()
   const [locations, setLocations] = useState<Location[]>([])
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editName, setEditName] = useState('')
