@@ -1,0 +1,87 @@
+{
+  "navigation": {
+    "dashboard": "Dashboard",
+    "locations": "Standorte",
+    "items": "Artikel",
+    "globalView": "Globale Ansicht",
+    "settings": "Einstellungen",
+    "auditLogs": "Audit-Logs",
+    "signOut": "Abmelden"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcomeBack": "Willkommen zurück, {{role}}",
+    "totalItems": "Gesamte Artikel",
+    "lowStock": "Niedriger Bestand",
+    "expiringSoon": "Läuft bald ab",
+    "locations": "Standorte",
+    "acrossAllLocations": "an allen Standorten",
+    "itemsNeedRestocking": "Artikel benötigen Nachschub",
+    "within7Days": "innerhalb von 7 Tagen",
+    "storageLocations": "Lagerstandorte",
+    "recentInventory": "Aktueller Bestand",
+    "latestItemsAdjustments": "Neueste Artikel mit schnellen Mengenanpassungen",
+    "quantity": "Menge: {{quantity}}",
+    "expiration": "Ablauf: {{date}}",
+    "lowStockLabel": "Niedriger Bestand",
+    "expiresSoon": "Läuft bald ab",
+    "checkDate": "Datum prüfen"
+  },
+  "locations": {
+    "title": "Standorte",
+    "subtitle": "Inventar an allen Lagerstandorten verwalten",
+    "addLocation": "Standort hinzufügen",
+    "refrigeratedStorage": "Gekühlte Lagerung",
+    "regularStorage": "Normale Lagerung",
+    "totalItems": "Gesamte Artikel",
+    "differentItems": "Verschiedene Artikel"
+  },
+  "items": {
+    "title": "Artikel",
+    "subtitle": "Alle Inventarartikel und Kategorien verwalten",
+    "addItem": "Artikel hinzufügen"
+  },
+  "global": {
+    "title": "Globale Ansicht",
+    "subtitle": "Übersicht über das gesamte Inventar an allen Standorten"
+  },
+  "auth": {
+    "login": "Anmelden",
+    "logout": "Abmelden",
+    "signIn": "Anmelden",
+    "signOut": "Abmelden"
+  },
+  "admin": {
+    "locationManagement": "Standortverwaltung",
+    "auditLogs": "Audit-Logs"
+  },
+  "common": {
+    "loading": "Lädt...",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "add": "Hinzufügen",
+    "close": "Schließen",
+    "confirm": "Bestätigen",
+    "search": "Suchen",
+    "filter": "Filtern",
+    "refresh": "Aktualisieren",
+    "name": "Name",
+    "description": "Beschreibung",
+    "type": "Typ",
+    "category": "Kategorie",
+    "quantity": "Menge",
+    "expiration": "Ablaufdatum",
+    "location": "Standort",
+    "date": "Datum",
+    "actions": "Aktionen"
+  },
+  "roles": {
+    "admin": "Administrator",
+    "reception": "Rezeption",
+    "cooking": "Küche",
+    "room_cleaner": "Zimmerreinigung",
+    "finance": "Finanzen"
+  }
+}

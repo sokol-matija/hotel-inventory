@@ -2,6 +2,8 @@ import React from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '../ui/button'
 import { useAuth } from '../auth/AuthProvider'
+import { useTranslation } from 'react-i18next'
+import LanguageSwitcher from '../ui/LanguageSwitcher'
 import { 
   Home, 
   Package, 
@@ -27,37 +29,37 @@ const roleIcons = {
 
 const sidebarItems = [
   { 
-    name: 'Dashboard', 
+    key: 'dashboard', 
     path: '/dashboard', 
     icon: Home, 
     roles: ['admin', 'reception', 'cooking', 'room_cleaner', 'finance'] 
   },
   { 
-    name: 'Locations', 
+    key: 'locations', 
     path: '/locations', 
     icon: MapPin, 
     roles: ['admin', 'reception', 'cooking', 'room_cleaner', 'finance'] 
   },
   { 
-    name: 'Items', 
+    key: 'items', 
     path: '/items', 
     icon: Package, 
     roles: ['admin', 'cooking'] 
   },
   { 
-    name: 'Global View', 
+    key: 'globalView', 
     path: '/global', 
     icon: Globe, 
     roles: ['admin', 'reception', 'cooking', 'room_cleaner', 'finance'] 
   },
   { 
-    name: 'Settings', 
+    key: 'settings', 
     path: '/admin/locations', 
     icon: Settings, 
     roles: ['admin'] 
   },
   { 
-    name: 'Audit Logs', 
+    key: 'auditLogs', 
     path: '/admin/audit', 
     icon: History, 
     roles: ['admin'] 
@@ -68,6 +70,7 @@ export default function Sidebar() {
   const { userProfile, signOut } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
+  const { t } = useTranslation()
 
   if (!userProfile) return null
 
@@ -100,7 +103,7 @@ export default function Sidebar() {
           
           return (
             <Link
-              key={item.name}
+              key={item.key}
               to={item.path}
               className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
                 isActive
@@ -109,7 +112,7 @@ export default function Sidebar() {
               }`}
             >
               <Icon className="w-5 h-5" />
-              <span className="font-medium">{item.name}</span>
+              <span className="font-medium">{t(`navigation.${item.key}`)}</span>
             </Link>
           )
         })}
@@ -122,12 +125,16 @@ export default function Sidebar() {
           </div>
           <div>
             <p className="font-medium text-gray-900 capitalize">
-              {userRole.replace('_', ' ')}
+              {t(`roles.${userRole}`)}
             </p>
             <p className="text-sm text-gray-600">
               {userProfile.role.description}
             </p>
           </div>
+        </div>
+        
+        <div className="mb-3">
+          <LanguageSwitcher />
         </div>
         
         <Button
@@ -136,7 +143,7 @@ export default function Sidebar() {
           className="w-full justify-start"
         >
           <LogOut className="w-4 h-4 mr-2" />
-          Sign Out
+          {t('navigation.signOut')}
         </Button>
       </div>
     </div>

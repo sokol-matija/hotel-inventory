@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { Button } from '../ui/button'
 import { supabase } from '@/lib/supabase'
 import AddLocationDialog from './AddLocationDialog'
+import { useTranslation } from 'react-i18next'
 import { 
   MapPin, 
   Refrigerator, 
@@ -30,6 +31,7 @@ export default function LocationsPage() {
   const [locations, setLocations] = useState<Location[]>([])
   const [loading, setLoading] = useState(true)
   const [showAddDialog, setShowAddDialog] = useState(false)
+  const { t } = useTranslation()
 
   useEffect(() => {
     fetchLocations()
@@ -114,12 +116,12 @@ export default function LocationsPage() {
     <div className="space-y-4 lg:space-y-6">
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Locations</h1>
-          <p className="text-gray-600 text-sm lg:text-base">Manage inventory across all storage locations</p>
+          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">{t('locations.title')}</h1>
+          <p className="text-gray-600 text-sm lg:text-base">{t('locations.subtitle')}</p>
         </div>
         <Button className="mt-3 lg:mt-0" onClick={() => setShowAddDialog(true)}>
           <Plus className="h-4 w-4 mr-2" />
-          Add Location
+          {t('locations.addLocation')}
         </Button>
       </div>
 
@@ -127,7 +129,7 @@ export default function LocationsPage() {
       <div className="space-y-4">
         <div className="flex items-center space-x-2">
           <Refrigerator className="h-5 w-5 text-blue-600" />
-          <h2 className="text-xl font-semibold text-gray-900">Refrigerated Storage</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{t('locations.refrigeratedStorage')}</h2>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
@@ -154,11 +156,11 @@ export default function LocationsPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="text-center">
                       <div className="text-2xl font-bold text-blue-900">{location.total_items}</div>
-                      <div className="text-sm text-blue-600">Total Items</div>
+                      <div className="text-sm text-blue-600">{t('locations.totalItems')}</div>
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold text-blue-900">{location.inventory_count}</div>
-                      <div className="text-sm text-blue-600">Different Items</div>
+                      <div className="text-sm text-blue-600">{t('locations.differentItems')}</div>
                     </div>
                   </div>
                   
@@ -190,7 +192,7 @@ export default function LocationsPage() {
       <div className="space-y-4">
         <div className="flex items-center space-x-2">
           <Warehouse className="h-5 w-5 text-gray-600" />
-          <h2 className="text-xl font-semibold text-gray-900">Regular Storage</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{t('locations.regularStorage')}</h2>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
@@ -217,11 +219,11 @@ export default function LocationsPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="text-center">
                       <div className="text-2xl font-bold text-gray-900">{location.total_items}</div>
-                      <div className="text-sm text-gray-600">Total Items</div>
+                      <div className="text-sm text-gray-600">{t('locations.totalItems')}</div>
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold text-gray-900">{location.inventory_count}</div>
-                      <div className="text-sm text-gray-600">Different Items</div>
+                      <div className="text-sm text-gray-600">{t('locations.differentItems')}</div>
                     </div>
                   </div>
                   

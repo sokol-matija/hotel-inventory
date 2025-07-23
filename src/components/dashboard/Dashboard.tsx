@@ -5,6 +5,7 @@ import { Button } from '../ui/button'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '../auth/AuthProvider'
 import { auditLog } from '@/lib/auditLog'
+import { useTranslation } from 'react-i18next'
 import { 
   Package, 
   AlertTriangle, 
@@ -46,6 +47,7 @@ interface DashboardStats {
 export default function Dashboard() {
   const { userProfile } = useAuth()
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [stats, setStats] = useState<DashboardStats>({
     totalItems: 0,
@@ -227,8 +229,8 @@ export default function Dashboard() {
     <div className="space-y-4 lg:space-y-6">
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 text-sm lg:text-base">Welcome back, {userProfile?.role.name.replace('_', ' ')}</p>
+          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">{t('dashboard.title')}</h1>
+          <p className="text-gray-600 text-sm lg:text-base">{t('dashboard.welcomeBack', { role: t(`roles.${userProfile?.role.name}`) })}</p>
         </div>
         <div className="text-left lg:text-right mt-2 lg:mt-0">
           <p className="text-sm text-gray-500">
@@ -249,12 +251,12 @@ export default function Dashboard() {
           onClick={() => handleCardClick('total')}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs lg:text-sm font-medium text-blue-800">Total Items</CardTitle>
+            <CardTitle className="text-xs lg:text-sm font-medium text-blue-800">{t('dashboard.totalItems')}</CardTitle>
             <Package className="h-3 w-3 lg:h-4 lg:w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
             <div className="text-xl lg:text-2xl font-bold text-blue-900">{stats.totalItems}</div>
-            <p className="text-xs text-blue-600">across all locations</p>
+            <p className="text-xs text-blue-600">{t('dashboard.acrossAllLocations')}</p>
           </CardContent>
         </Card>
 
@@ -263,12 +265,12 @@ export default function Dashboard() {
           onClick={() => handleCardClick('lowStock')}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs lg:text-sm font-medium text-orange-800">Low Stock</CardTitle>
+            <CardTitle className="text-xs lg:text-sm font-medium text-orange-800">{t('dashboard.lowStock')}</CardTitle>
             <AlertTriangle className="h-3 w-3 lg:h-4 lg:w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
             <div className="text-xl lg:text-2xl font-bold text-orange-900">{stats.lowStockItems}</div>
-            <p className="text-xs text-orange-600">items need restocking</p>
+            <p className="text-xs text-orange-600">{t('dashboard.itemsNeedRestocking')}</p>
           </CardContent>
         </Card>
 
@@ -277,12 +279,12 @@ export default function Dashboard() {
           onClick={() => handleCardClick('expiring')}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs lg:text-sm font-medium text-red-800">Expiring Soon</CardTitle>
+            <CardTitle className="text-xs lg:text-sm font-medium text-red-800">{t('dashboard.expiringSoon')}</CardTitle>
             <Clock className="h-3 w-3 lg:h-4 lg:w-4 text-red-600" />
           </CardHeader>
           <CardContent>
             <div className="text-xl lg:text-2xl font-bold text-red-900">{stats.expiringItems}</div>
-            <p className="text-xs text-red-600">within 7 days</p>
+            <p className="text-xs text-red-600">{t('dashboard.within7Days')}</p>
           </CardContent>
         </Card>
 
@@ -291,12 +293,12 @@ export default function Dashboard() {
           onClick={() => handleCardClick('locations')}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs lg:text-sm font-medium text-green-800">Locations</CardTitle>
+            <CardTitle className="text-xs lg:text-sm font-medium text-green-800">{t('dashboard.locations')}</CardTitle>
             <Warehouse className="h-3 w-3 lg:h-4 lg:w-4 text-green-600" />
           </CardHeader>
           <CardContent>
             <div className="text-xl lg:text-2xl font-bold text-green-900">{stats.locations}</div>
-            <p className="text-xs text-green-600">storage locations</p>
+            <p className="text-xs text-green-600">{t('dashboard.storageLocations')}</p>
           </CardContent>
         </Card>
       </div>
@@ -306,10 +308,10 @@ export default function Dashboard() {
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <TrendingUp className="h-5 w-5" />
-            <span>Recent Inventory</span>
+            <span>{t('dashboard.recentInventory')}</span>
           </CardTitle>
           <CardDescription>
-            Latest items with quick quantity adjustments
+            {t('dashboard.latestItemsAdjustments')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -336,17 +338,17 @@ export default function Dashboard() {
                     <div className="flex flex-wrap items-center gap-1 lg:gap-2">
                       {isLowStock && (
                         <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full">
-                          Low Stock
+                          {t('dashboard.lowStockLabel')}
                         </span>
                       )}
                       {expirationStatus === 'critical' && (
                         <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">
-                          Expires Soon
+                          {t('dashboard.expiresSoon')}
                         </span>
                       )}
                       {expirationStatus === 'warning' && (
                         <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
-                          Check Date
+                          {t('dashboard.checkDate')}
                         </span>
                       )}
                     </div>
@@ -354,10 +356,10 @@ export default function Dashboard() {
                   
                   <div className="flex items-center justify-between lg:justify-end lg:space-x-4">
                     <div className="text-left lg:text-right">
-                      <p className="font-medium text-gray-900">Qty: {item.quantity}</p>
+                      <p className="font-medium text-gray-900">{t('dashboard.quantity', { quantity: item.quantity })}</p>
                       {item.expiration_date && (
                         <p className="text-sm text-gray-600">
-                          Exp: {new Date(item.expiration_date).toLocaleDateString()}
+                          {t('dashboard.expiration', { date: new Date(item.expiration_date).toLocaleDateString() })}
                         </p>
                       )}
                     </div>

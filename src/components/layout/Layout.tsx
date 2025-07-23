@@ -3,6 +3,7 @@ import { Outlet, useNavigate } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import MobileNav from './MobileNav'
 import { useAuth } from '../auth/AuthProvider'
+import LanguageSwitcher from '../ui/LanguageSwitcher'
 
 export default function Layout() {
   const { userProfile } = useAuth()
@@ -38,6 +39,9 @@ export default function Layout() {
         {/* Mobile Header */}
         <div className="lg:hidden bg-white border-b border-gray-200 p-4">
           <div className="flex items-center justify-between">
+            <div className="flex-shrink-0">
+              <LanguageSwitcher />
+            </div>
             <div className="flex items-center justify-center flex-1">
               <div 
                 className="w-32 h-12 flex items-center justify-center cursor-pointer"
@@ -52,7 +56,7 @@ export default function Layout() {
             </div>
             <button
               onClick={() => setIsMobileMenuOpen(true)}
-              className="p-2 rounded-md text-gray-600 hover:bg-gray-100"
+              className="p-2 rounded-md text-gray-600 hover:bg-gray-100 flex-shrink-0"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />

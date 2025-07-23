@@ -1,0 +1,87 @@
+{
+  "navigation": {
+    "dashboard": "Kontrolna ploča",
+    "locations": "Lokacije",
+    "items": "Artikli",
+    "globalView": "Globalni pregled",
+    "settings": "Postavke",
+    "auditLogs": "Zapisnici revizije",
+    "signOut": "Odjava"
+  },
+  "dashboard": {
+    "title": "Kontrolna ploča",
+    "welcomeBack": "Dobrodošli natrag, {{role}}",
+    "totalItems": "Ukupno artikala",
+    "lowStock": "Malo zaliha",
+    "expiringSoon": "Uskoro istječe",
+    "locations": "Lokacije",
+    "acrossAllLocations": "u svim lokacijama",
+    "itemsNeedRestocking": "artikala treba dopuniti",
+    "within7Days": "u sljedećih 7 dana",
+    "storageLocations": "mjesta skladištenja",
+    "recentInventory": "Nedavni inventar",
+    "latestItemsAdjustments": "Najnoviji artikli s brzim prilagodbama količine",
+    "quantity": "Kol: {{quantity}}",
+    "expiration": "Ist: {{date}}",
+    "lowStockLabel": "Malo zaliha",
+    "expiresSoon": "Uskoro istječe",
+    "checkDate": "Provjeri datum"
+  },
+  "locations": {
+    "title": "Lokacije",
+    "subtitle": "Upravljajte inventarom u svim lokacijama skladištenja",
+    "addLocation": "Dodaj lokaciju",
+    "refrigeratedStorage": "Hlađeno skladište",
+    "regularStorage": "Redovito skladište",
+    "totalItems": "Ukupno artikala",
+    "differentItems": "Različitih artikala"
+  },
+  "items": {
+    "title": "Artikli",
+    "subtitle": "Upravljajte svim artiklima inventara i kategorijama",
+    "addItem": "Dodaj artikl"
+  },
+  "global": {
+    "title": "Globalni pregled",
+    "subtitle": "Pregled sveg inventara u svim lokacijama"
+  },
+  "auth": {
+    "login": "Prijava",
+    "logout": "Odjava",
+    "signIn": "Prijavite se",
+    "signOut": "Odjavite se"
+  },
+  "admin": {
+    "locationManagement": "Upravljanje lokacijama",
+    "auditLogs": "Zapisnici revizije"
+  },
+  "common": {
+    "loading": "Učitava...",
+    "save": "Spremi",
+    "cancel": "Odustani",
+    "delete": "Obriši",
+    "edit": "Uredi",
+    "add": "Dodaj",
+    "close": "Zatvori",
+    "confirm": "Potvrdi",
+    "search": "Pretraži",
+    "filter": "Filtriraj",
+    "refresh": "Osvježi",
+    "name": "Naziv",
+    "description": "Opis",
+    "type": "Tip",
+    "category": "Kategorija",
+    "quantity": "Količina",
+    "expiration": "Datum isteka",
+    "location": "Lokacija",
+    "date": "Datum",
+    "actions": "Akcije"
+  },
+  "roles": {
+    "admin": "Administrator",
+    "reception": "Recepcija",
+    "cooking": "Kuharica",
+    "room_cleaner": "Čistačica soba",
+    "finance": "Financije"
+  }
+}

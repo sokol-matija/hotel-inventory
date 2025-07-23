@@ -1,0 +1,87 @@
+{
+  "navigation": {
+    "dashboard": "Dashboard",
+    "locations": "Locations",
+    "items": "Items",
+    "globalView": "Global View",
+    "settings": "Settings",
+    "auditLogs": "Audit Logs",
+    "signOut": "Sign Out"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcomeBack": "Welcome back, {{role}}",
+    "totalItems": "Total Items",
+    "lowStock": "Low Stock",
+    "expiringSoon": "Expiring Soon",
+    "locations": "Locations",
+    "acrossAllLocations": "across all locations",
+    "itemsNeedRestocking": "items need restocking",
+    "within7Days": "within 7 days",
+    "storageLocations": "storage locations",
+    "recentInventory": "Recent Inventory",
+    "latestItemsAdjustments": "Latest items with quick quantity adjustments",
+    "quantity": "Qty: {{quantity}}",
+    "expiration": "Exp: {{date}}",
+    "lowStockLabel": "Low Stock",
+    "expiresSoon": "Expires Soon",
+    "checkDate": "Check Date"
+  },
+  "locations": {
+    "title": "Locations",
+    "subtitle": "Manage inventory across all storage locations",
+    "addLocation": "Add Location",
+    "refrigeratedStorage": "Refrigerated Storage",
+    "regularStorage": "Regular Storage",
+    "totalItems": "Total Items",
+    "differentItems": "Different Items"
+  },
+  "items": {
+    "title": "Items",
+    "subtitle": "Manage all inventory items and categories",
+    "addItem": "Add Item"
+  },
+  "global": {
+    "title": "Global View",
+    "subtitle": "Overview of all inventory across locations"
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "signIn": "Sign In",
+    "signOut": "Sign Out"
+  },
+  "admin": {
+    "locationManagement": "Location Management",
+    "auditLogs": "Audit Logs"
+  },
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "close": "Close",
+    "confirm": "Confirm",
+    "search": "Search",
+    "filter": "Filter",
+    "refresh": "Refresh",
+    "name": "Name",
+    "description": "Description",
+    "type": "Type",
+    "category": "Category",
+    "quantity": "Quantity",
+    "expiration": "Expiration",
+    "location": "Location",
+    "date": "Date",
+    "actions": "Actions"
+  },
+  "roles": {
+    "admin": "Admin",
+    "reception": "Reception",
+    "cooking": "Cooking",
+    "room_cleaner": "Room Cleaner",
+    "finance": "Finance"
+  }
+}
