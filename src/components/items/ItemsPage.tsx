@@ -5,6 +5,7 @@ import { Input } from '../ui/input'
 import { supabase } from '@/lib/supabase'
 import AddItemDialog from './AddItemDialog'
 import EditItemDialog from './EditItemDialog'
+import { useTranslation } from 'react-i18next'
 import { 
   Package, 
   Plus,
@@ -41,6 +42,7 @@ interface Category {
 }
 
 export default function ItemsPage() {
+  const { t } = useTranslation()
   const [items, setItems] = useState<Item[]>([])
   const [filteredItems, setFilteredItems] = useState<Item[]>([])
   const [categories, setCategories] = useState<Category[]>([])
@@ -131,7 +133,7 @@ export default function ItemsPage() {
   }
 
   const deleteItem = async (itemId: number) => {
-    if (!window.confirm('Are you sure you want to delete this item?')) return
+    if (!window.confirm(t('items.deleteConfirm'))) return
 
     try {
       const { error } = await supabase
@@ -159,12 +161,12 @@ export default function ItemsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Items</h1>
-          <p className="text-gray-600">Manage your inventory items catalog</p>
+          <h1 className="text-3xl font-bold text-gray-900">{t('items.title')}</h1>
+          <p className="text-gray-600">{t('items.subtitle')}</p>
         </div>
         <Button onClick={() => setShowAddDialog(true)}>
           <Plus className="h-4 w-4 mr-2" />
-          Add Item
+          {t('items.addItem')}
         </Button>
       </div>
 
@@ -172,10 +174,10 @@ export default function ItemsPage() {
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Package className="h-5 w-5" />
-            <span>Items Catalog ({filteredItems.length} items)</span>
+            <span>{t('items.itemsCatalog', { count: filteredItems.length })}</span>
           </CardTitle>
           <CardDescription>
-            All items available in your inventory system
+            {t('items.allItemsDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -183,7 +185,7 @@ export default function ItemsPage() {
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Search items..."
+                placeholder={t('items.searchItems')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -194,7 +196,7 @@ export default function ItemsPage() {
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="all">All Categories</option>
+              <option value="all">{t('items.allCategories')}</option>
               {categories.map(category => (
                 <option key={category.id} value={category.name}>
                   {category.name}
@@ -242,21 +244,21 @@ export default function ItemsPage() {
                   <div className="grid grid-cols-2 gap-4 mb-4">
                     <div className="text-center">
                       <div className="text-2xl font-bold text-gray-900">{item.total_quantity}</div>
-                      <div className="text-sm text-gray-600">Total Stock</div>
+                      <div className="text-sm text-gray-600">{t('items.totalStock')}</div>
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold text-gray-900">{item.inventory_count}</div>
-                      <div className="text-sm text-gray-600">Locations</div>
+                      <div className="text-sm text-gray-600">{t('items.locations')}</div>
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Unit:</span>
+                      <span className="text-sm text-gray-600">{t('items.unit')}:</span>
                       <span className="text-sm font-medium">{item.unit}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Min Stock:</span>
+                      <span className="text-sm text-gray-600">{t('items.minStock')}:</span>
                       <div className="flex items-center space-x-1">
                         <span className="text-sm font-medium">{item.minimum_stock}</span>
                         {item.total_quantity <= item.minimum_stock && (
@@ -266,7 +268,7 @@ export default function ItemsPage() {
                     </div>
                     {item.price && (
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Price:</span>
+                        <span className="text-sm text-gray-600">{t('items.price')}:</span>
                         <div className="flex items-center space-x-1">
                           <DollarSign className="h-3 w-3 text-gray-500" />
                           <span className="text-sm font-medium">{item.price}</span>
@@ -278,12 +280,12 @@ export default function ItemsPage() {
                   <div className="mt-4 flex items-center space-x-2">
                     {item.category.requires_expiration && (
                       <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                        Expires
+                        {t('items.expires')}
                       </span>
                     )}
                     {item.total_quantity <= item.minimum_stock && (
                       <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full">
-                        Low Stock
+                        {t('items.lowStock')}
                       </span>
                     )}
                   </div>
@@ -297,12 +299,12 @@ export default function ItemsPage() {
               <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-600">
                 {searchTerm || selectedCategory !== 'all' 
-                  ? 'No items found matching your filters.' 
-                  : 'No items in your catalog yet.'}
+                  ? t('items.noItemsFound') 
+                  : t('items.noItemsYet')}
               </p>
               <Button className="mt-4" onClick={() => setShowAddDialog(true)}>
                 <Plus className="h-4 w-4 mr-2" />
-                Add First Item
+                {t('items.addFirstItem')}
               </Button>
             </div>
           )}

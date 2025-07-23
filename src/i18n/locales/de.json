@@ -38,8 +38,23 @@
   },
   "items": {
     "title": "Artikel",
-    "subtitle": "Alle Inventarartikel und Kategorien verwalten",
-    "addItem": "Artikel hinzufügen"
+    "subtitle": "Verwalten Sie Ihren Inventar-Artikelkatalog",
+    "addItem": "Artikel hinzufügen",
+    "itemsCatalog": "Artikelkatalog ({{count}} Artikel)",
+    "allItemsDescription": "Alle in Ihrem Inventarsystem verfügbaren Artikel",
+    "searchItems": "Artikel suchen...",
+    "allCategories": "Alle Kategorien",
+    "totalStock": "Gesamtbestand",
+    "locations": "Standorte",
+    "unit": "Einheit",
+    "minStock": "Min. Bestand",
+    "price": "Preis",
+    "expires": "Läuft ab",
+    "lowStock": "Niedriger Bestand",
+    "noItemsFound": "Keine Artikel gefunden, die Ihren Filtern entsprechen.",
+    "noItemsYet": "Noch keine Artikel in Ihrem Katalog.",
+    "addFirstItem": "Ersten Artikel hinzufügen",
+    "deleteConfirm": "Sind Sie sicher, dass Sie diesen Artikel löschen möchten?"
   },
   "global": {
     "title": "Globale Ansicht",
@@ -75,7 +90,12 @@
     "expiration": "Ablaufdatum",
     "location": "Standort",
     "date": "Datum",
-    "actions": "Aktionen"
+    "actions": "Aktionen",
+    "unit": "Einheit",
+    "price": "Preis",
+    "totalStock": "Gesamtbestand",
+    "locations": "Standorte",
+    "minStock": "Min. Bestand"
   },
   "roles": {
     "admin": "Administrator",

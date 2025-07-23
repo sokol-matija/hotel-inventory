@@ -38,8 +38,23 @@
   },
   "items": {
     "title": "Items",
-    "subtitle": "Manage all inventory items and categories",
-    "addItem": "Add Item"
+    "subtitle": "Manage your inventory items catalog",
+    "addItem": "Add Item",
+    "itemsCatalog": "Items Catalog ({{count}} items)",
+    "allItemsDescription": "All items available in your inventory system",
+    "searchItems": "Search items...",
+    "allCategories": "All Categories",
+    "totalStock": "Total Stock",
+    "locations": "Locations",
+    "unit": "Unit",
+    "minStock": "Min Stock",
+    "price": "Price",
+    "expires": "Expires",
+    "lowStock": "Low Stock",
+    "noItemsFound": "No items found matching your filters.",
+    "noItemsYet": "No items in your catalog yet.",
+    "addFirstItem": "Add First Item",
+    "deleteConfirm": "Are you sure you want to delete this item?"
   },
   "global": {
     "title": "Global View",
@@ -75,7 +90,12 @@
     "expiration": "Expiration",
     "location": "Location",
     "date": "Date",
-    "actions": "Actions"
+    "actions": "Actions",
+    "unit": "Unit",
+    "price": "Price",
+    "totalStock": "Total Stock",
+    "locations": "Locations",
+    "minStock": "Min Stock"
   },
   "roles": {
     "admin": "Admin",

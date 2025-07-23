@@ -38,8 +38,23 @@
   },
   "items": {
     "title": "Artikli",
-    "subtitle": "Upravljajte svim artiklima inventara i kategorijama",
-    "addItem": "Dodaj artikl"
+    "subtitle": "Upravljajte katalogom artikala inventara",
+    "addItem": "Dodaj artikl",
+    "itemsCatalog": "Katalog artikala ({{count}} artikala)",
+    "allItemsDescription": "Svi artikli dostupni u vašem sustavu inventara",
+    "searchItems": "Pretraži artikle...",
+    "allCategories": "Sve kategorije",
+    "totalStock": "Ukupno zaliha",
+    "locations": "Lokacije",
+    "unit": "Jedinica",
+    "minStock": "Min. zalihe",
+    "price": "Cijena",
+    "expires": "Istječe",
+    "lowStock": "Malo zaliha",
+    "noItemsFound": "Nema artikala koji odgovaraju vašim filtrima.",
+    "noItemsYet": "Još nema artikala u vašem katalogu.",
+    "addFirstItem": "Dodaj prvi artikl",
+    "deleteConfirm": "Jeste li sigurni da želite obrisati ovaj artikl?"
   },
   "global": {
     "title": "Globalni pregled",
@@ -75,7 +90,12 @@
     "expiration": "Datum isteka",
     "location": "Lokacija",
     "date": "Datum",
-    "actions": "Akcije"
+    "actions": "Akcije",
+    "unit": "Jedinica",
+    "price": "Cijena",
+    "totalStock": "Ukupno zaliha",
+    "locations": "Lokacije",
+    "minStock": "Min. zalihe"
   },
   "roles": {
     "admin": "Administrator",
