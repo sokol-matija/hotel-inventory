@@ -31,10 +31,18 @@
     "title": "Lokacije",
     "subtitle": "Upravljajte inventarom u svim lokacijama skladištenja",
     "addLocation": "Dodaj lokaciju",
+    "addNewLocation": "Dodaj novu lokaciju",
+    "addLocationDescription": "Stvorite novu lokaciju skladištenja za svoj inventar",
     "refrigeratedStorage": "Hlađeno skladište",
     "regularStorage": "Redovito skladište",
     "totalItems": "Ukupno artikala",
-    "differentItems": "Različitih artikala"
+    "differentItems": "Različitih artikala",
+    "locationName": "Naziv lokacije",
+    "locationType": "Tip lokacije",
+    "enterLocationName": "Unesite naziv lokacije",
+    "selectLocationType": "Odaberite tip lokacije",
+    "enterLocationDescription": "Unesite opis lokacije (opcionalno)",
+    "failedToAdd": "Neuspješno dodavanje lokacije. Molimo pokušajte ponovno."
   },
   "items": {
     "title": "Artikli",
@@ -156,5 +164,14 @@
     "expiringFilter": "Artikli koji istječu",
     "noInventoryFound": "Nema inventara koji odgovara vašim filtrima.",
     "noInventoryYet": "Još nema inventara u sustavu."
+  },
+  "locationTypes": {
+    "refrigerator": "Hladnjak",
+    "freezer": "Zamrzivač",
+    "pantry": "Ostava",
+    "storage": "Skladišna soba",
+    "bar": "Bar",
+    "kitchen": "Kuhinja",
+    "office": "Ured"
   }
 }

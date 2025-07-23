@@ -31,10 +31,18 @@
     "title": "Standorte",
     "subtitle": "Inventar an allen Lagerstandorten verwalten",
     "addLocation": "Standort hinzufügen",
+    "addNewLocation": "Neuen Standort hinzufügen",
+    "addLocationDescription": "Erstellen Sie einen neuen Lagerstandort für Ihr Inventar",
     "refrigeratedStorage": "Gekühlte Lagerung",
     "regularStorage": "Normale Lagerung",
     "totalItems": "Gesamte Artikel",
-    "differentItems": "Verschiedene Artikel"
+    "differentItems": "Verschiedene Artikel",
+    "locationName": "Standortname",
+    "locationType": "Standorttyp",
+    "enterLocationName": "Standortname eingeben",
+    "selectLocationType": "Standorttyp auswählen",
+    "enterLocationDescription": "Standortbeschreibung eingeben (optional)",
+    "failedToAdd": "Standort konnte nicht hinzugefügt werden. Bitte versuchen Sie es erneut."
   },
   "items": {
     "title": "Artikel",
@@ -156,5 +164,14 @@
     "expiringFilter": "Ablaufende Artikel",
     "noInventoryFound": "Kein Inventar gefunden, das Ihren Filtern entspricht.",
     "noInventoryYet": "Noch kein Inventar im System."
+  },
+  "locationTypes": {
+    "refrigerator": "Kühlschrank",
+    "freezer": "Gefrierschrank",
+    "pantry": "Speisekammer",
+    "storage": "Lagerraum",
+    "bar": "Bar",
+    "kitchen": "Küche",
+    "office": "Büro"
   }
 }

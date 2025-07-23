@@ -31,10 +31,18 @@
     "title": "Locations",
     "subtitle": "Manage inventory across all storage locations",
     "addLocation": "Add Location",
+    "addNewLocation": "Add New Location",
+    "addLocationDescription": "Create a new storage location for your inventory",
     "refrigeratedStorage": "Refrigerated Storage",
     "regularStorage": "Regular Storage",
     "totalItems": "Total Items",
-    "differentItems": "Different Items"
+    "differentItems": "Different Items",
+    "locationName": "Location Name",
+    "locationType": "Location Type",
+    "enterLocationName": "Enter location name",
+    "selectLocationType": "Select location type",
+    "enterLocationDescription": "Enter location description (optional)",
+    "failedToAdd": "Failed to add location. Please try again."
   },
   "items": {
     "title": "Items",
@@ -135,5 +143,14 @@
     "expiringFilter": "Expiring Items",
     "noInventoryFound": "No inventory found matching your filters.",
     "noInventoryYet": "No inventory in the system yet."
+  },
+  "locationTypes": {
+    "refrigerator": "Refrigerator",
+    "freezer": "Freezer",
+    "pantry": "Pantry",
+    "storage": "Storage Room",
+    "bar": "Bar",
+    "kitchen": "Kitchen",
+    "office": "Office"
   }
 }

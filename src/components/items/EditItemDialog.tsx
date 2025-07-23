@@ -6,6 +6,7 @@ import { Label } from '../ui/label'
 import { Textarea } from '../ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { supabase } from '@/lib/supabase'
+import { useTranslation } from 'react-i18next'
 import { Package, Loader2 } from 'lucide-react'
 
 interface Item {
@@ -37,6 +38,7 @@ interface EditItemDialogProps {
 }
 
 export default function EditItemDialog({ isOpen, onClose, onItemUpdated, item }: EditItemDialogProps) {
+  const { t } = useTranslation()
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -133,7 +135,7 @@ export default function EditItemDialog({ isOpen, onClose, onItemUpdated, item }:
               id="name"
               value={formData.name}
               onChange={(e) => handleChange('name', e.target.value)}
-              placeholder="Enter item name"
+              placeholder={t('items.enterItemName')}
               required
             />
           </div>
@@ -144,7 +146,7 @@ export default function EditItemDialog({ isOpen, onClose, onItemUpdated, item }:
               id="description"
               value={formData.description}
               onChange={(e) => handleChange('description', e.target.value)}
-              placeholder="Enter item description"
+              placeholder={t('items.enterDescription')}
               rows={3}
             />
           </div>
@@ -182,7 +184,7 @@ export default function EditItemDialog({ isOpen, onClose, onItemUpdated, item }:
               min="0"
               value={formData.minimum_stock}
               onChange={(e) => handleChange('minimum_stock', e.target.value)}
-              placeholder="Enter minimum stock level"
+              placeholder="0"
               required
             />
           </div>
@@ -200,7 +202,7 @@ export default function EditItemDialog({ isOpen, onClose, onItemUpdated, item }:
                 onValueChange={(value) => handleChange('category_id', value)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a category" />
+                  <SelectValue placeholder={t('common.selectCategory')} />
                 </SelectTrigger>
                 <SelectContent>
                   {categories.map((category) => (
