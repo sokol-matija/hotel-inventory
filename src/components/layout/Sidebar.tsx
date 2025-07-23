@@ -54,8 +54,14 @@ const sidebarItems = [
   },
   { 
     key: 'settings', 
-    path: '/admin/locations', 
+    path: '/settings', 
     icon: Settings, 
+    roles: ['admin', 'reception', 'cooking', 'room_cleaner', 'finance'] 
+  },
+  { 
+    key: 'locationManagement', 
+    path: '/admin/locations', 
+    icon: MapPin, 
     roles: ['admin'] 
   },
   { 

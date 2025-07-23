@@ -5,6 +5,7 @@
     "items": "Items",
     "globalView": "Global View",
     "settings": "Settings",
+    "locationManagement": "Location Management",
     "auditLogs": "Audit Logs",
     "signOut": "Sign Out"
   },
@@ -17,7 +18,7 @@
     "locations": "Locations",
     "acrossAllLocations": "across all locations",
     "itemsNeedRestocking": "items need restocking",
-    "within7Days": "within 7 days",
+    "within30Days": "within 30 days",
     "storageLocations": "storage locations",
     "recentInventory": "Recent Inventory",
     "latestItemsAdjustments": "Latest items with quick quantity adjustments",
@@ -188,5 +189,42 @@
     "details": "Details",
     "timestamp": "Timestamp",
     "noLogsFound": "No audit logs found."
+  },
+  "settings": {
+    "title": "Settings",
+    "description": "Manage your application preferences and notifications",
+    "success": "Success",
+    "error": "Error",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "loadError": "Failed to load settings",
+    "toggleError": "Failed to toggle notifications",
+    "notificationsEnabled": "Push notifications have been enabled",
+    "notificationsDisabled": "Push notifications have been disabled",
+    "testSent": "Test notification sent",
+    "testSentDescription": "Check your browser for the test notification",
+    "notifications": {
+      "title": "Notifications",
+      "description": "Configure how you receive alerts about inventory expiration",
+      "pushNotifications": "Push Notifications",
+      "pushDescription": "Receive browser notifications for important inventory alerts",
+      "notSupported": "Push notifications not supported",
+      "notSupportedDescription": "Your browser or device doesn't support push notifications. Please use a modern browser.",
+      "active": "Notifications Active",
+      "activeDescription": "You will receive daily notifications at 7:00 AM about items expiring soon",
+      "testNotification": "Send Test Notification",
+      "schedule": {
+        "title": "Notification Schedule",
+        "thirtyDays": "30 days before expiration - Yellow warning",
+        "sevenDays": "7 days before expiration - Orange warning", 
+        "oneDay": "1 day before expiration - Red critical alert",
+        "description": "Notifications are sent daily at 7:00 AM local time"
+      }
+    },
+    "general": {
+      "title": "General Settings",
+      "description": "Application preferences and configuration",
+      "comingSoon": "Additional settings will be available in future updates"
+    }
   }
 }

@@ -11,6 +11,7 @@ import ItemsPage from './components/items/ItemsPage';
 import GlobalView from './components/global/GlobalView';
 import LocationManagement from './components/admin/LocationManagement';
 import AuditLogPage from './components/audit/AuditLogPage';
+import SettingsPage from './components/settings/SettingsPage';
 import { ToastProvider } from './components/ui/toast';
 import { Toaster } from './components/Toaster';
 
@@ -60,6 +61,7 @@ function AppRoutes() {
         <Route path="locations/:id" element={<LocationDetail />} />
         <Route path="items" element={<ItemsPage />} />
         <Route path="global" element={<GlobalView />} />
+        <Route path="settings" element={<SettingsPage />} />
         <Route path="admin/locations" element={<LocationManagement />} />
         <Route path="admin/audit" element={<AuditLogPage />} />
       </Route>

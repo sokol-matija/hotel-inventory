@@ -95,12 +95,12 @@ export default function Dashboard() {
         item.item && item.quantity <= item.item.minimum_stock
       ).length
       
-      // Calculate expiring items (within 7 days)
-      const sevenDaysFromNow = new Date()
-      sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7)
+      // Calculate expiring items (within 30 days with priority for critical items)
+      const thirtyDaysFromNow = new Date()
+      thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30)
       const expiringItems = inventoryItems.filter(item => 
         item.expiration_date && 
-        new Date(item.expiration_date) <= sevenDaysFromNow &&
+        new Date(item.expiration_date) <= thirtyDaysFromNow &&
         new Date(item.expiration_date) >= new Date()
       ).length
 
@@ -164,11 +164,11 @@ export default function Dashboard() {
           item.item && item.quantity <= item.item.minimum_stock
         ).length
         
-        const sevenDaysFromNow = new Date()
-        sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7)
+        const thirtyDaysFromNow = new Date()
+        thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30)
         const expiringItems = updatedInventory.filter(item => 
           item.expiration_date && 
-          new Date(item.expiration_date) <= sevenDaysFromNow &&
+          new Date(item.expiration_date) <= thirtyDaysFromNow &&
           new Date(item.expiration_date) >= new Date()
         ).length
         
@@ -194,8 +194,9 @@ export default function Dashboard() {
     const diffDays = Math.ceil((expDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
     
     if (diffDays < 0) return 'expired'
-    if (diffDays <= 3) return 'critical'
+    if (diffDays <= 1) return 'critical'
     if (diffDays <= 7) return 'warning'
+    if (diffDays <= 30) return 'info'
     return 'good'
   }
 
@@ -284,7 +285,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-xl lg:text-2xl font-bold text-red-900">{stats.expiringItems}</div>
-            <p className="text-xs text-red-600">{t('dashboard.within7Days')}</p>
+            <p className="text-xs text-red-600">{t('dashboard.within30Days')}</p>
           </CardContent>
         </Card>
 
@@ -347,8 +348,13 @@ export default function Dashboard() {
                         </span>
                       )}
                       {expirationStatus === 'warning' && (
-                        <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
+                        <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full">
                           {t('dashboard.checkDate')}
+                        </span>
+                      )}
+                      {expirationStatus === 'info' && (
+                        <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
+                          30 Days
                         </span>
                       )}
                     </div>

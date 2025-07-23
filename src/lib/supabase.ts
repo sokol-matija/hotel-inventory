@@ -34,6 +34,8 @@ export type Database = {
           user_id: string
           role_id: number
           is_active: boolean
+          push_notifications_enabled: boolean
+          push_subscription: string | null
           created_at: string
           updated_at: string
         }
@@ -42,6 +44,8 @@ export type Database = {
           user_id: string
           role_id: number
           is_active?: boolean
+          push_notifications_enabled?: boolean
+          push_subscription?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -50,6 +54,8 @@ export type Database = {
           user_id?: string
           role_id?: number
           is_active?: boolean
+          push_notifications_enabled?: boolean
+          push_subscription?: string | null
           created_at?: string
           updated_at?: string
         }
