@@ -52,7 +52,7 @@ export default function GlobalView() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [selectedLocation, setSelectedLocation] = useState<string>('all')
-  const [showWithExpiration, setShowWithExpiration] = useState(false)
+  const [perishableFilter, setPerishableFilter] = useState<string>('all')
   const [activeFilter, setActiveFilter] = useState<string>('all')
   const [loading, setLoading] = useState(true)
 
@@ -78,10 +78,14 @@ export default function GlobalView() {
       const matchesCategory = selectedCategory === 'all' ? true : item.item.category.name === selectedCategory
       const matchesLocation = selectedLocation === 'all' ? true : item.location.name === selectedLocation
       
-      // Filter by expiration preference
-      const matchesExpiration = showWithExpiration ? 
-        item.item.category.requires_expiration : 
-        !item.item.category.requires_expiration
+      // Filter by perishable preference
+      let matchesPerishable = true
+      if (perishableFilter === 'perishable') {
+        matchesPerishable = item.item.category.requires_expiration
+      } else if (perishableFilter === 'non-perishable') {
+        matchesPerishable = !item.item.category.requires_expiration
+      }
+      // If perishableFilter === 'all', matchesPerishable stays true
 
       // Apply dashboard filter
       let matchesActiveFilter = true
@@ -95,11 +99,11 @@ export default function GlobalView() {
           new Date(item.expiration_date) >= new Date())
       }
       
-      return matchesSearch && matchesCategory && matchesLocation && matchesExpiration && matchesActiveFilter
+      return matchesSearch && matchesCategory && matchesLocation && matchesPerishable && matchesActiveFilter
     })
     
     setFilteredInventory(filtered)
-  }, [inventory, searchTerm, selectedCategory, selectedLocation, showWithExpiration, activeFilter])
+  }, [inventory, searchTerm, selectedCategory, selectedLocation, perishableFilter, activeFilter])
 
   const fetchGlobalInventory = async () => {
     try {
@@ -213,13 +217,14 @@ export default function GlobalView() {
                 </SelectContent>
               </Select>
               
-              <Select value={showWithExpiration.toString()} onValueChange={(value) => setShowWithExpiration(value === 'true')}>
+              <Select value={perishableFilter} onValueChange={setPerishableFilter}>
                 <SelectTrigger className="w-full sm:w-48">
                   <SelectValue placeholder={t('global.itemType')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="false">Non-Perishable</SelectItem>
-                  <SelectItem value="true">Perishable</SelectItem>
+                  <SelectItem value="all">{t('global.allItems')}</SelectItem>
+                  <SelectItem value="perishable">{t('global.perishable')}</SelectItem>
+                  <SelectItem value="non-perishable">{t('global.nonPerishable')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
