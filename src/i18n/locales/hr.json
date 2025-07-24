@@ -5,6 +5,7 @@
     "items": "Artikli",
     "globalView": "Globalni pregled",
     "settings": "Postavke",
+    "locationManagement": "Upravljanje lokacijama",
     "auditLogs": "Zapisnici revizije",
     "signOut": "Odjava"
   },
@@ -209,5 +210,42 @@
     "details": "Detalji",
     "timestamp": "Vrijeme",
     "noLogsFound": "Nema pronađenih zapisnika revizije."
+  },
+  "settings": {
+    "title": "Postavke",
+    "description": "Upravljajte svojim preferencijama aplikacije i obavijestima",
+    "success": "Uspjeh",
+    "error": "Greška",
+    "enabled": "Omogućeno",
+    "disabled": "Onemogućeno",
+    "loadError": "Neuspješno učitavanje postavki",
+    "toggleError": "Neuspješno prebacivanje obavijesti",
+    "notificationsEnabled": "Push obavijesti su omogućene",
+    "notificationsDisabled": "Push obavijesti su onemogućene",
+    "testSent": "Test obavijest poslana",
+    "testSentDescription": "Provjerite svoj pregljednike za test obavijest",
+    "notifications": {
+      "title": "Obavijesti",
+      "description": "Konfigurirajte kako primate upozorenja o istjecanju inventara",
+      "pushNotifications": "Push obavijesti",
+      "pushDescription": "Primate obavijesti u pregledniku za važna upozorenja inventara",
+      "notSupported": "Push obavijesti nisu podržane",
+      "notSupportedDescription": "Vaš pregljednik ili uređaj ne podržava push obavijesti. Molimo koristite moderni pregljednik.",
+      "active": "Obavijesti aktivne",
+      "activeDescription": "Primat ćete dnevne obavijesti u 7:00 ujutro o artiklima koji uskoro istječu",
+      "testNotification": "Pošaljite test obavijest",
+      "schedule": {
+        "title": "Raspored obavijesti",
+        "thirtyDays": "30 dana prije istjecanja - Žuto upozorenje",
+        "sevenDays": "7 dana prije istjecanja - Narančasto upozorenje",
+        "oneDay": "1 dan prije istjecanja - Crveno kritično upozorenje",
+        "description": "Obavijesti se šalju svaki dan u 7:00 ujutro lokalnog vremena"
+      }
+    },
+    "general": {
+      "title": "Općenito",
+      "description": "Općenite postavke aplikacije",
+      "comingSoon": "Uskoro..."
+    }
   }
 }
