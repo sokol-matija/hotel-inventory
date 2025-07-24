@@ -47,6 +47,13 @@ interface Category {
 export default function ItemsPage() {
   const { t } = useTranslation()
   const { userProfile } = useAuth()
+
+  // Helper function to translate category names
+  const translateCategory = (categoryName: string) => {
+    // Convert category name to lowercase for translation key
+    const key = categoryName.toLowerCase().replace(/\s+/g, '')
+    return t(`categories.${key}`, { defaultValue: categoryName })
+  }
   const [items, setItems] = useState<Item[]>([])
   const [filteredItems, setFilteredItems] = useState<Item[]>([])
   const [categories, setCategories] = useState<Category[]>([])
@@ -236,7 +243,7 @@ export default function ItemsPage() {
               <option value="all">{t('items.allCategories')}</option>
               {categories.map(category => (
                 <option key={category.id} value={category.name}>
-                  {category.name}
+                  {translateCategory(category.name)}
                 </option>
               ))}
             </select>
@@ -252,7 +259,7 @@ export default function ItemsPage() {
                         {item.name}
                       </CardTitle>
                       <CardDescription className="mt-1">
-                        {item.category.name}
+                        {translateCategory(item.category.name)}
                       </CardDescription>
                     </div>
                     <div className="flex items-center space-x-1">

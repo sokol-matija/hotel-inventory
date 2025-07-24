@@ -134,7 +134,7 @@ export default function Sidebar() {
               {t(`roles.${userRole}`)}
             </p>
             <p className="text-sm text-gray-600">
-              {userProfile.role.description}
+              {t(`roleDescriptions.${userRole}`)}
             </p>
           </div>
         </div>

@@ -7,7 +7,6 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '../auth/AuthProvider'
 import { useTranslation } from 'react-i18next'
 import { 
-  Settings,
   Edit,
   Save,
   X,
@@ -91,7 +90,7 @@ export default function LocationManagement() {
   if (userProfile?.role.name !== 'admin') {
     return (
       <div className="text-center py-8">
-        <p className="text-gray-600">Access denied. Admin privileges required.</p>
+        <p className="text-gray-600">{t('admin.accessDenied')}</p>
       </div>
     )
   }
@@ -99,7 +98,8 @@ export default function LocationManagement() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mr-3" />
+        <span>{t('common.loading')}</span>
       </div>
     )
   }
@@ -110,8 +110,8 @@ export default function LocationManagement() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Location Management</h1>
-        <p className="text-gray-600">Manage and rename storage locations</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{t('admin.locationManagement')}</h1>
+        <p className="text-gray-600">{t('admin.locationManagementDescription')}</p>
       </div>
 
       {/* Refrigerated Locations */}
@@ -119,10 +119,10 @@ export default function LocationManagement() {
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Refrigerator className="h-5 w-5 text-blue-600" />
-            <span>Refrigerated Storage ({refrigeratedLocations.length})</span>
+            <span>{t('admin.refrigeratedStorage', { count: refrigeratedLocations.length })}</span>
           </CardTitle>
           <CardDescription>
-            Fridges and freezers that require temperature control
+            {t('admin.refrigeratedStorageDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -133,7 +133,7 @@ export default function LocationManagement() {
                   {editingId === location.id ? (
                     <div className="space-y-3">
                       <div>
-                        <Label htmlFor={`name-${location.id}`}>Name</Label>
+                        <Label htmlFor={`name-${location.id}`}>{t('common.name')}</Label>
                         <Input
                           id={`name-${location.id}`}
                           value={editName}
@@ -142,13 +142,13 @@ export default function LocationManagement() {
                         />
                       </div>
                       <div>
-                        <Label htmlFor={`desc-${location.id}`}>Description</Label>
+                        <Label htmlFor={`desc-${location.id}`}>{t('common.description')}</Label>
                         <Input
                           id={`desc-${location.id}`}
                           value={editDescription}
                           onChange={(e) => setEditDescription(e.target.value)}
                           className="mt-1"
-                          placeholder="Optional description"
+                          placeholder={t('admin.optionalDescription')}
                         />
                       </div>
                     </div>
@@ -156,10 +156,10 @@ export default function LocationManagement() {
                     <div>
                       <h3 className="font-medium text-gray-900">{location.name}</h3>
                       <p className="text-sm text-gray-600">
-                        {location.description || 'No description'}
+                        {location.description || t('admin.noDescription')}
                       </p>
                       <p className="text-xs text-gray-500 mt-1">
-                        Type: {location.type} • Created: {new Date(location.created_at).toLocaleDateString()}
+                        {t('common.type')}: {t(`locationTypes.${location.type.toLowerCase()}`)} • {t('admin.created')}: {new Date(location.created_at).toLocaleDateString()}
                       </p>
                     </div>
                   )}
@@ -205,10 +205,10 @@ export default function LocationManagement() {
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Warehouse className="h-5 w-5 text-gray-600" />
-              <span>Regular Storage ({regularLocations.length})</span>
+              <span>{t('admin.regularStorage', { count: regularLocations.length })}</span>
             </CardTitle>
             <CardDescription>
-              Non-refrigerated storage locations
+              {t('admin.regularStorageDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -219,7 +219,7 @@ export default function LocationManagement() {
                     {editingId === location.id ? (
                       <div className="space-y-3">
                         <div>
-                          <Label htmlFor={`name-${location.id}`}>Name</Label>
+                          <Label htmlFor={`name-${location.id}`}>{t('common.name')}</Label>
                           <Input
                             id={`name-${location.id}`}
                             value={editName}
@@ -228,13 +228,13 @@ export default function LocationManagement() {
                           />
                         </div>
                         <div>
-                          <Label htmlFor={`desc-${location.id}`}>Description</Label>
+                          <Label htmlFor={`desc-${location.id}`}>{t('common.description')}</Label>
                           <Input
                             id={`desc-${location.id}`}
                             value={editDescription}
                             onChange={(e) => setEditDescription(e.target.value)}
                             className="mt-1"
-                            placeholder="Optional description"
+                            placeholder={t('admin.optionalDescription')}
                           />
                         </div>
                       </div>
@@ -242,10 +242,10 @@ export default function LocationManagement() {
                       <div>
                         <h3 className="font-medium text-gray-900">{location.name}</h3>
                         <p className="text-sm text-gray-600">
-                          {location.description || 'No description'}
+                          {location.description || t('admin.noDescription')}
                         </p>
                         <p className="text-xs text-gray-500 mt-1">
-                          Type: {location.type} • Created: {new Date(location.created_at).toLocaleDateString()}
+                          {t('common.type')}: {t(`locationTypes.${location.type.toLowerCase()}`)} • {t('admin.created')}: {new Date(location.created_at).toLocaleDateString()}
                         </p>
                       </div>
                     )}

@@ -43,7 +43,20 @@
     "enterLocationName": "Unesite naziv lokacije",
     "selectLocationType": "Odaberite tip lokacije",
     "enterLocationDescription": "Unesite opis lokacije (opcionalno)",
-    "failedToAdd": "Neuspješno dodavanje lokacije. Molimo pokušajte ponovno."
+    "failedToAdd": "Neuspješno dodavanje lokacije. Molimo pokušajte ponovno.",
+    "addItem": "Dodaj artikl",
+    "inventory": "Inventar ({{count}} artikala)",
+    "inventoryDescription": "Trenutna razina zaliha i datumi isteka",
+    "searchItems": "Pretraži artikle...",
+    "noItemsFound": "Nema artikala koji odgovaraju vašoj pretrazi.",
+    "noItemsYet": "Još nema artikala na ovoj lokaciji.",
+    "addFirstItem": "Dodaj prvi artikl",
+    "locationNotFound": "Lokacija nije pronađena",
+    "backToLocations": "Povratak na lokacije",
+    "removeItemConfirm": "Jeste li sigurni da želite ukloniti ovaj artikl s lokacije?",
+    "expired": "Istekao",
+    "critical": "Kritično",
+    "warning": "Upozorenje"
   },
   "items": {
     "title": "Artikli",
@@ -121,7 +134,15 @@
     "noLocationsYet": "Još nema konfiguriranih lokacija.",
     "auditLogDescription": "Pregledajte aktivnost sustava i akcije korisnika",
     "allSystemActivities": "Sve aktivnosti sustava i akcije korisnika",
-    "noAuditLogs": "Nema pronađenih zapisnika revizije."
+    "noAuditLogs": "Nema pronađenih zapisnika revizije.",
+    "accessDenied": "Pristup odbijen. Potrebne su administratorske privilegije.",
+    "refrigeratedStorage": "Hlađeno skladište ({{count}})",
+    "refrigeratedStorageDescription": "Hladnjaci i zamrzivači koji zahtijevaju kontrolu temperature",
+    "regularStorage": "Obično skladište ({{count}})",
+    "regularStorageDescription": "Neohlađena mjesta skladištenja",
+    "optionalDescription": "Opcionalni opis",
+    "noDescription": "Bez opisa",
+    "created": "Stvoreno"
   },
   "common": {
     "loading": "Učitava...",
@@ -157,7 +178,12 @@
     "allCategories": "Sve kategorije",
     "allLocations": "Sve lokacije",
     "selectCategory": "Odaberite kategoriju",
-    "selectLocation": "Odaberite lokaciju"
+    "selectLocation": "Odaberite lokaciju",
+    "back": "Nazad",
+    "clearFilter": "Ukloni filtar",
+    "lowStock": "Malo zaliha",
+    "min": "Min",
+    "deleteConfirm": "Jeste li sigurni da želite obrisati?"
   },
   "roles": {
     "admin": "Administrator",
@@ -290,5 +316,38 @@
       "description": "Općenite postavke aplikacije",
       "comingSoon": "Uskoro..."
     }
+  },
+  "categories": {
+    "food": "Hrana",
+    "beverages": "Pića",
+    "cleaning": "Čišćenje",
+    "toiletries": "Toaletni artikli",
+    "linens": "Posteljina",
+    "supplies": "Potrepštine",
+    "equipment": "Oprema",
+    "maintenance": "Održavanje",
+    "office": "Ured",
+    "kitchen": "Kuhinja",
+    "bar": "Bar",
+    "housekeeping": "Domaćinstvo",
+    "laundry": "Praonica",
+    "front desk": "Recepcija",
+    "frontdesk": "Recepcija",
+    "restaurant": "Restoran",
+    "spa": "Spa",
+    "amenities": "Pogodnosti",
+    "cosmetics": "Kozmetika",
+    "dairy": "Mliječni proizvodi",
+    "meat": "Meso",
+    "vegetables": "Povrće",
+    "fruits": "Voće",
+    "spices": "Začini",
+    "condiments": "Condimenti",
+    "alcohol": "Alkohol",
+    "soft drinks": "Bezalkoholna pića",
+    "softdrinks": "Bezalkoholna pića",
+    "coffee": "Kava",
+    "tea": "Čaj",
+    "water": "Voda"
   }
 }

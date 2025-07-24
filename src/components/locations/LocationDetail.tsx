@@ -8,18 +8,18 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '../auth/AuthProvider'
 import { userHasPermission } from '@/lib/permissions'
 import AddInventoryDialog from './AddInventoryDialog'
+import { useTranslation } from 'react-i18next'
 import { 
   ArrowLeft, 
   Refrigerator, 
   Warehouse, 
   Package, 
-  AlertTriangle,
-  Clock,
   Plus,
   Minus,
   Search,
   Calendar,
-  DollarSign
+  DollarSign,
+  Trash2
 } from 'lucide-react'
 
 interface InventoryItem {
@@ -61,6 +61,14 @@ export default function LocationDetail() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [loading, setLoading] = useState(true)
   const [showAddDialog, setShowAddDialog] = useState(false)
+  const { t } = useTranslation()
+
+  // Helper function to translate category names
+  const translateCategory = (categoryName: string) => {
+    // Convert category name to lowercase for translation key
+    const key = categoryName.toLowerCase().replace(/\s+/g, '')
+    return t(`categories.${key}`, { defaultValue: categoryName })
+  }
 
   useEffect(() => {
     if (id) {
@@ -140,6 +148,24 @@ export default function LocationDetail() {
     }
   }
 
+  const removeItem = async (inventoryId: number) => {
+    if (!window.confirm(t('locations.removeItemConfirm'))) return
+
+    try {
+      const { error } = await supabase
+        .from('inventory')
+        .delete()
+        .eq('id', inventoryId)
+
+      if (error) throw error
+      
+      // Update local state
+      setInventory(prev => prev.filter(item => item.id !== inventoryId))
+    } catch (error) {
+      console.error('Error removing item:', error)
+    }
+  }
+
   const getExpirationStatus = (expirationDate: string | null, requiresExpiration: boolean) => {
     if (!expirationDate || !requiresExpiration) return 'none'
     
@@ -156,11 +182,11 @@ export default function LocationDetail() {
   const getExpirationBadge = (status: string) => {
     switch (status) {
       case 'expired':
-        return <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">Expired</span>
+        return <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">{t('locations.expired')}</span>
       case 'critical':
-        return <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">Critical</span>
+        return <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">{t('locations.critical')}</span>
       case 'warning':
-        return <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">Warning</span>
+        return <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">{t('locations.warning')}</span>
       default:
         return null
     }
@@ -169,7 +195,8 @@ export default function LocationDetail() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mr-3" />
+        <span>{t('common.loading')}</span>
       </div>
     )
   }
@@ -177,9 +204,9 @@ export default function LocationDetail() {
   if (!location) {
     return (
       <div className="text-center">
-        <p className="text-gray-600">Location not found</p>
+        <p className="text-gray-600">{t('locations.locationNotFound')}</p>
         <Link to="/locations">
-          <Button className="mt-4">Back to Locations</Button>
+          <Button className="mt-4">{t('locations.backToLocations')}</Button>
         </Link>
       </div>
     )
@@ -187,7 +214,7 @@ export default function LocationDetail() {
 
   const canModifyInventory = userHasPermission(userProfile, 'canModifyQuantity')
   const canAddInventory = userHasPermission(userProfile, 'canAddInventory')
-  const canEditInventory = userHasPermission(userProfile, 'canEditInventory')
+  const canDeleteInventory = userHasPermission(userProfile, 'canDeleteInventory')
 
   return (
     <div className="space-y-6">
@@ -196,7 +223,7 @@ export default function LocationDetail() {
           <Link to="/locations">
             <Button variant="outline" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
+              {t('common.back')}
             </Button>
           </Link>
           <div className="flex items-center space-x-3 flex-1 sm:flex-initial">
@@ -208,7 +235,7 @@ export default function LocationDetail() {
             <div className="min-w-0 flex-1">
               <h1 className="text-xl sm:text-3xl font-bold text-gray-900 break-words">{location.name}</h1>
               <p className="text-sm sm:text-base text-gray-600">
-                {location.type} • {location.is_refrigerated ? 'Refrigerated' : 'Regular Storage'}
+                {t(`locationTypes.${location.type.toLowerCase()}`)} • {location.is_refrigerated ? t('locations.refrigeratedStorage') : t('locations.regularStorage')}
               </p>
             </div>
           </div>
@@ -216,7 +243,7 @@ export default function LocationDetail() {
         {canAddInventory && (
           <Button onClick={() => setShowAddDialog(true)} className="w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
-            Add Item
+            {t('locations.addItem')}
           </Button>
         )}
       </div>
@@ -233,10 +260,10 @@ export default function LocationDetail() {
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Package className="h-5 w-5" />
-            <span>Inventory ({filteredInventory.length} items)</span>
+            <span>{t('locations.inventory', { count: filteredInventory.length })}</span>
           </CardTitle>
           <CardDescription>
-            Current stock levels and expiration dates
+            {t('locations.inventoryDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -244,7 +271,7 @@ export default function LocationDetail() {
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Search items..."
+                placeholder={t('locations.searchItems')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -253,12 +280,12 @@ export default function LocationDetail() {
             <div className="flex flex-col sm:flex-row gap-4">
               <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                 <SelectTrigger className="w-full sm:w-48">
-                  <SelectValue placeholder="All Categories" />
+                  <SelectValue placeholder={t('common.allCategories')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
+                  <SelectItem value="all">{t('common.allCategories')}</SelectItem>
                   {Array.from(new Set(inventory.map(item => item.item.category.name))).map(category => (
-                    <SelectItem key={category} value={category}>{category}</SelectItem>
+                    <SelectItem key={category} value={category}>{translateCategory(category)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -268,7 +295,7 @@ export default function LocationDetail() {
                   size="sm"
                   onClick={() => setSelectedCategory('all')}
                 >
-                  Clear Filter
+                  {t('common.clearFilter')}
                 </Button>
               )}
             </div>
@@ -289,15 +316,15 @@ export default function LocationDetail() {
                       <p className="font-medium text-gray-900">{item.item.name}</p>
                       {isLowStock && (
                         <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full">
-                          Low Stock
+                          {t('common.lowStock')}
                         </span>
                       )}
                       {getExpirationBadge(expirationStatus)}
                     </div>
                     <div className="flex items-center space-x-4 text-sm text-gray-600 flex-wrap">
-                      <p>{item.item.category.name}</p>
-                      <p>Unit: {item.item.unit}</p>
-                      <p>Min: {item.item.minimum_stock}</p>
+                      <p>{translateCategory(item.item.category.name)}</p>
+                      <p>{t('common.unit')}: {item.item.unit}</p>
+                      <p>{t('common.min')}: {item.item.minimum_stock}</p>
                     </div>
                     {item.item.description && (
                       <p className="text-sm text-gray-500">{item.item.description}</p>
@@ -324,25 +351,37 @@ export default function LocationDetail() {
                       )}
                     </div>
                     
-                    {canModifyInventory && (
-                      <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2">
+                      {canModifyInventory && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            disabled={item.quantity <= 0}
+                          >
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
+                      {canDeleteInventory && (
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                          disabled={item.quantity <= 0}
+                          onClick={() => removeItem(item.id)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
                         >
-                          <Minus className="h-4 w-4" />
+                          <Trash2 className="h-4 w-4" />
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </div>
               )
@@ -353,12 +392,12 @@ export default function LocationDetail() {
             <div className="text-center py-8">
               <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-600">
-                {searchTerm ? 'No items found matching your search.' : 'No items in this location yet.'}
+                {searchTerm ? t('locations.noItemsFound') : t('locations.noItemsYet')}
               </p>
               {canAddInventory && (
                 <Button className="mt-4" onClick={() => setShowAddDialog(true)}>
                   <Plus className="h-4 w-4 mr-2" />
-                  Add First Item
+                  {t('locations.addFirstItem')}
                 </Button>
               )}
             </div>
