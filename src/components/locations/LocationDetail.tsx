@@ -20,7 +20,10 @@ import {
   Search,
   Calendar,
   DollarSign,
-  Trash2
+  Trash2,
+  Edit3,
+  Check,
+  X
 } from 'lucide-react'
 
 interface InventoryItem {
@@ -62,6 +65,8 @@ export default function LocationDetail() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [loading, setLoading] = useState(true)
   const [showAddDialog, setShowAddDialog] = useState(false)
+  const [editingQuantity, setEditingQuantity] = useState<number | null>(null)
+  const [tempQuantity, setTempQuantity] = useState('')
   const { t } = useTranslation()
 
   // Helper function to translate category names
@@ -164,6 +169,44 @@ export default function LocationDetail() {
       setInventory(prev => prev.filter(item => item.id !== inventoryId))
     } catch (error) {
       console.error('Error removing item:', error)
+    }
+  }
+
+  const startQuantityEdit = (item: InventoryItem) => {
+    setEditingQuantity(item.id)
+    setTempQuantity(item.quantity.toString())
+  }
+
+  const cancelQuantityEdit = () => {
+    setEditingQuantity(null)
+    setTempQuantity('')
+  }
+
+  const saveQuantityEdit = async (inventoryId: number) => {
+    const newQuantity = parseInt(tempQuantity, 10)
+    
+    if (isNaN(newQuantity) || newQuantity < 0) {
+      return // Invalid quantity
+    }
+
+    await updateQuantity(inventoryId, newQuantity)
+    setEditingQuantity(null)
+    setTempQuantity('')
+  }
+
+  const handleQuantityInputChange = (value: string) => {
+    // Only allow digits
+    const numericValue = value.replace(/\D/g, '')
+    setTempQuantity(numericValue)
+  }
+
+  const handleQuantityKeyDown = (e: React.KeyboardEvent, inventoryId: number) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      saveQuantityEdit(inventoryId)
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      cancelQuantityEdit()
     }
   }
 
@@ -335,8 +378,31 @@ export default function LocationDetail() {
                   <div className="flex items-center justify-between sm:justify-end space-x-4 sm:space-x-6">
                     <div className="text-center sm:text-right">
                       <div className="flex items-center space-x-2">
-                        <span className="text-2xl font-bold text-gray-900">{item.quantity}</span>
-                        <span className="text-sm text-gray-600">{item.item.unit}</span>
+                        {editingQuantity === item.id ? (
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              type="text"
+                              value={tempQuantity}
+                              onChange={(e) => handleQuantityInputChange(e.target.value)}
+                              onKeyDown={(e) => handleQuantityKeyDown(e, item.id)}
+                              className="w-20 text-center text-xl font-bold"
+                              placeholder="0"
+                              autoFocus
+                            />
+                            <span className="text-sm text-gray-600">{item.item.unit}</span>
+                          </div>
+                        ) : (
+                          <>
+                            <span 
+                              className="text-2xl font-bold text-gray-900 cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
+                              onClick={() => canModifyInventory && startQuantityEdit(item)}
+                              title={canModifyInventory ? t('locations.clickToEditQuantity') : ""}
+                            >
+                              {item.quantity}
+                            </span>
+                            <span className="text-sm text-gray-600">{item.item.unit}</span>
+                          </>
+                        )}
                       </div>
                       {item.expiration_date && (
                         <div className="flex items-center space-x-1 text-sm text-gray-600">
@@ -353,25 +419,54 @@ export default function LocationDetail() {
                     </div>
                     
                     <div className="flex items-center space-x-2">
-                      {canModifyInventory && (
+                      {canModifyInventory && editingQuantity === item.id ? (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => saveQuantityEdit(item.id)}
+                            className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                          >
+                            <Check className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={cancelQuantityEdit}
+                            className="text-gray-600 hover:text-gray-700 hover:bg-gray-50"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </>
+                      ) : canModifyInventory ? (
                         <>
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => updateQuantity(item.id, item.quantity - 1)}
                             disabled={item.quantity <= 0}
+                            title={t('locations.decreaseQuantity')}
                           >
                             <Minus className="h-4 w-4" />
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
+                            onClick={() => startQuantityEdit(item)}
+                            title={t('locations.editQuantityManually')}
+                          >
+                            <Edit3 className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
                             onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            title={t('locations.increaseQuantity')}
                           >
                             <Plus className="h-4 w-4" />
                           </Button>
                         </>
-                      )}
+                      ) : null}
                       {canDeleteInventory && (
                         <Button
                           size="sm"

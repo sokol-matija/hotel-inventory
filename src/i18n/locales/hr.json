@@ -58,7 +58,13 @@
     "removeItemConfirm": "Jeste li sigurni da želite ukloniti ovaj artikl s lokacije?",
     "expired": "Istekao",
     "critical": "Kritično",
-    "warning": "Upozorenje"
+    "warning": "Upozorenje",
+    "clickToEditQuantity": "Kliknite za uređivanje količine",
+    "decreaseQuantity": "Smanji količinu",
+    "increaseQuantity": "Povećaj količinu",
+    "editQuantityManually": "Ručno uredi količinu",
+    "saveQuantity": "Spremi količinu",
+    "cancelEdit": "Otkaži uređivanje"
   },
   "items": {
     "title": "Artikli",
