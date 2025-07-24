@@ -2,6 +2,7 @@ import React from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Button } from '../ui/button'
 import { useAuth } from '../auth/AuthProvider'
+import { useTranslation } from 'react-i18next'
 import { 
   Home, 
   Package, 
@@ -14,7 +15,8 @@ import {
   ShieldCheck,
   X,
   Globe,
-  Settings
+  Settings,
+  History
 } from 'lucide-react'
 
 const roleIcons = {
@@ -27,33 +29,45 @@ const roleIcons = {
 
 const sidebarItems = [
   { 
-    name: 'Dashboard', 
+    key: 'dashboard', 
     path: '/dashboard', 
     icon: Home, 
     roles: ['admin', 'reception', 'cooking', 'room_cleaner', 'finance'] 
   },
   { 
-    name: 'Locations', 
+    key: 'locations', 
     path: '/locations', 
     icon: MapPin, 
     roles: ['admin', 'reception', 'cooking', 'room_cleaner', 'finance'] 
   },
   { 
-    name: 'Items', 
+    key: 'items', 
     path: '/items', 
     icon: Package, 
     roles: ['admin', 'cooking'] 
   },
   { 
-    name: 'Global View', 
+    key: 'globalView', 
     path: '/global', 
     icon: Globe, 
     roles: ['admin', 'reception', 'cooking', 'room_cleaner', 'finance'] 
   },
   { 
-    name: 'Settings', 
-    path: '/admin/locations', 
+    key: 'settings', 
+    path: '/settings', 
     icon: Settings, 
+    roles: ['admin', 'reception', 'cooking', 'room_cleaner', 'finance'] 
+  },
+  { 
+    key: 'locationManagement', 
+    path: '/admin/locations', 
+    icon: MapPin, 
+    roles: ['admin'] 
+  },
+  { 
+    key: 'auditLogs', 
+    path: '/admin/audit', 
+    icon: History, 
     roles: ['admin'] 
   },
 ]
@@ -66,6 +80,7 @@ interface MobileNavProps {
 export default function MobileNav({ isOpen, onClose }: MobileNavProps) {
   const { userProfile, signOut } = useAuth()
   const location = useLocation()
+  const { t } = useTranslation()
 
   if (!userProfile) return null
 
@@ -118,7 +133,7 @@ export default function MobileNav({ isOpen, onClose }: MobileNavProps) {
               
               return (
                 <Link
-                  key={item.name}
+                  key={item.key}
                   to={item.path}
                   onClick={onClose}
                   className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
@@ -128,7 +143,7 @@ export default function MobileNav({ isOpen, onClose }: MobileNavProps) {
                   }`}
                 >
                   <Icon className="w-5 h-5" />
-                  <span className="font-medium">{item.name}</span>
+                  <span className="font-medium">{t(`navigation.${item.key}`)}</span>
                 </Link>
               )
             })}
@@ -142,7 +157,7 @@ export default function MobileNav({ isOpen, onClose }: MobileNavProps) {
               </div>
               <div>
                 <p className="font-medium text-gray-900 capitalize">
-                  {userRole.replace('_', ' ')}
+                  {t(`roles.${userRole}`)}
                 </p>
                 <p className="text-sm text-gray-600">
                   {userProfile.role.description}
@@ -156,7 +171,7 @@ export default function MobileNav({ isOpen, onClose }: MobileNavProps) {
               className="w-full justify-start"
             >
               <LogOut className="w-4 h-4 mr-2" />
-              Sign Out
+              {t('navigation.signOut')}
             </Button>
           </div>
         </div>
