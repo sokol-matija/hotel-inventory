@@ -9,6 +9,7 @@ import { useAuth } from '../auth/AuthProvider'
 import { userHasPermission } from '@/lib/permissions'
 import AddInventoryDialog from './AddInventoryDialog'
 import { useTranslation } from 'react-i18next'
+import { formatDate } from '@/lib/dateUtils'
 import { 
   ArrowLeft, 
   Refrigerator, 
@@ -340,7 +341,7 @@ export default function LocationDetail() {
                       {item.expiration_date && (
                         <div className="flex items-center space-x-1 text-sm text-gray-600">
                           <Calendar className="h-3 w-3" />
-                          <span>{new Date(item.expiration_date).toLocaleDateString('hr-HR')}</span>
+                          <span>{formatDate(item.expiration_date)}</span>
                         </div>
                       )}
                       {item.cost_per_unit && (

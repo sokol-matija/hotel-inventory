@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '../auth/AuthProvider'
 import { auditLog } from '@/lib/auditLog'
 import { useTranslation } from 'react-i18next'
+import { formatDate, getCurrentDateFormatted } from '@/lib/dateUtils'
 import { 
   Package, 
   AlertTriangle, 
@@ -58,12 +59,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
 
   const currentDateFormatted = useMemo(() => {
-    return new Date().toLocaleDateString('hr-HR', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    })
+    return getCurrentDateFormatted()
   }, [])
 
   useEffect(() => {
@@ -371,7 +367,7 @@ export default function Dashboard() {
                       <p className="font-medium text-gray-900">{t('dashboard.quantity', { quantity: item.quantity })}</p>
                       {item.expiration_date && (
                         <p className="text-sm text-gray-600">
-                          {t('dashboard.expiration', { date: new Date(item.expiration_date).toLocaleDateString('hr-HR') })}
+                          {t('dashboard.expiration', { date: formatDate(item.expiration_date) })}
                         </p>
                       )}
                     </div>

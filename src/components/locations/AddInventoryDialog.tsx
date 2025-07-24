@@ -40,7 +40,10 @@ export default function AddInventoryDialog({ isOpen, onClose, onInventoryAdded, 
   const [selectedItem, setSelectedItem] = useState<Item | null>(null)
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const [useManualDateEntry, setUseManualDateEntry] = useState(false)
+  // Default to manual entry on mobile devices
+  const [useManualDateEntry, setUseManualDateEntry] = useState(() => {
+    return window.innerWidth <= 768 // Mobile breakpoint
+  })
 
   // Helper functions for date format conversion
   const formatDateForDisplay = (isoDate: string): string => {
@@ -56,21 +59,38 @@ export default function AddInventoryDialog({ isOpen, onClose, onInventoryAdded, 
     if (!displayDate) return ''
     const parts = displayDate.split('/')
     if (parts.length !== 3) return ''
-    const [day, month, year] = parts
+    let [day, month, year] = parts
+    
+    // Handle 2-digit years: 25 → 2025, 99 → 2099, etc.
+    if (year.length === 2) {
+      const currentYear = new Date().getFullYear()
+      const currentCentury = Math.floor(currentYear / 100) * 100
+      const twoDigitYear = parseInt(year, 10)
+      year = (currentCentury + twoDigitYear).toString()
+    }
+    
     return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
   }
 
   const validateDateFormat = (dateString: string): boolean => {
     if (!dateString) return false
-    const dateRegex = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/
+    // Accept both 2-digit and 4-digit years
+    const dateRegex = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/
     const match = dateString.match(dateRegex)
     
     if (!match) return false
     
-    const [, day, month, year] = match
+    let [, day, month, year] = match
     const dayNum = parseInt(day, 10)
     const monthNum = parseInt(month, 10)
-    const yearNum = parseInt(year, 10)
+    let yearNum = parseInt(year, 10)
+    
+    // Handle 2-digit years
+    if (year.length === 2) {
+      const currentYear = new Date().getFullYear()
+      const currentCentury = Math.floor(currentYear / 100) * 100
+      yearNum = currentCentury + yearNum
+    }
     
     // Basic validation
     if (monthNum < 1 || monthNum > 12) return false
@@ -206,6 +226,30 @@ export default function AddInventoryDialog({ isOpen, onClose, onInventoryAdded, 
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }))
+    }
+  }
+
+  const handleDateInputChange = (value: string) => {
+    // Auto-format date input with slashes
+    let formattedValue = value.replace(/\D/g, '') // Remove non-digits
+    
+    if (formattedValue.length >= 2) {
+      formattedValue = formattedValue.substring(0, 2) + '/' + formattedValue.substring(2)
+    }
+    if (formattedValue.length >= 5) {
+      formattedValue = formattedValue.substring(0, 5) + '/' + formattedValue.substring(5)
+    }
+    
+    // Limit to DD/MM/YYYY format (10 characters max)
+    if (formattedValue.length > 10) {
+      formattedValue = formattedValue.substring(0, 10)
+    }
+    
+    setFormData(prev => ({ ...prev, expiration_date: formattedValue }))
+    
+    // Clear error when user starts typing
+    if (errors.expiration_date) {
+      setErrors(prev => ({ ...prev, expiration_date: '' }))
     }
   }
 
@@ -359,9 +403,10 @@ export default function AddInventoryDialog({ isOpen, onClose, onInventoryAdded, 
                         id="expiration_date"
                         type="text"
                         value={formData.expiration_date}
-                        onChange={(e) => handleInputChange('expiration_date', e.target.value)}
+                        onChange={(e) => handleDateInputChange(e.target.value)}
                         placeholder="DD/MM/YYYY"
                         className={`pl-10 ${errors.expiration_date ? 'border-red-500' : ''}`}
+                        maxLength={10}
                       />
                       <span className="absolute right-3 top-3 text-xs text-gray-400">
                         DD/MM/YYYY
@@ -383,7 +428,7 @@ export default function AddInventoryDialog({ isOpen, onClose, onInventoryAdded, 
                 
                 {useManualDateEntry && (
                   <p className="text-xs text-gray-500 mt-1">
-                    Enter date in DD/MM/YYYY format (e.g., 25/12/2024)
+                    Enter date in DD/MM/YYYY format (e.g., 25/12/24 or 25/12/2024)
                   </p>
                 )}
                 

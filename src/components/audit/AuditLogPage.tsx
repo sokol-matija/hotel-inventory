@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '../auth/AuthProvider'
 import { useTranslation } from 'react-i18next'
+import { formatDateTimeForDisplay } from '@/lib/dateUtils'
 import { 
   History,
   Search,
@@ -131,12 +132,9 @@ export default function AuditLogPage() {
     }
   }
 
+  // Use optimized date formatting utility
   const formatDateTime = (dateString: string) => {
-    const date = new Date(dateString)
-    return {
-      date: date.toLocaleDateString('hr-HR'),
-      time: date.toLocaleTimeString('hr-HR', { hour: '2-digit', minute: '2-digit' })
-    }
+    return formatDateTimeForDisplay(dateString)
   }
 
   const getActionDisplayName = (action: string) => {
