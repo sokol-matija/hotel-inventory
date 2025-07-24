@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { Button } from '../ui/button'
@@ -237,12 +237,12 @@ export default function Dashboard() {
         </div>
         <div className="text-left lg:text-right mt-2 lg:mt-0">
           <p className="text-sm text-gray-500">
-            {new Date().toLocaleDateString('hr-HR', { 
+            {useMemo(() => new Date().toLocaleDateString('hr-HR', { 
               weekday: 'long', 
               year: 'numeric', 
               month: 'long', 
               day: 'numeric' 
-            })}
+            }), [])}
           </p>
         </div>
       </div>
