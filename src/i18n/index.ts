@@ -24,7 +24,8 @@ i18n
   .use(initReactI18next)
   .init({
     resources,
-    fallbackLng: 'en',
+    fallbackLng: 'hr',
+    lng: 'hr', // Set Croatian as the default language
     debug: process.env.NODE_ENV === 'development',
     
     interpolation: {
@@ -32,7 +33,7 @@ i18n
     },
 
     detection: {
-      order: ['localStorage', 'navigator', 'htmlTag'],
+      order: ['localStorage', 'htmlTag'],
       caches: ['localStorage']
     }
   })
