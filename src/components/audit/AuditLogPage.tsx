@@ -141,10 +141,10 @@ export default function AuditLogPage() {
 
   const getActionDisplayName = (action: string) => {
     switch (action) {
-      case 'CREATE': return 'Created'
-      case 'UPDATE': return 'Updated'
-      case 'DELETE': return 'Deleted'
-      case 'QUANTITY_UPDATE': return 'Quantity Changed'
+      case 'CREATE': return t('audit.actions.create')
+      case 'UPDATE': return t('audit.actions.update')
+      case 'DELETE': return t('audit.actions.delete')
+      case 'QUANTITY_UPDATE': return t('audit.actions.quantityUpdate')
       default: return action
     }
   }
@@ -156,7 +156,7 @@ export default function AuditLogPage() {
       // Creation - show new values
       return (
         <div className="mt-2 p-2 bg-green-50 rounded text-sm">
-          <p className="font-medium text-green-800 mb-1">New values:</p>
+          <p className="font-medium text-green-800 mb-1">{t('audit.newValues')}:</p>
           {Object.entries(newValues).map(([key, value]) => (
             <div key={key} className="text-green-700">
               <span className="font-medium">{key}:</span> {JSON.stringify(value)}
@@ -170,7 +170,7 @@ export default function AuditLogPage() {
       // Deletion - show old values
       return (
         <div className="mt-2 p-2 bg-red-50 rounded text-sm">
-          <p className="font-medium text-red-800 mb-1">Deleted values:</p>
+          <p className="font-medium text-red-800 mb-1">{t('audit.deletedValues')}:</p>
           {Object.entries(oldValues).map(([key, value]) => (
             <div key={key} className="text-red-700">
               <span className="font-medium">{key}:</span> {JSON.stringify(value)}
@@ -190,7 +190,7 @@ export default function AuditLogPage() {
 
       return (
         <div className="mt-2 p-2 bg-blue-50 rounded text-sm">
-          <p className="font-medium text-blue-800 mb-1">Changes:</p>
+          <p className="font-medium text-blue-800 mb-1">{t('audit.changes')}:</p>
           {changes.map(key => (
             <div key={key} className="text-blue-700">
               <span className="font-medium">{key}:</span>{' '}
@@ -221,7 +221,7 @@ export default function AuditLogPage() {
       <div className="text-center py-8">
         <History className="h-12 w-12 text-gray-400 mx-auto mb-4" />
         <p className="text-gray-600">
-          Access denied. Only administrators can view audit logs.
+          {t('audit.accessDenied')}
         </p>
       </div>
     )
@@ -231,8 +231,8 @@ export default function AuditLogPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Audit Logs</h1>
-          <p className="text-gray-600">Track all system activities and changes</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{t('audit.title')}</h1>
+          <p className="text-gray-600">{t('audit.subtitle')}</p>
         </div>
       </div>
 
@@ -240,10 +240,10 @@ export default function AuditLogPage() {
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <History className="h-5 w-5" />
-            <span>System Activity Log ({filteredLogs.length} of {logs.length} entries)</span>
+            <span>{t('audit.allActivities')} ({filteredLogs.length} of {logs.length} entries)</span>
           </CardTitle>
           <CardDescription>
-            Complete audit trail of all user actions and system changes
+            {t('audit.allActivitiesDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -251,7 +251,7 @@ export default function AuditLogPage() {
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Search descriptions, actions, or tables..."
+                placeholder={t('audit.searchLogs')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -261,39 +261,39 @@ export default function AuditLogPage() {
             <div className="flex flex-col sm:flex-row gap-4">
               <Select value={selectedAction} onValueChange={setSelectedAction}>
                 <SelectTrigger className="w-full sm:w-40">
-                  <SelectValue placeholder="All Actions" />
+                  <SelectValue placeholder={t('audit.actions.all')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Actions</SelectItem>
-                  <SelectItem value="CREATE">Created</SelectItem>
-                  <SelectItem value="UPDATE">Updated</SelectItem>
-                  <SelectItem value="DELETE">Deleted</SelectItem>
-                  <SelectItem value="QUANTITY_UPDATE">Quantity Changed</SelectItem>
+                  <SelectItem value="all">{t('audit.actions.all')}</SelectItem>
+                  <SelectItem value="CREATE">{t('audit.actions.create')}</SelectItem>
+                  <SelectItem value="UPDATE">{t('audit.actions.update')}</SelectItem>
+                  <SelectItem value="DELETE">{t('audit.actions.delete')}</SelectItem>
+                  <SelectItem value="QUANTITY_UPDATE">{t('audit.actions.quantityUpdate')}</SelectItem>
                 </SelectContent>
               </Select>
               
               <Select value={selectedTable} onValueChange={setSelectedTable}>
                 <SelectTrigger className="w-full sm:w-40">
-                  <SelectValue placeholder="All Tables" />
+                  <SelectValue placeholder={t('audit.tables.all')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Tables</SelectItem>
-                  <SelectItem value="items">Items</SelectItem>
-                  <SelectItem value="inventory">Inventory</SelectItem>
-                  <SelectItem value="locations">Locations</SelectItem>
-                  <SelectItem value="categories">Categories</SelectItem>
+                  <SelectItem value="all">{t('audit.tables.all')}</SelectItem>
+                  <SelectItem value="items">{t('audit.tables.items')}</SelectItem>
+                  <SelectItem value="inventory">{t('audit.tables.inventory')}</SelectItem>
+                  <SelectItem value="locations">{t('audit.tables.locations')}</SelectItem>
+                  <SelectItem value="categories">{t('audit.tables.categories')}</SelectItem>
                 </SelectContent>
               </Select>
 
               <Select value={selectedDateRange} onValueChange={setSelectedDateRange}>
                 <SelectTrigger className="w-full sm:w-40">
-                  <SelectValue placeholder="All Time" />
+                  <SelectValue placeholder={t('audit.dateRanges.all')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Time</SelectItem>
-                  <SelectItem value="today">Today</SelectItem>
-                  <SelectItem value="week">Past Week</SelectItem>
-                  <SelectItem value="month">Past Month</SelectItem>
+                  <SelectItem value="all">{t('audit.dateRanges.all')}</SelectItem>
+                  <SelectItem value="today">{t('audit.dateRanges.today')}</SelectItem>
+                  <SelectItem value="week">{t('audit.dateRanges.week')}</SelectItem>
+                  <SelectItem value="month">{t('audit.dateRanges.month')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -359,8 +359,8 @@ export default function AuditLogPage() {
               <History className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-600">
                 {searchTerm || selectedAction !== 'all' || selectedTable !== 'all' || selectedDateRange !== 'all' ? 
-                  'No audit logs found matching your filters.' : 
-                  'No audit logs found.'}
+                  t('audit.noLogsMatchingFilters') : 
+                  t('audit.noLogsFound')}
               </p>
             </div>
           )}

@@ -212,7 +212,32 @@
     "action": "Akcija",
     "details": "Detalji",
     "timestamp": "Vrijeme",
-    "noLogsFound": "Nema pronađenih zapisnika revizije."
+    "noLogsFound": "Nema pronađenih zapisnika revizije.",
+    "accessDenied": "Pristup odbijen. Samo administratori mogu pregledavati zapisnike revizije.",
+    "actions": {
+      "all": "Sve akcije",
+      "create": "Stvoreno",
+      "update": "Ažurirano", 
+      "delete": "Obrisano",
+      "quantityUpdate": "Promjena količine"
+    },
+    "tables": {
+      "all": "Sve tablice",
+      "items": "Artikli",
+      "inventory": "Inventar",
+      "locations": "Lokacije",
+      "categories": "Kategorije"
+    },
+    "dateRanges": {
+      "all": "Sve vrijeme",
+      "today": "Danas",
+      "week": "Prošli tjedan",
+      "month": "Prošli mjesec"
+    },
+    "changes": "Promjene",
+    "newValues": "Nove vrijednosti",
+    "deletedValues": "Obrisane vrijednosti",
+    "noLogsMatchingFilters": "Nema zapisnika revizije koji odgovaraju vašim filtrima."
   },
   "settings": {
     "title": "Postavke",
