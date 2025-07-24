@@ -4,6 +4,8 @@ import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { supabase } from '@/lib/supabase'
 import { auditLog } from '@/lib/auditLog'
+import { useAuth } from '../auth/AuthProvider'
+import { userHasPermission } from '@/lib/permissions'
 import AddItemDialog from './AddItemDialog'
 import EditItemDialog from './EditItemDialog'
 import { useTranslation } from 'react-i18next'
@@ -44,6 +46,7 @@ interface Category {
 
 export default function ItemsPage() {
   const { t } = useTranslation()
+  const { userProfile } = useAuth()
   const [items, setItems] = useState<Item[]>([])
   const [filteredItems, setFilteredItems] = useState<Item[]>([])
   const [categories, setCategories] = useState<Category[]>([])
@@ -53,6 +56,11 @@ export default function ItemsPage() {
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [editingItem, setEditingItem] = useState<Item | null>(null)
+
+  // Permission checks
+  const canAddItem = userHasPermission(userProfile, 'canAddItem')
+  const canEditItem = userHasPermission(userProfile, 'canEditItem')
+  const canDeleteItem = userHasPermission(userProfile, 'canDeleteItem')
 
   useEffect(() => {
     fetchData()
@@ -172,6 +180,18 @@ export default function ItemsPage() {
     )
   }
 
+  // Show permission message if user can't view items
+  if (!userHasPermission(userProfile, 'canViewItems')) {
+    return (
+      <div className="text-center py-8">
+        <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+        <p className="text-gray-600">
+          You don't have permission to view items. Contact your administrator.
+        </p>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -179,10 +199,12 @@ export default function ItemsPage() {
           <h1 className="text-3xl font-bold text-gray-900">{t('items.title')}</h1>
           <p className="text-gray-600">{t('items.subtitle')}</p>
         </div>
-        <Button onClick={() => setShowAddDialog(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          {t('items.addItem')}
-        </Button>
+        {canAddItem && (
+          <Button onClick={() => setShowAddDialog(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            {t('items.addItem')}
+          </Button>
+        )}
       </div>
 
       <Card>
@@ -234,20 +256,24 @@ export default function ItemsPage() {
                       </CardDescription>
                     </div>
                     <div className="flex items-center space-x-1">
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => handleEditItem(item)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => deleteItem(item.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {canEditItem && (
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => handleEditItem(item)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {canDeleteItem && (
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => deleteItem(item.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </CardHeader>
@@ -317,10 +343,12 @@ export default function ItemsPage() {
                   ? t('items.noItemsFound') 
                   : t('items.noItemsYet')}
               </p>
-              <Button className="mt-4" onClick={() => setShowAddDialog(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                {t('items.addFirstItem')}
-              </Button>
+              {canAddItem && (
+                <Button className="mt-4" onClick={() => setShowAddDialog(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  {t('items.addFirstItem')}
+                </Button>
+              )}
             </div>
           )}
         </CardContent>

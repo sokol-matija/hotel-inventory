@@ -22,9 +22,9 @@ import {
 const roleIcons = {
   'admin': ShieldCheck,
   'reception': UserCheck,
-  'cooking': ChefHat,
-  'room_cleaner': Sparkles,
-  'finance': Calculator
+  'kitchen': ChefHat,
+  'housekeeping': Sparkles,
+  'bookkeeping': Calculator
 }
 
 const sidebarItems = [
@@ -32,31 +32,31 @@ const sidebarItems = [
     key: 'dashboard', 
     path: '/dashboard', 
     icon: Home, 
-    roles: ['admin', 'reception', 'cooking', 'room_cleaner', 'finance'] 
+    roles: ['admin', 'reception', 'kitchen', 'housekeeping', 'bookkeeping'] 
   },
   { 
     key: 'locations', 
     path: '/locations', 
     icon: MapPin, 
-    roles: ['admin', 'reception', 'cooking', 'room_cleaner', 'finance'] 
+    roles: ['admin', 'reception', 'kitchen', 'housekeeping', 'bookkeeping'] 
   },
   { 
     key: 'items', 
     path: '/items', 
     icon: Package, 
-    roles: ['admin', 'cooking'] 
+    roles: ['admin', 'kitchen'] 
   },
   { 
     key: 'globalView', 
     path: '/global', 
     icon: Globe, 
-    roles: ['admin', 'reception', 'cooking', 'room_cleaner', 'finance'] 
+    roles: ['admin', 'reception', 'kitchen', 'housekeeping', 'bookkeeping'] 
   },
   { 
     key: 'settings', 
     path: '/settings', 
     icon: Settings, 
-    roles: ['admin', 'reception', 'cooking', 'room_cleaner', 'finance'] 
+    roles: ['admin', 'reception', 'kitchen', 'housekeeping', 'bookkeeping'] 
   },
   { 
     key: 'locationManagement', 

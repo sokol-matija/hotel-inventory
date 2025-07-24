@@ -6,6 +6,7 @@ import { Input } from '../ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '../auth/AuthProvider'
+import { userHasPermission } from '@/lib/permissions'
 import AddInventoryDialog from './AddInventoryDialog'
 import { 
   ArrowLeft, 
@@ -184,7 +185,9 @@ export default function LocationDetail() {
     )
   }
 
-  const canModifyInventory = ['admin', 'cooking'].includes(userProfile?.role.name || '')
+  const canModifyInventory = userHasPermission(userProfile, 'canModifyQuantity')
+  const canAddInventory = userHasPermission(userProfile, 'canAddInventory')
+  const canEditInventory = userHasPermission(userProfile, 'canEditInventory')
 
   return (
     <div className="space-y-6">
@@ -210,7 +213,7 @@ export default function LocationDetail() {
             </div>
           </div>
         </div>
-        {canModifyInventory && (
+        {canAddInventory && (
           <Button onClick={() => setShowAddDialog(true)} className="w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
             Add Item
@@ -352,7 +355,7 @@ export default function LocationDetail() {
               <p className="text-gray-600">
                 {searchTerm ? 'No items found matching your search.' : 'No items in this location yet.'}
               </p>
-              {canModifyInventory && (
+              {canAddInventory && (
                 <Button className="mt-4" onClick={() => setShowAddDialog(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   Add First Item
