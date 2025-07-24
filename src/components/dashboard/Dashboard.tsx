@@ -57,6 +57,15 @@ export default function Dashboard() {
   })
   const [loading, setLoading] = useState(true)
 
+  const currentDateFormatted = useMemo(() => {
+    return new Date().toLocaleDateString('hr-HR', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    })
+  }, [])
+
   useEffect(() => {
     fetchDashboardData()
   }, [])
@@ -237,12 +246,7 @@ export default function Dashboard() {
         </div>
         <div className="text-left lg:text-right mt-2 lg:mt-0">
           <p className="text-sm text-gray-500">
-            {useMemo(() => new Date().toLocaleDateString('hr-HR', { 
-              weekday: 'long', 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric' 
-            }), [])}
+            {currentDateFormatted}
           </p>
         </div>
       </div>

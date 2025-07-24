@@ -4,7 +4,7 @@ import { Input } from '../ui/input'
 import { Label } from '../ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { supabase } from '@/lib/supabase'
-import { X, Package, Hash, Calendar, DollarSign, AlertCircle } from 'lucide-react'
+import { X, Package, Hash, Calendar, DollarSign, AlertCircle, Type } from 'lucide-react'
 
 interface Item {
   id: number
@@ -40,6 +40,49 @@ export default function AddInventoryDialog({ isOpen, onClose, onInventoryAdded, 
   const [selectedItem, setSelectedItem] = useState<Item | null>(null)
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [useManualDateEntry, setUseManualDateEntry] = useState(false)
+
+  // Helper functions for date format conversion
+  const formatDateForDisplay = (isoDate: string): string => {
+    if (!isoDate) return ''
+    const date = new Date(isoDate)
+    const day = date.getDate().toString().padStart(2, '0')
+    const month = (date.getMonth() + 1).toString().padStart(2, '0')
+    const year = date.getFullYear()
+    return `${day}/${month}/${year}`
+  }
+
+  const formatDateForDatabase = (displayDate: string): string => {
+    if (!displayDate) return ''
+    const parts = displayDate.split('/')
+    if (parts.length !== 3) return ''
+    const [day, month, year] = parts
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+  }
+
+  const validateDateFormat = (dateString: string): boolean => {
+    if (!dateString) return false
+    const dateRegex = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/
+    const match = dateString.match(dateRegex)
+    
+    if (!match) return false
+    
+    const [, day, month, year] = match
+    const dayNum = parseInt(day, 10)
+    const monthNum = parseInt(month, 10)
+    const yearNum = parseInt(year, 10)
+    
+    // Basic validation
+    if (monthNum < 1 || monthNum > 12) return false
+    if (dayNum < 1 || dayNum > 31) return false
+    if (yearNum < 1900 || yearNum > 2100) return false
+    
+    // Check if date is valid
+    const date = new Date(yearNum, monthNum - 1, dayNum)
+    return date.getFullYear() === yearNum && 
+           date.getMonth() === monthNum - 1 && 
+           date.getDate() === dayNum
+  }
 
   useEffect(() => {
     if (isOpen) {
@@ -94,8 +137,12 @@ export default function AddInventoryDialog({ isOpen, onClose, onInventoryAdded, 
       newErrors.quantity = 'Quantity must be greater than 0'
     }
 
-    if (selectedItem?.category.requires_expiration && !formData.expiration_date) {
-      newErrors.expiration_date = 'Expiration date is required for this item'
+    if (selectedItem?.category.requires_expiration) {
+      if (!formData.expiration_date) {
+        newErrors.expiration_date = 'Expiration date is required for this item'
+      } else if (useManualDateEntry && !validateDateFormat(formData.expiration_date)) {
+        newErrors.expiration_date = 'Please enter date in DD/MM/YYYY format'
+      }
     }
 
     if (formData.cost_per_unit && parseFloat(formData.cost_per_unit) < 0) {
@@ -113,6 +160,12 @@ export default function AddInventoryDialog({ isOpen, onClose, onInventoryAdded, 
 
     setLoading(true)
     try {
+      // Convert manual date format to database format if needed
+      let expirationDate = formData.expiration_date
+      if (useManualDateEntry && formData.expiration_date) {
+        expirationDate = formatDateForDatabase(formData.expiration_date)
+      }
+
       const { error } = await supabase
         .from('inventory')
         .insert([
@@ -120,7 +173,7 @@ export default function AddInventoryDialog({ isOpen, onClose, onInventoryAdded, 
             item_id: parseInt(formData.item_id),
             location_id: locationId,
             quantity: parseInt(formData.quantity),
-            expiration_date: formData.expiration_date || null,
+            expiration_date: expirationDate || null,
             cost_per_unit: formData.cost_per_unit ? parseFloat(formData.cost_per_unit) : null
           }
         ])
@@ -136,6 +189,7 @@ export default function AddInventoryDialog({ isOpen, onClose, onInventoryAdded, 
       })
       setErrors({})
       setSelectedItem(null)
+      setUseManualDateEntry(false)
       
       onInventoryAdded()
       onClose()
@@ -152,6 +206,29 @@ export default function AddInventoryDialog({ isOpen, onClose, onInventoryAdded, 
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }))
+    }
+  }
+
+  const handleDateModeToggle = () => {
+    const newManualMode = !useManualDateEntry
+    setUseManualDateEntry(newManualMode)
+    
+    // Convert existing date when switching modes
+    if (formData.expiration_date) {
+      if (newManualMode) {
+        // Switching to manual - convert from YYYY-MM-DD to DD/MM/YYYY
+        const displayDate = formatDateForDisplay(formData.expiration_date)
+        setFormData(prev => ({ ...prev, expiration_date: displayDate }))
+      } else {
+        // Switching to date picker - convert from DD/MM/YYYY to YYYY-MM-DD
+        const isoDate = formatDateForDatabase(formData.expiration_date)
+        setFormData(prev => ({ ...prev, expiration_date: isoDate }))
+      }
+    }
+    
+    // Clear any date validation errors
+    if (errors.expiration_date) {
+      setErrors(prev => ({ ...prev, expiration_date: '' }))
     }
   }
 
@@ -251,17 +328,65 @@ export default function AddInventoryDialog({ isOpen, onClose, onInventoryAdded, 
             {/* Expiration Date (if required) */}
             {selectedItem?.category.requires_expiration && (
               <div>
-                <Label htmlFor="expiration_date">Expiration Date *</Label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="expiration_date"
-                    type="date"
-                    value={formData.expiration_date}
-                    onChange={(e) => handleInputChange('expiration_date', e.target.value)}
-                    className={`pl-10 ${errors.expiration_date ? 'border-red-500' : ''}`}
-                  />
+                <div className="flex items-center justify-between mb-2">
+                  <Label htmlFor="expiration_date">Expiration Date *</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDateModeToggle}
+                    className="text-xs px-2 py-1 h-auto"
+                  >
+                    {useManualDateEntry ? (
+                      <>
+                        <Calendar className="h-3 w-3 mr-1" />
+                        Date Picker
+                      </>
+                    ) : (
+                      <>
+                        <Type className="h-3 w-3 mr-1" />
+                        Manual Entry
+                      </>
+                    )}
+                  </Button>
                 </div>
+                
+                <div className="relative">
+                  {useManualDateEntry ? (
+                    <>
+                      <Type className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="expiration_date"
+                        type="text"
+                        value={formData.expiration_date}
+                        onChange={(e) => handleInputChange('expiration_date', e.target.value)}
+                        placeholder="DD/MM/YYYY"
+                        className={`pl-10 ${errors.expiration_date ? 'border-red-500' : ''}`}
+                      />
+                      <span className="absolute right-3 top-3 text-xs text-gray-400">
+                        DD/MM/YYYY
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="expiration_date"
+                        type="date"
+                        value={formData.expiration_date}
+                        onChange={(e) => handleInputChange('expiration_date', e.target.value)}
+                        className={`pl-10 ${errors.expiration_date ? 'border-red-500' : ''}`}
+                      />
+                    </>
+                  )}
+                </div>
+                
+                {useManualDateEntry && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Enter date in DD/MM/YYYY format (e.g., 25/12/2024)
+                  </p>
+                )}
+                
                 {errors.expiration_date && (
                   <p className="text-red-500 text-sm mt-1 flex items-center">
                     <AlertCircle className="h-3 w-3 mr-1" />
