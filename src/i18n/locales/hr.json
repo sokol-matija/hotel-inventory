@@ -12,6 +12,7 @@
   "dashboard": {
     "title": "Kontrolna ploča",
     "welcomeBack": "Dobrodošli natrag, {{role}}",
+    "welcomeBackUser": "Dobrodošli natrag, {{name}}",
     "totalItems": "Ukupno artikala",
     "lowStock": "Malo zaliha",
     "expiringSoon": "Uskoro istječe",
@@ -19,6 +20,7 @@
     "acrossAllLocations": "u svim lokacijama",
     "itemsNeedRestocking": "artikala treba dopuniti",
     "within7Days": "u sljedećih 7 dana",
+    "within30Days": "u sljedećih 30 dana",
     "storageLocations": "mjesta skladištenja",
     "recentInventory": "Nedavni inventar",
     "latestItemsAdjustments": "Najnoviji artikli s brzim prilagodbama količine",

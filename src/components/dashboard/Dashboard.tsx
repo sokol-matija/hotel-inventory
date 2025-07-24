@@ -45,7 +45,7 @@ interface DashboardStats {
 }
 
 export default function Dashboard() {
-  const { userProfile } = useAuth()
+  const { userProfile, user } = useAuth()
   const navigate = useNavigate()
   const { t } = useTranslation()
   const [inventory, setInventory] = useState<InventoryItem[]>([])
@@ -231,11 +231,13 @@ export default function Dashboard() {
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">{t('dashboard.title')}</h1>
-          <p className="text-gray-600 text-sm lg:text-base">{t('dashboard.welcomeBack', { role: t(`roles.${userProfile?.role.name}`) })}</p>
+          <p className="text-gray-600 text-sm lg:text-base">
+            {t('dashboard.welcomeBackUser', { name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || t(`roles.${userProfile?.role.name}`) })}
+          </p>
         </div>
         <div className="text-left lg:text-right mt-2 lg:mt-0">
           <p className="text-sm text-gray-500">
-            {new Date().toLocaleDateString('en-US', { 
+            {new Date().toLocaleDateString('hr-HR', { 
               weekday: 'long', 
               year: 'numeric', 
               month: 'long', 
@@ -365,7 +367,7 @@ export default function Dashboard() {
                       <p className="font-medium text-gray-900">{t('dashboard.quantity', { quantity: item.quantity })}</p>
                       {item.expiration_date && (
                         <p className="text-sm text-gray-600">
-                          {t('dashboard.expiration', { date: new Date(item.expiration_date).toLocaleDateString() })}
+                          {t('dashboard.expiration', { date: new Date(item.expiration_date).toLocaleDateString('hr-HR') })}
                         </p>
                       )}
                     </div>

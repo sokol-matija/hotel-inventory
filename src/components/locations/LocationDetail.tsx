@@ -340,7 +340,7 @@ export default function LocationDetail() {
                       {item.expiration_date && (
                         <div className="flex items-center space-x-1 text-sm text-gray-600">
                           <Calendar className="h-3 w-3" />
-                          <span>{new Date(item.expiration_date).toLocaleDateString()}</span>
+                          <span>{new Date(item.expiration_date).toLocaleDateString('hr-HR')}</span>
                         </div>
                       )}
                       {item.cost_per_unit && (

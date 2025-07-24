@@ -86,7 +86,21 @@ export default function Sidebar() {
   const RoleIcon = roleIcons[userRole as keyof typeof roleIcons] || UserCheck
 
   return (
-    <div className="w-64 bg-white border-r border-gray-200 h-screen flex flex-col">
+    <div className="w-64 bg-white border-r border-gray-200 h-screen flex flex-col relative overflow-hidden">
+      {/* Background image rotated 90 degrees to the right */}
+      <div 
+        className="absolute inset-0 opacity-10 transform rotate-90 scale-150"
+        style={{
+          backgroundImage: 'url(/mozaik_gp1 copy.png)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat'
+        }}
+      />
+      <div className="absolute inset-0 bg-gradient-to-b from-blue-50/20 to-indigo-100/20" />
+      
+      {/* Content wrapper with relative positioning to appear above background */}
+      <div className="relative z-10 flex flex-col h-full">
       <div className="p-6">
         <div className="flex items-center justify-center">
           <div 
@@ -151,6 +165,7 @@ export default function Sidebar() {
           <LogOut className="w-4 h-4 mr-2" />
           {t('navigation.signOut')}
         </Button>
+      </div>
       </div>
     </div>
   )

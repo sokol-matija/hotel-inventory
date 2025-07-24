@@ -103,7 +103,7 @@ const rolePermissions: Record<Role, UserPermissions> = {
     canViewInventory: true,
     canAddInventory: true,
     canEditInventory: true,
-    canDeleteInventory: false,
+    canDeleteInventory: true,
     canModifyQuantity: true,
     canViewGlobalInventory: true,
     canViewSettings: true,

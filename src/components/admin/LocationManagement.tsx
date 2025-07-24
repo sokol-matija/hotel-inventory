@@ -159,7 +159,7 @@ export default function LocationManagement() {
                         {location.description || t('admin.noDescription')}
                       </p>
                       <p className="text-xs text-gray-500 mt-1">
-                        {t('common.type')}: {t(`locationTypes.${location.type.toLowerCase()}`)} • {t('admin.created')}: {new Date(location.created_at).toLocaleDateString()}
+                        {t('common.type')}: {t(`locationTypes.${location.type.toLowerCase()}`)} • {t('admin.created')}: {new Date(location.created_at).toLocaleDateString('hr-HR')}
                       </p>
                     </div>
                   )}
@@ -245,7 +245,7 @@ export default function LocationManagement() {
                           {location.description || t('admin.noDescription')}
                         </p>
                         <p className="text-xs text-gray-500 mt-1">
-                          {t('common.type')}: {t(`locationTypes.${location.type.toLowerCase()}`)} • {t('admin.created')}: {new Date(location.created_at).toLocaleDateString()}
+                          {t('common.type')}: {t(`locationTypes.${location.type.toLowerCase()}`)} • {t('admin.created')}: {new Date(location.created_at).toLocaleDateString('hr-HR')}
                         </p>
                       </div>
                     )}
