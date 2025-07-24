@@ -77,6 +77,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     let isMounted = true
+    let initialLoadComplete = false
     
     const getSession = async () => {
       try {
@@ -95,7 +96,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('Error getting session:', error)
       } finally {
         if (isMounted) {
-          console.log('Setting loading to false')
+          console.log('Setting loading to false - initial load complete')
+          initialLoadComplete = true
           setLoading(false)
         }
       }
@@ -108,15 +110,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!isMounted) return
         
         console.log('Auth state changed:', event, session?.user ? 'User present' : 'No user')
-        setUser(session?.user ?? null)
         
-        if (session?.user) {
-          await fetchUserProfile(session.user.id)
-        } else {
-          setUserProfile(null)
+        // Only update loading state after initial load is complete
+        if (initialLoadComplete) {
+          setUser(session?.user ?? null)
+          
+          if (session?.user) {
+            await fetchUserProfile(session.user.id)
+          } else {
+            setUserProfile(null)
+          }
         }
-        
-        setLoading(false)
       }
     )
 
