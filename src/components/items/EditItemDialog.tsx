@@ -6,6 +6,7 @@ import { Label } from '../ui/label'
 import { Textarea } from '../ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { supabase } from '@/lib/supabase'
+import { auditLog } from '@/lib/auditLog'
 import { useTranslation } from 'react-i18next'
 import { Package, Loader2 } from 'lucide-react'
 
@@ -87,19 +88,33 @@ export default function EditItemDialog({ isOpen, onClose, onItemUpdated, item }:
     setSubmitting(true)
 
     try {
+      const newData = {
+        name: formData.name,
+        description: formData.description || null,
+        unit: formData.unit,
+        price: formData.price ? parseFloat(formData.price) : null,
+        minimum_stock: parseInt(formData.minimum_stock),
+        category_id: parseInt(formData.category_id)
+      }
+
       const { error } = await supabase
         .from('items')
-        .update({
-          name: formData.name,
-          description: formData.description || null,
-          unit: formData.unit,
-          price: formData.price ? parseFloat(formData.price) : null,
-          minimum_stock: parseInt(formData.minimum_stock),
-          category_id: parseInt(formData.category_id)
-        })
+        .update(newData)
         .eq('id', item.id)
 
       if (error) throw error
+
+      // Log the item update
+      const oldData = {
+        name: item.name,
+        description: item.description,
+        unit: item.unit,
+        price: item.price,
+        minimum_stock: item.minimum_stock,
+        category_id: item.category_id
+      }
+
+      await auditLog.itemUpdated(item.id, oldData, newData)
 
       onItemUpdated()
       onClose()

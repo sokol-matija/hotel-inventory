@@ -88,7 +88,7 @@ export default function Dashboard() {
       if (locationsError) throw locationsError
 
       const inventoryItems = inventoryData || []
-      const totalItems = inventoryItems.reduce((sum, item) => sum + (item.quantity || 0), 0)
+      const totalItems = inventoryItems.length // Count of unique inventory entries, not total quantity
       
       // Calculate low stock items (with null checks)
       const lowStockItems = inventoryItems.filter(item => 
@@ -159,7 +159,7 @@ export default function Dashboard() {
         )
         
         // Recalculate stats locally instead of refetching everything
-        const totalItems = updatedInventory.reduce((sum, item) => sum + (item.quantity || 0), 0)
+        const totalItems = updatedInventory.length // Count of unique inventory entries
         const lowStockItems = updatedInventory.filter(item => 
           item.item && item.quantity <= item.item.minimum_stock
         ).length

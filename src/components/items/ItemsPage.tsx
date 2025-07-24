@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { supabase } from '@/lib/supabase'
+import { auditLog } from '@/lib/auditLog'
 import AddItemDialog from './AddItemDialog'
 import EditItemDialog from './EditItemDialog'
 import { useTranslation } from 'react-i18next'
@@ -136,12 +137,26 @@ export default function ItemsPage() {
     if (!window.confirm(t('items.deleteConfirm'))) return
 
     try {
+      // Find the item to get its data for audit logging
+      const itemToDelete = items.find(item => item.id === itemId)
+      if (!itemToDelete) return
+
       const { error } = await supabase
         .from('items')
         .update({ is_active: false })
         .eq('id', itemId)
 
       if (error) throw error
+
+      // Log the deletion
+      await auditLog.itemDeleted(itemId, {
+        name: itemToDelete.name,
+        description: itemToDelete.description,
+        category: itemToDelete.category.name,
+        unit: itemToDelete.unit,
+        price: itemToDelete.price,
+        minimum_stock: itemToDelete.minimum_stock
+      })
 
       setItems(prev => prev.filter(item => item.id !== itemId))
     } catch (error) {
