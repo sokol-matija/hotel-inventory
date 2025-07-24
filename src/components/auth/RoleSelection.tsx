@@ -6,6 +6,7 @@ import { Label } from '../ui/label'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from './AuthProvider'
 import { User, ChefHat, UserCheck, Sparkles, Calculator, ShieldCheck, Lock } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 interface Role {
   id: number
@@ -20,6 +21,7 @@ interface RoleSelectionProps {
 
 export default function RoleSelection({ user, onRoleSelected }: RoleSelectionProps) {
   const { refreshUserProfile } = useAuth()
+  const { t } = useTranslation()
   const [roles, setRoles] = useState<Role[]>([])
   const [selectedRole, setSelectedRole] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -31,17 +33,17 @@ export default function RoleSelection({ user, onRoleSelected }: RoleSelectionPro
   const roleIcons = {
     'admin': ShieldCheck,
     'reception': UserCheck,
-    'cooking': ChefHat,
-    'room_cleaner': Sparkles,
-    'finance': Calculator
+    'kitchen': ChefHat,
+    'housekeeping': Sparkles,
+    'bookkeeping': Calculator
   }
 
   const roleColors = {
     'admin': 'from-red-500 to-red-600',
     'reception': 'from-blue-500 to-blue-600',
-    'cooking': 'from-green-500 to-green-600',
-    'room_cleaner': 'from-purple-500 to-purple-600',
-    'finance': 'from-yellow-500 to-yellow-600'
+    'kitchen': 'from-green-500 to-green-600',
+    'housekeeping': 'from-purple-500 to-purple-600',
+    'bookkeeping': 'from-yellow-500 to-yellow-600'
   }
 
   useEffect(() => {
@@ -89,7 +91,7 @@ export default function RoleSelection({ user, onRoleSelected }: RoleSelectionPro
     // Check if admin role is selected and password is required
     if (adminRole && selectedRole === adminRole.id) {
       if (adminPassword !== 'Hp247@$&') {
-        alert('Incorrect admin password!')
+        alert(t('auth.incorrectAdminPassword'))
         return
       }
     }
@@ -114,7 +116,7 @@ export default function RoleSelection({ user, onRoleSelected }: RoleSelectionPro
       onRoleSelected()
     } catch (error) {
       console.error('Error creating user profile:', error)
-      alert('Error creating user profile. Please try again.')
+      alert(t('auth.errorCreatingProfile'))
     } finally {
       setIsSubmitting(false)
     }
@@ -137,10 +139,10 @@ export default function RoleSelection({ user, onRoleSelected }: RoleSelectionPro
               <User className="w-10 h-10" />
             </div>
             <CardTitle className="text-3xl font-bold text-gray-900">
-              Welcome, {user.user_metadata?.full_name || 'User'}!
+              {t('auth.welcome', { name: user.user_metadata?.full_name || 'User' })}
             </CardTitle>
             <CardDescription className="text-gray-600 text-lg">
-              Please select your role to continue
+              {t('auth.selectRoleDescription')}
             </CardDescription>
           </CardHeader>
           
@@ -165,11 +167,11 @@ export default function RoleSelection({ user, onRoleSelected }: RoleSelectionPro
                         <IconComponent className="w-6 h-6" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-gray-900 capitalize">
-                          {role.name.replace('_', ' ')}
+                        <h3 className="font-semibold text-gray-900">
+                          {t(`roles.${role.name}`)}
                         </h3>
                         <p className="text-sm text-gray-600">
-                          {role.description}
+                          {t(`roleDescriptions.${role.name}`)}
                         </p>
                       </div>
                     </div>
@@ -191,17 +193,17 @@ export default function RoleSelection({ user, onRoleSelected }: RoleSelectionPro
                     <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white">
                       <ShieldCheck className="w-6 h-6" />
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2">
-                        <h3 className="font-semibold text-gray-900 capitalize">
-                          {adminRole.name}
-                        </h3>
-                        <Lock className="w-4 h-4 text-red-600" />
+                                          <div className="flex-1">
+                        <div className="flex items-center space-x-2">
+                          <h3 className="font-semibold text-gray-900">
+                            {t(`roles.${adminRole.name}`)}
+                          </h3>
+                          <Lock className="w-4 h-4 text-red-600" />
+                        </div>
+                        <p className="text-sm text-gray-600">
+                          {t(`roleDescriptions.${adminRole.name}`)} ({t('auth.adminPasswordRequired')})
+                        </p>
                       </div>
-                      <p className="text-sm text-gray-600">
-                        {adminRole.description} (Password required)
-                      </p>
-                    </div>
                   </div>
                 </button>
               )}
@@ -211,21 +213,21 @@ export default function RoleSelection({ user, onRoleSelected }: RoleSelectionPro
             {showAdminPassword && (
               <div className="mt-6 p-4 bg-red-50 rounded-lg border border-red-200">
                 <Label htmlFor="admin-password" className="text-red-800 font-medium">
-                  Admin Password Required
+                  {t('auth.adminPasswordRequired')}
                 </Label>
                 <div className="mt-2 relative">
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-red-500" />
                   <Input
                     id="admin-password"
                     type="password"
-                    placeholder="Enter admin password"
+                    placeholder={t('auth.adminPasswordPlaceholder')}
                     value={adminPassword}
                     onChange={(e) => setAdminPassword(e.target.value)}
                     className="pl-10 border-red-300 focus:border-red-500 focus:ring-red-500"
                   />
                 </div>
                 <p className="mt-2 text-sm text-red-600">
-                  Contact your system administrator for the admin password
+                  {t('auth.contactAdminForPassword')}
                 </p>
               </div>
             )}
@@ -238,10 +240,10 @@ export default function RoleSelection({ user, onRoleSelected }: RoleSelectionPro
               {isSubmitting ? (
                 <div className="flex items-center space-x-2">
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Setting up your account...</span>
+                  <span>{t('auth.settingUpAccount')}</span>
                 </div>
               ) : (
-                'Continue to Dashboard'
+                t('auth.continueToDashboard')
               )}
             </Button>
           </CardContent>

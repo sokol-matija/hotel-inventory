@@ -100,9 +100,17 @@
     "createAccount": "Stvori račun",
     "googleNotConfigured": "Google OAuth još nije konfiguriran. Molimo koristite prijavu e-poštom/lozinkom.",
     "selectYourRole": "Odaberite svoju ulogu",
-    "selectRoleDescription": "Odaberite svoju ulogu za pristup odgovarajućim značajkama",
+    "selectRoleDescription": "Molimo odaberite svoju ulogu za nastavak",
     "enterAdminPassword": "Unesite administratorsku lozinku",
-    "continueAsRole": "Nastavite kao {{role}}"
+    "continueAsRole": "Nastavite kao {{role}}",
+    "adminPasswordRequired": "Potrebna je administratorska lozinka",
+    "adminPasswordPlaceholder": "Unesite administratorsku lozinku",
+    "contactAdminForPassword": "Kontaktirajte administratora za lozinku",
+    "incorrectAdminPassword": "Netočna administratorska lozinka!",
+    "continueToDashboard": "Idite na nadzornu ploču",
+    "settingUpAccount": "Postavljanje vašeg računa...",
+    "errorCreatingProfile": "Greška pri stvaranju profila. Molimo pokušajte ponovno.",
+    "welcome": "Dobrodošli, {{name}}!"
   },
   "admin": {
     "locationManagement": "Upravljanje lokacijama",
@@ -154,9 +162,16 @@
   "roles": {
     "admin": "Administrator",
     "reception": "Recepcija",
-    "cooking": "Kuharica",
-    "room_cleaner": "Čistačica soba",
-    "finance": "Financije"
+    "kitchen": "Kuhinja",
+    "housekeeping": "Domacinstvo",
+    "bookkeeping": "Racunovodstvo"
+  },
+  "roleDescriptions": {
+    "admin": "Administrator sustava s punim pristupom",
+    "reception": "Recepcija i usluge gostiju",
+    "kitchen": "Osoblje kuhinje i ugostiteljskih usluga",
+    "housekeeping": "Osoblje za održavanje i čišćenje",
+    "bookkeeping": "Računovodstvo i financijsko upravljanje"
   },
   "validation": {
     "nameRequired": "Naziv artikla je obavezan",

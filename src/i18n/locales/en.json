@@ -88,9 +88,17 @@
     "createAccount": "Create Account",
     "googleNotConfigured": "Google OAuth is not configured yet. Please use email/password login.",
     "selectYourRole": "Select Your Role",
-    "selectRoleDescription": "Choose your role to access the appropriate features",
+    "selectRoleDescription": "Please select your role to continue",
     "enterAdminPassword": "Enter admin password",
-    "continueAsRole": "Continue as {{role}}"
+    "continueAsRole": "Continue as {{role}}",
+    "adminPasswordRequired": "Admin Password Required",
+    "adminPasswordPlaceholder": "Enter admin password",
+    "contactAdminForPassword": "Contact your system administrator for the admin password",
+    "incorrectAdminPassword": "Incorrect admin password!",
+    "continueToDashboard": "Continue to Dashboard",
+    "settingUpAccount": "Setting up your account...",
+    "errorCreatingProfile": "Error creating user profile. Please try again.",
+    "welcome": "Welcome, {{name}}!"
   },
   "admin": {
     "locationManagement": "Location Management",
@@ -133,9 +141,16 @@
   "roles": {
     "admin": "Admin",
     "reception": "Reception",
-    "cooking": "Cooking",
-    "room_cleaner": "Room Cleaner",
-    "finance": "Finance"
+    "kitchen": "Kitchen",
+    "housekeeping": "Housekeeping",
+    "bookkeeping": "Bookkeeping"
+  },
+  "roleDescriptions": {
+    "admin": "System administrator with full access",
+    "reception": "Front desk and guest services staff",
+    "kitchen": "Kitchen and food service staff",
+    "housekeeping": "Housekeeping and maintenance staff",
+    "bookkeeping": "Accounting and financial management staff"
   },
   "validation": {
     "nameRequired": "Item name is required",
