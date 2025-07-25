@@ -155,6 +155,7 @@ export type Database = {
           quantity: number
           expiration_date: string | null
           cost_per_unit: number | null
+          display_order: number
           created_at: string
           updated_at: string
         }
@@ -165,6 +166,7 @@ export type Database = {
           quantity?: number
           expiration_date?: string | null
           cost_per_unit?: number | null
+          display_order: number
           created_at?: string
           updated_at?: string
         }
@@ -175,6 +177,7 @@ export type Database = {
           quantity?: number
           expiration_date?: string | null
           cost_per_unit?: number | null
+          display_order?: number
           created_at?: string
           updated_at?: string
         }

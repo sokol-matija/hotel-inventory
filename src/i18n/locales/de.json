@@ -42,7 +42,50 @@
     "enterLocationName": "Standortname eingeben",
     "selectLocationType": "Standorttyp auswählen",
     "enterLocationDescription": "Standortbeschreibung eingeben (optional)",
-    "failedToAdd": "Standort konnte nicht hinzugefügt werden. Bitte versuchen Sie es erneut."
+    "failedToAdd": "Standort konnte nicht hinzugefügt werden. Bitte versuchen Sie es erneut.",
+    "dragToReorder": "Ziehen Sie zum Neuordnen der Artikel",
+    "clickToEditQuantity": "Klicken Sie zum Bearbeiten der Menge",
+    "decreaseQuantity": "Menge verringern",
+    "editQuantityManually": "Menge manuell bearbeiten",
+    "increaseQuantity": "Menge erhöhen",
+    "removeItemConfirm": "Sind Sie sicher, dass Sie diesen Artikel vom Standort entfernen möchten?",
+    "expired": "Abgelaufen",
+    "critical": "Kritisch",
+    "warning": "Warnung",
+    "locationNotFound": "Standort nicht gefunden",
+    "backToLocations": "Zurück zu Standorten",
+    "reorderItems": "Sortieren",
+    "finishOrdering": "Fertig",
+    "addItem": "Artikel hinzufügen",
+    "inventory": "Inventar ({{count}} Artikel)",
+    "inventoryDescription": "Mengen verwalten und Ablaufdaten verfolgen",
+    "searchItems": "Artikel suchen...",
+    "dragHint": "Ziehen Sie Artikel, um sie neu zu ordnen. Änderungen werden automatisch gespeichert.",
+    "noItemsFound": "Keine Artikel gefunden, die Ihrer Suche entsprechen.",
+    "noItemsYet": "Noch keine Artikel an diesem Standort.",
+    "addFirstItem": "Ersten Artikel hinzufügen"
+  },
+  "addInventory": {
+    "title": "Artikel zum Standort hinzufügen",
+    "description": "Einen vorhandenen Artikel zum Inventar dieses Standorts hinzufügen",
+    "selectItem": "Artikel auswählen",
+    "chooseItem": "Artikel auswählen",
+    "note": "Hinweis",
+    "expirationNote": "Dieser Artikel benötigt ein Ablaufdatum",
+    "expirationDate": "Ablaufdatum",
+    "expirationRequired": "Ablaufdatum ist für diesen Artikel erforderlich",
+    "dateFormatError": "Bitte geben Sie das Datum im Format TT/MM/JJJJ ein",
+    "dateFormat": "TT/MM/JJJJ",
+    "dateFormatHelp": "Datum im Format TT/MM/JJJJ eingeben (z.B. 25/12/24 oder 25/12/2024)",
+    "datePicker": "Datumsauswahl",
+    "manualEntry": "Manuelle Eingabe",
+    "costPerUnit": "Kosten pro Einheit (optional)",
+    "adding": "Hinzufügen...",
+    "addToInventory": "Zum Inventar hinzufügen",
+    "addError": "Artikel konnte nicht zum Inventar hinzugefügt werden. Bitte versuchen Sie es erneut."
+  },
+  "categories": {
+    "foodbeverage": "Lebensmittel & Getränke"
   },
   "items": {
     "title": "Artikel",
@@ -165,7 +208,8 @@
     "minStockNegative": "Mindestbestand kann nicht negativ sein",
     "locationRequired": "Standort ist erforderlich",
     "quantityRequired": "Menge ist erforderlich",
-    "quantityPositive": "Menge muss positiv sein"
+    "quantityPositive": "Menge muss positiv sein",
+    "itemRequired": "Artikel ist erforderlich"
   },
   "units": {
     "pieces": "Stück",

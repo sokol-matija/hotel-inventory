@@ -5,6 +5,7 @@ import { Label } from '../ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { supabase } from '@/lib/supabase'
 import { X, Package, Hash, Calendar, DollarSign, AlertCircle, Type } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 interface Item {
   id: number
@@ -30,6 +31,7 @@ interface AddInventoryDialogProps {
 }
 
 export default function AddInventoryDialog({ isOpen, onClose, onInventoryAdded, locationId }: AddInventoryDialogProps) {
+  const { t } = useTranslation()
   const [formData, setFormData] = useState({
     item_id: '',
     quantity: '1',
@@ -44,6 +46,13 @@ export default function AddInventoryDialog({ isOpen, onClose, onInventoryAdded, 
   const [useManualDateEntry, setUseManualDateEntry] = useState(() => {
     return window.innerWidth <= 768 // Mobile breakpoint
   })
+
+  // Helper function to translate category names
+  const translateCategory = (categoryName: string) => {
+    // Convert category name to lowercase for translation key
+    const key = categoryName.toLowerCase().replace(/\s+/g, '').replace(/&/g, '')
+    return t(`categories.${key}`, { defaultValue: categoryName })
+  }
 
   // Helper functions for date format conversion
   const formatDateForDisplay = (isoDate: string): string => {
@@ -150,23 +159,23 @@ export default function AddInventoryDialog({ isOpen, onClose, onInventoryAdded, 
     const newErrors: Record<string, string> = {}
 
     if (!formData.item_id) {
-      newErrors.item_id = 'Item is required'
+      newErrors.item_id = t('validation.itemRequired')
     }
 
     if (!formData.quantity || parseInt(formData.quantity) <= 0) {
-      newErrors.quantity = 'Quantity must be greater than 0'
+      newErrors.quantity = t('validation.quantityPositive')
     }
 
     if (selectedItem?.category.requires_expiration) {
       if (!formData.expiration_date) {
-        newErrors.expiration_date = 'Expiration date is required for this item'
+        newErrors.expiration_date = t('addInventory.expirationRequired')
       } else if (useManualDateEntry && !validateDateFormat(formData.expiration_date)) {
-        newErrors.expiration_date = 'Please enter date in DD/MM/YYYY format'
+        newErrors.expiration_date = t('addInventory.dateFormatError')
       }
     }
 
     if (formData.cost_per_unit && parseFloat(formData.cost_per_unit) < 0) {
-      newErrors.cost_per_unit = 'Cost cannot be negative'
+      newErrors.cost_per_unit = t('validation.priceNegative')
     }
 
     setErrors(newErrors)
@@ -186,6 +195,18 @@ export default function AddInventoryDialog({ isOpen, onClose, onInventoryAdded, 
         expirationDate = formatDateForDatabase(formData.expiration_date)
       }
 
+      // Get the next display_order for this location
+      const { data: maxOrderData } = await supabase
+        .from('inventory')
+        .select('display_order')
+        .eq('location_id', locationId)
+        .order('display_order', { ascending: false })
+        .limit(1)
+
+      const nextDisplayOrder = maxOrderData && maxOrderData.length > 0 
+        ? maxOrderData[0].display_order + 1 
+        : 1
+
       const { error } = await supabase
         .from('inventory')
         .insert([
@@ -194,7 +215,8 @@ export default function AddInventoryDialog({ isOpen, onClose, onInventoryAdded, 
             location_id: locationId,
             quantity: parseInt(formData.quantity),
             expiration_date: expirationDate || null,
-            cost_per_unit: formData.cost_per_unit ? parseFloat(formData.cost_per_unit) : null
+            cost_per_unit: formData.cost_per_unit ? parseFloat(formData.cost_per_unit) : null,
+            display_order: nextDisplayOrder
           }
         ])
 
@@ -215,7 +237,7 @@ export default function AddInventoryDialog({ isOpen, onClose, onInventoryAdded, 
       onClose()
     } catch (error) {
       console.error('Error adding inventory:', error)
-      setErrors({ submit: 'Failed to add item to inventory. Please try again.' })
+      setErrors({ submit: t('addInventory.addError') })
     } finally {
       setLoading(false)
     }
@@ -285,14 +307,14 @@ export default function AddInventoryDialog({ isOpen, onClose, onInventoryAdded, 
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <Package className="h-5 w-5 text-blue-600" />
-              <CardTitle>Add Item to Location</CardTitle>
+              <CardTitle>{t('addInventory.title')}</CardTitle>
             </div>
             <Button variant="ghost" size="sm" onClick={onClose}>
               <X className="h-4 w-4" />
             </Button>
           </div>
           <CardDescription>
-            Add an existing item to this location's inventory
+            {t('addInventory.description')}
           </CardDescription>
         </CardHeader>
         
@@ -300,7 +322,7 @@ export default function AddInventoryDialog({ isOpen, onClose, onInventoryAdded, 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Item Selection */}
             <div>
-              <Label htmlFor="item">Select Item *</Label>
+              <Label htmlFor="item">{t('addInventory.selectItem')} *</Label>
               <select
                 id="item"
                 value={formData.item_id}
@@ -309,10 +331,10 @@ export default function AddInventoryDialog({ isOpen, onClose, onInventoryAdded, 
                   errors.item_id ? 'border-red-500' : 'border-gray-300'
                 }`}
               >
-                <option value="">Choose an item</option>
+                <option value="">{t('addInventory.chooseItem')}</option>
                 {items.map(item => (
                   <option key={item.id} value={item.id}>
-                    {item.name} ({item.category.name})
+                    {item.name} ({translateCategory(item.category.name)})
                   </option>
                 ))}
               </select>
@@ -328,14 +350,14 @@ export default function AddInventoryDialog({ isOpen, onClose, onInventoryAdded, 
             {selectedItem && (
               <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
                 <p className="text-sm text-blue-800">
-                  <strong>Unit:</strong> {selectedItem.unit}
+                  <strong>{t('common.unit')}:</strong> {selectedItem.unit}
                 </p>
                 <p className="text-sm text-blue-800">
-                  <strong>Category:</strong> {selectedItem.category.name}
+                  <strong>{t('common.category')}:</strong> {translateCategory(selectedItem.category.name)}
                 </p>
                 {selectedItem.category.requires_expiration && (
                   <p className="text-sm text-blue-800">
-                    <strong>Note:</strong> This item requires an expiration date
+                    <strong>{t('addInventory.note')}:</strong> {t('addInventory.expirationNote')}
                   </p>
                 )}
               </div>
@@ -343,7 +365,7 @@ export default function AddInventoryDialog({ isOpen, onClose, onInventoryAdded, 
 
             {/* Quantity */}
             <div>
-              <Label htmlFor="quantity">Quantity *</Label>
+              <Label htmlFor="quantity">{t('common.quantity')} *</Label>
               <div className="relative">
                 <Hash className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                 <Input
@@ -373,7 +395,7 @@ export default function AddInventoryDialog({ isOpen, onClose, onInventoryAdded, 
             {selectedItem?.category.requires_expiration && (
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <Label htmlFor="expiration_date">Expiration Date *</Label>
+                  <Label htmlFor="expiration_date">{t('addInventory.expirationDate')} *</Label>
                   <Button
                     type="button"
                     variant="outline"
@@ -384,12 +406,12 @@ export default function AddInventoryDialog({ isOpen, onClose, onInventoryAdded, 
                     {useManualDateEntry ? (
                       <>
                         <Calendar className="h-3 w-3 mr-1" />
-                        Date Picker
+                        {t('addInventory.datePicker')}
                       </>
                     ) : (
                       <>
                         <Type className="h-3 w-3 mr-1" />
-                        Manual Entry
+                        {t('addInventory.manualEntry')}
                       </>
                     )}
                   </Button>
@@ -404,12 +426,12 @@ export default function AddInventoryDialog({ isOpen, onClose, onInventoryAdded, 
                         type="text"
                         value={formData.expiration_date}
                         onChange={(e) => handleDateInputChange(e.target.value)}
-                        placeholder="DD/MM/YYYY"
+                        placeholder={t('addInventory.dateFormat')}
                         className={`pl-10 ${errors.expiration_date ? 'border-red-500' : ''}`}
                         maxLength={10}
                       />
                       <span className="absolute right-3 top-3 text-xs text-gray-400">
-                        DD/MM/YYYY
+                        {t('addInventory.dateFormat')}
                       </span>
                     </>
                   ) : (
@@ -443,7 +465,7 @@ export default function AddInventoryDialog({ isOpen, onClose, onInventoryAdded, 
 
             {/* Cost per Unit (optional) */}
             <div>
-              <Label htmlFor="cost_per_unit">Cost per Unit (optional)</Label>
+              <Label htmlFor="cost_per_unit">{t('addInventory.costPerUnit')}</Label>
               <div className="relative">
                 <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                 <Input
@@ -478,16 +500,16 @@ export default function AddInventoryDialog({ isOpen, onClose, onInventoryAdded, 
             {/* Buttons */}
             <div className="flex space-x-3 pt-4">
               <Button type="button" variant="outline" onClick={onClose} className="flex-1">
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={loading} className="flex-1">
                 {loading ? (
                   <div className="flex items-center space-x-2">
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Adding...</span>
+                    <span>{t('addInventory.adding')}</span>
                   </div>
                 ) : (
-                  'Add to Inventory'
+                  t('addInventory.addToInventory')
                 )}
               </Button>
             </div>

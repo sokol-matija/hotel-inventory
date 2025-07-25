@@ -43,7 +43,50 @@
     "enterLocationName": "Enter location name",
     "selectLocationType": "Select location type",
     "enterLocationDescription": "Enter location description (optional)",
-    "failedToAdd": "Failed to add location. Please try again."
+    "failedToAdd": "Failed to add location. Please try again.",
+    "dragToReorder": "Drag to reorder items",
+    "clickToEditQuantity": "Click to edit quantity",
+    "decreaseQuantity": "Decrease quantity",
+    "editQuantityManually": "Edit quantity manually",
+    "increaseQuantity": "Increase quantity",
+    "removeItemConfirm": "Are you sure you want to remove this item from the location?",
+    "expired": "Expired",
+    "critical": "Critical",
+    "warning": "Warning",
+    "locationNotFound": "Location not found",
+    "backToLocations": "Back to Locations",
+    "reorderItems": "Reorder",
+    "finishOrdering": "Done",
+    "addItem": "Add Item",
+    "inventory": "Inventory ({{count}} items)",
+    "inventoryDescription": "Manage quantities and track expiration dates",
+    "searchItems": "Search items...",
+    "dragHint": "Drag items to reorder them. Changes are saved automatically.",
+    "noItemsFound": "No items found matching your search.",
+    "noItemsYet": "No items in this location yet.",
+    "addFirstItem": "Add First Item"
+  },
+  "addInventory": {
+    "title": "Add Item to Location",
+    "description": "Add an existing item to this location's inventory",
+    "selectItem": "Select Item",
+    "chooseItem": "Choose an item",
+    "note": "Note",
+    "expirationNote": "This item requires an expiration date",
+    "expirationDate": "Expiration Date",
+    "expirationRequired": "Expiration date is required for this item",
+    "dateFormatError": "Please enter date in DD/MM/YYYY format",
+    "dateFormat": "DD/MM/YYYY",
+    "dateFormatHelp": "Enter date in DD/MM/YYYY format (e.g., 25/12/24 or 25/12/2024)",
+    "datePicker": "Date Picker",
+    "manualEntry": "Manual Entry",
+    "costPerUnit": "Cost per Unit (optional)",
+    "adding": "Adding...",
+    "addToInventory": "Add to Inventory",
+    "addError": "Failed to add item to inventory. Please try again."
+  },
+  "categories": {
+    "foodbeverage": "Food & Beverage"
   },
   "items": {
     "title": "Items",
@@ -160,7 +203,8 @@
     "minStockNegative": "Minimum stock cannot be negative",
     "locationRequired": "Location is required",
     "quantityRequired": "Quantity is required",
-    "quantityPositive": "Quantity must be positive"
+    "quantityPositive": "Quantity must be positive",
+    "itemRequired": "Item is required"
   },
   "units": {
     "pieces": "Pieces",

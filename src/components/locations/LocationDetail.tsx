@@ -23,14 +23,247 @@ import {
   Trash2,
   Edit3,
   Check,
-  X
+  X,
+  Move,
+  Settings
 } from 'lucide-react'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import {
+  useSortable,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+
+interface SortableInventoryItemProps {
+  item: InventoryItem
+  orderingMode: boolean
+  canModifyInventory: boolean
+  canDeleteInventory: boolean
+  editingQuantity: number | null
+  tempQuantity: string
+  onStartQuantityEdit: (item: InventoryItem) => void
+  onSaveQuantityEdit: (inventoryId: number) => void
+  onCancelQuantityEdit: () => void
+  onQuantityInputChange: (value: string) => void
+  onQuantityKeyDown: (e: React.KeyboardEvent, inventoryId: number) => void
+  onUpdateQuantity: (inventoryId: number, newQuantity: number) => void
+  onRemoveItem: (inventoryId: number) => void
+  getExpirationStatus: (expirationDate: string | null, requiresExpiration: boolean) => string
+  getExpirationBadge: (status: string) => React.ReactNode
+  translateCategory: (categoryName: string) => string
+  formatDate: (date: string) => string
+  t: (key: string) => string
+}
+
+function SortableInventoryItem({
+  item,
+  orderingMode,
+  canModifyInventory,
+  canDeleteInventory,
+  editingQuantity,
+  tempQuantity,
+  onStartQuantityEdit,
+  onSaveQuantityEdit,
+  onCancelQuantityEdit,
+  onQuantityInputChange,
+  onQuantityKeyDown,
+  onUpdateQuantity,
+  onRemoveItem,
+  getExpirationStatus,
+  getExpirationBadge,
+  translateCategory,
+  formatDate,
+  t,
+}: SortableInventoryItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
+  const expirationStatus = getExpirationStatus(
+    item.expiration_date, 
+    item.item.category.requires_expiration
+  )
+  const isLowStock = item.quantity <= item.item.minimum_stock
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...(orderingMode ? { ...attributes, ...listeners } : {})}
+      className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50 rounded-lg space-y-3 sm:space-y-0 transition-all duration-200 ${
+        orderingMode 
+          ? 'border-2 border-dashed border-gray-300 cursor-grab active:cursor-grabbing hover:bg-gray-100 hover:shadow-md hover:border-blue-300' 
+          : ''
+      }`}
+      title={orderingMode ? t('locations.dragToReorder') : ""}
+    >
+      <div className="flex-1 space-y-2">
+        <div className="flex items-center space-x-2 flex-wrap">
+          {orderingMode && (
+            <div className="text-gray-500 flex-shrink-0">
+              <Move className="h-4 w-4" />
+            </div>
+          )}
+          <p className="font-medium text-gray-900">{item.item.name}</p>
+          {isLowStock && (
+            <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full">
+              {t('common.lowStock')}
+            </span>
+          )}
+          {getExpirationBadge(expirationStatus)}
+        </div>
+        <div className="flex items-center space-x-4 text-sm text-gray-600 flex-wrap">
+          <p>{translateCategory(item.item.category.name)}</p>
+          <p>{t('common.unit')}: {item.item.unit}</p>
+          <p>{t('common.min')}: {item.item.minimum_stock}</p>
+        </div>
+        {item.item.description && (
+          <p className="text-sm text-gray-500">{item.item.description}</p>
+        )}
+      </div>
+      
+      <div className="flex items-center justify-between sm:justify-end space-x-4 sm:space-x-6">
+        <div className="text-center sm:text-right">
+          <div className="flex items-center space-x-2">
+            {editingQuantity === item.id ? (
+              <div className="flex items-center space-x-2">
+                <Input
+                  type="text"
+                  value={tempQuantity}
+                  onChange={(e) => onQuantityInputChange(e.target.value)}
+                  onKeyDown={(e) => onQuantityKeyDown(e, item.id)}
+                  className="w-20 text-center text-xl font-bold"
+                  placeholder="0"
+                  autoFocus
+                />
+                <span className="text-sm text-gray-600">{item.item.unit}</span>
+              </div>
+            ) : (
+              <>
+                <span 
+                  className="text-2xl font-bold text-gray-900 cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
+                  onClick={() => canModifyInventory && !orderingMode && onStartQuantityEdit(item)}
+                  title={canModifyInventory && !orderingMode ? t('locations.clickToEditQuantity') : ""}
+                >
+                  {item.quantity}
+                </span>
+                <span className="text-sm text-gray-600">{item.item.unit}</span>
+              </>
+            )}
+          </div>
+          {item.expiration_date && (
+            <div className="flex items-center space-x-1 text-sm text-gray-600">
+              <Calendar className="h-3 w-3" />
+              <span>{formatDate(item.expiration_date)}</span>
+            </div>
+          )}
+          {item.cost_per_unit && (
+            <div className="flex items-center space-x-1 text-sm text-gray-600">
+              <DollarSign className="h-3 w-3" />
+              <span>{item.cost_per_unit}</span>
+            </div>
+          )}
+        </div>
+        
+        {!orderingMode && (
+          <div className="flex items-center space-x-2">
+            {canModifyInventory && editingQuantity === item.id ? (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onSaveQuantityEdit(item.id)}
+                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                >
+                  <Check className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={onCancelQuantityEdit}
+                  className="text-gray-600 hover:text-gray-700 hover:bg-gray-50"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </>
+            ) : canModifyInventory ? (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
+                  disabled={item.quantity <= 0}
+                  title={t('locations.decreaseQuantity')}
+                >
+                  <Minus className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onStartQuantityEdit(item)}
+                  title={t('locations.editQuantityManually')}
+                >
+                  <Edit3 className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
+                  title={t('locations.increaseQuantity')}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </>
+            ) : null}
+            {canDeleteInventory && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => onRemoveItem(item.id)}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
 
 interface InventoryItem {
   id: number
   quantity: number
   expiration_date: string | null
   cost_per_unit: number | null
+  display_order: number
   created_at: string
   updated_at: string
   item: {
@@ -67,13 +300,81 @@ export default function LocationDetail() {
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [editingQuantity, setEditingQuantity] = useState<number | null>(null)
   const [tempQuantity, setTempQuantity] = useState('')
+  const [orderingMode, setOrderingMode] = useState(false)
+  const [supportsOrdering, setSupportsOrdering] = useState(false)
+  const [activeId, setActiveId] = useState<number | null>(null)
   const { t } = useTranslation()
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Require moving 8px before starting drag
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
 
   // Helper function to translate category names
   const translateCategory = (categoryName: string) => {
     // Convert category name to lowercase for translation key
     const key = categoryName.toLowerCase().replace(/\s+/g, '')
     return t(`categories.${key}`, { defaultValue: categoryName })
+  }
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as number)
+  }
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event
+    setActiveId(null)
+
+    if (!over || active.id === over.id) {
+      return
+    }
+
+    const oldIndex = filteredInventory.findIndex(item => item.id === active.id)
+    const newIndex = filteredInventory.findIndex(item => item.id === over.id)
+
+    if (oldIndex !== -1 && newIndex !== -1) {
+      const newOrder = arrayMove(filteredInventory, oldIndex, newIndex)
+      setFilteredInventory(newOrder)
+      setInventory(prev => {
+        const updatedInventory = [...prev]
+        const itemToMove = updatedInventory.find(item => item.id === active.id)
+        if (itemToMove) {
+          const oldIdx = updatedInventory.findIndex(item => item.id === active.id)
+          const newIdx = updatedInventory.findIndex(item => item.id === over.id)
+          if (oldIdx !== -1 && newIdx !== -1) {
+            return arrayMove(updatedInventory, oldIdx, newIdx)
+          }
+        }
+        return updatedInventory
+      })
+
+      // Update display_order in database
+      await updateDisplayOrders(newOrder)
+    }
+  }
+
+  const updateDisplayOrders = async (reorderedItems: InventoryItem[]) => {
+    try {
+      const updates = reorderedItems.map((item, index) => ({
+        id: item.id,
+        display_order: index + 1
+      }))
+
+      const { error } = await supabase
+        .from('inventory')
+        .upsert(updates, { onConflict: 'id' })
+
+      if (error) throw error
+    } catch (error) {
+      console.error('Error updating display orders:', error)
+    }
   }
 
   useEffect(() => {
@@ -106,7 +407,7 @@ export default function LocationDetail() {
 
       if (locationError) throw locationError
 
-      // Fetch inventory for this location
+      // Fetch inventory for this location ordered by display_order
       const { data: inventoryData, error: inventoryError } = await supabase
         .from('inventory')
         .select(`
@@ -121,7 +422,10 @@ export default function LocationDetail() {
           )
         `)
         .eq('location_id', id)
-        .order('item(name)')
+        .order('display_order', { ascending: true })
+      
+      // Enable ordering since display_order column now exists
+      setSupportsOrdering(true)
 
       if (inventoryError) throw inventoryError
 
@@ -173,6 +477,10 @@ export default function LocationDetail() {
   }
 
   const startQuantityEdit = (item: InventoryItem) => {
+    // Disable ordering mode when editing quantity to avoid conflicts
+    if (orderingMode) {
+      setOrderingMode(false)
+    }
     setEditingQuantity(item.id)
     setTempQuantity(item.quantity.toString())
   }
@@ -262,34 +570,54 @@ export default function LocationDetail() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0">
-        <div className="flex items-center space-x-4 w-full sm:w-auto">
+      <div className="flex flex-col space-y-4">
+        <div className="flex items-center space-x-4">
           <Link to="/locations">
             <Button variant="outline" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
               {t('common.back')}
             </Button>
           </Link>
-          <div className="flex items-center space-x-3 flex-1 sm:flex-initial">
+          <div className="flex items-center space-x-3 flex-1">
             {location.is_refrigerated ? (
-              <Refrigerator className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
+              <Refrigerator className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 flex-shrink-0" />
             ) : (
-              <Warehouse className="h-6 w-6 sm:h-8 sm:w-8 text-gray-600" />
+              <Warehouse className="h-6 w-6 sm:h-8 sm:w-8 text-gray-600 flex-shrink-0" />
             )}
             <div className="min-w-0 flex-1">
               <h1 className="text-xl sm:text-3xl font-bold text-gray-900 break-words">{location.name}</h1>
-              <p className="text-sm sm:text-base text-gray-600">
+              <p className="text-sm sm:text-base text-gray-600 break-words">
                 {t(`locationTypes.${location.type.toLowerCase()}`)} • {location.is_refrigerated ? t('locations.refrigeratedStorage') : t('locations.regularStorage')}
               </p>
             </div>
           </div>
         </div>
-        {canAddInventory && (
-          <Button onClick={() => setShowAddDialog(true)} className="w-full sm:w-auto">
-            <Plus className="h-4 w-4 mr-2" />
-            {t('locations.addItem')}
-          </Button>
-        )}
+        
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-2 sm:justify-end">
+          {canModifyInventory && supportsOrdering && (
+            <Button
+              onClick={() => setOrderingMode(!orderingMode)}
+              variant={orderingMode ? "default" : "outline"}
+              className="w-full sm:w-auto flex-shrink-0 min-w-0"
+            >
+              <Settings className="h-4 w-4 mr-2 flex-shrink-0" />
+              <span className="truncate">
+                {orderingMode ? t('locations.finishOrdering') : t('locations.reorderItems')}
+              </span>
+            </Button>
+          )}
+          {canAddInventory && (
+            <Button 
+              onClick={() => setShowAddDialog(true)} 
+              className="w-full sm:w-auto flex-shrink-0 min-w-0"
+            >
+              <Plus className="h-4 w-4 mr-2 flex-shrink-0" />
+              <span className="truncate">
+                {t('locations.addItem')}
+              </span>
+            </Button>
+          )}
+        </div>
       </div>
 
       {location.description && (
@@ -345,144 +673,65 @@ export default function LocationDetail() {
             </div>
           </div>
 
-          <div className="space-y-4">
-            {filteredInventory.map((item) => {
-              const expirationStatus = getExpirationStatus(
-                item.expiration_date, 
-                item.item.category.requires_expiration
-              )
-              const isLowStock = item.quantity <= item.item.minimum_stock
-              
-              return (
-                <div key={item.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50 rounded-lg space-y-3 sm:space-y-0">
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-center space-x-2 flex-wrap">
-                      <p className="font-medium text-gray-900">{item.item.name}</p>
-                      {isLowStock && (
-                        <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full">
-                          {t('common.lowStock')}
-                        </span>
-                      )}
-                      {getExpirationBadge(expirationStatus)}
-                    </div>
-                    <div className="flex items-center space-x-4 text-sm text-gray-600 flex-wrap">
-                      <p>{translateCategory(item.item.category.name)}</p>
-                      <p>{t('common.unit')}: {item.item.unit}</p>
-                      <p>{t('common.min')}: {item.item.minimum_stock}</p>
-                    </div>
-                    {item.item.description && (
-                      <p className="text-sm text-gray-500">{item.item.description}</p>
-                    )}
+          {orderingMode && filteredInventory.length > 0 && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800">
+                <Move className="h-4 w-4 inline mr-1" />
+                {t('locations.dragHint')}
+              </p>
+            </div>
+          )}
+
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext items={filteredInventory.map(item => item.id)} strategy={verticalListSortingStrategy}>
+              <div className="space-y-4">
+                {filteredInventory.map((item) => (
+                  <SortableInventoryItem
+                    key={item.id}
+                    item={item}
+                    orderingMode={orderingMode}
+                    canModifyInventory={canModifyInventory}
+                    canDeleteInventory={canDeleteInventory}
+                    editingQuantity={editingQuantity}
+                    tempQuantity={tempQuantity}
+                    onStartQuantityEdit={startQuantityEdit}
+                    onSaveQuantityEdit={saveQuantityEdit}
+                    onCancelQuantityEdit={cancelQuantityEdit}
+                    onQuantityInputChange={handleQuantityInputChange}
+                    onQuantityKeyDown={handleQuantityKeyDown}
+                    onUpdateQuantity={updateQuantity}
+                    onRemoveItem={removeItem}
+                    getExpirationStatus={getExpirationStatus}
+                    getExpirationBadge={getExpirationBadge}
+                    translateCategory={translateCategory}
+                    formatDate={formatDate}
+                    t={t}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+            
+            <DragOverlay>
+              {activeId ? (
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white rounded-lg shadow-lg border-2 border-blue-300 space-y-3 sm:space-y-0 opacity-95">
+                  <div className="flex items-center space-x-2">
+                    <Move className="h-4 w-4 text-blue-500" />
+                    <p className="font-medium text-gray-900">
+                      {filteredInventory.find(item => item.id === activeId)?.item.name}
+                    </p>
                   </div>
-                  
-                  <div className="flex items-center justify-between sm:justify-end space-x-4 sm:space-x-6">
-                    <div className="text-center sm:text-right">
-                      <div className="flex items-center space-x-2">
-                        {editingQuantity === item.id ? (
-                          <div className="flex items-center space-x-2">
-                            <Input
-                              type="text"
-                              value={tempQuantity}
-                              onChange={(e) => handleQuantityInputChange(e.target.value)}
-                              onKeyDown={(e) => handleQuantityKeyDown(e, item.id)}
-                              className="w-20 text-center text-xl font-bold"
-                              placeholder="0"
-                              autoFocus
-                            />
-                            <span className="text-sm text-gray-600">{item.item.unit}</span>
-                          </div>
-                        ) : (
-                          <>
-                            <span 
-                              className="text-2xl font-bold text-gray-900 cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
-                              onClick={() => canModifyInventory && startQuantityEdit(item)}
-                              title={canModifyInventory ? t('locations.clickToEditQuantity') : ""}
-                            >
-                              {item.quantity}
-                            </span>
-                            <span className="text-sm text-gray-600">{item.item.unit}</span>
-                          </>
-                        )}
-                      </div>
-                      {item.expiration_date && (
-                        <div className="flex items-center space-x-1 text-sm text-gray-600">
-                          <Calendar className="h-3 w-3" />
-                          <span>{formatDate(item.expiration_date)}</span>
-                        </div>
-                      )}
-                      {item.cost_per_unit && (
-                        <div className="flex items-center space-x-1 text-sm text-gray-600">
-                          <DollarSign className="h-3 w-3" />
-                          <span>{item.cost_per_unit}</span>
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      {canModifyInventory && editingQuantity === item.id ? (
-                        <>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => saveQuantityEdit(item.id)}
-                            className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                          >
-                            <Check className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={cancelQuantityEdit}
-                            className="text-gray-600 hover:text-gray-700 hover:bg-gray-50"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </>
-                      ) : canModifyInventory ? (
-                        <>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                            disabled={item.quantity <= 0}
-                            title={t('locations.decreaseQuantity')}
-                          >
-                            <Minus className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => startQuantityEdit(item)}
-                            title={t('locations.editQuantityManually')}
-                          >
-                            <Edit3 className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                            title={t('locations.increaseQuantity')}
-                          >
-                            <Plus className="h-4 w-4" />
-                          </Button>
-                        </>
-                      ) : null}
-                      {canDeleteInventory && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => removeItem(item.id)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {filteredInventory.find(item => item.id === activeId)?.quantity}
                   </div>
                 </div>
-              )
-            })}
-          </div>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
 
           {filteredInventory.length === 0 && (
             <div className="text-center py-8">
