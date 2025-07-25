@@ -370,20 +370,28 @@ export default function LocationDetail() {
     const newIndex = filteredInventory.findIndex(item => item.id === over.id)
 
     if (oldIndex !== -1 && newIndex !== -1) {
-      const newFilteredOrder = arrayMove(filteredInventory, oldIndex, newIndex)
-      setFilteredInventory(newFilteredOrder)
-      
-      // Update the main inventory state to reflect the new order
+      // Update the main inventory state first to get correct ordering
       const updatedInventory = [...inventory]
       const oldIdx = updatedInventory.findIndex(item => item.id === active.id)
       const newIdx = updatedInventory.findIndex(item => item.id === over.id)
       
       if (oldIdx !== -1 && newIdx !== -1) {
         const newInventoryOrder = arrayMove(updatedInventory, oldIdx, newIdx)
-        setInventory(newInventoryOrder)
         
-        // Update display_order in database using the new order
-        await updateDisplayOrders(newInventoryOrder)
+        // Update display_order properties to match new positions
+        const updatedInventoryWithOrder = newInventoryOrder.map((item, index) => ({
+          ...item,
+          display_order: index + 1
+        }))
+        
+        // Update both states with the correct display_order values
+        setInventory(updatedInventoryWithOrder)
+        
+        // The filteredInventory will be updated automatically by the useEffect
+        // that responds to inventory changes, preserving the new order
+        
+        // Update display_order in database
+        await updateDisplayOrders(updatedInventoryWithOrder)
       }
     }
   }
