@@ -319,7 +319,19 @@ export default function LocationDetail() {
 
   // Helper function to translate category names
   const translateCategory = (categoryName: string) => {
-    // Convert category name to lowercase and normalize for translation key
+    // Create a direct mapping for known categories
+    const categoryMap: Record<string, string> = {
+      'Food & Beverage': t('categories.foodbeverage', { defaultValue: 'Food & Beverage' }),
+      'Cleaning': t('categories.cleaning', { defaultValue: 'Cleaning' }),
+      'Supplies': t('categories.supplies', { defaultValue: 'Supplies' }),
+    }
+    
+    // Use direct mapping first, then fallback to key generation
+    if (categoryMap[categoryName]) {
+      return categoryMap[categoryName]
+    }
+    
+    // Fallback: convert to key and try translation
     const key = categoryName.toLowerCase().replace(/\s+/g, '').replace(/&/g, '')
     return t(`categories.${key}`, { defaultValue: categoryName })
   }
@@ -340,40 +352,52 @@ export default function LocationDetail() {
     const newIndex = filteredInventory.findIndex(item => item.id === over.id)
 
     if (oldIndex !== -1 && newIndex !== -1) {
-      const newOrder = arrayMove(filteredInventory, oldIndex, newIndex)
-      setFilteredInventory(newOrder)
-      setInventory(prev => {
-        const updatedInventory = [...prev]
-        const itemToMove = updatedInventory.find(item => item.id === active.id)
-        if (itemToMove) {
-          const oldIdx = updatedInventory.findIndex(item => item.id === active.id)
-          const newIdx = updatedInventory.findIndex(item => item.id === over.id)
-          if (oldIdx !== -1 && newIdx !== -1) {
-            return arrayMove(updatedInventory, oldIdx, newIdx)
-          }
-        }
-        return updatedInventory
-      })
-
-      // Update display_order in database
-      await updateDisplayOrders(newOrder)
+      const newFilteredOrder = arrayMove(filteredInventory, oldIndex, newIndex)
+      setFilteredInventory(newFilteredOrder)
+      
+      // Update the main inventory state to reflect the new order
+      const updatedInventory = [...inventory]
+      const oldIdx = updatedInventory.findIndex(item => item.id === active.id)
+      const newIdx = updatedInventory.findIndex(item => item.id === over.id)
+      
+      if (oldIdx !== -1 && newIdx !== -1) {
+        const newInventoryOrder = arrayMove(updatedInventory, oldIdx, newIdx)
+        setInventory(newInventoryOrder)
+        
+        // Update display_order in database using the new order
+        await updateDisplayOrders(newInventoryOrder)
+      }
     }
   }
 
+
   const updateDisplayOrders = async (reorderedItems: InventoryItem[]) => {
     try {
-      const updates = reorderedItems.map((item, index) => ({
-        id: item.id,
-        display_order: index + 1
-      }))
+      console.log('Updating display orders for items:', reorderedItems.map(item => ({ id: item.id, display_order: item.display_order })))
+      
+      // Use individual update operations instead of upsert
+      for (let i = 0; i < reorderedItems.length; i++) {
+        const item = reorderedItems[i]
+        const newDisplayOrder = i + 1
+        
+        console.log(`Updating item ${item.id} to display_order ${newDisplayOrder}`)
+        
+        const { error } = await supabase
+          .from('inventory')
+          .update({ display_order: newDisplayOrder })
+          .eq('id', item.id)
 
-      const { error } = await supabase
-        .from('inventory')
-        .upsert(updates, { onConflict: 'id' })
-
-      if (error) throw error
+        if (error) {
+          console.error(`Error updating item ${item.id}:`, error)
+          throw error
+        }
+      }
+      
+      console.log('Successfully updated all display orders')
     } catch (error) {
       console.error('Error updating display orders:', error)
+      // Show user-friendly error message
+      alert('Failed to save item order. Please try again.')
     }
   }
 
@@ -422,7 +446,7 @@ export default function LocationDetail() {
           )
         `)
         .eq('location_id', id)
-        .order('display_order', { ascending: true })
+        .order('display_order', { ascending: true, nullsFirst: false })
       
       // Enable ordering since display_order column now exists
       setSupportsOrdering(true)
@@ -430,7 +454,23 @@ export default function LocationDetail() {
       if (inventoryError) throw inventoryError
 
       setLocation(locationData)
-      setInventory(inventoryData || [])
+      
+      // Sort the inventory data by display_order to ensure correct ordering
+      const sortedInventory = (inventoryData || []).sort((a, b) => {
+        // Handle null display_order values by putting them at the end
+        if (a.display_order === null && b.display_order === null) return 0
+        if (a.display_order === null) return 1
+        if (b.display_order === null) return -1
+        return a.display_order - b.display_order
+      })
+      
+      console.log('Loaded inventory with display_order:', sortedInventory.map(item => ({ 
+        id: item.id, 
+        display_order: item.display_order, 
+        name: item.item.name 
+      })))
+      
+      setInventory(sortedInventory)
     } catch (error) {
       console.error('Error fetching location data:', error)
     } finally {
