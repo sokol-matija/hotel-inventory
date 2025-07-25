@@ -86,7 +86,8 @@
     "addError": "Failed to add item to inventory. Please try again."
   },
   "categories": {
-    "foodbeverage": "Food & Beverage"
+    "foodbeverage": "Food & Beverage",
+    "food&beverage": "Food & Beverage"
   },
   "items": {
     "title": "Items",

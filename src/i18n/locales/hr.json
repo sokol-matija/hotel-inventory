@@ -88,7 +88,8 @@
     "addError": "Neuspješno dodavanje artikla u inventar. Molimo pokušajte ponovno."
   },
   "categories": {
-    "foodbeverage": "Hrana i piće"
+    "foodbeverage": "Hrana i piće",
+    "food&beverage": "Hrana i piće"
   },
   "items": {
     "title": "Artikli",

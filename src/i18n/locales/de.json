@@ -85,7 +85,8 @@
     "addError": "Artikel konnte nicht zum Inventar hinzugefügt werden. Bitte versuchen Sie es erneut."
   },
   "categories": {
-    "foodbeverage": "Lebensmittel & Getränke"
+    "foodbeverage": "Lebensmittel & Getränke",
+    "food&beverage": "Lebensmittel & Getränke"
   },
   "items": {
     "title": "Artikel",

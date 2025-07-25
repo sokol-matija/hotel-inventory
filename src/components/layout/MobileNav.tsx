@@ -105,10 +105,10 @@ export default function MobileNav({ isOpen, onClose }: MobileNavProps) {
       }`}>
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="p-6 border-b border-gray-200">
+          <div className="p-3 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <div className="flex items-center justify-center flex-1">
-                <div className="w-full h-16 flex items-center justify-center">
+                <div className="w-full h-12 flex items-center justify-center">
                   <img 
                     src="/LOGO1-hires.png" 
                     alt="Hotel Porec Logo" 
@@ -118,40 +118,52 @@ export default function MobileNav({ isOpen, onClose }: MobileNavProps) {
               </div>
               <button
                 onClick={onClose}
-                className="p-2 rounded-md text-gray-600 hover:bg-gray-100"
+                className="p-1 rounded-md text-gray-600 hover:bg-gray-100"
               >
-                <X className="w-6 h-6" />
+                <X className="w-5 h-5" />
               </button>
             </div>
           </div>
 
-          {/* Navigation */}
-          <nav className="flex-1 px-4 py-6 space-y-2">
-            {filteredItems.map((item) => {
-              const Icon = item.icon
-              const isActive = location.pathname === item.path
-              
-              return (
-                <Link
-                  key={item.key}
-                  to={item.path}
-                  onClick={onClose}
-                  className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-                    isActive
-                      ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  <Icon className="w-5 h-5" />
-                  <span className="font-medium">{t(`navigation.${item.key}`)}</span>
-                </Link>
-              )
-            })}
-          </nav>
+          {/* Navigation and image container */}
+          <div className="flex-1 flex flex-col">
+            {/* Navigation */}
+            <nav className="px-3 py-3 space-y-1">
+              {filteredItems.map((item) => {
+                const Icon = item.icon
+                const isActive = location.pathname === item.path
+                
+                return (
+                  <Link
+                    key={item.key}
+                    to={item.path}
+                    onClick={onClose}
+                    className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
+                      isActive
+                        ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <Icon className="w-5 h-5" />
+                    <span className="font-medium">{t(`navigation.${item.key}`)}</span>
+                  </Link>
+                )
+              })}
+            </nav>
 
-          {/* User Profile & Sign Out */}
-          <div className="p-4 border-t border-gray-200">
-            <div className="flex items-center space-x-3 mb-4">
+            {/* Decorative image - flex-1 to push user profile to bottom */}
+            <div className="px-2 flex justify-center flex-1">
+              <img 
+                src="/zemlja_gp_crop.png" 
+                alt="Decorative landscape" 
+                className="w-full h-full object-contain opacity-30"
+              />
+            </div>
+          </div>
+
+          {/* User Profile & Sign Out - at bottom */}
+          <div className="p-3 border-t border-gray-200">
+            <div className="flex items-center space-x-3 mb-3">
               <div className="w-10 h-10 bg-gradient-to-br from-gray-500 to-gray-600 rounded-lg flex items-center justify-center text-white">
                 <RoleIcon className="w-5 h-5" />
               </div>

@@ -50,8 +50,8 @@ export default function ItemsPage() {
 
   // Helper function to translate category names
   const translateCategory = (categoryName: string) => {
-    // Convert category name to lowercase for translation key
-    const key = categoryName.toLowerCase().replace(/\s+/g, '')
+    // Convert category name to lowercase and normalize for translation key
+    const key = categoryName.toLowerCase().replace(/\s+/g, '').replace(/&/g, '')
     return t(`categories.${key}`, { defaultValue: categoryName })
   }
   const [items, setItems] = useState<Item[]>([])

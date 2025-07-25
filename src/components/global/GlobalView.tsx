@@ -56,6 +56,13 @@ export default function GlobalView() {
   const [activeFilter, setActiveFilter] = useState<string>('all')
   const [loading, setLoading] = useState(true)
 
+  // Helper function to translate category names
+  const translateCategory = (categoryName: string) => {
+    // Convert category name to lowercase and normalize for translation key
+    const key = categoryName.toLowerCase().replace(/\s+/g, '').replace(/&/g, '')
+    return t(`categories.${key}`, { defaultValue: categoryName })
+  }
+
   useEffect(() => {
     fetchGlobalInventory()
   }, [])
@@ -255,7 +262,7 @@ export default function GlobalView() {
                           <Warehouse className="h-3 w-3 text-gray-600" />
                         )}
                       </div>
-                      <p>{item.item.category.name}</p>
+                      <p>{translateCategory(item.item.category.name)}</p>
                       <p>Unit: {item.item.unit}</p>
                       <p>Min: {item.item.minimum_stock}</p>
                     </div>

@@ -56,6 +56,15 @@ export default function Dashboard() {
     expiringItems: 0,
     locations: 0
   })
+
+  // Helper function to translate category names
+  const translateCategory = (categoryName: string) => {
+    // Convert category name to lowercase and normalize for translation key
+    const key = categoryName.toLowerCase().replace(/\s+/g, '').replace(/&/g, '')
+    const translation = t(`categories.${key}`)
+    // If translation is the same as the key, it means it wasn't found, so return default
+    return translation !== `categories.${key}` ? translation : categoryName
+  }
   const [loading, setLoading] = useState(true)
 
   const currentDateFormatted = useMemo(() => {
@@ -333,7 +342,7 @@ export default function Dashboard() {
                       <div className="min-w-0 flex-1">
                         <p className="font-medium text-gray-900 truncate">{item.item.name}</p>
                         <p className="text-sm text-gray-600">
-                          {item.location.name} • {item.item.category.name}
+                          {item.location.name} • {translateCategory(item.item.category.name)}
                         </p>
                       </div>
                     </div>

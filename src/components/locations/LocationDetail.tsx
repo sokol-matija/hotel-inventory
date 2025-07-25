@@ -319,8 +319,8 @@ export default function LocationDetail() {
 
   // Helper function to translate category names
   const translateCategory = (categoryName: string) => {
-    // Convert category name to lowercase for translation key
-    const key = categoryName.toLowerCase().replace(/\s+/g, '')
+    // Convert category name to lowercase and normalize for translation key
+    const key = categoryName.toLowerCase().replace(/\s+/g, '').replace(/&/g, '')
     return t(`categories.${key}`, { defaultValue: categoryName })
   }
 
@@ -534,11 +534,11 @@ export default function LocationDetail() {
   const getExpirationBadge = (status: string) => {
     switch (status) {
       case 'expired':
-        return <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">{t('locations.expired')}</span>
+        return <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full flex items-center justify-center">{t('locations.expired')}</span>
       case 'critical':
-        return <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">{t('locations.critical')}</span>
+        return <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full flex items-center justify-center">{t('locations.critical')}</span>
       case 'warning':
-        return <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">{t('locations.warning')}</span>
+        return <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full flex items-center justify-center">{t('locations.warning')}</span>
       default:
         return null
     }
