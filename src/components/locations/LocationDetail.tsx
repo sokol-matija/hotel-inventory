@@ -115,10 +115,13 @@ function SortableInventoryItem({
   return (
     <div
       ref={setNodeRef}
-      style={style}
+      style={{
+        ...style,
+        ...(orderingMode ? { touchAction: 'pan-y' } : {}) // Allow vertical scrolling but prevent horizontal gestures
+      }}
       className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50 rounded-lg space-y-3 sm:space-y-0 transition-all duration-200 ${
         orderingMode 
-          ? 'border-2 border-dashed border-gray-300 hover:bg-gray-100 hover:shadow-md hover:border-blue-300 touch-manipulation' 
+          ? 'border-2 border-dashed border-gray-300 hover:bg-gray-100 hover:shadow-md hover:border-blue-300' 
           : ''
       }`}
       title={orderingMode ? t('locations.dragToReorder') : ""}
@@ -129,10 +132,20 @@ function SortableInventoryItem({
             <div 
               {...attributes} 
               {...listeners}
-              className="text-gray-500 flex-shrink-0 p-2 -m-2 cursor-grab active:cursor-grabbing bg-gray-100 rounded-md border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 transition-colors touch-manipulation"
+              className="text-gray-500 flex-shrink-0 p-3 -m-2 cursor-grab active:cursor-grabbing bg-gray-100 rounded-md border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 transition-colors select-none"
+              style={{ 
+                touchAction: 'none',
+                userSelect: 'none',
+                WebkitUserSelect: 'none',
+                minWidth: '44px', // Minimum touch target size
+                minHeight: '44px', // Minimum touch target size
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
               title="Drag to reorder"
             >
-              <Move className="h-5 w-5" />
+              <Move className="h-6 w-6" />
             </div>
           )}
           <p className="font-medium text-gray-900">{item.item.name}</p>
@@ -319,9 +332,9 @@ export default function LocationDetail() {
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        distance: 8, // Require moving 8px before starting drag on mobile
-        delay: 200, // Slight delay to distinguish from scrolling
-        tolerance: 5, // Allow some movement tolerance
+        distance: 10, // Require more movement to start drag
+        delay: 250, // Longer delay to distinguish from scrolling
+        tolerance: 8, // Higher tolerance for touch accuracy
       },
     }),
     useSensor(KeyboardSensor, {
@@ -753,6 +766,9 @@ export default function LocationDetail() {
               <p className="text-sm text-blue-800">
                 <Move className="h-4 w-4 inline mr-1" />
                 {t('locations.dragHint')}
+              </p>
+              <p className="text-xs text-blue-700 mt-1 sm:hidden">
+                📱 On mobile: Press and hold the drag handle (⋮⋮) for a moment, then drag to reorder
               </p>
             </div>
           )}
