@@ -32,6 +32,7 @@ import {
   closestCenter,
   KeyboardSensor,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   DragEndEvent,
@@ -115,10 +116,9 @@ function SortableInventoryItem({
     <div
       ref={setNodeRef}
       style={style}
-      {...(orderingMode ? { ...attributes, ...listeners } : {})}
       className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50 rounded-lg space-y-3 sm:space-y-0 transition-all duration-200 ${
         orderingMode 
-          ? 'border-2 border-dashed border-gray-300 cursor-grab active:cursor-grabbing hover:bg-gray-100 hover:shadow-md hover:border-blue-300' 
+          ? 'border-2 border-dashed border-gray-300 hover:bg-gray-100 hover:shadow-md hover:border-blue-300 touch-manipulation' 
           : ''
       }`}
       title={orderingMode ? t('locations.dragToReorder') : ""}
@@ -126,8 +126,13 @@ function SortableInventoryItem({
       <div className="flex-1 space-y-2">
         <div className="flex items-center space-x-2 flex-wrap">
           {orderingMode && (
-            <div className="text-gray-500 flex-shrink-0">
-              <Move className="h-4 w-4" />
+            <div 
+              {...attributes} 
+              {...listeners}
+              className="text-gray-500 flex-shrink-0 p-2 -m-2 cursor-grab active:cursor-grabbing bg-gray-100 rounded-md border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 transition-colors touch-manipulation"
+              title="Drag to reorder"
+            >
+              <Move className="h-5 w-5" />
             </div>
           )}
           <p className="font-medium text-gray-900">{item.item.name}</p>
@@ -305,11 +310,18 @@ export default function LocationDetail() {
   const [activeId, setActiveId] = useState<number | null>(null)
   const { t } = useTranslation()
 
-  // Drag and drop sensors
+  // Drag and drop sensors - optimized for both desktop and mobile
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
         distance: 8, // Require moving 8px before starting drag
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        distance: 8, // Require moving 8px before starting drag on mobile
+        delay: 200, // Slight delay to distinguish from scrolling
+        tolerance: 5, // Allow some movement tolerance
       },
     }),
     useSensor(KeyboardSensor, {
@@ -319,21 +331,27 @@ export default function LocationDetail() {
 
   // Helper function to translate category names
   const translateCategory = (categoryName: string) => {
-    // Create a direct mapping for known categories
+    // Create a direct mapping for known categories to handle special characters
     const categoryMap: Record<string, string> = {
       'Food & Beverage': t('categories.foodbeverage', { defaultValue: 'Food & Beverage' }),
       'Cleaning': t('categories.cleaning', { defaultValue: 'Cleaning' }),
       'Supplies': t('categories.supplies', { defaultValue: 'Supplies' }),
+      'Toiletries': t('categories.toiletries', { defaultValue: 'Toiletries' }),
+      'Equipment': t('categories.equipment', { defaultValue: 'Equipment' }),
+      'Office': t('categories.office', { defaultValue: 'Office' }),
     }
     
-    // Use direct mapping first, then fallback to key generation
+    // Use direct mapping first
     if (categoryMap[categoryName]) {
       return categoryMap[categoryName]
     }
     
     // Fallback: convert to key and try translation
-    const key = categoryName.toLowerCase().replace(/\s+/g, '').replace(/&/g, '')
-    return t(`categories.${key}`, { defaultValue: categoryName })
+    const key = categoryName.toLowerCase().replace(/\s+/g, '').replace(/&/g, '').replace(/[^a-z0-9]/g, '')
+    const translatedValue = t(`categories.${key}`, { defaultValue: '' })
+    
+    // If translation found, return it; otherwise return original name
+    return translatedValue || categoryName
   }
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -416,6 +434,15 @@ export default function LocationDetail() {
     if (selectedCategory !== 'all') {
       filtered = filtered.filter(item => item.item.category.name === selectedCategory)
     }
+    
+    // IMPORTANT: Preserve the display_order sorting after filtering
+    filtered.sort((a, b) => {
+      // Handle null display_order values by putting them at the end
+      if (a.display_order === null && b.display_order === null) return 0
+      if (a.display_order === null) return 1
+      if (b.display_order === null) return -1
+      return a.display_order - b.display_order
+    })
     
     setFilteredInventory(filtered)
   }, [inventory, searchTerm, selectedCategory])

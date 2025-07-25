@@ -89,7 +89,12 @@
   },
   "categories": {
     "foodbeverage": "Hrana i piće",
-    "food&beverage": "Hrana i piće"
+    "food&beverage": "Hrana i piće",
+    "cleaning": "Čišćenje",
+    "supplies": "Potrepštine",
+    "toiletries": "Toaletni artikli",
+    "equipment": "Oprema",
+    "office": "Ured"
   },
   "items": {
     "title": "Artikli",
