@@ -124,8 +124,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     )
 
-    // Fix for iOS Safari: Refresh session when app becomes active again
-    // This prevents infinite loading after app switching
+    return () => {
+      console.log('Cleaning up auth subscription')
+      isMounted = false
+      subscription.unsubscribe()
+    }
+  }, [])
+
+  // Separate useEffect for iOS Safari session refresh fix
+  // This prevents infinite loading after app switching
+  useEffect(() => {
     const refreshSessionOnFocus = async () => {
       if (!document.hidden && user) {
         try {
@@ -148,9 +156,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     window.addEventListener('focus', refreshSessionOnFocus)
 
     return () => {
-      console.log('Cleaning up auth subscription')
-      isMounted = false
-      subscription.unsubscribe()
       document.removeEventListener('visibilitychange', refreshSessionOnFocus)
       window.removeEventListener('pageshow', refreshSessionOnFocus)
       window.removeEventListener('focus', refreshSessionOnFocus)
