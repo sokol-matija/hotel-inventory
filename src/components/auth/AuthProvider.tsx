@@ -81,44 +81,59 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('Validating session...')
       const { data: { session }, error } = await supabase.auth.getSession()
       
-      if (error || !session) {
-        console.log('Session invalid, signing out and redirecting to login')
-        await supabase.auth.signOut()
-        setUser(null)
-        setUserProfile(null)
-        // Force redirect to login page
-        window.location.href = '/login'
-        return false
-      }
-      
-      // Check if token is close to expiry (within 5 minutes)
-      const tokenExp = session.expires_at ? session.expires_at * 1000 : 0
-      const now = Date.now()
-      const fiveMinutes = 5 * 60 * 1000
-      
-      if (tokenExp && tokenExp - now < fiveMinutes) {
-        console.log('Token close to expiry, attempting refresh...')
-        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
-        
-        if (refreshError || !refreshData.session) {
-          console.log('Session refresh failed, signing out and redirecting to login')
+      // Only redirect if there's a clear session error, not just missing session
+      if (error) {
+        console.log('Session error detected:', error.message)
+        // Only redirect on specific session errors
+        if (error.message?.includes('Invalid refresh token') || 
+            error.message?.includes('refresh_token_not_found') ||
+            error.message?.includes('JWT expired')) {
+          console.log('Invalid session detected, signing out and redirecting to login')
           await supabase.auth.signOut()
           setUser(null)
           setUserProfile(null)
           window.location.href = '/login'
           return false
         }
-        console.log('Session refreshed successfully')
+      }
+      
+      if (!session) {
+        // Don't redirect immediately - session might be loading
+        console.log('No session found, but not redirecting (might be loading)')
+        return false
+      }
+      
+      // Only refresh if token is very close to expiry (within 2 minutes instead of 5)
+      const tokenExp = session.expires_at ? session.expires_at * 1000 : 0
+      const now = Date.now()
+      const twoMinutes = 2 * 60 * 1000
+      
+      if (tokenExp && tokenExp - now < twoMinutes) {
+        console.log('Token close to expiry, attempting refresh...')
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
+        
+        if (refreshError) {
+          console.log('Session refresh failed:', refreshError.message)
+          // Only redirect on specific refresh errors
+          if (refreshError.message?.includes('Invalid refresh token') || 
+              refreshError.message?.includes('refresh_token_not_found')) {
+            console.log('Invalid refresh token, signing out and redirecting to login')
+            await supabase.auth.signOut()
+            setUser(null)
+            setUserProfile(null)
+            window.location.href = '/login'
+            return false
+          }
+        } else {
+          console.log('Session refreshed successfully')
+        }
       }
       
       console.log('Session validation successful')
       return true
     } catch (error) {
       console.error('Session validation failed:', error)
-      await supabase.auth.signOut()
-      setUser(null)
-      setUserProfile(null)
-      window.location.href = '/login'
+      // Don't redirect on generic errors, let normal auth flow handle it
       return false
     }
   }
@@ -181,9 +196,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // PWA iOS session validation fix - validates session when app becomes active
   useEffect(() => {
+    let lastValidationTime = 0
+    const validationThrottle = 30000 // Only validate once every 30 seconds
+
     const validateSessionOnFocus = async () => {
-      if (!document.hidden && user) {
+      const now = Date.now()
+      
+      // Only validate if user exists, document is visible, and enough time has passed
+      if (!document.hidden && user && (now - lastValidationTime > validationThrottle)) {
         console.log('App became active, validating session...')
+        lastValidationTime = now
         await validateAndRefreshSession()
       }
     }
