@@ -529,20 +529,46 @@ export default function LocationDetail() {
   const updateQuantity = async (inventoryId: number, newQuantity: number) => {
     if (newQuantity < 0) return
 
+    console.log('🔢 QUANTITY UPDATE ATTEMPT:', {
+      inventoryId,
+      newQuantity,
+      timestamp: new Date().toISOString(),
+      documentHidden: document.hidden
+    })
+
     try {
+      // Check session before attempting update
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+      console.log('🔢 SESSION CHECK BEFORE UPDATE:', {
+        hasSession: !!session,
+        sessionUser: session?.user?.id,
+        sessionExpiry: session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : 'none',
+        sessionError: sessionError?.message
+      })
+
       const { error } = await supabase
         .from('inventory')
         .update({ quantity: newQuantity })
         .eq('id', inventoryId)
 
-      if (error) throw error
+      if (error) {
+        console.error('🔢 QUANTITY UPDATE ERROR:', {
+          error: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        })
+        throw error
+      }
+
+      console.log('🔢 QUANTITY UPDATE SUCCESS:', { inventoryId, newQuantity })
       
       // Update local state
       setInventory(prev => prev.map(item => 
         item.id === inventoryId ? { ...item, quantity: newQuantity } : item
       ))
     } catch (error) {
-      console.error('Error updating quantity:', error)
+      console.error('🔢 QUANTITY UPDATE FAILED:', error)
     }
   }
 

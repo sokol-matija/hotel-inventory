@@ -194,38 +194,67 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [])
 
-  // PWA iOS session validation fix - TEMPORARILY DISABLED for debugging
-  // TODO: Re-enable after confirming it's not causing premature signouts
+  // DEBUG: Add session debugging to track what happens on alt-tab
   useEffect(() => {
-    // Temporarily disable automatic session validation on focus
-    // This might be causing premature signouts on tab switches
-    console.log('Session validation on focus is temporarily disabled for debugging')
+    let sessionCheckInterval: NodeJS.Timeout
     
-    // let lastValidationTime = 0
-    // const validationThrottle = 30000 // Only validate once every 30 seconds
+    const debugSessionState = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession()
+        const localStorageAuth = localStorage.getItem('sb-gkbpthurkucotikjefra-auth-token')
+        
+        console.log('🔍 SESSION DEBUG:', {
+          timestamp: new Date().toISOString(),
+          hasSession: !!session,
+          sessionUser: session?.user?.id,
+          sessionExpiry: session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : 'none',
+          error: error?.message,
+          localStorageExists: !!localStorageAuth,
+          userState: !!user,
+          documentHidden: document.hidden
+        })
+      } catch (err) {
+        console.error('🔍 SESSION DEBUG ERROR:', err)
+      }
+    }
 
-    // const validateSessionOnFocus = async () => {
-    //   const now = Date.now()
-      
-    //   // Only validate if user exists, document is visible, and enough time has passed
-    //   if (!document.hidden && user && (now - lastValidationTime > validationThrottle)) {
-    //     console.log('App became active, validating session...')
-    //     lastValidationTime = now
-    //     await validateAndRefreshSession()
-    //   }
-    // }
+    const handleVisibilityChange = () => {
+      console.log('👁️ VISIBILITY CHANGE:', {
+        hidden: document.hidden,
+        visibilityState: document.visibilityState,
+        timestamp: new Date().toISOString()
+      })
+      debugSessionState()
+    }
 
-    // // Handle iOS Safari/PWA app switching with multiple event listeners for better coverage
-    // document.addEventListener('visibilitychange', validateSessionOnFocus)
-    // window.addEventListener('pageshow', validateSessionOnFocus)
-    // window.addEventListener('focus', validateSessionOnFocus)
+    const handleFocus = () => {
+      console.log('🎯 WINDOW FOCUS:', new Date().toISOString())
+      debugSessionState()
+    }
 
-    // return () => {
-    //   document.removeEventListener('visibilitychange', validateSessionOnFocus)
-    //   window.removeEventListener('pageshow', validateSessionOnFocus)
-    //   window.removeEventListener('focus', validateSessionOnFocus)
-    // }
-  }, [user, validateAndRefreshSession])
+    const handleBlur = () => {
+      console.log('😴 WINDOW BLUR:', new Date().toISOString())
+      debugSessionState()
+    }
+
+    // Add event listeners for debugging
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('focus', handleFocus)
+    window.addEventListener('blur', handleBlur)
+
+    // Check session state every 10 seconds
+    sessionCheckInterval = setInterval(debugSessionState, 10000)
+
+    // Initial debug check
+    debugSessionState()
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', handleFocus)
+      window.removeEventListener('blur', handleBlur)
+      clearInterval(sessionCheckInterval)
+    }
+  }, [user])
 
   const signOut = async () => {
     await supabase.auth.signOut()
