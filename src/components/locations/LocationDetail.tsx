@@ -235,7 +235,18 @@ function SortableInventoryItem({
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
+                  onClick={() => {
+                    console.log('➖ DECREMENT BUTTON CLICKED:', {
+                      itemId: item.id,
+                      currentQuantity: item.quantity,
+                      newQuantity: item.quantity - 1,
+                      timestamp: new Date().toISOString(),
+                      itemName: item.items?.name,
+                      documentHidden: document.hidden,
+                      windowFocused: document.hasFocus()
+                    })
+                    onUpdateQuantity(item.id, item.quantity - 1)
+                  }}
                   disabled={item.quantity <= 0}
                   title={t('locations.decreaseQuantity')}
                 >
@@ -252,7 +263,18 @@ function SortableInventoryItem({
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
+                  onClick={() => {
+                    console.log('➕ INCREMENT BUTTON CLICKED:', {
+                      itemId: item.id,
+                      currentQuantity: item.quantity,
+                      newQuantity: item.quantity + 1,
+                      timestamp: new Date().toISOString(),
+                      itemName: item.items?.name,
+                      documentHidden: document.hidden,
+                      windowFocused: document.hasFocus()
+                    })
+                    onUpdateQuantity(item.id, item.quantity + 1)
+                  }}
                   title={t('locations.increaseQuantity')}
                 >
                   <Plus className="h-4 w-4" />
