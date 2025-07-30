@@ -6,11 +6,11 @@ import { useAuth } from '../auth/AuthProvider'
 import LanguageSwitcher from '../ui/LanguageSwitcher'
 
 export default function Layout() {
-  const { userProfile } = useAuth()
+  const { user } = useAuth()
   const navigate = useNavigate()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
-  if (!userProfile) return null
+  if (!user) return null
 
   return (
     <div className="flex h-screen bg-gray-50 relative">

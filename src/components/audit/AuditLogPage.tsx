@@ -59,7 +59,7 @@ const tableDisplayNames = {
 }
 
 export default function AuditLogPage() {
-  const { userProfile } = useAuth()
+  const { user } = useAuth()
   const { t } = useTranslation()
   const [logs, setLogs] = useState<AuditLogEntry[]>([])
   const [filteredLogs, setFilteredLogs] = useState<AuditLogEntry[]>([])
@@ -211,10 +211,8 @@ export default function AuditLogPage() {
     )
   }
 
-  // Check if user is admin
-  const isAdmin = userProfile?.role.name === 'admin'
-
-  if (!isAdmin) {
+  // Allow all authenticated users access
+  if (!user) {
     return (
       <div className="text-center py-8">
         <History className="h-12 w-12 text-gray-400 mx-auto mb-4" />

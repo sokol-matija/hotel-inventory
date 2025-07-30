@@ -1,5 +1,5 @@
 // Service Worker for Push Notifications
-const CACHE_NAME = 'hotel-inventory-v1';
+const CACHE_NAME = 'hotel-inventory-v2'; // Updated version to force refresh
 
 // Install event
 self.addEventListener('install', (event) => {
@@ -142,17 +142,5 @@ function getVibrationPattern(severity) {
   }
 }
 
-// Fetch event for caching (optional)
-self.addEventListener('fetch', (event) => {
-  // Basic fetch handling - you can implement caching strategies here if needed
-  if (event.request.method !== 'GET') return;
-
-  event.respondWith(
-    fetch(event.request).catch(() => {
-      // Fallback for offline scenarios
-      if (event.request.destination === 'document') {
-        return caches.match('/offline.html');
-      }
-    })
-  );
-});
+// REMOVED FETCH HANDLER - it was causing button freeze when switching tabs
+// Service worker now only handles push notifications, not request caching

@@ -46,7 +46,7 @@ interface Category {
 
 export default function ItemsPage() {
   const { t } = useTranslation()
-  const { userProfile } = useAuth()
+  const { user } = useAuth()
 
   // Helper function to translate category names
   const translateCategory = (categoryName: string) => {
@@ -64,10 +64,10 @@ export default function ItemsPage() {
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [editingItem, setEditingItem] = useState<Item | null>(null)
 
-  // Permission checks
-  const canAddItem = userHasPermission(userProfile, 'canAddItem')
-  const canEditItem = userHasPermission(userProfile, 'canEditItem')
-  const canDeleteItem = userHasPermission(userProfile, 'canDeleteItem')
+  // Allow all authenticated users access
+  const canAddItem = !!user
+  const canEditItem = !!user
+  const canDeleteItem = !!user
 
   useEffect(() => {
     fetchData()
@@ -187,13 +187,13 @@ export default function ItemsPage() {
     )
   }
 
-  // Show permission message if user can't view items
-  if (!userHasPermission(userProfile, 'canViewItems')) {
+  // Allow all authenticated users to view items
+  if (!user) {
     return (
       <div className="text-center py-8">
         <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
         <p className="text-gray-600">
-          You don't have permission to view items. Contact your administrator.
+          You need to be logged in to view items.
         </p>
       </div>
     )

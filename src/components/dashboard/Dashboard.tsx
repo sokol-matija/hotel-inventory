@@ -46,7 +46,7 @@ interface DashboardStats {
 }
 
 export default function Dashboard() {
-  const { userProfile, user } = useAuth()
+  const { user } = useAuth()
   const navigate = useNavigate()
   const { t } = useTranslation()
   const [inventory, setInventory] = useState<InventoryItem[]>([])
@@ -59,11 +59,25 @@ export default function Dashboard() {
 
   // Helper function to translate category names
   const translateCategory = (categoryName: string) => {
-    // Convert category name to lowercase and normalize for translation key
-    const key = categoryName.toLowerCase().replace(/\s+/g, '').replace(/&/g, '')
-    const translation = t(`categories.${key}`)
-    // If translation is the same as the key, it means it wasn't found, so return default
-    return translation !== `categories.${key}` ? translation : categoryName
+    // Direct mapping to avoid translation lookup altogether for known problematic categories
+    const directMapping: Record<string, string> = {
+      'Food & Beverage': 'Hrana i piće',
+      'Food&Beverage': 'Hrana i piće', 
+      'foodbeverage': 'Hrana i piće',
+      'Cleaning': 'Čišćenje',
+      'Supplies': 'Potrepštine',
+      'Toiletries': 'Toaletni artikli',
+      'Equipment': 'Oprema',
+      'Office': 'Ured'
+    }
+    
+    // Use direct mapping first to avoid i18next calls
+    if (directMapping[categoryName]) {
+      return directMapping[categoryName]
+    }
+    
+    // For unknown categories, just return the original name to avoid console spam
+    return categoryName
   }
   const [loading, setLoading] = useState(true)
 
@@ -143,10 +157,22 @@ export default function Dashboard() {
   const updateQuantity = async (inventoryId: number, newQuantity: number) => {
     if (newQuantity < 0) return
 
+    console.log('🔢 QUANTITY UPDATE ATTEMPT:', {
+      inventoryId,
+      newQuantity,
+      timestamp: new Date().toISOString(),
+      documentHidden: document.hidden
+    })
+
     try {
-      // Find the item being updated for audit logging
+      // Skip session check - AuthProvider already handles session validation
+      console.log('🔢 STARTING DATABASE UPDATE (NO SESSION CHECK)...')
+      
       const itemToUpdate = inventory.find(item => item.id === inventoryId)
-      if (!itemToUpdate) return
+      if (!itemToUpdate) {
+        console.error('🔢 ITEM NOT FOUND:', { inventoryId })
+        return
+      }
 
       const oldQuantity = itemToUpdate.quantity
 
@@ -155,48 +181,51 @@ export default function Dashboard() {
         .update({ quantity: newQuantity })
         .eq('id', inventoryId)
 
-      if (error) throw error
+      if (error) {
+        console.error('🔢 QUANTITY UPDATE ERROR:', {
+          error: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        })
+        throw error
+      }
 
-      // Log the quantity change
-      await auditLog.quantityUpdated(
-        inventoryId,
-        itemToUpdate.item.name,
-        oldQuantity,
-        newQuantity,
-        itemToUpdate.location.name
-      )
-      
+      console.log('🔢 QUANTITY UPDATE SUCCESS:', { inventoryId, newQuantity })
+
       // Update local state
-      setInventory(prev => {
-        const updatedInventory = prev.map(item => 
-          item.id === inventoryId ? { ...item, quantity: newQuantity } : item
-        )
-        
-        // Recalculate stats locally instead of refetching everything
-        const totalItems = updatedInventory.length // Count of unique inventory entries
-        const lowStockItems = updatedInventory.filter(item => 
-          item.item && item.quantity <= item.item.minimum_stock
-        ).length
-        
-        const thirtyDaysFromNow = new Date()
-        thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30)
-        const expiringItems = updatedInventory.filter(item => 
-          item.expiration_date && 
-          new Date(item.expiration_date) <= thirtyDaysFromNow &&
-          new Date(item.expiration_date) >= new Date()
-        ).length
-        
-        setStats(prevStats => ({
-          ...prevStats,
-          totalItems,
-          lowStockItems,
-          expiringItems
-        }))
-        
-        return updatedInventory
-      })
+      setInventory(prev => prev.map(item =>
+        item.id === inventoryId ? { ...item, quantity: newQuantity } : item
+      ))
+
+      // Log to audit trail
+      try {
+                 await auditLog.quantityUpdated(
+           inventoryId,
+           itemToUpdate.item?.name || 'Unknown Item',
+           oldQuantity,
+           newQuantity,
+           'Dashboard' // Location context for dashboard updates
+         )
+      } catch (auditError) {
+        console.warn('Audit log failed (non-critical):', auditError)
+      }
+
     } catch (error) {
-      console.error('Error updating quantity:', error)
+      console.error('🔢 QUANTITY UPDATE FAILED:', {
+        error: error instanceof Error ? error.message : error,
+        inventoryId,
+        newQuantity,
+        timestamp: new Date().toISOString()
+      })
+
+      if (error instanceof Error && (
+        error.message.includes('fetch') ||
+        error.message.includes('network') ||
+        error.message.includes('timeout')
+      )) {
+        console.log('🔌 NETWORK ERROR DETECTED - CONNECTION MAY BE REFRESHING, TRY AGAIN IN A MOMENT')
+      }
     }
   }
 
@@ -246,7 +275,7 @@ export default function Dashboard() {
         <div>
           <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">{t('dashboard.title')}</h1>
           <p className="text-gray-600 text-sm lg:text-base">
-            {t('dashboard.welcomeBackUser', { name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || t(`roles.${userProfile?.role.name}`) })}
+            {t('dashboard.welcomeBackUser', { name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User' })}
           </p>
         </div>
         <div className="text-left lg:text-right mt-2 lg:mt-0">
@@ -381,12 +410,24 @@ export default function Dashboard() {
                       )}
                     </div>
                     
-                    {(['admin', 'cooking'].includes(userProfile?.role.name || '')) && (
+                    {(
                       <div className="flex items-center space-x-2">
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                          onClick={() => {
+                            console.log('➖ DASHBOARD DECREMENT BUTTON CLICKED:', {
+                              itemId: item.id,
+                              currentQuantity: item.quantity,
+                              newQuantity: item.quantity - 1,
+                              timestamp: new Date().toISOString(),
+                              itemName: item.item?.name,
+                              locationName: item.location?.name,
+                              documentHidden: document.hidden,
+                              windowFocused: document.hasFocus()
+                            })
+                            updateQuantity(item.id, item.quantity - 1)
+                          }}
                           disabled={item.quantity <= 0}
                         >
                           <Minus className="h-4 w-4" />
@@ -394,7 +435,19 @@ export default function Dashboard() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          onClick={() => {
+                            console.log('➕ DASHBOARD INCREMENT BUTTON CLICKED:', {
+                              itemId: item.id,
+                              currentQuantity: item.quantity,
+                              newQuantity: item.quantity + 1,
+                              timestamp: new Date().toISOString(),
+                              itemName: item.item?.name,
+                              locationName: item.location?.name,
+                              documentHidden: document.hidden,
+                              windowFocused: document.hasFocus()
+                            })
+                            updateQuantity(item.id, item.quantity + 1)
+                          }}
                         >
                           <Plus className="h-4 w-4" />
                         </Button>

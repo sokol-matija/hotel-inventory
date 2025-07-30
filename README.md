@@ -10,14 +10,17 @@ A comprehensive inventory management system built for hotel operations, featurin
 - **Item Categorization**: Organize inventory by categories with expiration tracking
 - **Dashboard Analytics**: Real-time overview with key metrics and alerts
 
-### Role-Based Access Control
-- **Admin**: Full system access including location and user management
-- **Cooking Staff**: Inventory updates and viewing permissions
-- **Viewing Staff**: Read-only access to inventory data
+### Simplified Access Control
+- **All Authenticated Users**: Full access to all inventory management features
+- **Google OAuth**: Seamless authentication with Google accounts
+- **Email/Password**: Traditional login option for flexibility
+- **No Complex Roles**: Simplified system focusing on functionality over restrictions
 
-### Smart Alerts
+### Smart Alerts & Notifications
 - **Low Stock Warnings**: Automatic notifications when items fall below minimum thresholds
-- **Expiration Tracking**: Monitor items expiring within 7 days
+- **Extended Expiration Tracking**: Monitor items expiring within 30 days with color coding
+- **Push Notifications**: Browser notifications for critical inventory alerts
+- **Severity Levels**: Critical (1 day), Warning (2-7 days), Info (8-30 days)
 - **Quick Actions**: One-click quantity adjustments from the dashboard
 
 ### Audit & Compliance
@@ -29,20 +32,24 @@ A comprehensive inventory management system built for hotel operations, featurin
 
 - **Frontend**: React 19 with TypeScript
 - **Styling**: Tailwind CSS with shadcn/ui components
-- **Backend**: Supabase (PostgreSQL + Auth)
+- **Backend**: Supabase (PostgreSQL + Auth + Edge Functions)
 - **State Management**: React Context API
 - **Routing**: React Router DOM v7
 - **Build Tool**: Create React App with CRACO
+- **Internationalization**: i18next (Croatian, German, English)
+- **UI Components**: Radix UI primitives + shadcn/ui
+- **Drag & Drop**: @dnd-kit for inventory reordering
+- **Push Notifications**: Web Push API with Service Worker
 
 ## Database Schema
 
 ### Core Tables
 - `items` - Product catalog with categories and minimum stock levels
 - `locations` - Storage locations (refrigerated/dry storage)
-- `inventory` - Item quantities by location with expiration dates
+- `inventory` - Item quantities by location with expiration dates and display ordering
 - `categories` - Item categorization with expiration requirements
-- `user_profiles` - User roles and permissions
-- `audit_logs` - Complete activity tracking
+- `user_profiles` - Basic user preferences and notification settings
+- `audit_logs` - Complete activity tracking with user attribution
 
 ## Quick Start
 
@@ -89,31 +96,58 @@ The application will be available at `http://localhost:3000`
 ```
 src/
 ├── components/
-│   ├── admin/          # Admin-only components
+│   ├── admin/          # Location management components
 │   ├── audit/          # Audit log viewing
-│   ├── auth/           # Authentication & authorization
-│   ├── dashboard/      # Main dashboard
+│   ├── auth/           # Ultra-simplified authentication (38-line AuthProvider)
+│   ├── dashboard/      # Main dashboard with analytics
 │   ├── global/         # Global inventory view
-│   ├── items/          # Item management
-│   ├── layout/         # Layout components
-│   ├── locations/      # Location management
-│   └── ui/             # Reusable UI components
-├── hooks/              # Custom React hooks
+│   ├── items/          # Item management (add, edit, list)
+│   ├── layout/         # Layout components (Sidebar, MobileNav, Layout)
+│   ├── locations/      # Location management with drag-drop ordering
+│   ├── settings/       # User settings and notification preferences
+│   └── ui/             # Reusable UI components (shadcn/ui)
+├── hooks/              # Custom React hooks (toast, etc.)
+├── i18n/               # Internationalization support (hr, de, en)
 ├── lib/                # Utilities and configurations
 │   ├── auditLog.ts     # Audit logging functions
+│   ├── dateUtils.ts    # Date formatting utilities
+│   ├── permissions.ts  # Role-based permission checks
+│   ├── pushNotifications.ts # Push notification handling
+│   ├── safeSupabase.ts # Error handling wrapper for Supabase calls
 │   ├── supabase.ts     # Database client & types
 │   └── utils.ts        # General utilities
-└── App.tsx             # Main application component
+├── __tests__/          # Test files
+├── public/             # Static assets and service worker
+└── App.tsx             # Main application component with routing
 ```
+
+## Recent Improvements & Fixes
+
+### Authentication System Optimization (v2.1 - January 2025)
+- **Simplified AuthProvider**: Reduced from 210 lines to 38 lines (matching working project)
+- **Fixed Tab Switching Bug**: Eliminated UI freeze when switching browser tabs
+- **Removed Complex User Profile System**: Simplified to basic user/session state only
+- **TypeScript Compilation Fixed**: Removed all userProfile dependencies across components
+- **Clean Session Management**: Let Supabase handle auth complexity automatically
+- **No More Database Calls on Auth Changes**: Prevented blocking UI operations
+
+### Enhanced User Experience
+- **Drag & Drop Ordering**: Reorder inventory items within locations
+- **Extended Expiration Tracking**: 30-day lookahead with color-coded severity
+- **Push Notifications**: Browser notifications for critical inventory alerts
+- **Mobile Responsive**: Optimized touch interface for all devices
+- **Multi-language Support**: Croatian, German, and English localization
+- **Simplified Permission System**: All authenticated users have access to all features
 
 ## Key Features Explained
 
 ### Dashboard
 The main dashboard provides:
-- Real-time inventory statistics
-- Quick quantity adjustments
-- Expiration and low-stock alerts
-- Clickable cards for detailed views
+- Real-time inventory statistics with color-coded alerts
+- Quick quantity adjustments with +/- buttons
+- Extended expiration tracking (30 days with severity levels)
+- Clickable cards for detailed location views
+- Low stock warnings with customizable thresholds
 
 ### Location Management
 - Create and manage storage locations
@@ -133,12 +167,14 @@ The main dashboard provides:
 
 ## Authentication & Authorization
 
-The system uses Supabase Auth with role-based permissions:
+The system uses an ultra-simplified Supabase Auth integration:
 
 1. **Google OAuth Integration** - Seamless login with Google accounts
-2. **Role Selection** - Users select their role after first login
-3. **Protected Routes** - Role-based access to different features
-4. **Session Management** - Automatic session handling and refresh
+2. **Email/Password Auth** - Traditional login option with account creation
+3. **No Complex Roles** - All authenticated users have full access
+4. **Protected Routes** - Simple authentication check only
+5. **Ultra-Simplified Session Management** - 38-line AuthProvider with zero complexity
+6. **No Database Calls on Auth** - Prevents UI blocking and tab switching issues
 
 ## Deployment
 

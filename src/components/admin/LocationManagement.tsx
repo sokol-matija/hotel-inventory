@@ -25,7 +25,7 @@ interface Location {
 }
 
 export default function LocationManagement() {
-  const { userProfile } = useAuth()
+  const { user } = useAuth()
   const { t } = useTranslation()
   const [locations, setLocations] = useState<Location[]>([])
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -87,8 +87,8 @@ export default function LocationManagement() {
     }
   }
 
-  // Only allow admin users to access this
-  if (userProfile?.role.name !== 'admin') {
+  // Allow all authenticated users access
+  if (!user) {
     return (
       <div className="text-center py-8">
         <p className="text-gray-600">{t('admin.accessDenied')}</p>

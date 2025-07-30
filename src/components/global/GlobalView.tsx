@@ -44,7 +44,7 @@ interface GlobalInventoryItem {
 }
 
 export default function GlobalView() {
-  const { userProfile } = useAuth()
+  const { user } = useAuth()
   const location = useLocation()
   const { t } = useTranslation()
   const [inventory, setInventory] = useState<GlobalInventoryItem[]>([])

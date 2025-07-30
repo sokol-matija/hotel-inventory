@@ -2,7 +2,6 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './components/auth/AuthProvider';
 import LoginPage from './components/auth/LoginPage';
-import RoleSelection from './components/auth/RoleSelection';
 import Layout from './components/layout/Layout';
 import Dashboard from './components/dashboard/Dashboard';
 import LocationsPage from './components/locations/LocationsPage';
@@ -16,7 +15,7 @@ import { ToastProvider } from './components/ui/toast';
 import { Toaster } from './components/Toaster';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, userProfile, loading } = useAuth();
+  const { user, loading } = useAuth();
 
   if (loading) {
     return (
@@ -28,14 +27,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (!user) {
     return <Navigate to="/login" replace />;
-  }
-
-  if (!userProfile) {
-    const handleRoleSelected = () => {
-      // Force a re-render by reloading the page
-      window.location.reload();
-    };
-    return <RoleSelection user={user} onRoleSelected={handleRoleSelected} />;
   }
 
   return <>{children}</>;

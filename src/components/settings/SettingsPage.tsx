@@ -21,7 +21,7 @@ interface NotificationSettings {
 
 const SettingsPage: React.FC = () => {
   const { t } = useTranslation();
-  const { user, userProfile, refreshUserProfile } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [settings, setSettings] = useState<NotificationSettings>({
     pushNotificationsEnabled: false,
@@ -34,10 +34,10 @@ const SettingsPage: React.FC = () => {
   useEffect(() => {
     setSupportsPush(isPushNotificationSupported());
     loadSettings();
-  }, [userProfile]);
+  }, [user]);
 
   const loadSettings = async () => {
-    if (!userProfile) {
+    if (!user) {
       setLoading(false);
       return;
     }
@@ -92,8 +92,7 @@ const SettingsPage: React.FC = () => {
           variant: 'default'
         });
 
-        // Refresh user profile to get updated data
-        await refreshUserProfile();
+        // Settings updated successfully
       }
     } catch (error) {
       console.error('Error toggling notifications:', error);

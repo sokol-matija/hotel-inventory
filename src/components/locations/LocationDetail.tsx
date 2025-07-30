@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '../auth/AuthProvider'
 import { userHasPermission } from '@/lib/permissions'
+import { auditLog } from '@/lib/auditLog'
 import AddInventoryDialog from './AddInventoryDialog'
 import { useTranslation } from 'react-i18next'
 import { formatDate } from '@/lib/dateUtils'
@@ -330,7 +331,7 @@ interface Location {
 
 export default function LocationDetail() {
   const { id } = useParams<{ id: string }>()
-  const { userProfile } = useAuth()
+  const { user } = useAuth()
   const [location, setLocation] = useState<Location | null>(null)
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [filteredInventory, setFilteredInventory] = useState<InventoryItem[]>([])
@@ -366,27 +367,25 @@ export default function LocationDetail() {
 
   // Helper function to translate category names
   const translateCategory = (categoryName: string) => {
-    // Create a direct mapping for known categories to handle special characters
-    const categoryMap: Record<string, string> = {
-      'Food & Beverage': t('categories.foodbeverage', { defaultValue: 'Food & Beverage' }),
-      'Cleaning': t('categories.cleaning', { defaultValue: 'Cleaning' }),
-      'Supplies': t('categories.supplies', { defaultValue: 'Supplies' }),
-      'Toiletries': t('categories.toiletries', { defaultValue: 'Toiletries' }),
-      'Equipment': t('categories.equipment', { defaultValue: 'Equipment' }),
-      'Office': t('categories.office', { defaultValue: 'Office' }),
+    // Direct mapping to avoid translation lookup altogether for known problematic categories
+    const directMapping: Record<string, string> = {
+      'Food & Beverage': 'Hrana i piće',
+      'Food&Beverage': 'Hrana i piće', 
+      'foodbeverage': 'Hrana i piće',
+      'Cleaning': 'Čišćenje',
+      'Supplies': 'Potrepštine',
+      'Toiletries': 'Toaletni artikli',
+      'Equipment': 'Oprema',
+      'Office': 'Ured'
     }
     
-    // Use direct mapping first
-    if (categoryMap[categoryName]) {
-      return categoryMap[categoryName]
+    // Use direct mapping first to avoid i18next calls
+    if (directMapping[categoryName]) {
+      return directMapping[categoryName]
     }
     
-    // Fallback: convert to key and try translation
-    const key = categoryName.toLowerCase().replace(/\s+/g, '').replace(/&/g, '').replace(/[^a-z0-9]/g, '')
-    const translatedValue = t(`categories.${key}`, { defaultValue: '' })
-    
-    // If translation found, return it; otherwise return original name
-    return translatedValue || categoryName
+    // For unknown categories, just return the original name to avoid console spam
+    return categoryName
   }
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -559,14 +558,16 @@ export default function LocationDetail() {
     })
 
     try {
-      // Check session before attempting update
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-      console.log('🔢 SESSION CHECK BEFORE UPDATE:', {
-        hasSession: !!session,
-        sessionUser: session?.user?.id,
-        sessionExpiry: session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : 'none',
-        sessionError: sessionError?.message
-      })
+      // Skip session check - AuthProvider already handles session validation
+      console.log('🔢 STARTING DATABASE UPDATE (NO SESSION CHECK)...')
+      
+      const itemToUpdate = inventory.find(item => item.id === inventoryId)
+      if (!itemToUpdate) {
+        console.error('🔢 ITEM NOT FOUND:', { inventoryId })
+        return
+      }
+
+      const oldQuantity = itemToUpdate.quantity
 
       const { error } = await supabase
         .from('inventory')
@@ -584,13 +585,40 @@ export default function LocationDetail() {
       }
 
       console.log('🔢 QUANTITY UPDATE SUCCESS:', { inventoryId, newQuantity })
-      
-      // Update local state
-      setInventory(prev => prev.map(item => 
+
+      // Update local state after successful database update
+      setInventory(prev => prev.map(item =>
         item.id === inventoryId ? { ...item, quantity: newQuantity } : item
       ))
+
+      // Log to audit trail (non-critical)
+      try {
+        await auditLog.quantityUpdated(
+          inventoryId,
+          itemToUpdate.item?.name || 'Unknown Item',
+          oldQuantity,
+          newQuantity,
+          location?.name || 'Unknown Location'
+        )
+      } catch (auditError) {
+        console.warn('Audit log failed (non-critical):', auditError)
+      }
+
     } catch (error) {
-      console.error('🔢 QUANTITY UPDATE FAILED:', error)
+      console.error('🔢 QUANTITY UPDATE FAILED:', {
+        error: error instanceof Error ? error.message : error,
+        inventoryId,
+        newQuantity,
+        timestamp: new Date().toISOString()
+      })
+
+      if (error instanceof Error && (
+        error.message.includes('fetch') ||
+        error.message.includes('network') ||
+        error.message.includes('timeout')
+      )) {
+        console.log('🔌 NETWORK ERROR - TRY AGAIN OR REFRESH APP IF ISSUE PERSISTS')
+      }
     }
   }
 
@@ -700,9 +728,9 @@ export default function LocationDetail() {
     )
   }
 
-  const canModifyInventory = userHasPermission(userProfile, 'canModifyQuantity')
-  const canAddInventory = userHasPermission(userProfile, 'canAddInventory')
-  const canDeleteInventory = userHasPermission(userProfile, 'canDeleteInventory')
+  const canModifyInventory = !!user
+  const canAddInventory = !!user
+  const canDeleteInventory = !!user
 
   return (
     <div className="space-y-6">

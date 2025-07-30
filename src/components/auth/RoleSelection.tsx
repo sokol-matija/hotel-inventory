@@ -20,7 +20,7 @@ interface RoleSelectionProps {
 }
 
 export default function RoleSelection({ user, onRoleSelected }: RoleSelectionProps) {
-  const { refreshUserProfile } = useAuth()
+  const { user: authUser } = useAuth()
   const { t } = useTranslation()
   const [roles, setRoles] = useState<Role[]>([])
   const [selectedRole, setSelectedRole] = useState<number | null>(null)
@@ -108,9 +108,6 @@ export default function RoleSelection({ user, onRoleSelected }: RoleSelectionPro
         ])
 
       if (error) throw error
-      
-      // Refresh the user profile in the auth context
-      await refreshUserProfile()
       
       // Call the callback to trigger re-render
       onRoleSelected()

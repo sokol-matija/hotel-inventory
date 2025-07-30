@@ -9,81 +9,47 @@ import {
   Package, 
   MapPin, 
   LogOut,
-  ChefHat,
   UserCheck,
-  Sparkles,
-  Calculator,
-  ShieldCheck,
   Globe,
   Settings,
   History
 } from 'lucide-react'
 
-const roleIcons = {
-  'admin': ShieldCheck,
-  'reception': UserCheck,
-  'kitchen': ChefHat,
-  'housekeeping': Sparkles,
-  'bookkeeping': Calculator
-}
-
 const sidebarItems = [
   { 
     key: 'dashboard', 
     path: '/dashboard', 
-    icon: Home, 
-    roles: ['admin', 'reception', 'kitchen', 'housekeeping', 'bookkeeping'] 
+    icon: Home
   },
   { 
     key: 'locations', 
     path: '/locations', 
-    icon: MapPin, 
-    roles: ['admin', 'reception', 'kitchen', 'housekeeping', 'bookkeeping'] 
+    icon: MapPin
   },
   { 
     key: 'items', 
     path: '/items', 
-    icon: Package, 
-    roles: ['admin', 'kitchen'] 
+    icon: Package
   },
   { 
     key: 'globalView', 
     path: '/global', 
-    icon: Globe, 
-    roles: ['admin', 'reception', 'kitchen', 'housekeeping', 'bookkeeping'] 
+    icon: Globe
   },
   { 
     key: 'settings', 
     path: '/settings', 
-    icon: Settings, 
-    roles: ['admin', 'reception', 'kitchen', 'housekeeping', 'bookkeeping'] 
-  },
-  { 
-    key: 'locationManagement', 
-    path: '/admin/locations', 
-    icon: MapPin, 
-    roles: ['admin'] 
-  },
-  { 
-    key: 'auditLogs', 
-    path: '/admin/audit', 
-    icon: History, 
-    roles: ['admin'] 
-  },
+    icon: Settings
+  }
 ]
 
 export default function Sidebar() {
-  const { userProfile, signOut } = useAuth()
+  const { user, signOut } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
   const { t } = useTranslation()
 
-  if (!userProfile) return null
-
-  const userRole = userProfile.role.name
-  const filteredItems = sidebarItems.filter(item => item.roles.includes(userRole))
-
-  const RoleIcon = roleIcons[userRole as keyof typeof roleIcons] || UserCheck
+  if (!user) return null
 
   return (
     <div className="w-64 bg-white border-r border-gray-200 h-screen flex flex-col relative overflow-hidden">
@@ -117,7 +83,7 @@ export default function Sidebar() {
       </div>
 
       <nav className="flex-1 px-4 space-y-2">
-        {filteredItems.map((item) => {
+        {sidebarItems.map((item) => {
           const Icon = item.icon
           const isActive = location.pathname === item.path
           
@@ -141,14 +107,14 @@ export default function Sidebar() {
       <div className="p-4 border-t border-gray-200">
         <div className="flex items-center space-x-3 mb-4">
           <div className="w-10 h-10 bg-gradient-to-br from-gray-500 to-gray-600 rounded-lg flex items-center justify-center text-white">
-            <RoleIcon className="w-5 h-5" />
+            <UserCheck className="w-5 h-5" />
           </div>
           <div>
-            <p className="font-medium text-gray-900 capitalize">
-              {t(`roles.${userRole}`)}
+            <p className="font-medium text-gray-900">
+              {user.email}
             </p>
             <p className="text-sm text-gray-600">
-              {t(`roleDescriptions.${userRole}`)}
+              User
             </p>
           </div>
         </div>
