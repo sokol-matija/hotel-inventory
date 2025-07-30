@@ -48,95 +48,13 @@ export const isSessionError = (error: any): boolean => {
   )
 }
 
-// Safe Supabase client that automatically handles session errors
-export const createSafeSupabaseClient = () => {
-  return {
-    // Wrap common Supabase operations
-    from: (table: string) => {
-      const query = supabase.from(table)
-      
-      // Wrap the select method
-      const originalSelect = query.select
-      query.select = function(columns?: string) {
-        const selectQuery = originalSelect.call(this, columns)
-        
-        // Wrap the execution methods
-        const wrapMethod = (methodName: string) => {
-          const originalMethod = (selectQuery as any)[methodName]
-          if (typeof originalMethod === 'function') {
-            (selectQuery as any)[methodName] = async function(...args: any[]) {
-              return safeSupabaseCall(() => originalMethod.apply(this, args))
-            }
-          }
-        }
-        
-        // Wrap common query methods
-        wrapMethod('single')
-        wrapMethod('maybeSingle')
-        wrapMethod('then')
-        
-        return selectQuery
-      }
-      
-      // Wrap insert method
-      const originalInsert = query.insert
-      query.insert = function(values: any) {
-        const insertQuery = originalInsert.call(this, values)
-        
-        // Wrap execution methods
-        const originalThen = insertQuery.then
-        if (originalThen) {
-          insertQuery.then = async function(onFulfilled?: any, onRejected?: any) {
-            return safeSupabaseCall(() => originalThen.call(this, onFulfilled, onRejected))
-          }
-        }
-        
-        return insertQuery
-      }
-      
-      // Wrap update method
-      const originalUpdate = query.update
-      query.update = function(values: any) {
-        const updateQuery = originalUpdate.call(this, values)
-        
-        // Wrap execution methods
-        const originalThen = updateQuery.then
-        if (originalThen) {
-          updateQuery.then = async function(onFulfilled?: any, onRejected?: any) {
-            return safeSupabaseCall(() => originalThen.call(this, onFulfilled, onRejected))
-          }
-        }
-        
-        return updateQuery
-      }
-      
-      // Wrap delete method
-      const originalDelete = query.delete
-      query.delete = function() {
-        const deleteQuery = originalDelete.call(this)
-        
-        // Wrap execution methods
-        const originalThen = deleteQuery.then
-        if (originalThen) {
-          deleteQuery.then = async function(onFulfilled?: any, onRejected?: any) {
-            return safeSupabaseCall(() => originalThen.call(this, onFulfilled, onRejected))
-          }
-        }
-        
-        return deleteQuery
-      }
-      
-      return query
-    },
-    
-    // Expose auth methods directly (they handle their own errors)
-    auth: supabase.auth,
-    
-    // Add other Supabase methods as needed
-    storage: supabase.storage,
-    functions: supabase.functions,
-    realtime: supabase.realtime
-  }
-}
+// TEMPORARILY DISABLED - Complex type wrapping causing TypeScript errors
+// This was causing build failures due to complex Supabase type definitions
+// Since we're testing without safeSupabase calls anyway, commenting out for now
 
-export const safeSupabase = createSafeSupabaseClient()
+// export const createSafeSupabaseClient = () => {
+//   // Complex type wrapping removed to fix build
+//   return supabase
+// }
+
+// export const safeSupabase = createSafeSupabaseClient()

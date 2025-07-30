@@ -4,7 +4,6 @@ import { Input } from '../ui/input'
 import { Label } from '../ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { supabase } from '@/lib/supabase'
-import { safeSupabaseCall } from '@/lib/safeSupabase'
 import { X, Package, Hash, Calendar, DollarSign, AlertCircle, Type } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
