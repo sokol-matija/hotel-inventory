@@ -241,7 +241,7 @@ function SortableInventoryItem({
                       currentQuantity: item.quantity,
                       newQuantity: item.quantity - 1,
                       timestamp: new Date().toISOString(),
-                      itemName: item.items?.name,
+                      itemName: item.item?.name,
                       documentHidden: document.hidden,
                       windowFocused: document.hasFocus()
                     })
@@ -269,7 +269,7 @@ function SortableInventoryItem({
                       currentQuantity: item.quantity,
                       newQuantity: item.quantity + 1,
                       timestamp: new Date().toISOString(),
-                      itemName: item.items?.name,
+                      itemName: item.item?.name,
                       documentHidden: document.hidden,
                       windowFocused: document.hasFocus()
                     })
