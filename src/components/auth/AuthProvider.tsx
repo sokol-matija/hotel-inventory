@@ -194,32 +194,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [])
 
-  // PWA iOS session validation fix - validates session when app becomes active
+  // PWA iOS session validation fix - TEMPORARILY DISABLED for debugging
+  // TODO: Re-enable after confirming it's not causing premature signouts
   useEffect(() => {
-    let lastValidationTime = 0
-    const validationThrottle = 30000 // Only validate once every 30 seconds
+    // Temporarily disable automatic session validation on focus
+    // This might be causing premature signouts on tab switches
+    console.log('Session validation on focus is temporarily disabled for debugging')
+    
+    // let lastValidationTime = 0
+    // const validationThrottle = 30000 // Only validate once every 30 seconds
 
-    const validateSessionOnFocus = async () => {
-      const now = Date.now()
+    // const validateSessionOnFocus = async () => {
+    //   const now = Date.now()
       
-      // Only validate if user exists, document is visible, and enough time has passed
-      if (!document.hidden && user && (now - lastValidationTime > validationThrottle)) {
-        console.log('App became active, validating session...')
-        lastValidationTime = now
-        await validateAndRefreshSession()
-      }
-    }
+    //   // Only validate if user exists, document is visible, and enough time has passed
+    //   if (!document.hidden && user && (now - lastValidationTime > validationThrottle)) {
+    //     console.log('App became active, validating session...')
+    //     lastValidationTime = now
+    //     await validateAndRefreshSession()
+    //   }
+    // }
 
-    // Handle iOS Safari/PWA app switching with multiple event listeners for better coverage
-    document.addEventListener('visibilitychange', validateSessionOnFocus)
-    window.addEventListener('pageshow', validateSessionOnFocus)
-    window.addEventListener('focus', validateSessionOnFocus)
+    // // Handle iOS Safari/PWA app switching with multiple event listeners for better coverage
+    // document.addEventListener('visibilitychange', validateSessionOnFocus)
+    // window.addEventListener('pageshow', validateSessionOnFocus)
+    // window.addEventListener('focus', validateSessionOnFocus)
 
-    return () => {
-      document.removeEventListener('visibilitychange', validateSessionOnFocus)
-      window.removeEventListener('pageshow', validateSessionOnFocus)
-      window.removeEventListener('focus', validateSessionOnFocus)
-    }
+    // return () => {
+    //   document.removeEventListener('visibilitychange', validateSessionOnFocus)
+    //   window.removeEventListener('pageshow', validateSessionOnFocus)
+    //   window.removeEventListener('focus', validateSessionOnFocus)
+    // }
   }, [user, validateAndRefreshSession])
 
   const signOut = async () => {

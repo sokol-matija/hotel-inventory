@@ -11,15 +11,14 @@ export const safeSupabaseCall = async <T>(
   } catch (error: any) {
     const errorMessage = error?.message?.toLowerCase() || ''
     
-    // Check for session-related errors
+    // Only handle very specific session errors - be much more conservative
     if (
       errorMessage.includes('invalid refresh token') ||
-      errorMessage.includes('jwt expired') ||
       errorMessage.includes('refresh_token_not_found') ||
-      errorMessage.includes('invalid_token') ||
-      error?.status === 401
+      errorMessage.includes('jwt expired') ||
+      (error?.status === 401 && errorMessage.includes('expired'))
     ) {
-      console.log('Session expired during API call, signing out and redirecting to login')
+      console.log('Specific session error detected during API call:', error.message)
       
       // Sign out and redirect to login
       await supabase.auth.signOut()
@@ -31,7 +30,8 @@ export const safeSupabaseCall = async <T>(
       return null
     }
     
-    // Re-throw non-auth errors
+    // Don't handle generic 401s - they could be permission errors, not session errors
+    // Let the calling code handle other errors normally
     throw error
   }
 }
