@@ -4,6 +4,7 @@ import { Input } from '../ui/input'
 import { Label } from '../ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { supabase } from '@/lib/supabase'
+import { safeSupabaseCall } from '@/lib/safeSupabase'
 import { X, Package, Hash, Calendar, DollarSign, AlertCircle, Type } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
@@ -195,31 +196,47 @@ export default function AddInventoryDialog({ isOpen, onClose, onInventoryAdded, 
         expirationDate = formatDateForDatabase(formData.expiration_date)
       }
 
-      // Get the next display_order for this location
-      const { data: maxOrderData } = await supabase
-        .from('inventory')
-        .select('display_order')
-        .eq('location_id', locationId)
-        .order('display_order', { ascending: false })
-        .limit(1)
+      // Get the next display_order for this location with safe call
+      const maxOrderResult = await safeSupabaseCall(async () => {
+        return await supabase
+          .from('inventory')
+          .select('display_order')
+          .eq('location_id', locationId)
+          .order('display_order', { ascending: false })
+          .limit(1)
+      })
 
+      if (!maxOrderResult) {
+        // Session was invalid and user was redirected to login
+        return
+      }
+
+      const { data: maxOrderData } = maxOrderResult
       const nextDisplayOrder = maxOrderData && maxOrderData.length > 0 
         ? maxOrderData[0].display_order + 1 
         : 1
 
-      const { error } = await supabase
-        .from('inventory')
-        .insert([
-          {
-            item_id: parseInt(formData.item_id),
-            location_id: locationId,
-            quantity: parseInt(formData.quantity),
-            expiration_date: expirationDate || null,
-            cost_per_unit: formData.cost_per_unit ? parseFloat(formData.cost_per_unit) : null,
-            display_order: nextDisplayOrder
-          }
-        ])
+      const insertResult = await safeSupabaseCall(async () => {
+        return await supabase
+          .from('inventory')
+          .insert([
+            {
+              item_id: parseInt(formData.item_id),
+              location_id: locationId,
+              quantity: parseInt(formData.quantity),
+              expiration_date: expirationDate || null,
+              cost_per_unit: formData.cost_per_unit ? parseFloat(formData.cost_per_unit) : null,
+              display_order: nextDisplayOrder
+            }
+          ])
+      })
 
+      if (!insertResult) {
+        // Session was invalid and user was redirected to login
+        return
+      }
+
+      const { error } = insertResult
       if (error) throw error
 
       // Reset form

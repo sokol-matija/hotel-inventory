@@ -62,6 +62,35 @@ After switching apps on iPhone and returning to the web app, actions like adding
 - Session automatically refreshes when user returns to app
 - Works across different iOS Safari versions and scenarios
 
+### PWA Session Fix Implementation
+✅ **Added PWA session validation and auto-redirect**:
+- Added `validateAndRefreshSession` function that checks session validity
+- Automatically redirects to login when session is invalid or expired
+- Validates tokens within 5 minutes of expiry and attempts refresh
+- Added to AuthProvider context for use throughout app
+
+✅ **Created safe Supabase wrapper** (`src/lib/safeSupabase.ts`):
+- Automatically catches session-related errors (401, invalid tokens, expired JWT)
+- Redirects to login when session is invalid during API calls
+- Prevents infinite loading by handling auth failures gracefully
+
+✅ **Updated key components to use safe API calls**:
+- Modified `AddItemDialog.tsx` to use `safeSupabaseCall`
+- Modified `AddInventoryDialog.tsx` to use `safeSupabaseCall`
+- Both components now handle session expiry during add operations
+
+✅ **Enhanced app focus handler**:
+- Uses session validation instead of just token refresh
+- Handles multiple iOS Safari events (visibilitychange, pageshow, focus)
+- Automatically redirects to login if session is invalid when app regains focus
+
+### Expected PWA Behavior
+- When session expires while app is in background, user gets redirected to login automatically
+- No more infinite loading - users get a clear path back to authentication
+- Works in PWA mode without needing refresh button
+- Handles both token expiry and localStorage clearing scenarios
+
 ### Next Steps
-- Test on iOS Safari by switching apps and trying to add articles
-- Monitor console logs for "App became active, refreshing session..." messages
+- Test on iOS Safari/PWA by switching apps and trying to add articles
+- Monitor console logs for "App became active, validating session..." messages
+- Verify auto-redirect to login when session expires

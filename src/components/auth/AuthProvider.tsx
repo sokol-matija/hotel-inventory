@@ -20,6 +20,7 @@ interface AuthContextType {
   loading: boolean
   signOut: () => Promise<void>
   refreshUserProfile: () => Promise<void>
+  validateAndRefreshSession: () => Promise<boolean>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -72,6 +73,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const refreshUserProfile = async () => {
     if (user) {
       await fetchUserProfile(user.id)
+    }
+  }
+
+  const validateAndRefreshSession = async (): Promise<boolean> => {
+    try {
+      console.log('Validating session...')
+      const { data: { session }, error } = await supabase.auth.getSession()
+      
+      if (error || !session) {
+        console.log('Session invalid, signing out and redirecting to login')
+        await supabase.auth.signOut()
+        setUser(null)
+        setUserProfile(null)
+        // Force redirect to login page
+        window.location.href = '/login'
+        return false
+      }
+      
+      // Check if token is close to expiry (within 5 minutes)
+      const tokenExp = session.expires_at ? session.expires_at * 1000 : 0
+      const now = Date.now()
+      const fiveMinutes = 5 * 60 * 1000
+      
+      if (tokenExp && tokenExp - now < fiveMinutes) {
+        console.log('Token close to expiry, attempting refresh...')
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
+        
+        if (refreshError || !refreshData.session) {
+          console.log('Session refresh failed, signing out and redirecting to login')
+          await supabase.auth.signOut()
+          setUser(null)
+          setUserProfile(null)
+          window.location.href = '/login'
+          return false
+        }
+        console.log('Session refreshed successfully')
+      }
+      
+      console.log('Session validation successful')
+      return true
+    } catch (error) {
+      console.error('Session validation failed:', error)
+      await supabase.auth.signOut()
+      setUser(null)
+      setUserProfile(null)
+      window.location.href = '/login'
+      return false
     }
   }
 
@@ -131,36 +179,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [])
 
-  // Separate useEffect for iOS Safari session refresh fix
-  // This prevents infinite loading after app switching
+  // PWA iOS session validation fix - validates session when app becomes active
   useEffect(() => {
-    const refreshSessionOnFocus = async () => {
+    const validateSessionOnFocus = async () => {
       if (!document.hidden && user) {
-        try {
-          console.log('App became active, refreshing session...')
-          const { data, error } = await supabase.auth.refreshSession()
-          if (error) {
-            console.error('Session refresh failed:', error)
-          } else {
-            console.log('Session refreshed successfully')
-          }
-        } catch (error) {
-          console.error('Error refreshing session:', error)
-        }
+        console.log('App became active, validating session...')
+        await validateAndRefreshSession()
       }
     }
 
-    // Handle iOS Safari app switching with multiple event listeners for better coverage
-    document.addEventListener('visibilitychange', refreshSessionOnFocus)
-    window.addEventListener('pageshow', refreshSessionOnFocus)
-    window.addEventListener('focus', refreshSessionOnFocus)
+    // Handle iOS Safari/PWA app switching with multiple event listeners for better coverage
+    document.addEventListener('visibilitychange', validateSessionOnFocus)
+    window.addEventListener('pageshow', validateSessionOnFocus)
+    window.addEventListener('focus', validateSessionOnFocus)
 
     return () => {
-      document.removeEventListener('visibilitychange', refreshSessionOnFocus)
-      window.removeEventListener('pageshow', refreshSessionOnFocus)
-      window.removeEventListener('focus', refreshSessionOnFocus)
+      document.removeEventListener('visibilitychange', validateSessionOnFocus)
+      window.removeEventListener('pageshow', validateSessionOnFocus)
+      window.removeEventListener('focus', validateSessionOnFocus)
     }
-  }, [user])
+  }, [user, validateAndRefreshSession])
 
   const signOut = async () => {
     await supabase.auth.signOut()
@@ -169,7 +207,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   return (
-    <AuthContext.Provider value={{ user, userProfile, loading, signOut, refreshUserProfile }}>
+    <AuthContext.Provider value={{ user, userProfile, loading, signOut, refreshUserProfile, validateAndRefreshSession }}>
       {children}
     </AuthContext.Provider>
   )

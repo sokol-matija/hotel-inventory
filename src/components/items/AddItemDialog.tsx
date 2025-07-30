@@ -4,6 +4,7 @@ import { Input } from '../ui/input'
 import { Label } from '../ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { supabase } from '@/lib/supabase'
+import { safeSupabaseCall } from '@/lib/safeSupabase'
 import { auditLog } from '@/lib/auditLog'
 import { useTranslation } from 'react-i18next'
 import { X, Package, DollarSign, Hash, AlertCircle } from 'lucide-react'
@@ -97,11 +98,19 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
         minimum_stock: parseInt(formData.minimum_stock)
       }
 
-      const { data, error } = await supabase
-        .from('items')
-        .insert([itemData])
-        .select()
+      const result = await safeSupabaseCall(async () => {
+        return await supabase
+          .from('items')
+          .insert([itemData])
+          .select()
+      })
 
+      if (!result) {
+        // Session was invalid and user was redirected to login
+        return
+      }
+
+      const { data, error } = result
       if (error) throw error
 
       // Log the item creation
