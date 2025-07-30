@@ -124,12 +124,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     )
 
+    // Fix for iOS Safari: Refresh session when app becomes active again
+    // This prevents infinite loading after app switching
+    const refreshSessionOnFocus = async () => {
+      if (!document.hidden && user) {
+        try {
+          console.log('App became active, refreshing session...')
+          const { data, error } = await supabase.auth.refreshSession()
+          if (error) {
+            console.error('Session refresh failed:', error)
+          } else {
+            console.log('Session refreshed successfully')
+          }
+        } catch (error) {
+          console.error('Error refreshing session:', error)
+        }
+      }
+    }
+
+    // Handle iOS Safari app switching with multiple event listeners for better coverage
+    document.addEventListener('visibilitychange', refreshSessionOnFocus)
+    window.addEventListener('pageshow', refreshSessionOnFocus)
+    window.addEventListener('focus', refreshSessionOnFocus)
+
     return () => {
       console.log('Cleaning up auth subscription')
       isMounted = false
       subscription.unsubscribe()
+      document.removeEventListener('visibilitychange', refreshSessionOnFocus)
+      window.removeEventListener('pageshow', refreshSessionOnFocus)
+      window.removeEventListener('focus', refreshSessionOnFocus)
     }
-  }, [])
+  }, [user])
 
   const signOut = async () => {
     await supabase.auth.signOut()
