@@ -98,19 +98,11 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
         minimum_stock: parseInt(formData.minimum_stock)
       }
 
-      const result = await safeSupabaseCall(async () => {
-        return await supabase
-          .from('items')
-          .insert([itemData])
-          .select()
-      })
-
-      if (!result) {
-        // Session was invalid and user was redirected to login
-        return
-      }
-
-      const { data, error } = result
+      // Temporarily disable safeSupabaseCall to test if it's causing issues
+      const { data, error } = await supabase
+        .from('items')
+        .insert([itemData])
+        .select()
       if (error) throw error
 
       // Log the item creation
