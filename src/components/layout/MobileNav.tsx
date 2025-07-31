@@ -11,7 +11,8 @@ import {
   UserCheck,
   Globe,
   Settings,
-  X
+  X,
+  Building2
 } from 'lucide-react'
 
 const sidebarItems = [
@@ -39,6 +40,11 @@ const sidebarItems = [
     key: 'settings', 
     path: '/settings', 
     icon: Settings
+  },
+  { 
+    key: 'moduleSelector', 
+    path: '/hotel/module-selector', 
+    icon: Building2
   }
 ]
 
