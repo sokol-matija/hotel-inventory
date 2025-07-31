@@ -17,7 +17,8 @@ import {
   Minimize2
 } from 'lucide-react';
 import { HOTEL_POREC_ROOMS, getRoomsByFloor } from '../../../lib/hotel/hotelData';
-import { SAMPLE_RESERVATIONS, SAMPLE_GUESTS } from '../../../lib/hotel/sampleData';
+import { SAMPLE_GUESTS } from '../../../lib/hotel/sampleData';
+import { useHotel } from '../../../lib/hotel/state/HotelContext';
 import { 
   reservationsToCalendarEvents,
   eventStyleGetter,
@@ -216,6 +217,7 @@ function FloorSection({
 
 // Main calendar view component
 export default function CalendarView() {
+  const { reservations, isUpdating } = useHotel();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentView, setCurrentView] = useState<string>('twoWeeks');
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -230,15 +232,15 @@ export default function CalendarView() {
   
   // Convert reservations to calendar events
   const calendarEvents = useMemo(() => {
-    return reservationsToCalendarEvents(SAMPLE_RESERVATIONS);
-  }, []);
+    return reservationsToCalendarEvents(reservations);
+  }, [reservations]);
   
   // Get current occupancy data
   const currentOccupancy = useMemo(() => {
     const today = new Date();
     const occupancy: Record<string, any> = {};
     
-    SAMPLE_RESERVATIONS.forEach(reservation => {
+    reservations.forEach(reservation => {
       if (today >= reservation.checkIn && today < reservation.checkOut) {
         occupancy[reservation.roomId] = {
           reservation,
@@ -248,7 +250,7 @@ export default function CalendarView() {
     });
     
     return occupancy;
-  }, []);
+  }, [reservations]);
   
   // Group rooms by floor
   const roomsByFloor = useMemo(() => {
@@ -312,7 +314,15 @@ export default function CalendarView() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Front Desk Calendar</h2>
+            <div className="flex items-center space-x-3">
+              <h2 className="text-2xl font-bold text-gray-900">Front Desk Calendar</h2>
+              {isUpdating && (
+                <div className="flex items-center space-x-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                  <span className="text-sm text-blue-600">Updating...</span>
+                </div>
+              )}
+            </div>
             <p className="text-gray-600">Hotel Porec - 46 Rooms</p>
           </div>
           

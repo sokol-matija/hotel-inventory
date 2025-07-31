@@ -25,9 +25,10 @@ import {
   X
 } from 'lucide-react';
 import { CalendarEvent, Reservation, Guest } from '../../../../lib/hotel/types';
-import { SAMPLE_RESERVATIONS, SAMPLE_GUESTS } from '../../../../lib/hotel/sampleData';
+import { SAMPLE_GUESTS } from '../../../../lib/hotel/sampleData';
 import { HOTEL_POREC_ROOMS } from '../../../../lib/hotel/hotelData';
 import { RESERVATION_STATUS_COLORS } from '../../../../lib/hotel/calendarUtils';
+import { useHotel } from '../../../../lib/hotel/state/HotelContext';
 import PaymentDetailsModal from './PaymentDetailsModal';
 
 interface ReservationPopupProps {
@@ -43,14 +44,16 @@ export default function ReservationPopup({
   event,
   onStatusChange
 }: ReservationPopupProps) {
+  const { reservations, updateReservationStatus, updateReservationNotes, isUpdating } = useHotel();
   const [isEditing, setIsEditing] = useState(false);
   const [showPaymentDetails, setShowPaymentDetails] = useState(false);
   const [editedNotes, setEditedNotes] = useState('');
+  const [statusUpdateError, setStatusUpdateError] = useState<string | null>(null);
 
   if (!event) return null;
 
   // Find the reservation and guest data
-  const reservation = SAMPLE_RESERVATIONS.find(r => r.id === event.reservationId);
+  const reservation = reservations.find(r => r.id === event.reservationId);
   const guest = SAMPLE_GUESTS.find(g => g.id === reservation?.guestId);
   const room = HOTEL_POREC_ROOMS.find(r => r.id === event.roomId);
   
@@ -79,17 +82,36 @@ export default function ReservationPopup({
     setIsEditing(!isEditing);
   };
 
-  const handleSaveEdit = () => {
-    // TODO: Update reservation notes in state/backend
-    console.log('Saving notes:', editedNotes);
-    setIsEditing(false);
+  const handleSaveEdit = async () => {
+    try {
+      setStatusUpdateError(null);
+      await updateReservationNotes(reservation.id, editedNotes);
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Failed to save notes:', error);
+      setStatusUpdateError('Failed to save notes. Please try again.');
+    }
   };
 
-  const handleStatusUpdate = (newStatus: string) => {
-    if (onStatusChange) {
-      onStatusChange(reservation.id, newStatus);
+  const handleStatusUpdate = async (newStatus: string) => {
+    try {
+      setStatusUpdateError(null);
+      await updateReservationStatus(reservation.id, newStatus as any);
+      
+      // Also call the original callback if provided
+      if (onStatusChange) {
+        onStatusChange(reservation.id, newStatus);
+      }
+      
+      // Close popup after successful status change
+      setTimeout(() => {
+        onClose();
+      }, 1000); // Give user time to see the update
+      
+    } catch (error) {
+      console.error('Failed to update status:', error);
+      setStatusUpdateError('Failed to update reservation status. Please try again.');
     }
-    console.log(`Updating reservation ${reservation.id} status to ${newStatus}`);
   };
 
   const getStatusActions = () => {
@@ -99,9 +121,14 @@ export default function ReservationPopup({
           <Button
             onClick={() => handleStatusUpdate('checked-in')}
             className="bg-green-600 hover:bg-green-700"
+            disabled={isUpdating}
           >
-            <LogIn className="h-4 w-4 mr-2" />
-            Check In
+            {isUpdating ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+            ) : (
+              <LogIn className="h-4 w-4 mr-2" />
+            )}
+            {isUpdating ? 'Checking In...' : 'Check In'}
           </Button>
         );
       case 'checked-in':
@@ -109,9 +136,14 @@ export default function ReservationPopup({
           <Button
             onClick={() => handleStatusUpdate('checked-out')}
             className="bg-gray-600 hover:bg-gray-700"
+            disabled={isUpdating}
           >
-            <LogOut className="h-4 w-4 mr-2" />
-            Check Out
+            {isUpdating ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+            ) : (
+              <LogOut className="h-4 w-4 mr-2" />
+            )}
+            {isUpdating ? 'Checking Out...' : 'Check Out'}
           </Button>
         );
       case 'incomplete-payment':
@@ -119,9 +151,14 @@ export default function ReservationPopup({
           <Button
             onClick={() => handleStatusUpdate('confirmed')}
             className="bg-orange-600 hover:bg-orange-700"
+            disabled={isUpdating}
           >
-            <Check className="h-4 w-4 mr-2" />
-            Mark Paid
+            {isUpdating ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+            ) : (
+              <Check className="h-4 w-4 mr-2" />
+            )}
+            {isUpdating ? 'Updating...' : 'Mark Paid'}
           </Button>
         );
       default:
@@ -199,6 +236,35 @@ export default function ReservationPopup({
           </DialogHeader>
 
           <div className="space-y-6">
+            {/* Error Display */}
+            {statusUpdateError && (
+              <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <X className="h-5 w-5 text-red-400" />
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-red-800">
+                      Error
+                    </h3>
+                    <div className="mt-2 text-sm text-red-700">
+                      {statusUpdateError}
+                    </div>
+                  </div>
+                  <div className="ml-auto pl-3">
+                    <div className="-mx-1.5 -my-1.5">
+                      <button
+                        onClick={() => setStatusUpdateError(null)}
+                        className="inline-flex bg-red-50 rounded-md p-1.5 text-red-500 hover:bg-red-100"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Guest Information */}
             <Card>
               <CardHeader>
