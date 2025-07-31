@@ -11,6 +11,8 @@ import GlobalView from './components/global/GlobalView';
 import LocationManagement from './components/admin/LocationManagement';
 import AuditLogPage from './components/audit/AuditLogPage';
 import SettingsPage from './components/settings/SettingsPage';
+import ModuleSelector from './components/hotel/ModuleSelector';
+import FrontDeskLayout from './components/hotel/frontdesk/FrontDeskLayout';
 import { ToastProvider } from './components/ui/toast';
 import { Toaster } from './components/Toaster';
 
@@ -38,15 +40,28 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={
-        user ? <Navigate to="/dashboard" replace /> : <LoginPage />
+        user ? <Navigate to="/hotel/module-selector" replace /> : <LoginPage />
       } />
       
+      {/* Hotel Management Routes */}
+      <Route path="/hotel/module-selector" element={
+        <ProtectedRoute>
+          <ModuleSelector />
+        </ProtectedRoute>
+      } />
+      <Route path="/hotel/front-desk" element={
+        <ProtectedRoute>
+          <FrontDeskLayout />
+        </ProtectedRoute>
+      } />
+      
+      {/* Existing Inventory System Routes */}
       <Route path="/" element={
         <ProtectedRoute>
           <Layout />
         </ProtectedRoute>
       }>
-        <Route index element={<Navigate to="/dashboard" replace />} />
+        <Route index element={<Navigate to="/hotel/module-selector" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="locations" element={<LocationsPage />} />
         <Route path="locations/:id" element={<LocationDetail />} />
@@ -57,7 +72,7 @@ function AppRoutes() {
         <Route path="admin/audit" element={<AuditLogPage />} />
       </Route>
       
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      <Route path="*" element={<Navigate to="/hotel/module-selector" replace />} />
     </Routes>
   );
 }
