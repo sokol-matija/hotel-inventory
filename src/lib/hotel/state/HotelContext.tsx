@@ -13,9 +13,15 @@ interface HotelContextType {
   isUpdating: boolean;
   lastUpdated: Date;
   
-  // Actions
+  // Actions - Reservations
   updateReservationStatus: (id: string, newStatus: ReservationStatus) => Promise<void>;
   updateReservationNotes: (id: string, notes: string) => Promise<void>;
+  
+  // Actions - Guests
+  createGuest: (guest: Omit<Guest, 'id' | 'totalStays'>) => Promise<void>;
+  updateGuest: (id: string, updates: Partial<Guest>) => Promise<void>;
+  findGuestsByName: (query: string) => Guest[];
+  getGuestStayHistory: (guestId: string) => Reservation[];
   
   // Sync utilities
   refreshData: () => void;
@@ -25,18 +31,20 @@ const HotelContext = createContext<HotelContextType | undefined>(undefined);
 
 const STORAGE_KEYS = {
   RESERVATIONS: 'hotel_reservations_v1',
+  GUESTS: 'hotel_guests_v1',
   LAST_SYNC: 'hotel_last_sync_v1'
 };
 
 export function HotelProvider({ children }: { children: React.ReactNode }) {
   const [reservations, setReservations] = useState<Reservation[]>([]);
-  const [guests] = useState<Guest[]>(SAMPLE_GUESTS);
+  const [guests, setGuests] = useState<Guest[]>([]);
   const [rooms] = useState<Room[]>(HOTEL_POREC_ROOMS);
   const [isUpdating, setIsUpdating] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(new Date());
 
   // Initialize data from localStorage or use sample data
   useEffect(() => {
+    // Initialize reservations
     const storedReservations = localStorage.getItem(STORAGE_KEYS.RESERVATIONS);
     if (storedReservations) {
       try {
@@ -57,16 +65,49 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
     } else {
       setReservations(SAMPLE_RESERVATIONS);
     }
+
+    // Initialize guests
+    const storedGuests = localStorage.getItem(STORAGE_KEYS.GUESTS);
+    if (storedGuests) {
+      try {
+        const parsed = JSON.parse(storedGuests);
+        // Convert date strings back to Date objects for children
+        const guestsWithDates = parsed.map((guest: any) => ({
+          ...guest,
+          dateOfBirth: guest.dateOfBirth ? new Date(guest.dateOfBirth) : undefined,
+          children: guest.children?.map((child: any) => ({
+            ...child,
+            dateOfBirth: new Date(child.dateOfBirth)
+          })) || []
+        }));
+        setGuests(guestsWithDates);
+      } catch (error) {
+        console.error('Failed to parse stored guests:', error);
+        setGuests(SAMPLE_GUESTS);
+      }
+    } else {
+      setGuests(SAMPLE_GUESTS);
+    }
   }, []);
 
-  // Save to localStorage whenever reservations change
-  const saveToStorage = (updatedReservations: Reservation[]) => {
+  // Save to localStorage whenever data changes
+  const saveReservationsToStorage = (updatedReservations: Reservation[]) => {
     try {
       localStorage.setItem(STORAGE_KEYS.RESERVATIONS, JSON.stringify(updatedReservations));
       localStorage.setItem(STORAGE_KEYS.LAST_SYNC, new Date().toISOString());
       setLastUpdated(new Date());
     } catch (error) {
       console.error('Failed to save reservations to localStorage:', error);
+    }
+  };
+
+  const saveGuestsToStorage = (updatedGuests: Guest[]) => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.GUESTS, JSON.stringify(updatedGuests));
+      localStorage.setItem(STORAGE_KEYS.LAST_SYNC, new Date().toISOString());
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error('Failed to save guests to localStorage:', error);
     }
   };
 
@@ -89,7 +130,7 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
       await new Promise(resolve => setTimeout(resolve, 500));
       
       // 3. Persist to localStorage
-      saveToStorage(updatedReservations);
+      saveReservationsToStorage(updatedReservations);
       
       // 4. Success feedback (handled by calling component)
       console.log(`Reservation ${reservationId} status updated to ${newStatus}`);
@@ -123,7 +164,7 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
       await new Promise(resolve => setTimeout(resolve, 300));
       
       // Persist to localStorage
-      saveToStorage(updatedReservations);
+      saveReservationsToStorage(updatedReservations);
       
     } catch (error) {
       console.error('Failed to update reservation notes:', error);
@@ -132,6 +173,88 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsUpdating(false);
     }
+  };
+
+  // Create new guest
+  const createGuest = async (guestData: Omit<Guest, 'id' | 'totalStays'>): Promise<void> => {
+    const newGuest: Guest = {
+      ...guestData,
+      id: `guest-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      totalStays: 0
+    };
+
+    const updatedGuests = [...guests, newGuest];
+    setGuests(updatedGuests);
+    setIsUpdating(true);
+
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Persist to localStorage
+      saveGuestsToStorage(updatedGuests);
+      
+      console.log(`Guest ${newGuest.name} created successfully`);
+      
+    } catch (error) {
+      console.error('Failed to create guest:', error);
+      setGuests(guests); // Rollback
+      throw error;
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  // Update guest information
+  const updateGuest = async (guestId: string, updates: Partial<Guest>): Promise<void> => {
+    const originalGuests = [...guests];
+    
+    // Optimistic update
+    const updatedGuests = guests.map(guest =>
+      guest.id === guestId
+        ? { ...guest, ...updates }
+        : guest
+    );
+    
+    setGuests(updatedGuests);
+    setIsUpdating(true);
+
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Persist to localStorage
+      saveGuestsToStorage(updatedGuests);
+      
+      console.log(`Guest ${guestId} updated successfully`);
+      
+    } catch (error) {
+      console.error('Failed to update guest:', error);
+      setGuests(originalGuests); // Rollback
+      throw error;
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  // Find guests by name (search function)
+  const findGuestsByName = (query: string): Guest[] => {
+    if (!query.trim()) return [];
+    
+    const searchTerm = query.toLowerCase().trim();
+    return guests.filter(guest =>
+      guest.name.toLowerCase().includes(searchTerm) ||
+      guest.email.toLowerCase().includes(searchTerm) ||
+      guest.phone.toLowerCase().includes(searchTerm) ||
+      guest.nationality.toLowerCase().includes(searchTerm)
+    );
+  };
+
+  // Get guest stay history
+  const getGuestStayHistory = (guestId: string): Reservation[] => {
+    return reservations
+      .filter(reservation => reservation.guestId === guestId)
+      .sort((a, b) => b.checkIn.getTime() - a.checkIn.getTime());
   };
 
   // Refresh data from storage
@@ -163,6 +286,10 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
     lastUpdated,
     updateReservationStatus,
     updateReservationNotes,
+    createGuest,
+    updateGuest,
+    findGuestsByName,
+    getGuestStayHistory,
     refreshData
   };
 
