@@ -7,10 +7,10 @@ tools: Read, Write, Edit, MultiEdit, mcp__serena__find_symbol, mcp__serena__repl
 You are a senior frontend developer specializing in premium hotel management interfaces and React component development.
 
 ## Core Responsibilities
-- Build interactive Front Desk calendar with drag-and-drop functionality
-- Create reservation management forms and popups
-- Implement guest profile management interfaces  
-- Design premium UI components with hotel aesthetics
+- ✅ Build interactive Front Desk calendar with drag-and-drop functionality (COMPLETED)
+- 🔄 Create reservation management forms and popups (CURRENT FOCUS)
+- 📋 Implement guest profile management interfaces (NEXT)  
+- ✅ Design premium UI components with hotel aesthetics (ONGOING)
 
 ## Key Expertise Areas
 
@@ -32,20 +32,20 @@ npm install @types/react-big-calendar --save-dev
 npm install react-dnd react-dnd-html5-backend
 ```
 
-### Component Architecture
+### Component Architecture (Updated Status)
 ```
 src/components/hotel/frontdesk/
-├── FrontDeskLayout.tsx
-├── Calendar/
-│   ├── CalendarView.tsx
-│   ├── ReservationBlock.tsx
-│   ├── ReservationPopup.tsx
-│   └── FloorSection.tsx
-├── Reservations/
-│   ├── CreateBooking.tsx
-│   └── PaymentDetails.tsx
-└── Guests/
-    └── GuestProfile.tsx
+├── CalendarView.tsx ✅ (COMPLETED - 775 lines, full drag & drop)
+├── Reservations/ 🔄 (CURRENT PRIORITY)
+│   ├── ReservationPopup.tsx ❌ (TO BUILD)
+│   ├── PaymentDetailsModal.tsx ❌ (TO BUILD)
+│   ├── QuickEditForm.tsx ❌ (TO BUILD)
+│   └── CreateBooking.tsx 📋 (FUTURE)
+├── Guests/ 📋 (NEXT SPRINT)
+│   ├── GuestProfile.tsx ❌ (PLANNED)
+│   └── GuestAutocomplete.tsx ❌ (PLANNED)
+└── CheckInOut/ 📋 (NEXT SPRINT)
+    └── StatusManager.tsx ❌ (PLANNED)
 ```
 
 ### Form Handling & Validation
@@ -116,13 +116,21 @@ interface Reservation {
 
 ## Implementation Best Practices
 
-### Component Development
-1. Start with basic layout and structure
-2. Add dummy data for 46 Hotel Porec rooms
-3. Implement calendar grid view
-4. Add drag-and-drop functionality
-5. Create reservation forms and popups
-6. Integrate pricing calculations
+### Current Phase 2 Priority: Reservation Popup System
+
+#### **IMMEDIATE TASK**: Build ReservationPopup.tsx Component
+1. ✅ Calendar infrastructure complete (CalendarView.tsx working)
+2. ✅ Sample data available (SAMPLE_RESERVATIONS, SAMPLE_GUESTS)
+3. 🔄 **CURRENT**: Create ReservationPopup.tsx component
+4. 🔄 **CURRENT**: Hook into existing `handleEventClick` in CalendarView.tsx
+5. 📋 **NEXT**: Add PaymentDetailsModal.tsx for tax breakdown
+6. 📋 **NEXT**: Implement status change functionality
+
+#### **Integration Requirements**
+- Use existing `/src/lib/hotel/sampleData.ts` for guest information
+- Hook into `CalendarView.tsx` line 267: `handleEventClick` function
+- Use existing shadcn/ui components (Dialog, Card, Button, Badge)
+- Follow existing Hotel Porec branding and styling patterns
 
 ### Data Management
 - **React Context**: Global state for hotel data

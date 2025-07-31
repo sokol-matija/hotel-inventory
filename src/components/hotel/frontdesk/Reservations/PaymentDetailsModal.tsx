@@ -1,0 +1,303 @@
+import React from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '../../../ui/dialog';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
+import { Button } from '../../../ui/button';
+import { Badge } from '../../../ui/badge';
+import {
+  CreditCard,
+  FileText,
+  Mail,
+  Download,
+  Calculator,
+  Users,
+  Calendar
+} from 'lucide-react';
+import { Reservation, Guest, Room } from '../../../../lib/hotel/types';
+import { calculatePricing } from '../../../../lib/hotel/pricingCalculator';
+
+interface PaymentDetailsModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  reservation: Reservation;
+  guest: Guest;
+  room: Room;
+}
+
+export default function PaymentDetailsModal({
+  isOpen,
+  onClose,
+  reservation,
+  guest,
+  room
+}: PaymentDetailsModalProps) {
+  // Recalculate pricing to get detailed breakdown
+  const pricingDetails = calculatePricing(
+    reservation.roomId,
+    reservation.checkIn,
+    reservation.checkOut,
+    reservation.adults,
+    guest.children,
+    {
+      hasPets: guest.hasPets,
+      needsParking: reservation.parkingFee > 0,
+      additionalCharges: reservation.additionalCharges
+    }
+  );
+
+  const handlePrintInvoice = () => {
+    console.log('Printing PDF invoice for reservation:', reservation.id);
+    // TODO: Implement PDF generation
+    alert('PDF invoice generation coming soon!');
+  };
+
+  const handleSendEmail = () => {
+    console.log('Sending reminder email to:', guest.email);
+    // TODO: Implement email sending
+    alert(`Reminder email would be sent to ${guest.email}`);
+  };
+
+  const formatCurrency = (amount: number) => `€${amount.toFixed(2)}`;
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center space-x-2">
+            <Calculator className="h-5 w-5" />
+            <span>Payment Breakdown - Room {room.number}</span>
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-6">
+          {/* Guest and Booking Summary */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Booking Summary</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <div className="text-sm text-gray-500">Guest</div>
+                  <div className="font-medium">{guest.name}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500">Room</div>
+                  <div className="font-medium">{room.number} - {room.nameEnglish}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500">Dates</div>
+                  <div className="font-medium">
+                    {reservation.checkIn.toLocaleDateString()} - {reservation.checkOut.toLocaleDateString()}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500">Duration</div>
+                  <div className="font-medium">{reservation.numberOfNights} nights</div>
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-4 pt-2">
+                <div className="flex items-center space-x-1">
+                  <Users className="h-4 w-4 text-gray-500" />
+                  <span className="text-sm">{reservation.numberOfGuests} guests</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <Calendar className="h-4 w-4 text-gray-500" />
+                  <span className="text-sm">Season {reservation.seasonalPeriod}</span>
+                </div>
+                {guest.hasPets && (
+                  <Badge variant="outline" className="text-xs">🐕 Pet</Badge>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Room Rate Breakdown */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Room Charges</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex justify-between items-center">
+                <div>
+                  <div className="font-medium">Base Room Rate</div>
+                  <div className="text-sm text-gray-500">
+                    {formatCurrency(reservation.baseRoomRate)} × {reservation.numberOfNights} nights
+                  </div>
+                </div>
+                <div className="font-medium">{formatCurrency(reservation.subtotal)}</div>
+              </div>
+
+              {reservation.childrenDiscounts > 0 && (
+                <div className="flex justify-between items-center text-green-600">
+                  <div>
+                    <div className="font-medium">Children Discounts</div>
+                    <div className="text-sm">Age-based pricing discounts</div>
+                  </div>
+                  <div className="font-medium">-{formatCurrency(reservation.childrenDiscounts)}</div>
+                </div>
+              )}
+
+              {reservation.shortStaySuplement > 0 && (
+                <div className="flex justify-between items-center text-orange-600">
+                  <div>
+                    <div className="font-medium">Short Stay Supplement</div>
+                    <div className="text-sm">+20% for stays under 3 nights</div>
+                  </div>
+                  <div className="font-medium">+{formatCurrency(reservation.shortStaySuplement)}</div>
+                </div>
+              )}
+
+              <hr className="my-3" />
+              
+              <div className="flex justify-between items-center font-medium">
+                <div>Room Subtotal</div>
+                <div>{formatCurrency(reservation.subtotal - reservation.childrenDiscounts + reservation.shortStaySuplement)}</div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Croatian Taxes and Fees */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Croatian Taxes & Fees</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex justify-between items-center">
+                <div>
+                  <div className="font-medium">Tourism Tax</div>
+                  <div className="text-sm text-gray-500">
+                    {pricingDetails.fees.tourism / (reservation.numberOfGuests * reservation.numberOfNights) === 1.10 ? '€1.10' : '€1.50'} per person per night × {reservation.numberOfGuests} guests × {reservation.numberOfNights} nights
+                  </div>
+                </div>
+                <div className="font-medium">{formatCurrency(reservation.tourismTax)}</div>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <div>
+                  <div className="font-medium">VAT (25%)</div>
+                  <div className="text-sm text-gray-500">Croatian Value Added Tax</div>
+                </div>
+                <div className="font-medium">{formatCurrency(reservation.vatAmount)}</div>
+              </div>
+
+              {reservation.petFee > 0 && (
+                <div className="flex justify-between items-center">
+                  <div>
+                    <div className="font-medium">Pet Fee</div>
+                    <div className="text-sm text-gray-500">€20.00 per stay</div>
+                  </div>
+                  <div className="font-medium">{formatCurrency(reservation.petFee)}</div>
+                </div>
+              )}
+
+              {reservation.parkingFee > 0 && (
+                <div className="flex justify-between items-center">
+                  <div>
+                    <div className="font-medium">Parking Fee</div>
+                    <div className="text-sm text-gray-500">€7.00 per night × {reservation.numberOfNights} nights</div>
+                  </div>
+                  <div className="font-medium">{formatCurrency(reservation.parkingFee)}</div>
+                </div>
+              )}
+
+              {reservation.additionalCharges > 0 && (
+                <div className="flex justify-between items-center">
+                  <div>
+                    <div className="font-medium">Additional Charges</div>
+                    <div className="text-sm text-gray-500">Room service, extras</div>
+                  </div>
+                  <div className="font-medium">{formatCurrency(reservation.additionalCharges)}</div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Total Amount */}
+          <Card className="bg-blue-50">
+            <CardContent className="pt-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <div className="text-xl font-bold">Total Amount</div>
+                  <div className="text-sm text-gray-600">All taxes and fees included</div>
+                </div>
+                <div className="text-2xl font-bold text-blue-700">
+                  {formatCurrency(reservation.totalAmount)}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Payment Status */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Payment Status</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <CreditCard className="h-5 w-5 text-gray-500" />
+                  <div>
+                    <div className="font-medium">
+                      {reservation.status === 'incomplete-payment' ? 'Payment Pending' : 'Paid'}
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      Booking made on {reservation.bookingDate.toLocaleDateString()}
+                    </div>
+                  </div>
+                </div>
+                <Badge
+                  variant={reservation.status === 'incomplete-payment' ? 'destructive' : 'default'}
+                >
+                  {reservation.status === 'incomplete-payment' ? 'PENDING' : 'PAID'}
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button
+              onClick={handlePrintInvoice}
+              className="flex items-center space-x-2"
+              variant="default"
+            >
+              <Download className="h-4 w-4" />
+              <span>Print PDF Invoice</span>
+            </Button>
+            
+            <Button
+              onClick={handleSendEmail}
+              className="flex items-center space-x-2"
+              variant="outline"
+            >
+              <Mail className="h-4 w-4" />
+              <span>Send Reminder Email</span>
+            </Button>
+
+            <Button
+              onClick={onClose}
+              variant="outline"
+              className="flex items-center space-x-2"
+            >
+              <FileText className="h-4 w-4" />
+              <span>Close</span>
+            </Button>
+          </div>
+
+          {/* Croatian Legal Notice */}
+          <div className="text-xs text-gray-500 p-3 bg-gray-50 rounded-md">
+            <strong>Hotel Porec</strong> • OIB: 87246357068 • 52440 Poreč, Croatia, R Konoba 1<br />
+            Phone: +385(0)52/451 611 • Email: hotelporec@pu.t-com.hr<br />
+            VAT included at 25% rate. Tourism tax collected per Croatian Law.
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

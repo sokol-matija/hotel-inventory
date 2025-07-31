@@ -26,6 +26,7 @@ import {
   getRoomTypeDisplay
 } from '../../../lib/hotel/calendarUtils';
 import { CalendarEvent, ReservationStatus } from '../../../lib/hotel/types';
+import ReservationPopup from './Reservations/ReservationPopup';
 
 const localizer = momentLocalizer(moment);
 const DragAndDropCalendar = withDragAndDrop(Calendar);
@@ -224,6 +225,8 @@ export default function CalendarView() {
     3: true,
     4: true
   });
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [showReservationPopup, setShowReservationPopup] = useState(false);
   
   // Convert reservations to calendar events
   const calendarEvents = useMemo(() => {
@@ -266,7 +269,8 @@ export default function CalendarView() {
   
   const handleEventClick = (event: CalendarEvent) => {
     console.log('Event clicked:', event);
-    // TODO: Open reservation details modal
+    setSelectedEvent(event);
+    setShowReservationPopup(true);
   };
   
   const handleSelectSlot = ({ start, end, resource }: { start: Date; end: Date; resource?: any }) => {
@@ -500,6 +504,18 @@ export default function CalendarView() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Reservation Popup */}
+      <ReservationPopup
+        isOpen={showReservationPopup}
+        onClose={() => setShowReservationPopup(false)}
+        event={selectedEvent}
+        onStatusChange={(reservationId, newStatus) => {
+          console.log(`Status change: ${reservationId} -> ${newStatus}`);
+          // TODO: Update reservation status in state
+          setShowReservationPopup(false);
+        }}
+      />
     </div>
   );
 }
