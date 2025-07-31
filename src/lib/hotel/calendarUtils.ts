@@ -45,12 +45,18 @@ export const RESERVATION_STATUS_COLORS = {
 } as const;
 
 // Convert reservation to calendar event
-export function reservationToCalendarEvent(reservation: Reservation): CalendarEvent {
+export function reservationToCalendarEvent(reservation: Reservation): CalendarEvent | null {
+  // Safety checks for required data
+  if (!reservation || !reservation.id || !reservation.checkIn || !reservation.checkOut) {
+    console.warn('Invalid reservation data:', reservation);
+    return null;
+  }
+
   const room = HOTEL_POREC_ROOMS.find(r => r.id === reservation.roomId);
   const guest = SAMPLE_GUESTS.find(g => g.id === reservation.guestId);
   
   const roomNumber = room?.number || 'Unknown';
-  const guestName = guest?.name || reservation.guestId;
+  const guestName = guest?.name || reservation.guestId || 'Unknown Guest';
   
   // Create title based on status
   let title = '';
@@ -58,31 +64,43 @@ export function reservationToCalendarEvent(reservation: Reservation): CalendarEv
     title = `🔧 Maintenance`;
   } else {
     title = `${guestName}`;
-    if (reservation.numberOfGuests > 1) {
+    if (reservation.numberOfGuests && reservation.numberOfGuests > 1) {
       title += ` (+${reservation.numberOfGuests - 1})`;
     }
+  }
+  
+  // Ensure title is never empty
+  if (!title) {
+    title = 'Reservation';
   }
   
   return {
     id: `event-${reservation.id}`,
     reservationId: reservation.id,
-    roomId: reservation.roomId,
+    roomId: reservation.roomId || '',
     title,
     start: reservation.checkIn,
     end: reservation.checkOut,
     resource: {
-      status: reservation.status,
+      status: reservation.status || 'confirmed',
       guestName,
       roomNumber,
-      numberOfGuests: reservation.numberOfGuests,
-      hasPets: SAMPLE_GUESTS.find(g => g.id === reservation.guestId)?.hasPets || false
+      numberOfGuests: reservation.numberOfGuests || 1,
+      hasPets: guest?.hasPets || false
     }
   };
 }
 
 // Convert multiple reservations to calendar events
 export function reservationsToCalendarEvents(reservations: Reservation[]): CalendarEvent[] {
-  return reservations.map(reservationToCalendarEvent);
+  if (!Array.isArray(reservations)) {
+    console.warn('Invalid reservations array:', reservations);
+    return [];
+  }
+  
+  return reservations
+    .map(reservationToCalendarEvent)
+    .filter((event): event is CalendarEvent => event !== null);
 }
 
 // Get reservations for a specific date range

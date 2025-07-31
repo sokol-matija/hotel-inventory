@@ -232,7 +232,16 @@ export default function CalendarView() {
   
   // Convert reservations to calendar events
   const calendarEvents = useMemo(() => {
-    return reservationsToCalendarEvents(reservations);
+    try {
+      if (!reservations || !Array.isArray(reservations)) {
+        console.warn('Invalid reservations data:', reservations);
+        return [];
+      }
+      return reservationsToCalendarEvents(reservations);
+    } catch (error) {
+      console.error('Error converting reservations to calendar events:', error);
+      return [];
+    }
   }, [reservations]);
   
   // Get current occupancy data
@@ -429,11 +438,11 @@ export default function CalendarView() {
                     event: ({ event }: any) => (
                       <div className="px-2 py-1 text-xs font-medium truncate">
                         <div className="flex items-center space-x-1">
-                          {event.resource?.hasPets && <span>🐕</span>}
-                          <span>{event.title}</span>
+                          {event?.resource?.hasPets && <span>🐕</span>}
+                          <span>{event?.title || 'Event'}</span>
                         </div>
                         <div className="text-xs opacity-80">
-                          {event.resource?.numberOfGuests} guests
+                          {event?.resource?.numberOfGuests || 1} guests
                         </div>
                       </div>
                     ),
