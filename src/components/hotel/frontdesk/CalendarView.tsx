@@ -1,0 +1,505 @@
+import React, { useState, useMemo } from 'react';
+import { Calendar, momentLocalizer, View } from 'react-big-calendar';
+import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop';
+import moment from 'moment';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
+import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
+import { addDays, format } from 'date-fns';
+import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
+import { Button } from '../../ui/button';
+import { Badge } from '../../ui/badge';
+import { 
+  ChevronLeft, 
+  ChevronRight, 
+  Calendar as CalendarIcon,
+  Users,
+  Maximize2,
+  Minimize2
+} from 'lucide-react';
+import { HOTEL_POREC_ROOMS, getRoomsByFloor } from '../../../lib/hotel/hotelData';
+import { SAMPLE_RESERVATIONS, SAMPLE_GUESTS } from '../../../lib/hotel/sampleData';
+import { 
+  reservationsToCalendarEvents,
+  eventStyleGetter,
+  RESERVATION_STATUS_COLORS,
+  formatRoomNumber,
+  getRoomTypeDisplay
+} from '../../../lib/hotel/calendarUtils';
+import { CalendarEvent, ReservationStatus } from '../../../lib/hotel/types';
+
+const localizer = momentLocalizer(moment);
+const DragAndDropCalendar = withDragAndDrop(Calendar);
+
+// Custom toolbar for calendar navigation
+function CustomToolbar({ 
+  date, 
+  onNavigate, 
+  onView, 
+  view,
+  views,
+  localizer: toolbarLocalizer 
+}: any) {
+  const goToBack = () => onNavigate('PREV');
+  const goToNext = () => onNavigate('NEXT');
+  const goToToday = () => onNavigate('TODAY');
+  
+  const viewOptions = [
+    { key: 'week', label: '7 Days', days: 7 },
+    { key: 'twoWeeks', label: '14 Days', days: 14 },
+    { key: 'month', label: '30 Days', days: 30 }
+  ];
+  
+  return (
+    <div className="flex items-center justify-between mb-6 p-4 bg-white rounded-lg border shadow-sm">
+      <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2">
+          <Button variant="outline" size="sm" onClick={goToBack}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="sm" onClick={goToToday}>
+            Today
+          </Button>
+          <Button variant="outline" size="sm" onClick={goToNext}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+        
+        <div className="text-lg font-semibold text-gray-900">
+          {toolbarLocalizer.format(date, 'MMMM YYYY')}
+        </div>
+      </div>
+      
+      <div className="flex items-center space-x-2">
+        {viewOptions.map((option) => (
+          <Button
+            key={option.key}
+            variant={view === option.key ? "default" : "outline"}
+            size="sm"
+            onClick={() => onView(option.key)}
+          >
+            {option.label}
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Status legend component
+function StatusLegend() {
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 mb-4">
+      {Object.entries(RESERVATION_STATUS_COLORS).map(([status, colors]) => (
+        <div key={status} className="flex items-center space-x-2">
+          <div 
+            className="w-4 h-4 rounded border-2"
+            style={{ 
+              backgroundColor: colors.backgroundColor,
+              borderColor: colors.borderColor 
+            }}
+          />
+          <span className="text-sm text-gray-600">{colors.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Floor section component with collapsible rooms
+function FloorSection({ 
+  floor, 
+  rooms, 
+  isExpanded, 
+  onToggle,
+  occupancyData 
+}: {
+  floor: number;
+  rooms: any[];
+  isExpanded: boolean;
+  onToggle: () => void;
+  occupancyData: Record<string, any>;
+}) {
+  const floorName = floor === 4 ? 'Rooftop Premium' : `Floor ${floor}`;
+  const occupiedRooms = rooms.filter(room => occupancyData[room.id]);
+  const occupancyRate = rooms.length > 0 ? (occupiedRooms.length / rooms.length) * 100 : 0;
+  
+  return (
+    <Card className="mb-4">
+      <CardHeader 
+        className="cursor-pointer hover:bg-gray-50 transition-colors"
+        onClick={onToggle}
+      >
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center space-x-3">
+            <span className={floor === 4 ? 'text-yellow-600' : 'text-gray-900'}>
+              {floorName}
+            </span>
+            <Badge variant="secondary">
+              {rooms.length} rooms
+            </Badge>
+            <Badge variant={occupancyRate > 80 ? "destructive" : occupancyRate > 50 ? "default" : "secondary"}>
+              {occupancyRate.toFixed(0)}% occupied
+            </Badge>
+          </CardTitle>
+          
+          <Button variant="ghost" size="sm">
+            {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+          </Button>
+        </div>
+      </CardHeader>
+      
+      {isExpanded && (
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            {rooms.map(room => {
+              const isOccupied = !!occupancyData[room.id];
+              const reservation = occupancyData[room.id]?.reservation;
+              const status = occupancyData[room.id]?.status;
+              const statusColors = status ? RESERVATION_STATUS_COLORS[status as ReservationStatus] : null;
+              
+              return (
+                <div
+                  key={room.id}
+                  className={`
+                    p-3 rounded-lg border transition-all duration-200 cursor-pointer hover:shadow-md
+                    ${isOccupied 
+                      ? 'border-2' 
+                      : 'border border-gray-200 hover:border-blue-300'
+                    }
+                    ${room.isPremium ? 'bg-gradient-to-br from-yellow-50 to-amber-50' : 'bg-white'}
+                  `}
+                  style={isOccupied && statusColors ? {
+                    borderColor: statusColors.borderColor,
+                    backgroundColor: `${statusColors.backgroundColor}10`
+                  } : {}}
+                >
+                  <div className="flex flex-col space-y-1">
+                    <div className="font-semibold text-sm">
+                      {formatRoomNumber(room)}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {getRoomTypeDisplay(room)}
+                    </div>
+                    {isOccupied && reservation && (
+                      <div className="text-xs mt-2">
+                        <div className="font-medium">
+                          {SAMPLE_GUESTS.find(g => g.id === reservation.guestId)?.name || 'Guest'}
+                        </div>
+                        <div className="flex items-center space-x-1 text-gray-500">
+                          <Users className="h-3 w-3" />
+                          <span>{reservation.numberOfGuests}</span>
+                        </div>
+                      </div>
+                    )}
+                    {isOccupied && statusColors && (
+                      <Badge 
+                        className="mt-1 text-xs"
+                        style={{ 
+                          backgroundColor: statusColors.backgroundColor,
+                          color: statusColors.textColor 
+                        }}
+                      >
+                        {statusColors.label}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      )}
+    </Card>
+  );
+}
+
+// Main calendar view component
+export default function CalendarView() {
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentView, setCurrentView] = useState<string>('twoWeeks');
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [expandedFloors, setExpandedFloors] = useState<Record<number, boolean>>({
+    1: true,
+    2: true, 
+    3: true,
+    4: true
+  });
+  
+  // Convert reservations to calendar events
+  const calendarEvents = useMemo(() => {
+    return reservationsToCalendarEvents(SAMPLE_RESERVATIONS);
+  }, []);
+  
+  // Get current occupancy data
+  const currentOccupancy = useMemo(() => {
+    const today = new Date();
+    const occupancy: Record<string, any> = {};
+    
+    SAMPLE_RESERVATIONS.forEach(reservation => {
+      if (today >= reservation.checkIn && today < reservation.checkOut) {
+        occupancy[reservation.roomId] = {
+          reservation,
+          status: reservation.status
+        };
+      }
+    });
+    
+    return occupancy;
+  }, []);
+  
+  // Group rooms by floor
+  const roomsByFloor = useMemo(() => {
+    return {
+      1: getRoomsByFloor(1),
+      2: getRoomsByFloor(2),
+      3: getRoomsByFloor(3),
+      4: getRoomsByFloor(4)
+    };
+  }, []);
+  
+  const toggleFloor = (floor: number) => {
+    setExpandedFloors(prev => ({
+      ...prev,
+      [floor]: !prev[floor]
+    }));
+  };
+  
+  const handleEventClick = (event: CalendarEvent) => {
+    console.log('Event clicked:', event);
+    // TODO: Open reservation details modal
+  };
+  
+  const handleSelectSlot = ({ start, end, resource }: { start: Date; end: Date; resource?: any }) => {
+    console.log('Slot selected:', { start, end, resource });
+    // TODO: Open new reservation modal
+  };
+
+  const handleEventDrop = ({ event, start, end, resourceId }: any) => {
+    console.log('Event dropped:', { event, start, end, resourceId });
+    
+    // Find the reservation being moved
+    const reservationId = event.reservationId;
+    const newRoomId = resourceId || event.roomId;
+    
+    // TODO: Update reservation with new dates and room
+    // This would typically make an API call to update the database
+    console.log(`Moving reservation ${reservationId} to room ${newRoomId} from ${start} to ${end}`);
+    
+    // For now, show a success message
+    alert(`Reservation moved to ${HOTEL_POREC_ROOMS.find(r => r.id === newRoomId)?.number || 'Unknown Room'}\nNew dates: ${start.toLocaleDateString()} - ${end.toLocaleDateString()}`);
+  };
+
+  const handleEventResize = ({ event, start, end }: any) => {
+    console.log('Event resized:', { event, start, end });
+    
+    // Find the reservation being resized
+    const reservationId = event.reservationId;
+    
+    // TODO: Update reservation with new dates
+    console.log(`Resizing reservation ${reservationId} to ${start} - ${end}`);
+    
+    // For now, show a success message
+    alert(`Reservation dates updated:\nNew dates: ${start.toLocaleDateString()} - ${end.toLocaleDateString()}`);
+  };
+  
+  return (
+    <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-white' : ''}`}>
+      <div className="p-6 space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Front Desk Calendar</h2>
+            <p className="text-gray-600">Hotel Porec - 46 Rooms</p>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsFullscreen(!isFullscreen)}
+            >
+              {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+              {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+            </Button>
+          </div>
+        </div>
+        
+        {/* Status Legend */}
+        <StatusLegend />
+        
+        {/* Room Overview by Floor */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-gray-900 flex items-center space-x-2">
+            <CalendarIcon className="h-5 w-5" />
+            <span>Room Status Overview</span>
+          </h3>
+          
+          {Object.entries(roomsByFloor).map(([floor, rooms]) => (
+            <FloorSection
+              key={floor}
+              floor={parseInt(floor)}
+              rooms={rooms}
+              isExpanded={expandedFloors[parseInt(floor)]}
+              onToggle={() => toggleFloor(parseInt(floor))}
+              occupancyData={currentOccupancy}
+            />
+          ))}
+        </div>
+        
+        {/* Interactive Calendar Grid */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Hotel Porec Booking Calendar</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-full">
+              {/* Custom toolbar */}
+              <CustomToolbar
+                date={currentDate}
+                onNavigate={(action: 'PREV' | 'NEXT' | 'TODAY') => {
+                  if (action === 'PREV') {
+                    setCurrentDate(prev => {
+                      const days = currentView === 'week' ? 7 : currentView === 'twoWeeks' ? 14 : 30;
+                      return addDays(prev, -days);
+                    });
+                  } else if (action === 'NEXT') {
+                    setCurrentDate(prev => {
+                      const days = currentView === 'week' ? 7 : currentView === 'twoWeeks' ? 14 : 30;
+                      return addDays(prev, days);
+                    });
+                  } else if (action === 'TODAY') {
+                    setCurrentDate(new Date());
+                  }
+                }}
+                onView={(view: string) => setCurrentView(view)}
+                view={currentView}
+                views={['week', 'twoWeeks', 'month']}
+                localizer={localizer}
+              />
+              
+              {/* React Big Calendar with Drag & Drop */}
+              <div className="h-[600px] border rounded-lg bg-white">
+                {/* @ts-ignore */}
+                <DragAndDropCalendar
+                  localizer={localizer}
+                  events={calendarEvents}
+                  startAccessor="start"
+                  endAccessor="end"
+                  titleAccessor="title"
+                  allDayAccessor={() => true}
+                  step={30}
+                  showMultiDayTimes={false}
+                  defaultView="week"
+                  view={currentView as View}
+                  views={['week', 'twoWeeks' as any, 'month']}
+                  date={currentDate}
+                  onNavigate={setCurrentDate}
+                  onView={setCurrentView as any}
+                  eventPropGetter={eventStyleGetter as any}
+                  onSelectEvent={handleEventClick as any}
+                  onSelectSlot={handleSelectSlot}
+                  onEventDrop={handleEventDrop}
+                  onEventResize={handleEventResize}
+                  selectable={true}
+                  resizable={true}
+                  popup={true}
+                  popupOffset={30}
+                  resources={HOTEL_POREC_ROOMS.map(room => ({
+                    id: room.id,
+                    title: `${formatRoomNumber(room)} - ${getRoomTypeDisplay(room)}`,
+                    floor: room.floor
+                  }))}
+                  resourceIdAccessor="id"
+                  resourceTitleAccessor="title"
+                  components={{
+                    toolbar: () => null, // Hide default toolbar since we have custom one
+                    event: ({ event }: any) => (
+                      <div className="px-2 py-1 text-xs font-medium truncate">
+                        <div className="flex items-center space-x-1">
+                          {event.resource?.hasPets && <span>🐕</span>}
+                          <span>{event.title}</span>
+                        </div>
+                        <div className="text-xs opacity-80">
+                          {event.resource?.numberOfGuests} guests
+                        </div>
+                      </div>
+                    ),
+                    month: {
+                      dateHeader: ({ date }) => (
+                        <div className="text-sm font-medium text-gray-700">
+                          {moment(date).format('D')}
+                        </div>
+                      )
+                    }
+                  }}
+                  formats={{
+                    dayFormat: (date, culture, localizer) => 
+                      localizer?.format(date, 'ddd DD/MM', culture) || '',
+                    dayHeaderFormat: (date, culture, localizer) =>
+                      localizer?.format(date, 'dddd DD/MM/YYYY', culture) || '',
+                    dayRangeHeaderFormat: ({ start, end }, culture, localizer) =>
+                      `${localizer?.format(start, 'DD/MM/YYYY', culture)} - ${localizer?.format(end, 'DD/MM/YYYY', culture)}`,
+                    monthHeaderFormat: (date, culture, localizer) =>
+                      localizer?.format(date, 'MMMM YYYY', culture) || '',
+                    weekdayFormat: (date, culture, localizer) =>
+                      localizer?.format(date, 'ddd', culture) || ''
+                  }}
+                  messages={{
+                    today: 'Today',
+                    previous: 'Previous',
+                    next: 'Next',
+                    month: 'Month',
+                    week: 'Week',
+                    work_week: 'Work Week',
+                    day: 'Day',
+                    agenda: 'Agenda',
+                    date: 'Date',
+                    time: 'Time',
+                    event: 'Reservation',
+                    noEventsInRange: 'No reservations in this date range',
+                    showMore: (total: number) => `+${total} more`
+                  }}
+                />
+              </div>
+              
+              {/* Calendar legend and statistics */}
+              <div className="mt-4 flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
+                <div className="text-sm text-gray-600">
+                  <span className="font-medium">
+                    {calendarEvents.length} reservations shown
+                  </span>
+                  {' • '}
+                  <span>
+                    Drag reservations to move between rooms/dates
+                  </span>
+                  {' • '}
+                  <span>
+                    Resize to extend/shorten stays
+                  </span>
+                  {' • '}
+                  <span>
+                    Click empty slots to create booking
+                  </span>
+                </div>
+                
+                <div className="flex items-center space-x-4 text-sm text-gray-500">
+                  <div className="flex items-center space-x-1">
+                    <CalendarIcon className="h-4 w-4" />
+                    <span>
+                      {format(currentDate, 'MMMM yyyy')}
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <Users className="h-4 w-4" />
+                    <span>
+                      {calendarEvents.reduce((sum, event) => sum + event.resource.numberOfGuests, 0)} guests
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
