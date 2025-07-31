@@ -251,3 +251,45 @@ export function eventStyleGetter(event: CalendarEvent) {
     }
   };
 }
+
+// Hotel-specific time utilities for half-day booking logic
+export const HOTEL_TIMES = {
+  CHECK_IN_HOUR: 15, // 3:00 PM
+  CHECK_IN_MINUTE: 0,
+  CHECK_OUT_HOUR: 11, // 11:00 AM
+  CHECK_OUT_MINUTE: 0
+} as const;
+
+// Create a proper check-in date with hotel-specific time
+export function createCheckInDate(date: Date): Date {
+  const checkInDate = new Date(date);
+  checkInDate.setHours(HOTEL_TIMES.CHECK_IN_HOUR, HOTEL_TIMES.CHECK_IN_MINUTE, 0, 0);
+  return checkInDate;
+}
+
+// Create a proper check-out date with hotel-specific time
+export function createCheckOutDate(date: Date): Date {
+  const checkOutDate = new Date(date);
+  checkOutDate.setHours(HOTEL_TIMES.CHECK_OUT_HOUR, HOTEL_TIMES.CHECK_OUT_MINUTE, 0, 0);
+  return checkOutDate;
+}
+
+// Calculate visual position offset for half-day display
+export function getVisualStartOffset(): number {
+  // Check-in at 3PM means visual start at 62.5% of the day (15/24 = 0.625)
+  return 0.5; // Simplified to 50% for clean visual representation
+}
+
+// Calculate visual end offset for half-day display  
+export function getVisualEndOffset(): number {
+  // Check-out at 11AM means visual end at 45.8% of the day (11/24 = 0.458)
+  return 0.5; // Simplified to 50% for clean visual representation
+}
+
+// Update existing reservation date logic to use proper times
+export function normalizeReservationDates(checkIn: Date, checkOut: Date): { checkIn: Date; checkOut: Date } {
+  return {
+    checkIn: createCheckInDate(checkIn),
+    checkOut: createCheckOutDate(checkOut)
+  };
+}

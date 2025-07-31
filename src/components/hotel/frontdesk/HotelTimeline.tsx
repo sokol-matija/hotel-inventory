@@ -135,7 +135,9 @@ function ReservationBlock({
     }),
   }), [reservation, room, guest]);
 
-  // Calculate position and span
+  // Calculate position and span with half-day logic
+  // Check-in is at 3:00 PM, so visual start is at middle of check-in day
+  // Check-out is at 11:00 AM, so visual end is at middle of check-out day
   const checkInDate = startOfDay(reservation.checkIn);
   const checkOutDate = startOfDay(reservation.checkOut);
   const timelineStart = startOfDay(startDate);
@@ -178,10 +180,14 @@ function ReservationBlock({
   const statusColors = RESERVATION_STATUS_COLORS[reservation.status as ReservationStatus] || RESERVATION_STATUS_COLORS.confirmed;
   const flag = getCountryFlag(guest?.nationality || '');
   
-  // Calculate absolute positioning within the date cell
+  // Calculate absolute positioning within the date cell with half-day logic
   const cellWidth = 100; // Each day cell width
-  const leftOffset = visibleStartDay * cellWidth;
-  const width = visibleSpan * cellWidth - 2; // Account for minimal borders
+  // Start at middle of check-in day (50% offset) - second half of the cube
+  const leftOffset = visibleStartDay * cellWidth + (cellWidth * 0.5);
+  // Width calculation: total visual span should end at middle of checkout day
+  // From middle of check-in day to middle of check-out day
+  // This makes bookings start in second half of check-in day and end in first half of check-out day
+  const width = ((visibleSpan - 1) * cellWidth) + (cellWidth * 0.5) - 2; // Full days + half of checkout day - borders
   
   return (
     <div
@@ -264,10 +270,16 @@ function DroppableDateCell({
   const [{ isOver, canDrop }, drop] = useDrop(() => ({
     accept: ItemTypes.RESERVATION,
     drop: (item: any) => {
-      // Calculate new dates based on drop position
+      // Calculate new dates based on drop position with proper check-in/check-out times
       const originalDuration = Math.ceil((item.checkOut.getTime() - item.checkIn.getTime()) / (24 * 60 * 60 * 1000));
+      
+      // Set check-in time to 3:00 PM (15:00)
       const newCheckIn = new Date(date);
+      newCheckIn.setHours(15, 0, 0, 0);
+      
+      // Set check-out time to 11:00 AM on the departure day
       const newCheckOut = addDays(newCheckIn, originalDuration);
+      newCheckOut.setHours(11, 0, 0, 0);
       
       console.log('Dropped reservation:', {
         reservationId: item.reservationId,

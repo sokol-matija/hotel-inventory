@@ -151,17 +151,15 @@ export function calculatePricing(
     ? (subtotal * HOTEL_CONSTANTS.SHORT_STAY_SUPPLEMENT) : 0;
   const additionalCharges = options.additionalCharges || 0;
   
-  // Calculate subtotal before VAT
-  const subtotalBeforeVAT = subtotal - childrenDiscounts.totalDiscount + tourismTax + petFee + parkingFee + shortStayFee + additionalCharges;
+  // Room prices already include 25% VAT (as per Croatian law)
+  // Calculate what the VAT amount was (for display purposes)
+  const roomSubtotalAfterDiscounts = subtotal - childrenDiscounts.totalDiscount;
+  const vatAmount = roomSubtotalAfterDiscounts * (HOTEL_CONSTANTS.VAT_RATE / (1 + HOTEL_CONSTANTS.VAT_RATE));
   
-  // Calculate VAT (25% on accommodation, not on tourism tax)
-  const vatableAmount = subtotal - childrenDiscounts.totalDiscount + petFee + parkingFee + shortStayFee + additionalCharges;
-  const vatAmount = vatableAmount * HOTEL_CONSTANTS.VAT_RATE;
+  // Total fees (tourism tax and extras - no additional VAT)
+  const totalFees = tourismTax + petFee + parkingFee + shortStayFee + additionalCharges;
   
-  // Total fees
-  const totalFees = tourismTax + petFee + parkingFee + shortStayFee + additionalCharges + vatAmount;
-  
-  // Final total
+  // Final total (room rates already include VAT, just add other fees)
   const total = subtotal - childrenDiscounts.totalDiscount + totalFees;
   
   return {
@@ -176,7 +174,7 @@ export function calculatePricing(
     totalDiscounts: childrenDiscounts.totalDiscount,
     fees: {
       tourism: tourismTax,
-      vat: vatAmount,
+      vat: vatAmount, // This is the VAT included in room price (for display)
       pets: petFee,
       parking: parkingFee,
       shortStay: shortStayFee,

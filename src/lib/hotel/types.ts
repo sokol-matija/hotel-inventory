@@ -226,7 +226,7 @@ export interface HotelContextType {
 
 // Constants
 export const HOTEL_CONSTANTS = {
-  VAT_RATE: 0.25, // 25%
+  VAT_RATE: 0.25, // 25% VAT (already included in room prices per Croatian law)
   PET_FEE: 20.00, // €20 per stay
   PARKING_FEE: 7.00, // €7 per night
   SHORT_STAY_SUPPLEMENT: 0.20, // +20% for stays < 3 days
@@ -236,4 +236,4 @@ export const HOTEL_CONSTANTS = {
   CHILDREN_HALF_PRICE_AGE: 7,
   CHILDREN_DISCOUNT_AGE: 14,
   MIN_NIGHTS_NO_SUPPLEMENT: 3
-} as const;
+} as const;;

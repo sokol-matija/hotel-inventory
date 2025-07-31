@@ -82,7 +82,7 @@ class HotelNotification {
             /* Hotel Notification Container */
             .hotel-notification-container {
                 position: fixed;
-                top: 20px;
+                bottom: 20px;
                 right: 20px;
                 z-index: 1000;
                 pointer-events: none;
@@ -92,7 +92,7 @@ class HotelNotification {
 
             @media (max-width: 768px) {
                 .hotel-notification-container {
-                    top: 10px;
+                    bottom: 10px;
                     right: 10px;
                     left: 10px;
                 }
@@ -293,7 +293,7 @@ class HotelNotification {
         const container = document.createElement('div');
         container.className = 'hotel-notification-container';
         container.style.position = 'fixed';
-        container.style.top = '20px';
+        container.style.bottom = '20px';
         container.style.right = '20px';
         container.style.zIndex = '1000';
         container.style.opacity = '0';
@@ -453,17 +453,18 @@ class HotelNotification {
     private positionNotifications() {
         let currentOffset = 0;
 
-        // Position from top to bottom
-        this.activeNotifications.forEach(notification => {
+        // Position from bottom to top (reverse order for stacking upwards)
+        for (let i = this.activeNotifications.length - 1; i >= 0; i--) {
+            const notification = this.activeNotifications[i];
             gsap.to(notification.container, {
-                y: currentOffset,
+                y: -currentOffset,
                 duration: 0.3,
                 ease: 'power2.out'
             });
 
             const height = notification.height || 80;
             currentOffset += height + this.notificationGap;
-        });
+        }
     }
 
     /**

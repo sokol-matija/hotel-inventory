@@ -49,7 +49,7 @@ function AppRoutes() {
           <ModuleSelector />
         </ProtectedRoute>
       } />
-      <Route path="/hotel/front-desk" element={
+      <Route path="/hotel/front-desk/*" element={
         <ProtectedRoute>
           <FrontDeskLayout />
         </ProtectedRoute>
