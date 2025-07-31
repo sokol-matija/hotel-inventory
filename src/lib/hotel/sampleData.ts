@@ -310,6 +310,184 @@ export function generateSampleReservations(): Reservation[] {
   return reservations;
 }
 
+// Generate demo reservations for investor presentation (80% occupancy for 3 weeks)
+export function generateDemoReservations(): Reservation[] {
+  const reservations: Reservation[] = [];
+  const today = new Date();
+  
+  // Get all rooms for generating realistic occupancy
+  const allRooms = HOTEL_POREC_ROOMS;
+  const targetOccupancy = 0.8; // 80% occupancy
+  
+  // Helper function to get random guest
+  function getRandomGuest() {
+    return SAMPLE_GUESTS[Math.floor(Math.random() * SAMPLE_GUESTS.length)];
+  }
+  
+  // Helper function to get random booking source
+  function getRandomBookingSource(): 'booking.com' | 'direct' | 'other' {
+    const sources = ['booking.com', 'direct', 'other'];
+    return sources[Math.floor(Math.random() * sources.length)] as any;
+  }
+  
+  // Helper function to get random status with realistic distribution
+  function getRandomStatus(): ReservationStatus {
+    const rand = Math.random();
+    if (rand < 0.7) return 'confirmed';
+    if (rand < 0.85) return 'checked-in';
+    if (rand < 0.92) return 'checked-out';
+    if (rand < 0.96) return 'incomplete-payment';
+    return 'unallocated';
+  }
+  
+  // Generate reservations for the next 3 weeks
+  for (let weekOffset = 0; weekOffset < 3; weekOffset++) {
+    const weekStart = addWeeks(today, weekOffset);
+    
+    // Shuffle rooms for this week
+    const shuffledRooms = [...allRooms].sort(() => Math.random() - 0.5);
+    const roomsToFill = Math.floor(shuffledRooms.length * targetOccupancy);
+    
+    for (let i = 0; i < roomsToFill; i++) {
+      const room = shuffledRooms[i];
+      const guest = getRandomGuest();
+      
+      // Random stay duration (1-7 days, with bias toward 2-4 days)
+      const stayDuration = Math.random() < 0.6 
+        ? 2 + Math.floor(Math.random() * 3) // 2-4 days (60% chance)
+        : 1 + Math.floor(Math.random() * 7); // 1-7 days (40% chance)
+      
+      // Random start day within the week (0-6)
+      const startDayOffset = Math.floor(Math.random() * 7);
+      const checkIn = addDays(weekStart, startDayOffset);
+      const checkOut = addDays(checkIn, stayDuration);
+      
+      // Determine status based on dates
+      let status: ReservationStatus;
+      if (checkOut < today) {
+        status = 'checked-out';
+      } else if (checkIn <= today && checkOut > today) {
+        status = Math.random() < 0.8 ? 'checked-in' : 'confirmed';
+      } else {
+        status = getRandomStatus();
+      }
+      
+      // Generate adults/children counts
+      const maxOccupancy = room.maxOccupancy;
+      const adults = Math.min(1 + Math.floor(Math.random() * 2), maxOccupancy); // 1-2 adults, max room capacity
+      const remainingCapacity = maxOccupancy - adults;
+      const childrenCount = remainingCapacity > 0 && Math.random() < 0.3 
+        ? Math.floor(Math.random() * Math.min(2, remainingCapacity + 1)) // 0-2 children
+        : 0;
+      
+      // Generate children array
+      const children: GuestChild[] = [];
+      for (let c = 0; c < childrenCount; c++) {
+        children.push(createChild(`Child ${c + 1}`, 3 + Math.floor(Math.random() * 12))); // Age 3-14
+      }
+      
+      // Special requests variety
+      const specialRequests = [
+        'Late check-in requested',
+        'Early check-out needed',
+        'Quiet room preferred',
+        'High floor preference',
+        'Sea view if available',
+        'Extra towels needed',
+        'Business trip - invoice required',
+        'Honeymoon - special occasion',
+        'Family vacation',
+        'Anniversary celebration',
+        ''
+      ];
+      const randomRequest = specialRequests[Math.floor(Math.random() * specialRequests.length)];
+      
+      // Random additional options
+      const hasPets = guest.hasPets && Math.random() < 0.3;
+      const needsParking = Math.random() < 0.4;
+      const additionalCharges = Math.random() < 0.2 ? Math.floor(Math.random() * 50) : 0;
+      
+      try {
+        const reservation = createReservation(
+          guest.id,
+          room.id,
+          checkIn,
+          checkOut,
+          adults,
+          children,
+          status,
+          getRandomBookingSource(),
+          randomRequest,
+          { hasPets, needsParking, additionalCharges }
+        );
+        reservations.push(reservation);
+      } catch (error) {
+        console.warn(`Failed to create reservation for room ${room.number}:`, error);
+      }
+    }
+  }
+  
+  // Add some specific showcase reservations for the demo
+  const showcaseReservations = [
+    // VIP guest in premium suite
+    createReservation(
+      'guest-1', // Hans Mueller (VIP)
+      'room-401', // Premium rooftop apartment
+      addDays(today, 1),
+      addDays(today, 5),
+      2,
+      [],
+      'confirmed',
+      'direct',
+      'VIP guest - champagne and sea view preferred',
+      { needsParking: true, additionalCharges: 150 }
+    ),
+    
+    // Family with pets currently checked in
+    createReservation(
+      'guest-2', // Familie Schmidt with children
+      'room-205', // Family room on floor 2
+      subDays(today, 2),
+      addDays(today, 3),
+      2,
+      SAMPLE_GUESTS.find(g => g.id === 'guest-2')?.children || [],
+      'checked-in',
+      'booking.com',
+      'Family with small children and dog',
+      { hasPets: true, needsParking: true }
+    ),
+    
+    // High-value business booking
+    createReservation(
+      'guest-6', // James Thompson
+      'room-314',
+      addDays(today, 7),
+      addDays(today, 12),
+      1,
+      [],
+      'confirmed',
+      'direct',
+      'Business conference - daily housekeeping required',
+      { needsParking: true, additionalCharges: 200 }
+    )
+  ];
+  
+  // Add showcase reservations, replacing any conflicting ones
+  showcaseReservations.forEach(showcase => {
+    // Remove any existing reservation for the same room and overlapping dates
+    const index = reservations.findIndex(r => 
+      r.roomId === showcase.roomId && 
+      (r.checkIn < showcase.checkOut && r.checkOut > showcase.checkIn)
+    );
+    if (index >= 0) {
+      reservations.splice(index, 1);
+    }
+    reservations.push(showcase);
+  });
+  
+  return reservations;
+}
+
 // Helper function to create a reservation with automatic pricing
 function createReservation(
   guestId: string,
@@ -379,7 +557,7 @@ function createReservation(
 }
 
 // Export generated sample reservations
-export const SAMPLE_RESERVATIONS: Reservation[] = generateSampleReservations();
+export const SAMPLE_RESERVATIONS: Reservation[] = generateDemoReservations();
 
 // Utility functions for sample data
 export function getGuestById(guestId: string): Guest | undefined {

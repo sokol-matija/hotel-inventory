@@ -1,64 +1,78 @@
-# Hotel Porec Data Structure Testing Plan
+# Real-Time Status Update System Implementation Plan
 
-## Test Objectives
-Test the complete Hotel Porec data structure implementation to ensure it's ready for calendar integration.
+## Overview
+Implement real-time status updates for hotel reservations so that when users click "Check In" or "Check Out" buttons in the ReservationPopup, the calendar immediately reflects the status changes with proper color coding.
 
-## Test Plan Tasks
+## Current State Analysis
+- ✅ CalendarView displays reservations from SAMPLE_RESERVATIONS using `reservationsToCalendarEvents()`
+- ✅ ReservationPopup has status change buttons with `onStatusChange` prop
+- ✅ Status colors defined in RESERVATION_STATUS_COLORS
+- ❌ No connection between popup status changes and calendar updates
+- ❌ No global state management for reservations
 
-### 1. TypeScript Compilation Test
-- [ ] Verify `src/lib/hotel/types.ts` compiles without errors
-- [ ] Verify `src/lib/hotel/hotelData.ts` compiles without errors  
-- [ ] Verify `src/lib/hotel/pricingCalculator.ts` compiles without errors
-- [ ] Verify `src/lib/hotel/sampleData.ts` compiles without errors
-- [ ] Run full TypeScript build to ensure no dependency errors
+## Implementation Tasks
 
-### 2. Data Structure Validation Test
-- [ ] Examine hotel types and interfaces in `types.ts`
-- [ ] Verify Hotel Porec has exactly 46 rooms configured in `hotelData.ts`
-- [ ] Check room categorization (standard, family, luxury, etc.) 
-- [ ] Validate room amenities and pricing structures
-- [ ] Test room availability and booking status data
+### 1. Create Global State Management Context
+- [ ] Create `src/lib/hotel/state/HotelContext.tsx`
+  - Define HotelContextType interface with reservations array and update functions
+  - Implement optimistic updates with localStorage persistence
+  - Add loading states and error handling
+  - Include rollback mechanism for failed updates
 
-### 3. Pricing Calculator Test
-- [ ] Test Croatian tax calculations (VAT rates)
-- [ ] Verify seasonal pricing adjustments work
-- [ ] Test peak/off-peak pricing logic
-- [ ] Validate currency formatting (HRK/EUR)
-- [ ] Test discount calculations if present
+### 2. Update CalendarView Component
+- [ ] Replace SAMPLE_RESERVATIONS with context state
+- [ ] Update calendarEvents to use context reservations
+- [ ] Add loading indicator support
+- [ ] Ensure calendar re-renders when reservations change
 
-### 4. Sample Data Test
-- [ ] Verify guest data generation works correctly
-- [ ] Test reservation data structure and dates
-- [ ] Check guest profiles have proper fields
-- [ ] Validate reservation-room associations
-- [ ] Test check-in/check-out date logic
+### 3. Update ReservationPopup Component  
+- [ ] Connect status change buttons to context actions
+- [ ] Add loading states during status updates
+- [ ] Include error handling with user feedback
+- [ ] Ensure popup updates immediately on status change
 
-### 5. Integration Test
-- [ ] Test importing hotel data in components
-- [ ] Verify data can be consumed by calendar views
-- [ ] Check TypeScript type safety across imports
-- [ ] Test data transformation for UI components
-- [ ] Validate no circular dependencies
+### 4. Integration and Testing
+- [ ] Wrap CalendarView with HotelContext provider
+- [ ] Test immediate color updates on status changes
+- [ ] Verify localStorage persistence across page refreshes
+- [ ] Test error handling and rollback functionality
+- [ ] Ensure TypeScript compilation passes
 
-### 6. Performance & Memory Test
-- [ ] Check data loading performance
-- [ ] Verify memory usage is reasonable for 46 rooms
-- [ ] Test data caching if implemented
-- [ ] Check for memory leaks in sample data generation
+## Technical Implementation Details
 
-## Files Being Tested
-- `src/lib/hotel/types.ts` - TypeScript interfaces and types
-- `src/lib/hotel/hotelData.ts` - Hotel Porec configuration (46 rooms)
-- `src/lib/hotel/pricingCalculator.ts` - Croatian tax and pricing logic
-- `src/lib/hotel/sampleData.ts` - Sample guests and reservations
+### HotelContext Structure
+```tsx
+interface HotelContextType {
+  reservations: Reservation[];
+  updateReservationStatus: (id: string, newStatus: ReservationStatus) => Promise<void>;
+  isUpdating: boolean;
+  error: string | null;
+}
+```
+
+### Optimistic Update Flow
+1. User clicks status button → UI immediately updates calendar color
+2. Show loading indicator during async operation
+3. Persist change to localStorage (simulate API call)
+4. On success: keep the change
+5. On error: rollback to previous state and show error message
+
+### File Modifications Required
+- `/src/components/hotel/frontdesk/CalendarView.tsx` (line 233: calendarEvents)
+- `/src/components/hotel/frontdesk/Reservations/ReservationPopup.tsx` (line 513: onStatusChange)
+- Create new: `/src/lib/hotel/state/HotelContext.tsx`
 
 ## Success Criteria
-- All TypeScript files compile without errors
-- Hotel Porec has exactly 46 rooms properly configured
-- Croatian tax calculations work correctly
-- Sample data generates valid guest and reservation objects
-- Data can be successfully imported and used in React components
-- No performance issues with the data structures
+- ✅ Click "Check In" → Calendar immediately shows green color
+- ✅ Click "Check Out" → Calendar immediately shows gray color  
+- ✅ Status changes persist after page refresh
+- ✅ Smooth UX with loading indicators
+- ✅ Proper error handling with user feedback
+- ✅ TypeScript compilation passes
+- ✅ No breaking changes to existing functionality
+
+## Expected Impact
+This will complete the missing piece in the hotel management system user workflow, providing immediate visual feedback when staff change reservation statuses, which is critical for front desk operations.
 
 ## Review Section
-*To be completed after testing*
+*To be completed after implementation*

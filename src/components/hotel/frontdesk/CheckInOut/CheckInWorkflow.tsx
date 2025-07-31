@@ -22,7 +22,8 @@ import {
   Users,
   Baby,
   Wifi,
-  Car
+  Car,
+  CheckCheck
 } from 'lucide-react';
 import { Reservation, Guest, Room } from '../../../../lib/hotel/types';
 import { useHotel } from '../../../../lib/hotel/state/HotelContext';
@@ -136,6 +137,14 @@ export default function CheckInWorkflow({
     setCheckInSteps(prev => prev.map(step =>
       step.id === stepId ? { ...step, completed: !step.completed } : step
     ));
+  };
+
+  const handleCheckAll = () => {
+    setCheckInSteps(prev => prev.map(step => ({ ...step, completed: true })));
+    // Also set individual state items
+    setRoomKeyIssued(true);
+    setWifiInfoProvided(true);
+    setParkingAssigned(true);
   };
 
   const canCompleteCheckIn = () => {
@@ -284,7 +293,18 @@ export default function CheckInWorkflow({
           {/* Check-In Steps */}
           <Card>
             <CardHeader>
-              <CardTitle>Check-In Checklist</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle>Check-In Checklist</CardTitle>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCheckAll}
+                  className="bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700"
+                >
+                  <CheckCheck className="h-4 w-4 mr-2" />
+                  Check All (Experienced Staff)
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">

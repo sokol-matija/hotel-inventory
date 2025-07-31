@@ -16,6 +16,8 @@ interface HotelContextType {
   // Actions - Reservations
   updateReservationStatus: (id: string, newStatus: ReservationStatus) => Promise<void>;
   updateReservationNotes: (id: string, notes: string) => Promise<void>;
+  updateReservation: (id: string, updates: Partial<Reservation>) => Promise<void>;
+  createReservation: (reservationData: Omit<Reservation, 'id' | 'bookingDate' | 'lastModified'>) => Promise<void>;
   
   // Actions - Guests
   createGuest: (guest: Omit<Guest, 'id' | 'totalStays'>) => Promise<void>;
@@ -175,6 +177,69 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Update reservation (for moving rooms, changing dates, etc.)
+  const updateReservation = async (reservationId: string, updates: Partial<Reservation>): Promise<void> => {
+    const originalReservations = [...reservations];
+    
+    // Optimistic update
+    const updatedReservations = reservations.map(reservation =>
+      reservation.id === reservationId
+        ? { ...reservation, ...updates, lastModified: new Date() }
+        : reservation
+    );
+    
+    setReservations(updatedReservations);
+    setIsUpdating(true);
+
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Persist to localStorage
+      saveReservationsToStorage(updatedReservations);
+      
+      console.log(`Reservation ${reservationId} updated successfully`);
+      
+    } catch (error) {
+      console.error('Failed to update reservation:', error);
+      setReservations(originalReservations);
+      throw error;
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  // Create new reservation
+  const createReservation = async (reservationData: Omit<Reservation, 'id' | 'bookingDate' | 'lastModified'>): Promise<void> => {
+    const newReservation: Reservation = {
+      ...reservationData,
+      id: `res-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      bookingDate: new Date(),
+      lastModified: new Date()
+    };
+
+    const updatedReservations = [...reservations, newReservation];
+    setReservations(updatedReservations);
+    setIsUpdating(true);
+
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Persist to localStorage
+      saveReservationsToStorage(updatedReservations);
+      
+      console.log(`Reservation ${newReservation.id} created successfully`);
+      
+    } catch (error) {
+      console.error('Failed to create reservation:', error);
+      setReservations(reservations); // Rollback
+      throw error;
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   // Create new guest
   const createGuest = async (guestData: Omit<Guest, 'id' | 'totalStays'>): Promise<void> => {
     const newGuest: Guest = {
@@ -286,6 +351,8 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
     lastUpdated,
     updateReservationStatus,
     updateReservationNotes,
+    updateReservation,
+    createReservation,
     createGuest,
     updateGuest,
     findGuestsByName,

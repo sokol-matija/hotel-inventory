@@ -22,13 +22,16 @@ import {
   LogOut,
   Edit,
   Save,
-  X
+  X,
+  Send
 } from 'lucide-react';
 import { CalendarEvent, Reservation, Guest } from '../../../../lib/hotel/types';
 import { SAMPLE_GUESTS } from '../../../../lib/hotel/sampleData';
 import { HOTEL_POREC_ROOMS } from '../../../../lib/hotel/hotelData';
 import { RESERVATION_STATUS_COLORS } from '../../../../lib/hotel/calendarUtils';
 import { useHotel } from '../../../../lib/hotel/state/HotelContext';
+import { HotelEmailService } from '../../../../lib/emailService';
+import hotelNotification from '../../../../lib/notifications';
 import PaymentDetailsModal from './PaymentDetailsModal';
 import CheckInWorkflow from '../CheckInOut/CheckInWorkflow';
 import CheckOutWorkflow from '../CheckInOut/CheckOutWorkflow';
@@ -53,6 +56,7 @@ export default function ReservationPopup({
   const [showCheckOutWorkflow, setShowCheckOutWorkflow] = useState(false);
   const [editedNotes, setEditedNotes] = useState('');
   const [statusUpdateError, setStatusUpdateError] = useState<string | null>(null);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   if (!event) return null;
 
@@ -115,6 +119,70 @@ export default function ReservationPopup({
     } catch (error) {
       console.error('Failed to update status:', error);
       setStatusUpdateError('Failed to update reservation status. Please try again.');
+    }
+  };
+
+  const handleSendWelcomeEmail = async () => {
+    if (!reservation) return;
+    
+    try {
+      setIsSendingEmail(true);
+      const result = await HotelEmailService.sendWelcomeEmail(reservation);
+      
+      if (result.success) {
+        hotelNotification.success(
+          'Welcome Email Sent!',
+          `Guest information sent to ${guest?.email || 'guest'}`,
+          4
+        );
+      } else {
+        hotelNotification.error(
+          'Email Failed',
+          result.message,
+          5
+        );
+      }
+    } catch (error) {
+      console.error('Error sending email:', error);
+      hotelNotification.error(
+        'Email Error',
+        'Failed to send welcome email. Please try again.',
+        5
+      );
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
+  const handleSendReminderEmail = async () => {
+    if (!reservation) return;
+    
+    try {
+      setIsSendingEmail(true);
+      const result = await HotelEmailService.sendReminderEmail(reservation);
+      
+      if (result.success) {
+        hotelNotification.success(
+          'Reminder Email Sent!',
+          `Reminder sent to ${guest?.email || 'guest'}`,
+          4
+        );
+      } else {
+        hotelNotification.error(
+          'Email Failed',
+          result.message,
+          5
+        );
+      }
+    } catch (error) {
+      console.error('Error sending reminder:', error);
+      hotelNotification.error(
+        'Email Error',
+        'Failed to send reminder email. Please try again.',
+        5
+      );
+    } finally {
+      setIsSendingEmail(false);
     }
   };
 
@@ -322,6 +390,54 @@ export default function ReservationPopup({
                     </div>
                   </div>
                 )}
+              </CardContent>
+            </Card>
+
+            {/* Guest Communication */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Send className="h-5 w-5" />
+                  <span>Guest Communication</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button
+                    onClick={handleSendWelcomeEmail}
+                    disabled={isSendingEmail || !guest?.email}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    {isSendingEmail ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    ) : (
+                      <Mail className="h-4 w-4 mr-2" />
+                    )}
+                    Send Welcome Email
+                  </Button>
+                  
+                  <Button
+                    onClick={handleSendReminderEmail}
+                    disabled={isSendingEmail || !guest?.email}
+                    variant="outline"
+                    className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                  >
+                    {isSendingEmail ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                    ) : (
+                      <Send className="h-4 w-4 mr-2" />
+                    )}
+                    Send Reminder
+                  </Button>
+                </div>
+                
+                <div className="mt-3 text-sm text-gray-600">
+                  <p>📧 <strong>Welcome Email:</strong> Includes breakfast times, WiFi details, check-in instructions, and local recommendations</p>
+                  <p className="mt-1">⏰ <strong>Reminder Email:</strong> Simple reminder about upcoming stay with key details</p>
+                  {!guest?.email && (
+                    <p className="mt-2 text-red-600">⚠️ No email address on file for this guest</p>
+                  )}
+                </div>
               </CardContent>
             </Card>
 

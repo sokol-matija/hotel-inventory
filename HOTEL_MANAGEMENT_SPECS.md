@@ -1,4 +1,4 @@
-# Hotel Management System - Complete Specifications
+s# Hotel Management System - Complete Specifications
 
 ## Project Overview
 Expanding the existing hotel inventory management system to include comprehensive hotel management features. The system will have a modular architecture with dummy data for demonstration purposes.
@@ -84,19 +84,20 @@ After login, users see a module selection screen with:
 
 ## Front Desk Module - Detailed Specifications
 
-### 1. **🚀 Ultra-Critical Calendar View (Staff Retention Priority #1)**
+### 1. **🚀 Ultra-Critical Timeline Calendar View (Staff Retention Priority #1)**
 
-**Research Foundation**: Interactive drag-and-drop calendar is the **most critical feature** across all hotel PMS systems
+**Research Foundation**: Hotel front desk timeline view is the **most critical feature** across all hotel PMS systems
 
-#### **Layout & Structure (Optimized for <1 Month Staff Competency)**
-- **Intuitive Floor Grouping**: Expandable/collapsible floor sections with clear visual hierarchy
-- **Premium Room Distinction**: Room 401 with luxury styling and premium indicators
-- **Multi-View Intelligence**: 14-day default, with quick-switch to 7-day, 30-day views
-- **Distraction-Free Mode**: Full-screen calendar with focus mode toggle
-- **Smart Zoom**: Automatic layout optimization based on screen size and room count
+#### **Layout & Structure (Hotel Timeline Design)**
+- **Left Side**: Room list grouped by floor with expand/collapse functionality
+- **Top Header**: 14 days displayed horizontally with dates
+- **Grid Layout**: Each cell represents one room × one date intersection
+- **Floor Grouping**: Expandable/collapsible floor sections (Floor 1, Floor 2, Floor 3, Floor 4 - Rooftop Premium)
+- **Room Information**: Room number + room type display for each row
+- **Distraction-Free Mode**: Full-screen timeline with focus mode toggle
 
-#### **Advanced Reservation Blocks (Color Psychology Optimized)**
-- **Sophisticated Status System**: 6 carefully chosen status colors for instant recognition
+#### **Advanced Reservation Blocks (Enhanced Visual Information)** ✅ **IMPLEMENTED**
+- **✅ Sophisticated Status System**: 6 carefully chosen status colors for instant recognition
   - 🟠 **Confirmed** (warm, welcoming)
   - 🟢 **Checked in** (active, positive)
   - ⚫ **Checked out** (neutral, completed)
@@ -104,12 +105,28 @@ After login, users see a module selection screen with:
   - 🔵 **Unallocated** (calm, available)
   - ⚪ **Incomplete payment** (urgent, action required)
 
-#### **Professional Drag & Drop System (Zero-Training Goal)**
-- **Intelligent Move Detection**: Smart drag targets with visual feedback
-- **Edge Resize Mastery**: Intuitive extend/split with snap-to-grid functionality
-- **Conflict Prevention**: Real-time occupied room warnings with smart alternatives
-- **Gesture Creation**: Natural drag-to-create booking with auto-populated details
-- **Undo/Redo Support**: Ctrl+Z functionality for confident experimentation
+- **✅ Rich Block Information**: Each reservation block displays:
+  - **✅ Guest Name**: Primary guest name with country flag
+  - **✅ Occupancy Icons**: 👤 Adults, 👶 Children with accurate counts
+  - **✅ Pet Indicator**: ❤️ icon if guests have pets
+  - **✅ Country Flag**: Visual emoji flag based on guest nationality
+  - **✅ Drag Handle**: Move icon for clear interaction indication
+  - **✅ Duration**: Spans multiple days showing stay length
+
+- **✅ Visual Improvements**: Perfect cell coverage and spacing
+  - **✅ Full Cell Coverage**: Reservation blocks completely fill their cells
+  - **✅ No Empty Spaces**: Eliminated gaps and alignment issues
+  - **✅ Better Height**: Increased room row height for better visibility
+  - **✅ Pixel-Perfect Positioning**: Fixed absolute positioning calculations
+
+#### **Professional Drag & Drop System (Zero-Training Goal)** ✅ **IMPLEMENTED**
+- **✅ Intelligent Move Detection**: Smart drag targets with visual feedback using react-dnd
+- **✅ Real-time Visual Feedback**: Drop zones highlight blue (valid) or red (invalid)
+- **✅ Reservation Moving**: Drag reservations between rooms while preserving stay duration
+- **✅ Conflict Prevention**: Smart validation prevents invalid moves
+- **✅ Click Interaction**: Single click opens existing ReservationPopup with full details
+- **✅ Drag Handle**: Move icon on each reservation block for clear interaction cues
+- **✅ Instant Updates**: Changes are immediately reflected and persisted
 
 ### 2. Reservation Management
 
@@ -152,12 +169,63 @@ After login, users see a module selection screen with:
 - 🖨️ Print PDF invoice button
 - 📧 **Send Reminder Email** button (manual trigger for testing)
 
-### 3. Check-in/Check-out Process
-- **Check-in Button**: In reservation detail view
-- **Status Change**: Updates reservation color on calendar
-- **Real-time Updates**: Calendar reflects status changes immediately
+### 3. **Professional Notification System** ✅ **IMPLEMENTED**
 
-### 4. Guest Management
+#### **Custom GSAP-Powered Notifications (Hotel Theme)**
+- **✅ Hotel-Branded Design**: Light, professional theme matching hotel app (not dark mode)
+- **✅ Smooth Animations**: Beautiful GSAP slide-in effects with scale and bounce
+- **✅ Auto-Stacking**: Multiple notifications stack gracefully with repositioning
+- **✅ Multiple Types**: Success, error, info, and warning with appropriate colors
+- **✅ Responsive Design**: Works perfectly on mobile and desktop
+- **✅ Progress Indicators**: Visual countdown bars for notification duration
+
+#### **Replaced All Alerts** ✅ **COMPLETE**
+- **✅ Booking Confirmation**: Custom success notifications with guest details
+- **✅ Error Handling**: Professional error messages with actionable feedback
+- **✅ Status Updates**: Elegant notifications for reservation changes
+- **✅ Move Operations**: Detailed feedback for drag & drop operations
+
+### 4. **Guest Communication System** ✅ **IMPLEMENTED**
+
+#### **Professional Email Templates (HTML + CSS)**
+- **✅ Welcome Email**: Comprehensive guest information package
+  - 🏨 Hotel branding with Porec information
+  - 📋 Complete booking details (room, dates, pricing)
+  - ⏰ Check-in instructions and timing (2:00 PM - 11:00 PM)
+  - 🍽️ Breakfast service details (7:00 AM - 10:30 AM, continental buffet)
+  - 🌐 WiFi and amenities information
+  - 🏖️ Local Poreč attractions and recommendations
+  - 📞 Complete Hotel Porec contact information
+  - 🐕 Pet-specific information (when applicable)
+  - 📱 Responsive design for mobile and desktop
+
+- **✅ Reminder Email**: Simple upcoming stay reminder
+  - Days until arrival countdown
+  - Key booking details
+  - What to bring checklist
+  - Contact information
+
+#### **Email Integration** ✅ **COMPLETE**
+- **✅ Reservation Popup**: Dedicated "Guest Communication" section
+- **✅ Real-time Feedback**: Custom notifications for email status
+- **✅ Loading States**: Professional spinning indicators
+- **✅ Error Handling**: Meaningful error messages with retry options
+- **✅ Email Validation**: Checks for guest email availability
+
+### 5. Check-in/Check-out Process ✅ **ENHANCED**
+
+#### **Streamlined Check-in Workflow**
+- **✅ Check-in Button**: In reservation detail view
+- **✅ "Check All" Button**: One-click completion for experienced staff
+  - Professional blue button in check-in workflow header
+  - "Check All (Experienced Staff)" label for context
+  - Instantly marks all checklist items as completed
+  - Updates all individual state items automatically
+- **✅ Status Change**: Updates reservation color on calendar
+- **✅ Real-time Updates**: Calendar reflects status changes immediately
+- **✅ Custom Notifications**: Professional feedback for all operations
+
+### 6. Guest Management
 
 #### Guest Profile Information
 **Contact Details:**
@@ -179,26 +247,40 @@ After login, users see a module selection screen with:
 
 ## Technical Implementation
 
-### Calendar Library: React Big Calendar (Free Alternative)
-**Why React Big Calendar:**
-- ✅ Free, open-source MIT license
-- ✅ Mature library with active community support
-- ✅ Customizable grid layout for hotel booking systems
-- ✅ React + TypeScript support
-- ✅ Custom drag & drop implementation possible
-- ✅ Flexible styling and theming
+### Custom Hotel Timeline Component
+**Why Custom Timeline Component:**
+- ✅ Perfect fit for hotel front desk timeline layout (rooms × dates grid)
+- ✅ Full control over drag & drop behavior and visual feedback
+- ✅ Optimized for 14-day view with floor grouping
+- ✅ Rich reservation blocks with guest info, icons, and flags
+- ✅ Seamless integration with existing ReservationPopup component
+- ✅ Better performance than forcing calendar libraries into hotel timeline format
 
-**Installation:**
+**Core Dependencies:** ✅ **INSTALLED**
 ```bash
-npm install react-big-calendar moment
-npm install @types/react-big-calendar --save-dev
+npm install react-dnd react-dnd-html5-backend  # Drag & drop functionality ✅
+npm install date-fns                           # Date calculations and formatting ✅
+npm install lucide-react                       # Icons for adults/children/pets ✅
+npm install gsap                               # Animation library for notifications ✅
+npm install @types/gsap                        # TypeScript types for GSAP ✅
 ```
 
-**Custom Implementation Approach:**
-- Use Month view as base, customize to show rooms as "days"
-- Implement custom drag & drop with react-dnd
-- Custom styling to achieve hotel booking grid appearance
-- Floor grouping through custom header components
+**Custom Implementation Features:** ✅ **COMPLETE**
+- ✅ CSS Grid layout for rooms × dates timeline
+- ✅ React DnD for drag & drop reservation management
+- ✅ Custom reservation blocks with rich visual information
+- ✅ Floor-based room grouping with expand/collapse
+- ✅ GSAP-powered notification system with hotel theme
+- ✅ Professional email templates with HTML/CSS
+- ✅ Check-in workflow with "Check All" functionality
+- ✅ Responsive design with horizontal scrolling for 14+ days
+- ✅ Integration with existing hotel data structures and reservation popup
+- ✅ Perfect visual alignment and pixel-perfect positioning
+
+**New Files Created:** ✅ **IMPLEMENTED**
+- ✅ `src/lib/notifications.ts` - Custom notification system with GSAP
+- ✅ `src/lib/emailService.ts` - Complete email service with HTML templates
+- ✅ `src/lib/hotel/countryFlags.ts` - Country flag mapping utilities
 
 ### Internationalization (i18n) Setup
 **Language Files:**
