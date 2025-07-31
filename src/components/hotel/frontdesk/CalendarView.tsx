@@ -218,6 +218,17 @@ function FloorSection({
 // Main calendar view component
 export default function CalendarView() {
   const { reservations, isUpdating } = useHotel();
+  
+  // Debug logging
+  React.useEffect(() => {
+    console.log('=== CALENDAR DEBUG INFO ===');
+    console.log('HOTEL_POREC_ROOMS:', HOTEL_POREC_ROOMS);
+    console.log('HOTEL_POREC_ROOMS length:', HOTEL_POREC_ROOMS?.length);
+    console.log('First room:', HOTEL_POREC_ROOMS?.[0]);
+    console.log('reservations:', reservations);
+    console.log('reservations length:', reservations?.length);
+    console.log('=== END DEBUG INFO ===');
+  }, [reservations]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentView, setCurrentView] = useState<string>('twoWeeks');
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -404,7 +415,7 @@ export default function CalendarView() {
                 {/* @ts-ignore */}
                 <DragAndDropCalendar
                   localizer={localizer}
-                  events={calendarEvents}
+                  events={calendarEvents.filter(event => event && event.title)}
                   startAccessor="start"
                   endAccessor="end"
                   titleAccessor="title"
@@ -426,11 +437,55 @@ export default function CalendarView() {
                   resizable={true}
                   popup={true}
                   popupOffset={30}
-                  resources={HOTEL_POREC_ROOMS.map(room => ({
-                    id: room.id,
-                    title: `${formatRoomNumber(room)} - ${getRoomTypeDisplay(room)}`,
-                    floor: room.floor
-                  }))}
+                  resources={(() => {
+                    try {
+                      if (!HOTEL_POREC_ROOMS || !Array.isArray(HOTEL_POREC_ROOMS)) {
+                        console.error('HOTEL_POREC_ROOMS is not a valid array:', HOTEL_POREC_ROOMS);
+                        return [{ id: 'fallback-room', title: 'Room 101 - Fallback', floor: 1 }];
+                      }
+                      
+                      if (HOTEL_POREC_ROOMS.length === 0) {
+                        console.error('HOTEL_POREC_ROOMS is empty');
+                        return [{ id: 'fallback-room', title: 'Room 101 - Fallback', floor: 1 }];
+                      }
+                      
+                      const processedRooms = HOTEL_POREC_ROOMS
+                        .filter(room => room && room.id && room.number) // Filter out invalid rooms
+                        .map(room => {
+                          try {
+                            const roomNumber = formatRoomNumber(room) || room.number || 'Unknown';
+                            const roomType = getRoomTypeDisplay(room) || room.nameEnglish || 'Room';
+                            const title = `${roomNumber} - ${roomType}`;
+                            console.log('Processing room:', room.id, title);
+                            return {
+                              id: room.id,
+                              title,
+                              floor: room.floor || 1
+                            };
+                          } catch (error) {
+                            console.error('Error formatting room:', room, error);
+                            return {
+                              id: room.id || `room-${Math.random()}`,
+                              title: `Room ${room.number || 'Unknown'}`,
+                              floor: room.floor || 1
+                            };
+                          }
+                        })
+                        .filter(resource => resource && resource.title && resource.title.length > 0); // Ensure all resources have valid titles
+                      
+                      console.log('Final processed rooms:', processedRooms);
+                      
+                      if (processedRooms.length === 0) {
+                        console.error('No valid rooms after processing');
+                        return [{ id: 'fallback-room', title: 'Room 101 - Fallback', floor: 1 }];
+                      }
+                      
+                      return processedRooms;
+                    } catch (error) {
+                      console.error('Error processing hotel rooms:', error);
+                      return [{ id: 'fallback-room', title: 'Room 101 - Fallback', floor: 1 }];
+                    }
+                  })()}
                   resourceIdAccessor="id"
                   resourceTitleAccessor="title"
                   components={{
