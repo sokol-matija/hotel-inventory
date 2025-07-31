@@ -24,3 +24,5 @@ yarn-error.log*
 .vercel
 
 add_fridges_freezers.sql
+
+logs/
