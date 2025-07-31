@@ -56,7 +56,7 @@ function HotelOverviewStats({ reservations }: { reservations: any[] }) {
         <CardContent>
           <div className="text-2xl font-bold">{occupiedRooms}/{totalRooms}</div>
           <div className="flex items-center space-x-2">
-            <Badge variant={occupancyRate > 80 ? "destructive" : occupancyRate > 60 ? "default" : "secondary"}>
+            <Badge variant={occupancyRate > 80 ? "default" : occupancyRate > 60 ? "secondary" : "destructive"}>
               {occupancyRate.toFixed(1)}%
             </Badge>
             <p className="text-xs text-muted-foreground">

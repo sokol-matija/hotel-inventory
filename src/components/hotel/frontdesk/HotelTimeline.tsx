@@ -69,19 +69,25 @@ function TimelineHeader({
       </div>
       
       {/* Date headers */}
-      <div className="grid grid-cols-[280px_repeat(14,minmax(80px,1fr))] border-b border-gray-200 relative z-20">
+      <div className="grid grid-cols-[240px_repeat(14,minmax(60px,1fr))] border-b border-gray-200 relative z-20">
         <div className="p-3 bg-gray-50 border-r border-gray-200 font-medium text-gray-700">
           Rooms
         </div>
-        {dates.map((date, index) => (
-          <div 
-            key={index}
-            className={`p-3 text-center border-r border-gray-200 ${
-              isSameDay(date, new Date()) 
-                ? 'bg-blue-50 font-semibold text-blue-700' 
-                : 'bg-gray-50 text-gray-700'
-            }`}
-          >
+        {dates.map((date, index) => {
+          const isToday = isSameDay(date, new Date());
+          const isWeekend = date.getDay() === 0 || date.getDay() === 6; // Sunday = 0, Saturday = 6
+          
+          return (
+            <div 
+              key={index}
+              className={`p-3 text-center border-r border-gray-200 ${
+                isToday 
+                  ? 'bg-blue-50 font-semibold text-blue-700' 
+                  : isWeekend
+                  ? 'bg-orange-50 text-orange-700 font-medium'
+                  : 'bg-gray-50 text-gray-700'
+              }`}
+            >
             <div className="text-xs font-medium">
               {format(date, 'EEE')}
             </div>
@@ -92,7 +98,8 @@ function TimelineHeader({
               {format(date, 'MMM')}
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -135,9 +142,7 @@ function ReservationBlock({
     }),
   }), [reservation, room, guest]);
 
-  // Calculate position and span with half-day logic
-  // Check-in is at 3:00 PM, so visual start is at middle of check-in day
-  // Check-out is at 11:00 AM, so visual end is at middle of check-out day
+  // SIMPLIFIED: Calculate position without complex half-day logic
   const checkInDate = startOfDay(reservation.checkIn);
   const checkOutDate = startOfDay(reservation.checkOut);
   const timelineStart = startOfDay(startDate);
@@ -163,31 +168,13 @@ function ReservationBlock({
     return null;
   }
   
-  // Debug logging
-  console.log(`Reservation ${reservation.id}:`, {
-    guestName: guest?.name,
-    checkIn: format(checkInDate, 'yyyy-MM-dd'),
-    checkOut: format(checkOutDate, 'yyyy-MM-dd'),
-    timelineStart: format(timelineStart, 'yyyy-MM-dd'),
-    startDayIndex,
-    endDayIndex,
-    durationDays,
-    visibleStartDay,
-    visibleEndDay,
-    visibleSpan
-  });
-  
   const statusColors = RESERVATION_STATUS_COLORS[reservation.status as ReservationStatus] || RESERVATION_STATUS_COLORS.confirmed;
   const flag = getCountryFlag(guest?.nationality || '');
   
-  // Calculate absolute positioning within the date cell with half-day logic
-  const cellWidth = 100; // Each day cell width
-  // Start at middle of check-in day (50% offset) - second half of the cube
-  const leftOffset = visibleStartDay * cellWidth + (cellWidth * 0.5);
-  // Width calculation: total visual span should end at middle of checkout day
-  // From middle of check-in day to middle of check-out day
-  // This makes bookings start in second half of check-in day and end in first half of check-out day
-  const width = ((visibleSpan - 1) * cellWidth) + (cellWidth * 0.5) - 2; // Full days + half of checkout day - borders
+  // SIMPLIFIED: Calculate absolute positioning - full day cells
+  const cellWidth = 100; // Each day cell width percentage
+  const leftOffset = visibleStartDay * cellWidth;
+  const width = visibleSpan * cellWidth - 2; // Full width minus borders
   
   return (
     <div
@@ -196,8 +183,8 @@ function ReservationBlock({
         isDragging ? 'opacity-50 ring-2 ring-blue-400' : ''
       }`}
       style={{
-        left: `calc(280px + ${leftOffset}px + 1px)`, // Room column width + date offset + minimal padding
-        width: `${width}px`,
+        left: `calc(240px + ${leftOffset}%)`, // Room column width + date offset  
+        width: `${width}%`,
         height: 'calc(100% - 2px)', // Fill the row height minus minimal margins
         top: '1px',
         backgroundColor: statusColors.backgroundColor,
@@ -267,17 +254,19 @@ function DroppableDateCell({
   date: Date;
   onMoveReservation: (reservationId: string, newRoomId: string, newCheckIn: Date, newCheckOut: Date) => void;
 }) {
+  const isWeekend = date.getDay() === 0 || date.getDay() === 6; // Sunday = 0, Saturday = 6
+  
   const [{ isOver, canDrop }, drop] = useDrop(() => ({
     accept: ItemTypes.RESERVATION,
     drop: (item: any) => {
-      // Calculate new dates based on drop position with proper check-in/check-out times
+      // SIMPLIFIED: Calculate new dates with proper hotel times
       const originalDuration = Math.ceil((item.checkOut.getTime() - item.checkIn.getTime()) / (24 * 60 * 60 * 1000));
       
-      // Set check-in time to 3:00 PM (15:00)
+      // Set check-in time to 3:00 PM (standard hotel check-in)
       const newCheckIn = new Date(date);
       newCheckIn.setHours(15, 0, 0, 0);
       
-      // Set check-out time to 11:00 AM on the departure day
+      // Set check-out time to 11:00 AM on the departure day (standard hotel check-out)
       const newCheckOut = addDays(newCheckIn, originalDuration);
       newCheckOut.setHours(11, 0, 0, 0);
       
@@ -307,12 +296,14 @@ function DroppableDateCell({
   return (
     <div 
       ref={drop as any}
-      className={`h-14 border-r border-gray-200 transition-colors duration-200 ${
+      className={`h-14 border-r border-gray-200 transition-colors duration-200 relative ${
         isOver && canDrop 
           ? 'bg-blue-100 border-blue-300' 
           : isOver && !canDrop 
           ? 'bg-red-100 border-red-300' 
-          : 'bg-white'
+          : isWeekend
+          ? 'bg-orange-50/30 hover:bg-orange-50'
+          : 'bg-white hover:bg-gray-50'
       } ${canDrop ? 'hover:bg-blue-50' : ''}`}
       title={canDrop ? `Drop here to move to ${formatRoomNumber(room)} on ${format(date, 'MMM dd')}` : 'Cannot drop here'}
     />
@@ -337,7 +328,7 @@ function RoomRow({
   const roomReservations = reservations.filter(r => r.roomId === room.id);
   
   return (
-    <div className="relative grid grid-cols-[280px_repeat(14,minmax(80px,1fr))] border-b border-gray-100 hover:bg-gray-50">
+    <div className="relative grid grid-cols-[240px_repeat(14,minmax(60px,1fr))] border-b border-gray-100 hover:bg-gray-50">
       {/* Room info */}
       <div className="p-3 border-r border-gray-200 flex items-center justify-between h-14">
         <div>
@@ -437,7 +428,7 @@ function FloorSection({
             <Badge variant="secondary">
               {rooms.length} rooms
             </Badge>
-            <Badge variant={occupancyRate > 80 ? "destructive" : occupancyRate > 50 ? "default" : "secondary"}>
+            <Badge variant={occupancyRate > 80 ? "default" : occupancyRate > 50 ? "secondary" : "destructive"}>
               {occupancyRate.toFixed(0)}% occupied
             </Badge>
           </div>
@@ -497,7 +488,7 @@ function RoomOverviewFloorSection({
             <Badge variant="secondary">
               {rooms.length} rooms
             </Badge>
-            <Badge variant={occupancyRate > 80 ? "destructive" : occupancyRate > 50 ? "default" : "secondary"}>
+            <Badge variant={occupancyRate > 80 ? "default" : occupancyRate > 50 ? "secondary" : "destructive"}>
               {occupancyRate.toFixed(0)}% occupied
             </Badge>
           </CardTitle>
