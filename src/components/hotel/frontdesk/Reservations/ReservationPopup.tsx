@@ -30,6 +30,8 @@ import { HOTEL_POREC_ROOMS } from '../../../../lib/hotel/hotelData';
 import { RESERVATION_STATUS_COLORS } from '../../../../lib/hotel/calendarUtils';
 import { useHotel } from '../../../../lib/hotel/state/HotelContext';
 import PaymentDetailsModal from './PaymentDetailsModal';
+import CheckInWorkflow from '../CheckInOut/CheckInWorkflow';
+import CheckOutWorkflow from '../CheckInOut/CheckOutWorkflow';
 
 interface ReservationPopupProps {
   isOpen: boolean;
@@ -47,6 +49,8 @@ export default function ReservationPopup({
   const { reservations, updateReservationStatus, updateReservationNotes, isUpdating } = useHotel();
   const [isEditing, setIsEditing] = useState(false);
   const [showPaymentDetails, setShowPaymentDetails] = useState(false);
+  const [showCheckInWorkflow, setShowCheckInWorkflow] = useState(false);
+  const [showCheckOutWorkflow, setShowCheckOutWorkflow] = useState(false);
   const [editedNotes, setEditedNotes] = useState('');
   const [statusUpdateError, setStatusUpdateError] = useState<string | null>(null);
 
@@ -119,31 +123,23 @@ export default function ReservationPopup({
       case 'confirmed':
         return (
           <Button
-            onClick={() => handleStatusUpdate('checked-in')}
+            onClick={() => setShowCheckInWorkflow(true)}
             className="bg-green-600 hover:bg-green-700"
             disabled={isUpdating}
           >
-            {isUpdating ? (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-            ) : (
-              <LogIn className="h-4 w-4 mr-2" />
-            )}
-            {isUpdating ? 'Checking In...' : 'Check In'}
+            <LogIn className="h-4 w-4 mr-2" />
+            Start Check-In
           </Button>
         );
       case 'checked-in':
         return (
           <Button
-            onClick={() => handleStatusUpdate('checked-out')}
-            className="bg-gray-600 hover:bg-gray-700"
+            onClick={() => setShowCheckOutWorkflow(true)}
+            className="bg-blue-600 hover:bg-blue-700"
             disabled={isUpdating}
           >
-            {isUpdating ? (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-            ) : (
-              <LogOut className="h-4 w-4 mr-2" />
-            )}
-            {isUpdating ? 'Checking Out...' : 'Check Out'}
+            <LogOut className="h-4 w-4 mr-2" />
+            Start Check-Out
           </Button>
         );
       case 'incomplete-payment':
@@ -429,6 +425,28 @@ export default function ReservationPopup({
         reservation={reservation}
         guest={guest}
         room={room}
+      />
+
+      {/* Check-In Workflow */}
+      <CheckInWorkflow
+        isOpen={showCheckInWorkflow}
+        onClose={() => {
+          setShowCheckInWorkflow(false);
+          // Close the main popup after successful check-in
+          setTimeout(() => onClose(), 1000);
+        }}
+        reservation={reservation}
+      />
+
+      {/* Check-Out Workflow */}
+      <CheckOutWorkflow
+        isOpen={showCheckOutWorkflow}
+        onClose={() => {
+          setShowCheckOutWorkflow(false);
+          // Close the main popup after successful check-out
+          setTimeout(() => onClose(), 1000);
+        }}
+        reservation={reservation}
       />
     </>
   );
