@@ -17,7 +17,9 @@ import {
   Minimize2,
   ChevronDown,
   ChevronRight as ChevronRightIcon,
-  Move
+  Move,
+  Plus,
+  Dog
 } from 'lucide-react';
 import { HOTEL_POREC_ROOMS, getRoomsByFloor } from '../../../lib/hotel/hotelData';
 import { SAMPLE_GUESTS } from '../../../lib/hotel/sampleData';
@@ -278,10 +280,33 @@ function ReservationBlock({
         {/* Country flag */}
         <span className="text-sm flex-shrink-0">{flag}</span>
         
-        {/* Guest name - always visible */}
-        <span className="truncate font-medium flex-1 min-w-0">
-          {guest?.name || 'Guest'}
-        </span>
+        {/* Guest info - name with guest count */}
+        <div className="flex items-center space-x-1 flex-1 min-w-0">
+          <span className="truncate font-medium">
+            {guest?.name || 'Guest'}
+          </span>
+          
+          {/* Guest count icons next to name */}
+          <div className="flex items-center space-x-1 flex-shrink-0">
+            {reservation.adults > 0 && (
+              <div className="flex items-center">
+                <Users className="h-3 w-3" />
+                <span className="ml-0.5 text-xs">{reservation.adults}</span>
+              </div>
+            )}
+            
+            {reservation.children.length > 0 && (
+              <div className="flex items-center">
+                <Baby className="h-3 w-3" />
+                <span className="ml-0.5 text-xs">{reservation.children.length}</span>
+              </div>
+            )}
+            
+            {guest?.hasPets && (
+              <Dog className="h-3 w-3 text-amber-600" />
+            )}
+          </div>
+        </div>
         
         {/* Drag handle for longer reservations only */}
         {!isShortReservation && (
@@ -296,40 +321,19 @@ function ReservationBlock({
             <Move className="h-3 w-3 text-gray-500 hover:text-gray-700" />
           </div>
         )}
-        
-        {/* Occupancy icons */}
-        <div className="flex items-center space-x-1 flex-shrink-0">
-          {reservation.adults > 0 && (
-            <div className="flex items-center">
-              <Users className="h-3 w-3" />
-              <span className="ml-0.5 text-xs">{reservation.adults}</span>
-            </div>
-          )}
-          
-          {reservation.children.length > 0 && (
-            <div className="flex items-center">
-              <Baby className="h-3 w-3" />
-              <span className="ml-0.5 text-xs">{reservation.children.length}</span>
-            </div>
-          )}
-          
-          {guest?.hasPets && (
-            <Heart className="h-3 w-3 text-red-500" />
-          )}
-        </div>
       </div>
       
-      {/* Top drag handle for short reservations - half visible tab */}
+      {/* Top drag handle for short reservations - small circle with plus */}
       {isShortReservation && (
         <div
           ref={(el) => {
             drag(el); // Top drag handle for short reservations
             dragHandleRef.current = el;
           }}
-          className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-white/95 backdrop-blur-sm border border-gray-200/60 rounded-t-md px-2 py-1 cursor-move transition-all duration-200 shadow-sm hover:shadow-md hover:bg-white hover:border-gray-300 z-10"
-          title="⋮⋮ Drag to move reservation"
+          className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-6 h-6 bg-white/95 backdrop-blur-sm border border-gray-200/60 rounded-full flex items-center justify-center cursor-move transition-all duration-200 shadow-sm hover:shadow-md hover:bg-white hover:border-gray-300 z-10"
+          title="+ Drag to move reservation"
         >
-          <Move className="h-3 w-3 text-gray-500 hover:text-gray-700" />
+          <Plus className="h-3 w-3 text-gray-500 hover:text-gray-700" />
         </div>
       )}
       
