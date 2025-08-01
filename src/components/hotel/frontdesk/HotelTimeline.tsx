@@ -73,8 +73,8 @@ function TimelineHeader({
       </div>
       
       {/* Date headers */}
-      <div className="grid grid-cols-[240px_repeat(14,minmax(60px,1fr))] border-b border-gray-200 relative z-20">
-        <div className="p-3 bg-gray-50 border-r border-gray-200 font-medium text-gray-700">
+      <div className="grid grid-cols-[180px_repeat(14,minmax(45px,1fr))] border-b border-gray-200 relative z-20">
+        <div className="p-2 bg-gray-50 border-r border-gray-200 font-medium text-gray-700 text-sm">
           Rooms
         </div>
         {dates.map((date, index) => {
@@ -84,7 +84,7 @@ function TimelineHeader({
           return (
             <div 
               key={index}
-              className={`p-3 text-center border-r border-gray-200 ${
+              className={`p-2 text-center border-r border-gray-200 ${
                 isToday 
                   ? 'bg-blue-50 font-semibold text-blue-700' 
                   : isWeekend
@@ -273,7 +273,7 @@ function ReservationBlock({
         blockRef.current = el;
         cardRef.current = el;
       }}
-      className={`rounded cursor-pointer hover:shadow-md border flex items-center px-3 py-1 text-xs font-medium overflow-hidden group z-10 pointer-events-auto ${
+      className={`rounded cursor-pointer hover:shadow-md border flex items-center px-2 py-0.5 text-xs font-medium overflow-hidden group z-10 pointer-events-auto ${
         isDragging ? 'opacity-50 ring-2 ring-blue-400' : isResizing ? 'ring-2 ring-purple-400' : ''
       }`}
       style={{
@@ -330,26 +330,26 @@ function ReservationBlock({
         isShortReservation ? 'pt-2' : ''
       }`}>
         {/* Country flag */}
-        <span className="text-sm flex-shrink-0">{flag}</span>
+        <span className="text-xs flex-shrink-0">{flag}</span>
         
         {/* Guest info - name with guest count */}
         <div className="flex items-center space-x-1 flex-1 min-w-0">
-          <span className="truncate font-medium">
+          <span className="truncate font-medium text-xs">
             {guest?.name || 'Guest'}
           </span>
           
           {/* Guest count icons next to name */}
-          <div className="flex items-center space-x-1 flex-shrink-0">
+          <div className="flex items-center space-x-0.5 flex-shrink-0">
             {reservation.adults > 0 && (
               <div className="flex items-center">
-                <Users className="h-3 w-3" />
+                <Users className="h-2.5 w-2.5" />
                 <span className="ml-0.5 text-xs">{reservation.adults}</span>
               </div>
             )}
             
             {reservation.children.length > 0 && (
               <div className="flex items-center">
-                <Baby className="h-3 w-3" />
+                <Baby className="h-2.5 w-2.5" />
                 <span className="ml-0.5 text-xs">{reservation.children.length}</span>
               </div>
             )}
@@ -808,7 +808,7 @@ function DroppableDateCell({
   return (
     <div 
       ref={dropLeft as any}
-      className={`h-14 border-r border-gray-200 transition-all duration-200 relative ${
+      className={`h-12 border-r border-gray-200 transition-all duration-200 relative ${
         isOverLeft && canDropLeft 
           ? 'bg-green-100 border-2 border-green-400' 
           : isOverLeft && !canDropLeft 
@@ -864,11 +864,11 @@ function RoomRow({
   return (
     <div className="relative border-b border-gray-100 hover:bg-gray-50">
       {/* Background grid for drop zones */}
-      <div className="grid grid-cols-[240px_repeat(14,minmax(60px,1fr))]">
+      <div className="grid grid-cols-[180px_repeat(14,minmax(45px,1fr))]">
         {/* Room info */}
-        <div className="p-3 border-r border-gray-200 flex items-center justify-between h-14">
+        <div className="p-2 border-r border-gray-200 flex items-center justify-between h-12">
           <div>
-            <div className="font-medium text-gray-900">
+            <div className="font-medium text-gray-900 text-sm">
               {formatRoomNumber(room)}
             </div>
             <div className="text-xs text-gray-500">
@@ -899,7 +899,7 @@ function RoomRow({
       </div>
       
       {/* Reservation blocks overlaid on the same grid */}
-      <div className="absolute inset-0 grid grid-cols-[240px_repeat(14,minmax(60px,1fr))] pointer-events-none">
+      <div className="absolute inset-0 grid grid-cols-[180px_repeat(14,minmax(45px,1fr))] pointer-events-none">
         {roomReservations.map(reservation => {
           const guest = SAMPLE_GUESTS.find(g => g.id === reservation.guestId);
           return (
@@ -1109,12 +1109,12 @@ function RoomOverviewFloorSection({
                         {/* Guest composition with icons */}
                         <div className="flex items-center space-x-2 text-gray-500">
                           <div className="flex items-center space-x-1">
-                            <Users className="h-3 w-3" />
+                            <Users className="h-2.5 w-2.5" />
                             <span>{reservation.adults}</span>
                           </div>
                           {reservation.children.length > 0 && (
                             <div className="flex items-center space-x-1">
-                              <Baby className="h-3 w-3" />
+                              <Baby className="h-2.5 w-2.5" />
                               <span>{reservation.children.length}</span>
                             </div>
                           )}

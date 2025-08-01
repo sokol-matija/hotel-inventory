@@ -9,6 +9,7 @@ export default function Layout() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
 
   if (!user) return null
 
@@ -25,7 +26,10 @@ export default function Layout() {
       
       {/* Desktop Sidebar */}
       <div className="hidden lg:block relative z-10">
-        <Sidebar />
+        <Sidebar 
+          isCollapsed={isSidebarCollapsed}
+          onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+        />
       </div>
 
       {/* Mobile Navigation */}
