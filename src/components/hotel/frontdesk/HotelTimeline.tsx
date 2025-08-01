@@ -126,6 +126,10 @@ function ReservationBlock({
   onReservationClick: (reservation: Reservation) => void;
   onMoveReservation?: (reservationId: string, newRoomId: string, newCheckIn: Date, newCheckOut: Date) => void;
 }) {
+  // Context menu state
+  const [showContextMenu, setShowContextMenu] = useState(false);
+  const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 });
+
   // Setup drag functionality - MUST be at the top level before any early returns
   const [{ isDragging }, drag] = useDrag(() => ({
     type: ItemTypes.RESERVATION,
@@ -142,48 +146,30 @@ function ReservationBlock({
     }),
   }), [reservation, room, guest]);
 
-  // DEBUG: Fixed positioning logic with better logging
+  // SIMPLE FIX: Direct day index calculation
   const checkInDate = startOfDay(reservation.checkIn);
   const checkOutDate = startOfDay(reservation.checkOut);
   const timelineStart = startOfDay(startDate);
   
-  // Calculate day indices from timeline start (0-based)
+  // Calculate day indices from timeline start (0-13)
   const startDayIndex = Math.floor((checkInDate.getTime() - timelineStart.getTime()) / (24 * 60 * 60 * 1000));
   const endDayIndex = Math.floor((checkOutDate.getTime() - timelineStart.getTime()) / (24 * 60 * 60 * 1000));
   
-  // DEBUG logging to understand the mismatch
-  console.log(`POSITIONING DEBUG for ${guest?.name}:`, {
-    checkInDate: format(checkInDate, 'MMM dd'),
-    checkOutDate: format(checkOutDate, 'MMM dd'),
-    timelineStart: format(timelineStart, 'MMM dd'),
-    startDayIndex,
-    endDayIndex,
-    reservationId: reservation.id
-  });
-  
-  // Don't render if completely outside visible timeline (0-13 days)
+  // Don't render if completely outside visible timeline
   if (startDayIndex >= 14 || endDayIndex <= 0) {
     return null;
   }
   
   // Clamp to visible range
   const visibleStartDay = Math.max(0, startDayIndex);
-  const visibleEndDay = Math.min(13, endDayIndex); // 0-13 = 14 days
+  const visibleEndDay = Math.min(13, endDayIndex);
   
-  // FIXED: Full-day positioning math
-  // - 14 days total, each day = 100% / 14 = ~7.143%
-  // - Reservation starts at LEFT edge of check-in day (full left)
-  // - Reservation ends at RIGHT edge of check-out day (full right)
-  const dayWidth = 100 / 14; // ~7.143%
-  
-  // Visual positioning:
-  // Start: LEFT edge of start day = startDay * dayWidth
-  // End: RIGHT edge of end day = (endDay + 1) * dayWidth  
+  // SIMPLE POSITIONING: Each day = 100/14 = ~7.14%
+  const dayWidth = 100 / 14;
   const visualStartPercent = visibleStartDay * dayWidth;
-  const visualEndPercent = (visibleEndDay + 1) * dayWidth;
-  const visualWidthPercent = visualEndPercent - visualStartPercent;
+  const visualWidthPercent = (visibleEndDay - visibleStartDay + 1) * dayWidth;
   
-  // Skip if no visible width
+  // Skip if no width
   if (visualWidthPercent <= 0) {
     return null;
   }
@@ -212,7 +198,12 @@ function ReservationBlock({
           onReservationClick(reservation);
         }
       }}
-      title={`${guest?.name || 'Guest'} - ${reservation.numberOfGuests} guests ${isDragging ? '(Dragging...)' : '(Click for details, drag to move)'}`}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        setContextMenuPos({ x: e.clientX, y: e.clientY });
+        setShowContextMenu(true);
+      }}
+      title={`${guest?.name || 'Guest'} - ${reservation.numberOfGuests} guests ${isDragging ? '(Dragging...)' : '(Click for details, drag to move, right-click for options)'}`}
     >
       {/* Main content */}
       <div className="flex items-center space-x-1 min-w-0 flex-1">
@@ -249,8 +240,8 @@ function ReservationBlock({
         </div>
       </div>
       
-      {/* Resize handles */}
-      <div className="absolute inset-y-0 left-0 w-2 cursor-ew-resize bg-transparent hover:bg-white/20 group-hover:bg-white/30 transition-colors"
+      {/* Always visible resize handles */}
+      <div className="absolute inset-y-0 left-0 w-1 cursor-ew-resize bg-white/40 hover:bg-white/60 transition-colors border-r border-white/60"
            title="Drag to change check-in date"
            onMouseDown={(e) => {
              e.stopPropagation(); // Prevent main drag
@@ -258,7 +249,7 @@ function ReservationBlock({
            }}
       ></div>
       
-      <div className="absolute inset-y-0 right-0 w-2 cursor-ew-resize bg-transparent hover:bg-white/20 group-hover:bg-white/30 transition-colors"
+      <div className="absolute inset-y-0 right-0 w-1 cursor-ew-resize bg-white/40 hover:bg-white/60 transition-colors border-l border-white/60"
            title="Drag to change check-out date"
            onMouseDown={(e) => {
              e.stopPropagation(); // Prevent main drag
@@ -270,6 +261,45 @@ function ReservationBlock({
       <div className="absolute top-full left-0 mt-1 bg-gray-900 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 pointer-events-none z-20 whitespace-nowrap">
         {guest?.name} • {reservation.numberOfGuests} guests • {format(reservation.checkIn, 'MMM dd')} - {format(reservation.checkOut, 'MMM dd')}
       </div>
+
+      {/* Context Menu */}
+      {showContextMenu && (
+        <>
+          {/* Backdrop to close menu */}
+          <div 
+            className="fixed inset-0 z-30" 
+            onClick={() => setShowContextMenu(false)}
+          />
+          <div 
+            className="fixed bg-white rounded-lg shadow-lg border z-40 py-1 min-w-[120px]"
+            style={{ 
+              left: contextMenuPos.x, 
+              top: contextMenuPos.y 
+            }}
+          >
+            <button 
+              className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 flex items-center space-x-2"
+              onClick={() => {
+                // TODO: Implement change dates
+                setShowContextMenu(false);
+              }}
+            >
+              <CalendarIcon className="w-4 h-4" />
+              <span>Change Dates</span>
+            </button>
+            <button 
+              className="w-full text-left px-3 py-2 text-sm hover:bg-red-50 text-red-600 flex items-center space-x-2"
+              onClick={() => {
+                // TODO: Implement delete reservation
+                setShowContextMenu(false);
+              }}
+            >
+              <span className="w-4 h-4 flex items-center justify-center">×</span>
+              <span>Delete</span>
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -310,14 +340,6 @@ function DroppableDateCell({
       const newCheckOut = addDays(newCheckIn, originalDuration);
       newCheckOut.setHours(11, 0, 0, 0);
       
-      // DEBUG logging for drop logic
-      console.log(`DROP DEBUG:`, {
-        droppedOn: format(date, 'MMM dd'),
-        newCheckIn: format(newCheckIn, 'MMM dd'),
-        newCheckOut: format(newCheckOut, 'MMM dd'),
-        originalDuration,
-        guestName: item.guestName
-      });
       
       onMoveReservation(item.reservationId, room.id, newCheckIn, newCheckOut);
     },
