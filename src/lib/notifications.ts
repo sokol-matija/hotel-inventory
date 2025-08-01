@@ -15,6 +15,8 @@ class HotelNotification {
         timeline: gsap.core.Timeline;
     }> = [];
     private notificationGap = 12;
+    private lastNotificationTime: Map<string, number> = new Map();
+    private debounceDelay = 2000; // 2 seconds debounce
 
     constructor() {
         this.createNotificationContainer();
@@ -282,7 +284,20 @@ class HotelNotification {
      * @param duration - Duration in seconds before notification disappears
      * @returns The GSAP timeline for the animation
      */
-    show(type: NotificationType = 'success', title: string = 'Success!', message: string = 'Your action has been completed successfully.', duration: number = 4): gsap.core.Timeline {
+    show(type: NotificationType = 'success', title: string = 'Success!', message: string = 'Your action has been completed successfully.', duration: number = 4): gsap.core.Timeline | null {
+        // Create a unique key for this notification
+        const notificationKey = `${type}-${title}`;
+        const now = Date.now();
+        const lastTime = this.lastNotificationTime.get(notificationKey) || 0;
+        
+        // If the same notification was shown recently, skip it
+        if (now - lastTime < this.debounceDelay) {
+            console.log(`Notification debounced: ${title}`);
+            return null;
+        }
+        
+        // Update last notification time
+        this.lastNotificationTime.set(notificationKey, now);
         // Create a new notification for stacking
         const notificationContainer = this.createStackedNotification(type, title, message, duration);
         
@@ -470,28 +485,28 @@ class HotelNotification {
     /**
      * Show a success notification
      */
-    success(title: string = 'Success!', message: string = 'Your action has been completed successfully.', duration: number = 4): gsap.core.Timeline {
+    success(title: string = 'Success!', message: string = 'Your action has been completed successfully.', duration: number = 4): gsap.core.Timeline | null {
         return this.show('success', title, message, duration);
     }
 
     /**
      * Show an error notification
      */
-    error(title: string = 'Error!', message: string = 'Something went wrong. Please try again.', duration: number = 5): gsap.core.Timeline {
+    error(title: string = 'Error!', message: string = 'Something went wrong. Please try again.', duration: number = 5): gsap.core.Timeline | null {
         return this.show('error', title, message, duration);
     }
 
     /**
      * Show an info notification
      */
-    info(title: string = 'Information', message: string = 'Here is some important information for you.', duration: number = 4): gsap.core.Timeline {
+    info(title: string = 'Information', message: string = 'Here is some important information for you.', duration: number = 4): gsap.core.Timeline | null {
         return this.show('info', title, message, duration);
     }
 
     /**
      * Show a warning notification
      */
-    warning(title: string = 'Warning', message: string = 'Please pay attention to this information.', duration: number = 5): gsap.core.Timeline {
+    warning(title: string = 'Warning', message: string = 'Please pay attention to this information.', duration: number = 5): gsap.core.Timeline | null {
         return this.show('warning', title, message, duration);
     }
 }

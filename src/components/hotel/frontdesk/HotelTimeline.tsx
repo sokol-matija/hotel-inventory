@@ -294,13 +294,13 @@ function ReservationBlock({
         </div>
       </div>
       
-      {/* Always visible resize handles with hover animation */}
-      <div className={`absolute inset-y-0 left-0 w-1 cursor-ew-resize transition-all duration-200 border-r pointer-events-auto ${
+      {/* Precise resize handles - only visible on card hover */}
+      <div className={`absolute inset-y-0 left-0 w-0 group-hover:w-2 cursor-ew-resize transition-all duration-200 pointer-events-auto ${
         isResizing && resizeType === 'left' 
-          ? 'bg-purple-400 border-purple-600 w-2' 
-          : 'bg-white/40 hover:bg-white/80 hover:w-2 border-white/60'
+          ? 'bg-purple-500 border-purple-700 w-3' 
+          : 'hover:bg-blue-400/90'
       }`}
-           title="Drag to change check-in date"
+           title="⟷ Drag to change check-in date"
            onMouseEnter={(e) => {
              if (!isResizing) {
                gsap.to(e.currentTarget, { 
@@ -354,12 +354,12 @@ function ReservationBlock({
            }}
       ></div>
       
-      <div className={`absolute inset-y-0 right-0 w-1 cursor-ew-resize transition-all duration-200 border-l pointer-events-auto ${
+      <div className={`absolute inset-y-0 right-0 w-0 group-hover:w-2 cursor-ew-resize transition-all duration-200 pointer-events-auto ${
         isResizing && resizeType === 'right' 
-          ? 'bg-purple-400 border-purple-600 w-2' 
-          : 'bg-white/40 hover:bg-white/80 hover:w-2 border-white/60'
+          ? 'bg-purple-500 border-purple-700 w-3' 
+          : 'hover:bg-blue-400/90'
       }`}
-           title="Drag to change check-out date"
+           title="⟷ Drag to change check-out date"
            onMouseEnter={(e) => {
              if (!isResizing) {
                gsap.to(e.currentTarget, { 
