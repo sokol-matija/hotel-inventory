@@ -253,7 +253,12 @@ function ReservationBlock({
         zIndex: isDragging ? 50 : 5 // Higher z-index when dragging
       }}
       onClick={(e) => {
-        if (!isDragging) {
+        // Prevent click-to-view if clicking on resize handles
+        const target = e.target as HTMLElement;
+        const isResizeHandle = target.closest('[title*="Resize:"]') || 
+                              target.classList.contains('cursor-ew-resize');
+        
+        if (!isDragging && !isResizeHandle) {
           onReservationClick(reservation);
         }
       }}
@@ -265,21 +270,21 @@ function ReservationBlock({
       title={`${guest?.name || 'Guest'} - ${reservation.numberOfGuests} guests ${isDragging ? '(Dragging...)' : '(Click for details, right-click for options)'}`}
     >
       {/* Main content */}
-      <div className="flex items-center space-x-1 min-w-0 flex-1">
-        {/* Drag handle - Only this icon is draggable */}
+      <div className="flex items-center space-x-2 min-w-0 flex-1">
+        {/* Country flag */}
+        <span className="text-sm flex-shrink-0">{flag}</span>
+        
+        {/* Modern drag handle - Only this area is draggable */}
         <div
           ref={(el) => {
             drag(el); // Only the drag handle is draggable
             dragHandleRef.current = el;
           }}
-          className="p-1 hover:bg-gray-100/80 rounded cursor-move transition-colors flex-shrink-0"
+          className="bg-white/95 backdrop-blur-sm border border-gray-200/60 rounded-md p-1.5 hover:bg-white hover:border-gray-300 cursor-move transition-all duration-200 flex-shrink-0 shadow-sm hover:shadow-md"
           title="⋮⋮ Drag to move reservation"
         >
-          <Move className="h-3 w-3 text-gray-400 hover:text-gray-600" />
+          <Move className="h-4 w-4 text-gray-500 hover:text-gray-700" />
         </div>
-        
-        {/* Country flag */}
-        <span className="text-sm flex-shrink-0">{flag}</span>
         
         {/* Guest name */}
         <span className="truncate font-medium">
@@ -308,13 +313,13 @@ function ReservationBlock({
         </div>
       </div>
       
-      {/* Precise resize handles - only visible on card hover */}
-      <div className={`absolute inset-y-0 left-0 w-0 group-hover:w-2 cursor-ew-resize transition-all duration-200 pointer-events-auto ${
+      {/* Always visible resize handles for better UX */}
+      <div className={`absolute inset-y-0 left-0 w-2 cursor-ew-resize transition-all duration-200 pointer-events-auto ${
         isResizing && resizeType === 'left' 
           ? 'bg-purple-500 border-purple-700 w-3' 
-          : 'hover:bg-blue-400/90'
+          : 'bg-blue-300/60 hover:bg-blue-400/90 border-r border-blue-400/40'
       }`}
-           title="⟷ Drag to change check-in date"
+           title="⟷ Resize: Drag to change check-in date"
            onMouseEnter={(e) => {
              if (!isResizing) {
                gsap.to(e.currentTarget, { 
@@ -368,12 +373,12 @@ function ReservationBlock({
            }}
       ></div>
       
-      <div className={`absolute inset-y-0 right-0 w-0 group-hover:w-2 cursor-ew-resize transition-all duration-200 pointer-events-auto ${
+      <div className={`absolute inset-y-0 right-0 w-2 cursor-ew-resize transition-all duration-200 pointer-events-auto ${
         isResizing && resizeType === 'right' 
           ? 'bg-purple-500 border-purple-700 w-3' 
-          : 'hover:bg-blue-400/90'
+          : 'bg-blue-300/60 hover:bg-blue-400/90 border-l border-blue-400/40'
       }`}
-           title="⟷ Drag to change check-out date"
+           title="⟷ Resize: Drag to change check-out date"
            onMouseEnter={(e) => {
              if (!isResizing) {
                gsap.to(e.currentTarget, { 
