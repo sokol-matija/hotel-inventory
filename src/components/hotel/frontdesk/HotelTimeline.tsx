@@ -142,7 +142,7 @@ function ReservationBlock({
     }),
   }), [reservation, room, guest]);
 
-  // CLEAN REWRITE: Half-day positioning logic
+  // DEBUG: Fixed positioning logic with better logging
   const checkInDate = startOfDay(reservation.checkIn);
   const checkOutDate = startOfDay(reservation.checkOut);
   const timelineStart = startOfDay(startDate);
@@ -150,6 +150,16 @@ function ReservationBlock({
   // Calculate day indices from timeline start (0-based)
   const startDayIndex = Math.floor((checkInDate.getTime() - timelineStart.getTime()) / (24 * 60 * 60 * 1000));
   const endDayIndex = Math.floor((checkOutDate.getTime() - timelineStart.getTime()) / (24 * 60 * 60 * 1000));
+  
+  // DEBUG logging to understand the mismatch
+  console.log(`POSITIONING DEBUG for ${guest?.name}:`, {
+    checkInDate: format(checkInDate, 'MMM dd'),
+    checkOutDate: format(checkOutDate, 'MMM dd'),
+    timelineStart: format(timelineStart, 'MMM dd'),
+    startDayIndex,
+    endDayIndex,
+    reservationId: reservation.id
+  });
   
   // Don't render if completely outside visible timeline (0-13 days)
   if (startDayIndex >= 14 || endDayIndex <= 0) {
@@ -299,6 +309,15 @@ function DroppableDateCell({
       // Set check-out to 11:00 AM after original duration
       const newCheckOut = addDays(newCheckIn, originalDuration);
       newCheckOut.setHours(11, 0, 0, 0);
+      
+      // DEBUG logging for drop logic
+      console.log(`DROP DEBUG:`, {
+        droppedOn: format(date, 'MMM dd'),
+        newCheckIn: format(newCheckIn, 'MMM dd'),
+        newCheckOut: format(newCheckOut, 'MMM dd'),
+        originalDuration,
+        guestName: item.guestName
+      });
       
       onMoveReservation(item.reservationId, room.id, newCheckIn, newCheckOut);
     },
