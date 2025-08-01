@@ -269,13 +269,18 @@ function ReservationBlock({
         }
       }}
       onContextMenu={(e) => {
+        console.log('Context menu triggered!', { isDragging, isResizing, target: e.target });
         e.preventDefault();
         e.stopPropagation();
         
         // Only show context menu if not currently dragging or resizing
         if (!isDragging && !isResizing) {
+          console.log('Setting context menu position:', { x: e.clientX, y: e.clientY });
           setContextMenuPos({ x: e.clientX, y: e.clientY });
           setShowContextMenu(true);
+          console.log('Context menu state set to true');
+        } else {
+          console.log('Context menu blocked - isDragging:', isDragging, 'isResizing:', isResizing);
         }
       }}
       title={`${guest?.name || 'Guest'} - ${reservation.numberOfGuests} guests ${isDragging ? '(Dragging...)' : '(Click for details, right-click for options)'}`}
@@ -488,14 +493,15 @@ function ReservationBlock({
 
       {/* Context Menu */}
       {showContextMenu && (
+        (console.log('Rendering context menu at position:', contextMenuPos), true) &&
         <>
           {/* Backdrop to close menu */}
           <div 
-            className="fixed inset-0 z-30" 
+            className="fixed inset-0 z-50" 
             onClick={() => setShowContextMenu(false)}
           />
           <div 
-            className="fixed bg-white rounded-lg shadow-lg border z-40 py-1 min-w-[120px]"
+            className="fixed bg-white rounded-lg shadow-lg border z-[100] py-1 min-w-[120px]"
             style={{ 
               left: contextMenuPos.x, 
               top: contextMenuPos.y 
