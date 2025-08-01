@@ -129,6 +129,10 @@ function ReservationBlock({
   // Context menu state
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 });
+  
+  // Resize state
+  const [isResizing, setIsResizing] = useState(false);
+  const [resizeType, setResizeType] = useState<'left' | 'right' | null>(null);
 
   // Setup drag functionality - MUST be at the top level before any early returns
   const [{ isDragging }, drag] = useDrag(() => ({
@@ -146,7 +150,7 @@ function ReservationBlock({
     }),
   }), [reservation, room, guest]);
 
-  // SIMPLE FIX: Direct day index calculation
+  // BULLETPROOF: Direct day index calculation
   const checkInDate = startOfDay(reservation.checkIn);
   const checkOutDate = startOfDay(reservation.checkOut);
   const timelineStart = startOfDay(startDate);
@@ -162,17 +166,17 @@ function ReservationBlock({
   
   // Clamp to visible range
   const visibleStartDay = Math.max(0, startDayIndex);
-  const visibleEndDay = Math.min(13, endDayIndex);
-  
-  // SIMPLE POSITIONING: Each day = 100/14 = ~7.14%
-  const dayWidth = 100 / 14;
-  const visualStartPercent = visibleStartDay * dayWidth;
-  const visualWidthPercent = (visibleEndDay - visibleStartDay + 1) * dayWidth;
+  const visibleEndDay = Math.min(13, endDayIndex - 1); // End day is exclusive for checkout
   
   // Skip if no width
-  if (visualWidthPercent <= 0) {
+  if (visibleEndDay < visibleStartDay) {
     return null;
   }
+  
+  // BULLETPROOF: CSS Grid positioning
+  // Grid columns: 1=rooms, 2=day0, 3=day1, ..., 15=day13
+  const gridColumnStart = visibleStartDay + 2; // day 0 = column 2
+  const gridColumnEnd = visibleEndDay + 3;     // day 1 = column 3 (end is exclusive)
   
   const statusColors = RESERVATION_STATUS_COLORS[reservation.status as ReservationStatus] || RESERVATION_STATUS_COLORS.confirmed;
   const flag = getCountryFlag(guest?.nationality || '');
@@ -180,14 +184,16 @@ function ReservationBlock({
   return (
     <div
       ref={drag as any}
-      className={`absolute rounded cursor-move hover:shadow-md transition-all duration-200 border flex items-center px-2 text-xs font-medium overflow-hidden group z-10 ${
-        isDragging ? 'opacity-50 ring-2 ring-blue-400' : ''
+      className={`rounded cursor-move hover:shadow-md transition-all duration-200 border flex items-center px-2 text-xs font-medium overflow-hidden group z-10 pointer-events-auto ${
+        isDragging ? 'opacity-50 ring-2 ring-blue-400' : isResizing ? 'ring-2 ring-purple-400' : ''
       }`}
       style={{
-        left: `calc(240px + ${visualStartPercent}%)`, // Room column + visual start position
-        width: `${visualWidthPercent}%`, // Visual width from LEFT start to RIGHT end
+        gridColumnStart: gridColumnStart,
+        gridColumnEnd: gridColumnEnd,
+        gridRowStart: 1,
+        gridRowEnd: 1,
         height: 'calc(100% - 2px)', // Fill row height minus margins
-        top: '1px',
+        margin: '1px 0',
         backgroundColor: statusColors.backgroundColor,
         borderColor: statusColors.borderColor,
         color: statusColors.textColor,
@@ -241,19 +247,85 @@ function ReservationBlock({
       </div>
       
       {/* Always visible resize handles */}
-      <div className="absolute inset-y-0 left-0 w-1 cursor-ew-resize bg-white/40 hover:bg-white/60 transition-colors border-r border-white/60"
+      <div className={`absolute inset-y-0 left-0 w-1 cursor-ew-resize transition-colors border-r pointer-events-auto ${
+        isResizing && resizeType === 'left' 
+          ? 'bg-purple-400 border-purple-600' 
+          : 'bg-white/40 hover:bg-white/60 border-white/60'
+      }`}
            title="Drag to change check-in date"
            onMouseDown={(e) => {
              e.stopPropagation(); // Prevent main drag
-             // TODO: Implement resize from left handle
+             setIsResizing(true);
+             setResizeType('left');
+             
+             const handleResize = (moveEvent: MouseEvent) => {
+               const timelineElement = document.querySelector('.grid.grid-cols-\\[240px_repeat\\(14\\,minmax\\(60px\\,1fr\\)\\)\\]');
+               if (!timelineElement) return;
+               
+               const rect = timelineElement.getBoundingClientRect();
+               const columnWidth = (rect.width - 240) / 14; // Subtract room column width
+               const mouseX = moveEvent.clientX - rect.left - 240; // Relative to first date column
+               const newDayIndex = Math.floor(mouseX / columnWidth);
+               const clampedDayIndex = Math.max(0, Math.min(13, newDayIndex));
+               
+               const newCheckIn = addDays(startDate, clampedDayIndex);
+               newCheckIn.setHours(15, 0, 0, 0); // 3 PM check-in
+               
+               if (newCheckIn < reservation.checkOut && onMoveReservation) {
+                 onMoveReservation(reservation.id, room.id, newCheckIn, reservation.checkOut);
+               }
+             };
+             
+             const handleMouseUp = () => {
+               setIsResizing(false);
+               setResizeType(null);
+               document.removeEventListener('mousemove', handleResize);
+               document.removeEventListener('mouseup', handleMouseUp);
+             };
+             
+             document.addEventListener('mousemove', handleResize);
+             document.addEventListener('mouseup', handleMouseUp);
            }}
       ></div>
       
-      <div className="absolute inset-y-0 right-0 w-1 cursor-ew-resize bg-white/40 hover:bg-white/60 transition-colors border-l border-white/60"
+      <div className={`absolute inset-y-0 right-0 w-1 cursor-ew-resize transition-colors border-l pointer-events-auto ${
+        isResizing && resizeType === 'right' 
+          ? 'bg-purple-400 border-purple-600' 
+          : 'bg-white/40 hover:bg-white/60 border-white/60'
+      }`}
            title="Drag to change check-out date"
            onMouseDown={(e) => {
              e.stopPropagation(); // Prevent main drag
-             // TODO: Implement resize from right handle
+             setIsResizing(true);
+             setResizeType('right');
+             
+             const handleResize = (moveEvent: MouseEvent) => {
+               const timelineElement = document.querySelector('.grid.grid-cols-\\[240px_repeat\\(14\\,minmax\\(60px\\,1fr\\)\\)\\]');
+               if (!timelineElement) return;
+               
+               const rect = timelineElement.getBoundingClientRect();
+               const columnWidth = (rect.width - 240) / 14; // Subtract room column width
+               const mouseX = moveEvent.clientX - rect.left - 240; // Relative to first date column
+               const newDayIndex = Math.floor(mouseX / columnWidth) + 1; // +1 because checkout is next day
+               const clampedDayIndex = Math.max(1, Math.min(14, newDayIndex));
+               
+               const newCheckOut = addDays(startDate, clampedDayIndex);
+               newCheckOut.setHours(11, 0, 0, 0); // 11 AM check-out
+               
+               if (newCheckOut > reservation.checkIn && onMoveReservation) {
+                 onMoveReservation(reservation.id, room.id, reservation.checkIn, newCheckOut);
+               }
+             };
+             
+             const handleMouseUp = () => {
+               setIsResizing(false);
+               setResizeType(null);
+               document.removeEventListener('mousemove', handleResize);
+               document.removeEventListener('mouseup', handleMouseUp);
+             };
+             
+             document.addEventListener('mousemove', handleResize);
+             document.addEventListener('mouseup', handleMouseUp);
            }}
       ></div>
       
@@ -406,54 +478,59 @@ function RoomRow({
   const roomReservations = reservations.filter(r => r.roomId === room.id);
   
   return (
-    <div className="relative grid grid-cols-[240px_repeat(14,minmax(60px,1fr))] border-b border-gray-100 hover:bg-gray-50">
-      {/* Room info */}
-      <div className="p-3 border-r border-gray-200 flex items-center justify-between h-14">
-        <div>
-          <div className="font-medium text-gray-900">
-            {formatRoomNumber(room)}
+    <div className="relative border-b border-gray-100 hover:bg-gray-50">
+      {/* Background grid for drop zones */}
+      <div className="grid grid-cols-[240px_repeat(14,minmax(60px,1fr))]">
+        {/* Room info */}
+        <div className="p-3 border-r border-gray-200 flex items-center justify-between h-14">
+          <div>
+            <div className="font-medium text-gray-900">
+              {formatRoomNumber(room)}
+            </div>
+            <div className="text-xs text-gray-500">
+              {getRoomTypeDisplay(room)}
+            </div>
           </div>
-          <div className="text-xs text-gray-500">
-            {getRoomTypeDisplay(room)}
-          </div>
+          {room.isPremium && (
+            <Badge variant="secondary" className="text-xs">
+              Premium
+            </Badge>
+          )}
         </div>
-        {room.isPremium && (
-          <Badge variant="secondary" className="text-xs">
-            Premium
-          </Badge>
-        )}
+        
+        {/* Date cells */}
+        {Array.from({ length: 14 }, (_, dayIndex) => {
+          const cellDate = addDays(startDate, dayIndex);
+          return (
+            <DroppableDateCell
+              key={dayIndex}
+              room={room}
+              dayIndex={dayIndex}
+              date={cellDate}
+              onMoveReservation={onMoveReservation}
+              existingReservations={reservations}
+            />
+          );
+        })}
       </div>
       
-      {/* Date cells */}
-      {Array.from({ length: 14 }, (_, dayIndex) => {
-        const cellDate = addDays(startDate, dayIndex);
-        return (
-          <DroppableDateCell
-            key={dayIndex}
-            room={room}
-            dayIndex={dayIndex}
-            date={cellDate}
-            onMoveReservation={onMoveReservation}
-            existingReservations={reservations}
-          />
-        );
-      })}
-      
-      {/* Reservation blocks positioned absolutely over the entire row */}
-      {roomReservations.map(reservation => {
-        const guest = SAMPLE_GUESTS.find(g => g.id === reservation.guestId);
-        return (
-          <ReservationBlock
-            key={reservation.id}
-            reservation={reservation}
-            guest={guest}
-            room={room}
-            startDate={startDate}
-            onReservationClick={onReservationClick}
-            onMoveReservation={onMoveReservation}
-          />
-        );
-      })}
+      {/* Reservation blocks overlaid on the same grid */}
+      <div className="absolute inset-0 grid grid-cols-[240px_repeat(14,minmax(60px,1fr))] pointer-events-none">
+        {roomReservations.map(reservation => {
+          const guest = SAMPLE_GUESTS.find(g => g.id === reservation.guestId);
+          return (
+            <ReservationBlock
+              key={reservation.id}
+              reservation={reservation}
+              guest={guest}
+              room={room}
+              startDate={startDate}
+              onReservationClick={onReservationClick}
+              onMoveReservation={onMoveReservation}
+            />
+          );
+        })}
+      </div>
     </div>
   );
 }
