@@ -243,7 +243,7 @@ function ReservationBlock({
         blockRef.current = el;
         cardRef.current = el;
       }}
-      className={`rounded cursor-pointer hover:shadow-md border flex items-center px-1 text-xs font-medium overflow-hidden group z-10 pointer-events-auto ${
+      className={`rounded cursor-pointer hover:shadow-md border flex items-center px-3 py-1 text-xs font-medium overflow-hidden group z-10 pointer-events-auto ${
         isDragging ? 'opacity-50 ring-2 ring-blue-400' : isResizing ? 'ring-2 ring-purple-400' : ''
       }`}
       style={{
@@ -280,8 +280,10 @@ function ReservationBlock({
       }}
       title={`${guest?.name || 'Guest'} - ${reservation.numberOfGuests} guests ${isDragging ? '(Dragging...)' : '(Click for details, right-click for options)'}`}
     >
-      {/* Main content */}
-      <div className="flex items-center space-x-1 min-w-0 flex-1">
+      {/* Main content with proper spacing for drag handle */}
+      <div className={`flex items-center space-x-2 min-w-0 flex-1 ${
+        isShortReservation ? 'pt-2' : ''
+      }`}>
         {/* Country flag */}
         <span className="text-sm flex-shrink-0">{flag}</span>
         
@@ -335,7 +337,7 @@ function ReservationBlock({
             drag(el); // Top drag handle for short reservations
             dragHandleRef.current = el;
           }}
-          className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-6 h-6 bg-white/70 backdrop-blur-sm border border-gray-200/40 rounded-full flex items-center justify-center cursor-move transition-all duration-200 shadow-sm hover:shadow-md hover:bg-white/90 hover:border-gray-300/60 z-10"
+          className="absolute -top-3 left-1/2 transform -translate-x-1/2 w-6 h-6 bg-white/70 backdrop-blur-sm border border-gray-200/40 rounded-full flex items-center justify-center cursor-move transition-all duration-200 shadow-sm hover:shadow-md hover:bg-white/90 hover:border-gray-300/60 z-10"
           title="+ Drag to move reservation"
         >
           <Plus className="h-3 w-3 text-gray-400/70 hover:text-gray-600" />
