@@ -110,7 +110,7 @@ const ItemTypes = {
   RESERVATION: 'reservation'
 };
 
-// Reservation block component
+// Reservation block component with resize handles
 function ReservationBlock({ 
   reservation, 
   guest, 
@@ -160,19 +160,17 @@ function ReservationBlock({
   const visibleStartDay = Math.max(0, startDayIndex);
   const visibleEndDay = Math.min(13, endDayIndex); // 0-13 = 14 days
   
-  // Half-day positioning math:
+  // FIXED: Full-day positioning math
   // - 14 days total, each day = 100% / 14 = ~7.143%
-  // - Each half-day = 7.143% / 2 = ~3.571%
-  // - Reservation starts in LEFT half of check-in day
-  // - Reservation ends in RIGHT half of check-out day
+  // - Reservation starts at LEFT edge of check-in day (full left)
+  // - Reservation ends at RIGHT edge of check-out day (full right)
   const dayWidth = 100 / 14; // ~7.143%
-  const halfDayWidth = dayWidth / 2; // ~3.571%
   
   // Visual positioning:
-  // Start: LEFT half of start day = startDay * dayWidth
-  // End: RIGHT half of end day = (endDay * dayWidth) + halfDayWidth  
+  // Start: LEFT edge of start day = startDay * dayWidth
+  // End: RIGHT edge of end day = (endDay + 1) * dayWidth  
   const visualStartPercent = visibleStartDay * dayWidth;
-  const visualEndPercent = (visibleEndDay * dayWidth) + halfDayWidth;
+  const visualEndPercent = (visibleEndDay + 1) * dayWidth;
   const visualWidthPercent = visualEndPercent - visualStartPercent;
   
   // Skip if no visible width
@@ -241,6 +239,23 @@ function ReservationBlock({
         </div>
       </div>
       
+      {/* Resize handles */}
+      <div className="absolute inset-y-0 left-0 w-2 cursor-ew-resize bg-transparent hover:bg-white/20 group-hover:bg-white/30 transition-colors"
+           title="Drag to change check-in date"
+           onMouseDown={(e) => {
+             e.stopPropagation(); // Prevent main drag
+             // TODO: Implement resize from left handle
+           }}
+      ></div>
+      
+      <div className="absolute inset-y-0 right-0 w-2 cursor-ew-resize bg-transparent hover:bg-white/20 group-hover:bg-white/30 transition-colors"
+           title="Drag to change check-out date"
+           onMouseDown={(e) => {
+             e.stopPropagation(); // Prevent main drag
+             // TODO: Implement resize from right handle
+           }}
+      ></div>
+      
       {/* Hover tooltip */}
       <div className="absolute top-full left-0 mt-1 bg-gray-900 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 pointer-events-none z-20 whitespace-nowrap">
         {guest?.name} • {reservation.numberOfGuests} guests • {format(reservation.checkIn, 'MMM dd')} - {format(reservation.checkOut, 'MMM dd')}
@@ -300,45 +315,34 @@ function DroppableDateCell({
   }), [room, dayIndex, date, onMoveReservation, hasExistingReservation]);
 
   return (
-    <div className="h-14 border-r border-gray-200 flex relative">
-      {/* LEFT HALF - Check-in zone (droppable) */}
-      <div 
-        ref={dropLeft as any}
-        className={`flex-1 transition-all duration-200 relative ${
-          isOverLeft && canDropLeft 
-            ? 'bg-green-100 border-r-2 border-green-400' 
-            : isOverLeft && !canDropLeft 
-            ? 'bg-red-100 border-r-2 border-red-400' 
-            : isWeekend
-            ? 'bg-orange-50/20'
-            : 'bg-white hover:bg-blue-50/30'
-        }`}
-        title={canDropLeft ? `Drop here for check-in on ${format(date, 'MMM dd')}` : 'Cannot drop here'}
-      >
-        {/* Dotted circle indicator when dragging over valid drop zone */}
-        {isOverLeft && canDropLeft && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-4 h-4 border-2 border-dashed border-green-500 rounded-full bg-green-100/50"></div>
-          </div>
-        )}
-        
-        {/* Invalid drop indicator */}
-        {isOverLeft && !canDropLeft && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-4 h-4 border-2 border-dashed border-red-500 rounded-full bg-red-100/50">
-              <div className="w-full h-full flex items-center justify-center text-red-500 text-xs">×</div>
-            </div>
-          </div>
-        )}
-      </div>
+    <div 
+      ref={dropLeft as any}
+      className={`h-14 border-r border-gray-200 transition-all duration-200 relative ${
+        isOverLeft && canDropLeft 
+          ? 'bg-green-100 border-2 border-green-400' 
+          : isOverLeft && !canDropLeft 
+          ? 'bg-red-100 border-2 border-red-400' 
+          : isWeekend
+          ? 'bg-orange-50/20'
+          : 'bg-white hover:bg-blue-50/30'
+      }`}
+      title={canDropLeft ? `Drop here for check-in on ${format(date, 'MMM dd')}` : 'Cannot drop here'}
+    >
+      {/* Dotted circle indicator when dragging over valid drop zone */}
+      {isOverLeft && canDropLeft && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-4 h-4 border-2 border-dashed border-green-500 rounded-full bg-green-100/50"></div>
+        </div>
+      )}
       
-      {/* RIGHT HALF - Visual only (not droppable, represents check-out zone) */}
-      <div className={`flex-1 ${
-        isWeekend ? 'bg-orange-50/10' : 'bg-gray-50/30'
-      }`}>
-        {/* Visual separator line */}
-        <div className="w-px h-full bg-gray-300/50 ml-0"></div>
-      </div>
+      {/* Invalid drop indicator */}
+      {isOverLeft && !canDropLeft && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-4 h-4 border-2 border-dashed border-red-500 rounded-full bg-red-100/50">
+            <div className="w-full h-full flex items-center justify-center text-red-500 text-xs">×</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
