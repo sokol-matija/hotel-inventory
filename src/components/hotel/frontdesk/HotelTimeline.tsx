@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { format, addDays, startOfDay, isSameDay } from 'date-fns';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
@@ -120,7 +121,10 @@ function ReservationBlock({
   room,
   startDate,
   onReservationClick,
-  onMoveReservation 
+  onMoveReservation,
+  isFullscreen = false,
+  onUpdateReservationStatus,
+  onDeleteReservation
 }: {
   reservation: Reservation;
   guest: any;
@@ -128,11 +132,37 @@ function ReservationBlock({
   startDate: Date;
   onReservationClick: (reservation: Reservation) => void;
   onMoveReservation?: (reservationId: string, newRoomId: string, newCheckIn: Date, newCheckOut: Date) => void;
+  isFullscreen?: boolean;
+  onUpdateReservationStatus?: (id: string, status: ReservationStatus) => Promise<void>;
+  onDeleteReservation?: (id: string) => Promise<void>;
 }) {
-  // Context menu state
-  const [showContextMenu, setShowContextMenu] = useState(false);
-  const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 });
-  
+  // Context menu state - simple implementation
+  const [contextMenu, setContextMenu] = useState<{
+    show: boolean;
+    x: number;
+    y: number;
+    reservation: Reservation | null;
+  }>({
+    show: false,
+    x: 0,
+    y: 0,
+    reservation: null
+  });
+
+  // Flag to prevent click through when closing context menu
+  const [isClosingContextMenu, setIsClosingContextMenu] = useState(false);
+
+  // Debug: Log context menu state changes
+  useEffect(() => {
+    console.log('[CONTEXT MENU] State changed:', {
+      show: contextMenu.show,
+      x: contextMenu.x,
+      y: contextMenu.y,
+      reservationId: contextMenu.reservation?.id,
+      currentReservationId: reservation.id
+    });
+  }, [contextMenu, reservation.id]);
+
   // Resize state
   const [isResizing, setIsResizing] = useState(false);
   const [resizeType, setResizeType] = useState<'left' | 'right' | null>(null);
@@ -259,31 +289,41 @@ function ReservationBlock({
         zIndex: isDragging ? 50 : 5 // Higher z-index when dragging
       }}
       onClick={(e) => {
-        // Prevent click-to-view if dragging, resizing, or clicking resize handles
+        // Prevent click-to-view if dragging, resizing, clicking resize handles, or closing context menu
         const target = e.target as HTMLElement;
         const isResizeHandle = target.closest('[title*="Resize:"]') || 
                               target.classList.contains('cursor-ew-resize');
         
-        if (!isDragging && !isResizing && !isResizeHandle) {
+        if (!isDragging && !isResizing && !isResizeHandle && !isClosingContextMenu) {
           onReservationClick(reservation);
         }
       }}
       onContextMenu={(e) => {
-        console.log('Context menu triggered!', { isDragging, isResizing, target: e.target });
+        console.log('[CONTEXT MENU] Right-click detected!', {
+          reservationId: reservation.id,
+          guestName: guest?.name,
+          clientX: e.clientX,
+          clientY: e.clientY,
+          target: e.target
+        });
+        
         e.preventDefault();
         e.stopPropagation();
         
-        // Only show context menu if not currently dragging or resizing
-        if (!isDragging && !isResizing) {
-          console.log('Setting context menu position:', { x: e.clientX, y: e.clientY });
-          setContextMenuPos({ x: e.clientX, y: e.clientY });
-          setShowContextMenu(true);
-          console.log('Context menu state set to true');
-        } else {
-          console.log('Context menu blocked - isDragging:', isDragging, 'isResizing:', isResizing);
-        }
+        // Show context menu at cursor position
+        const newContextMenu = {
+          show: true,
+          x: e.clientX,
+          y: e.clientY,
+          reservation: reservation
+        };
+        
+        console.log('[CONTEXT MENU] Setting context menu state:', newContextMenu);
+        setContextMenu(newContextMenu);
+        
+        console.log('[CONTEXT MENU] State set complete');
       }}
-      title={`${guest?.name || 'Guest'} - ${reservation.numberOfGuests} guests ${isDragging ? '(Dragging...)' : '(Click for details, right-click for options)'}`}
+      title={`${guest?.name || 'Guest'} - ${reservation.numberOfGuests} guests ${isDragging ? '(Dragging...)' : '(Click for details)'}`}
     >
       {/* Main content with proper spacing for drag handle */}
       <div className={`flex items-center space-x-2 min-w-0 flex-1 ${
@@ -356,15 +396,6 @@ function ReservationBlock({
           : 'bg-blue-300/60 hover:bg-blue-400/90 border-r border-blue-400/40'
       }`}
            title="⟷ Resize: Drag to change check-in date"
-           onContextMenu={(e) => {
-             if (!isResizing) {
-               // Let the event bubble up to the parent card
-               return;
-             } else {
-               e.preventDefault();
-               e.stopPropagation();
-             }
-           }}
            onMouseEnter={(e) => {
              if (!isResizing) {
                gsap.to(e.currentTarget, { 
@@ -424,15 +455,6 @@ function ReservationBlock({
           : 'bg-blue-300/60 hover:bg-blue-400/90 border-l border-blue-400/40'
       }`}
            title="⟷ Resize: Drag to change check-out date"
-           onContextMenu={(e) => {
-             if (!isResizing) {
-               // Let the event bubble up to the parent card
-               return;
-             } else {
-               e.preventDefault();
-               e.stopPropagation();
-             }
-           }}
            onMouseEnter={(e) => {
              if (!isResizing) {
                gsap.to(e.currentTarget, { 
@@ -491,45 +513,243 @@ function ReservationBlock({
         {guest?.name} • {reservation.numberOfGuests} guests • {format(reservation.checkIn, 'MMM dd')} - {format(reservation.checkOut, 'MMM dd')}
       </div>
 
-      {/* Context Menu */}
-      {showContextMenu && (
-        (console.log('Rendering context menu at position:', contextMenuPos), true) &&
-        <>
-          {/* Backdrop to close menu */}
-          <div 
-            className="fixed inset-0 z-50" 
-            onClick={() => setShowContextMenu(false)}
-          />
-          <div 
-            className="fixed bg-white rounded-lg shadow-lg border z-[100] py-1 min-w-[120px]"
-            style={{ 
-              left: contextMenuPos.x, 
-              top: contextMenuPos.y 
-            }}
-          >
-            <button 
-              className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 flex items-center space-x-2"
+      {/* Simple Context Menu */}
+      {contextMenu.show && contextMenu.reservation?.id === reservation.id && (
+        (console.log('[CONTEXT MENU] Rendering context menu!', {
+          show: contextMenu.show,
+          x: contextMenu.x,
+          y: contextMenu.y,
+          reservationId: contextMenu.reservation?.id,
+          currentReservationId: reservation.id,
+          windowWidth: window.innerWidth,
+          windowHeight: window.innerHeight,
+          isFullscreen: isFullscreen
+        }), true) &&
+        (isFullscreen ? createPortal(
+          <>
+            {/* Backdrop to close menu */}
+            <div 
+              className="fixed inset-0 z-40" 
               onClick={() => {
-                // TODO: Implement change dates
-                setShowContextMenu(false);
+                console.log('[CONTEXT MENU] Backdrop clicked - closing menu');
+                setIsClosingContextMenu(true);
+                setContextMenu({ show: false, x: 0, y: 0, reservation: null });
+                // Reset flag after a short delay
+                setTimeout(() => setIsClosingContextMenu(false), 100);
               }}
+            />
+            
+            {/* Context Menu */}
+            <div 
+              className="fixed bg-white rounded-lg shadow-xl border border-gray-200 py-2 min-w-[180px] z-[9999]"
+              style={{ 
+                left: contextMenu.x, 
+                top: contextMenu.y
+              }}
+              onClick={() => console.log('[CONTEXT MENU] Menu clicked')}
             >
-              <CalendarIcon className="w-4 h-4" />
-              <span>Change Dates</span>
-            </button>
-            <button 
-              className="w-full text-left px-3 py-2 text-sm hover:bg-red-50 text-red-600 flex items-center space-x-2"
+              <button 
+                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3"
+                onClick={async () => {
+                  console.log('Fast Check-in clicked for:', contextMenu.reservation?.id);
+                  if (contextMenu.reservation && onUpdateReservationStatus) {
+                    try {
+                      await onUpdateReservationStatus(contextMenu.reservation.id, 'checked-in');
+                      console.log('✅ Guest checked in successfully');
+                    } catch (error) {
+                      console.error('❌ Failed to check in guest:', error);
+                    }
+                  }
+                  setContextMenu({ show: false, x: 0, y: 0, reservation: null });
+                }}
+              >
+                <span className="text-green-600">✓</span>
+                <span>Fast Check-in</span>
+              </button>
+              
+              <button 
+                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3"
+                onClick={async () => {
+                  console.log('Fast Check-out clicked for:', contextMenu.reservation?.id);
+                  if (contextMenu.reservation && onUpdateReservationStatus) {
+                    try {
+                      await onUpdateReservationStatus(contextMenu.reservation.id, 'checked-out');
+                      console.log('✅ Guest checked out successfully');
+                    } catch (error) {
+                      console.error('❌ Failed to check out guest:', error);
+                    }
+                  }
+                  setContextMenu({ show: false, x: 0, y: 0, reservation: null });
+                }}
+              >
+                <span className="text-blue-600">↗</span>
+                <span>Fast Check-out</span>
+              </button>
+
+              <div className="border-t border-gray-100 my-1"></div>
+              
+              <button 
+                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3"
+                onClick={() => {
+                  console.log('📄 Create Invoice clicked for:', contextMenu.reservation?.id);
+                  alert('Invoice creation feature coming soon!');
+                  setContextMenu({ show: false, x: 0, y: 0, reservation: null });
+                }}
+              >
+                <span className="text-purple-600">📄</span>
+                <span>Create Invoice</span>
+              </button>
+              
+              <button 
+                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3"
+                onClick={() => {
+                  console.log('💰 Mark as Paid clicked for:', contextMenu.reservation?.id);
+                  alert('Payment tracking feature coming soon!');
+                  setContextMenu({ show: false, x: 0, y: 0, reservation: null });
+                }}
+              >
+                <span className="text-yellow-600">💰</span>
+                <span>Mark as Paid</span>
+              </button>
+
+              <div className="border-t border-gray-100 my-1"></div>
+              
+              <button 
+                className="w-full text-left px-4 py-2 text-sm hover:bg-red-50 text-red-600 flex items-center space-x-3"
+                onClick={async () => {
+                  console.log('Delete clicked for:', contextMenu.reservation?.id);
+                  if (contextMenu.reservation && onDeleteReservation) {
+                    if (window.confirm(`Are you sure you want to delete the reservation for ${contextMenu.reservation.guestId}?`)) {
+                      try {
+                        await onDeleteReservation(contextMenu.reservation.id);
+                        console.log('✅ Reservation deleted successfully');
+                      } catch (error) {
+                        console.error('❌ Failed to delete reservation:', error);
+                      }
+                    }
+                  }
+                  setContextMenu({ show: false, x: 0, y: 0, reservation: null });
+                }}
+              >
+                <span className="text-red-600">×</span>
+                <span>Delete Reservation</span>
+              </button>
+            </div>
+          </>, document.body
+        ) : (
+          <>
+            {/* Backdrop to close menu */}
+            <div 
+              className="fixed inset-0 z-40" 
               onClick={() => {
-                // TODO: Implement delete reservation
-                setShowContextMenu(false);
+                console.log('[CONTEXT MENU] Backdrop clicked - closing menu');
+                setIsClosingContextMenu(true);
+                setContextMenu({ show: false, x: 0, y: 0, reservation: null });
+                // Reset flag after a short delay
+                setTimeout(() => setIsClosingContextMenu(false), 100);
               }}
+            />
+            
+            {/* Context Menu */}
+            <div 
+              className="fixed bg-white rounded-lg shadow-xl border border-gray-200 py-2 min-w-[180px] z-[9999]"
+              style={{ 
+                left: contextMenu.x, 
+                top: contextMenu.y
+              }}
+              onClick={() => console.log('[CONTEXT MENU] Menu clicked')}
             >
-              <span className="w-4 h-4 flex items-center justify-center">×</span>
-              <span>Delete</span>
-            </button>
-          </div>
-        </>
+              <button 
+                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3"
+                onClick={async () => {
+                  console.log('Fast Check-in clicked for:', contextMenu.reservation?.id);
+                  if (contextMenu.reservation && onUpdateReservationStatus) {
+                    try {
+                      await onUpdateReservationStatus(contextMenu.reservation.id, 'checked-in');
+                      console.log('✅ Guest checked in successfully');
+                    } catch (error) {
+                      console.error('❌ Failed to check in guest:', error);
+                    }
+                  }
+                  setContextMenu({ show: false, x: 0, y: 0, reservation: null });
+                }}
+              >
+                <span className="text-green-600">✓</span>
+                <span>Fast Check-in</span>
+              </button>
+              
+              <button 
+                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3"
+                onClick={async () => {
+                  console.log('Fast Check-out clicked for:', contextMenu.reservation?.id);
+                  if (contextMenu.reservation && onUpdateReservationStatus) {
+                    try {
+                      await onUpdateReservationStatus(contextMenu.reservation.id, 'checked-out');
+                      console.log('✅ Guest checked out successfully');
+                    } catch (error) {
+                      console.error('❌ Failed to check out guest:', error);
+                    }
+                  }
+                  setContextMenu({ show: false, x: 0, y: 0, reservation: null });
+                }}
+              >
+                <span className="text-blue-600">↗</span>
+                <span>Fast Check-out</span>
+              </button>
+
+              <div className="border-t border-gray-100 my-1"></div>
+              
+              <button 
+                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3"
+                onClick={() => {
+                  console.log('📄 Create Invoice clicked for:', contextMenu.reservation?.id);
+                  alert('Invoice creation feature coming soon!');
+                  setContextMenu({ show: false, x: 0, y: 0, reservation: null });
+                }}
+              >
+                <span className="text-purple-600">📄</span>
+                <span>Create Invoice</span>
+              </button>
+              
+              <button 
+                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3"
+                onClick={() => {
+                  console.log('💰 Mark as Paid clicked for:', contextMenu.reservation?.id);
+                  alert('Payment tracking feature coming soon!');
+                  setContextMenu({ show: false, x: 0, y: 0, reservation: null });
+                }}
+              >
+                <span className="text-yellow-600">💰</span>
+                <span>Mark as Paid</span>
+              </button>
+
+              <div className="border-t border-gray-100 my-1"></div>
+              
+              <button 
+                className="w-full text-left px-4 py-2 text-sm hover:bg-red-50 text-red-600 flex items-center space-x-3"
+                onClick={async () => {
+                  console.log('Delete clicked for:', contextMenu.reservation?.id);
+                  if (contextMenu.reservation && onDeleteReservation) {
+                    if (window.confirm(`Are you sure you want to delete the reservation for ${contextMenu.reservation.guestId}?`)) {
+                      try {
+                        await onDeleteReservation(contextMenu.reservation.id);
+                        console.log('✅ Reservation deleted successfully');
+                      } catch (error) {
+                        console.error('❌ Failed to delete reservation:', error);
+                      }
+                    }
+                  }
+                  setContextMenu({ show: false, x: 0, y: 0, reservation: null });
+                }}
+              >
+                <span className="text-red-600">×</span>
+                <span>Delete Reservation</span>
+              </button>
+            </div>
+          </>
+        ))
       )}
+
     </div>
   );
 }
@@ -624,13 +844,19 @@ function RoomRow({
   reservations, 
   startDate,
   onReservationClick,
-  onMoveReservation 
+  onMoveReservation,
+  isFullscreen = false,
+  onUpdateReservationStatus,
+  onDeleteReservation
 }: {
   room: Room;
   reservations: Reservation[];
   startDate: Date;
   onReservationClick: (reservation: Reservation) => void;
   onMoveReservation: (reservationId: string, newRoomId: string, newCheckIn: Date, newCheckOut: Date) => void;
+  isFullscreen?: boolean;
+  onUpdateReservationStatus?: (id: string, status: ReservationStatus) => Promise<void>;
+  onDeleteReservation?: (id: string) => Promise<void>;
 }) {
   // Find reservations for this room
   const roomReservations = reservations.filter(r => r.roomId === room.id);
@@ -685,6 +911,9 @@ function RoomRow({
               startDate={startDate}
               onReservationClick={onReservationClick}
               onMoveReservation={onMoveReservation}
+              isFullscreen={isFullscreen}
+              onUpdateReservationStatus={onUpdateReservationStatus}
+              onDeleteReservation={onDeleteReservation}
             />
           );
         })}
@@ -702,7 +931,10 @@ function FloorSection({
   isExpanded, 
   onToggle,
   onReservationClick,
-  onMoveReservation 
+  onMoveReservation,
+  isFullscreen = false,
+  onUpdateReservationStatus,
+  onDeleteReservation
 }: {
   floor: number;
   rooms: Room[];
@@ -712,6 +944,9 @@ function FloorSection({
   onToggle: () => void;
   onReservationClick: (reservation: Reservation) => void;
   onMoveReservation: (reservationId: string, newRoomId: string, newCheckIn: Date, newCheckOut: Date) => void;
+  isFullscreen?: boolean;
+  onUpdateReservationStatus?: (id: string, status: ReservationStatus) => Promise<void>;
+  onDeleteReservation?: (id: string) => Promise<void>;
 }) {
   const floorName = floor === 4 ? 'Rooftop Premium' : `Floor ${floor}`;
   const occupiedRooms = rooms.filter(room => 
@@ -760,6 +995,9 @@ function FloorSection({
               startDate={startDate}
               onReservationClick={onReservationClick}
               onMoveReservation={onMoveReservation}
+              isFullscreen={isFullscreen}
+              onUpdateReservationStatus={onUpdateReservationStatus}
+              onDeleteReservation={onDeleteReservation}
             />
           ))}
         </div>
@@ -920,7 +1158,7 @@ function RoomOverviewFloorSection({
 
 // Main timeline component
 export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen }: HotelTimelineProps) {
-  const { reservations, isUpdating, createReservation, createGuest, updateReservation } = useHotel();
+  const { reservations, isUpdating, createReservation, createGuest, updateReservation, updateReservationStatus, deleteReservation } = useHotel();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [expandedFloors, setExpandedFloors] = useState<Record<number, boolean>>({
     1: true,
@@ -1204,6 +1442,9 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
                 onToggle={() => toggleFloor(parseInt(floor))}
                 onReservationClick={handleReservationClick}
                 onMoveReservation={handleMoveReservation}
+                isFullscreen={isFullscreen}
+                onUpdateReservationStatus={updateReservationStatus}
+                onDeleteReservation={deleteReservation}
               />
             ))}
           </div>

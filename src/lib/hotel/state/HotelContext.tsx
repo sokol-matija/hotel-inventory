@@ -18,6 +18,7 @@ interface HotelContextType {
   updateReservationNotes: (id: string, notes: string) => Promise<void>;
   updateReservation: (id: string, updates: Partial<Reservation>) => Promise<void>;
   createReservation: (reservationData: Omit<Reservation, 'id' | 'bookingDate' | 'lastModified'>) => Promise<void>;
+  deleteReservation: (id: string) => Promise<void>;
   
   // Actions - Guests
   createGuest: (guest: Omit<Guest, 'id' | 'totalStays'>) => Promise<void>;
@@ -240,6 +241,33 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Delete reservation
+  const deleteReservation = async (reservationId: string): Promise<void> => {
+    const originalReservations = [...reservations];
+    
+    // Optimistic update - remove the reservation immediately
+    const updatedReservations = reservations.filter(reservation => reservation.id !== reservationId);
+    setReservations(updatedReservations);
+    setIsUpdating(true);
+
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Persist to localStorage
+      saveReservationsToStorage(updatedReservations);
+      
+      console.log(`Reservation ${reservationId} deleted successfully`);
+      
+    } catch (error) {
+      console.error('Failed to delete reservation:', error);
+      setReservations(originalReservations); // Rollback
+      throw error;
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   // Create new guest
   const createGuest = async (guestData: Omit<Guest, 'id' | 'totalStays'>): Promise<void> => {
     const newGuest: Guest = {
@@ -353,6 +381,7 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
     updateReservationNotes,
     updateReservation,
     createReservation,
+    deleteReservation,
     createGuest,
     updateGuest,
     findGuestsByName,
