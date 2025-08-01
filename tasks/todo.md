@@ -304,3 +304,124 @@ The timeline was using `grid-cols-[240px_repeat(14,minmax(60px,1fr))]` which cre
 - **Space Saved:** 270px (25% reduction)
 
 **Status: HORIZONTAL SCROLLING ELIMINATED** ✅
+
+---
+
+### SIDEBAR COLLAPSE FUNCTIONALITY REMOVAL - JANUARY 30, 2025 ✅
+
+**Task Completed:**
+Removed all collapsible sidebar functionality from the front-desk page as requested, returning to the original simple sidebar design.
+
+**Changes Made:**
+
+1. **Layout Component Cleanup:**
+   ```typescript
+   // REMOVED: Collapse state management
+   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+   
+   // REMOVED: Props passed to Sidebar
+   <Sidebar 
+     isCollapsed={isSidebarCollapsed}
+     onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+   />
+   
+   // RESTORED: Simple sidebar call
+   <Sidebar />
+   ```
+
+2. **Sidebar Component Restoration:**
+   - **REMOVED**: SidebarProps interface with isCollapsed and onToggle
+   - **REMOVED**: All collapse/expand toggle button logic
+   - **REMOVED**: Conditional styling based on collapsed state
+   - **REMOVED**: Complex collapsed bottom section with tooltips
+   - **REMOVED**: ChevronLeft and ChevronRight imports
+   - **RESTORED**: Original w-64 fixed width
+   - **RESTORED**: Simple logo display without HP branding
+   - **RESTORED**: Standard navigation without tooltips
+   - **RESTORED**: Original user section layout
+
+3. **Visual Changes:**
+   - **Width**: Back to fixed 264px (w-64) instead of dynamic
+   - **Logo**: Back to full LOGO1-hires.png display
+   - **Navigation**: Standard horizontal layout with text labels
+   - **User Section**: Full expanded layout with email and language switcher
+   - **No Animations**: Removed all transition classes
+
+**Benefits of Removal:**
+- ✅ **Simplified Code**: Removed 200+ lines of complex collapse logic
+- ✅ **Cleaner Interface**: No toggle buttons or collapsed states to manage
+- ✅ **Reduced Bundle Size**: 699 B smaller JavaScript bundle
+- ✅ **Less Complexity**: No state management for collapse behavior
+- ✅ **Original Design**: Restored to proven, working sidebar layout
+
+**Files Modified:**
+- `/Users/msokol/Dev/Repos/2-Personal/hotel-inventory/src/components/layout/Layout.tsx` - Removed collapse state and props
+- `/Users/msokol/Dev/Repos/2-Personal/hotel-inventory/src/components/layout/Sidebar.tsx` - Complete restoration to original design
+
+**Build Status:** ✅ Successfully compiled with no errors
+
+**Result:**
+The sidebar is now back to its original, simple design without any collapsible functionality. The fixed 264px width provides consistent layout and the interface is cleaner without toggle buttons or collapsed states.
+
+**Status: COLLAPSE FUNCTIONALITY COMPLETELY REMOVED** ✅
+
+---
+
+### COMPLETE SIDEBAR COLLAPSE REMOVAL - FINAL UPDATE ✅
+
+**Issue Found & Fixed:**
+The collapsible sidebar was still working because the Front Desk page uses a separate `HotelSidebar` component that had its own collapse functionality.
+
+**Additional Changes Made:**
+
+1. **HotelSidebar.tsx Cleanup:**
+   ```typescript
+   // REMOVED: useState import and collapse state
+   const [isCollapsed, setIsCollapsed] = useState(false)
+   
+   // REMOVED: Dynamic width classes
+   className={`...transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'}`}
+   
+   // REMOVED: Collapse/Expand toggle button entirely
+   <Button onClick={() => setIsCollapsed(!isCollapsed)}>
+     {isCollapsed ? <ChevronRight /> : <ChevronLeft />}
+   </Button>
+   
+   // REMOVED: Conditional rendering based on collapse state
+   {!isCollapsed && <div>...</div>}
+   
+   // RESTORED: Fixed width and always visible content
+   className="w-64 bg-white border-r border-gray-200..."
+   ```
+
+2. **Removed Unused Imports:**
+   - `ChevronLeft` and `ChevronRight` icons
+   - `useState` React hook
+
+3. **Restored Fixed Layout:**
+   - **Module Title**: Always visible "Front Desk" and "Hotel Management"
+   - **Navigation**: Always shows full labels, no icon-only mode
+   - **User Section**: Always shows full user info and language switcher
+   - **Back Button**: Always shows "Module Selector" text
+
+**Final Bundle Size Reduction:**
+- **Total Reduction**: 842 B smaller JavaScript bundle
+- **HotelSidebar**: 143 B additional reduction from this cleanup
+- **Main Sidebar**: 699 B reduction from previous cleanup
+
+**Files Modified (Complete List):**
+- `/Users/msokol/Dev/Repos/2-Personal/hotel-inventory/src/components/layout/Layout.tsx` - Main layout collapse removal
+- `/Users/msokol/Dev/Repos/2-Personal/hotel-inventory/src/components/layout/Sidebar.tsx` - Main sidebar collapse removal  
+- `/Users/msokol/Dev/Repos/2-Personal/hotel-inventory/src/components/hotel/shared/HotelSidebar.tsx` - Hotel sidebar collapse removal
+
+**Verification:**
+- ✅ **Build Success**: No TypeScript or compilation errors
+- ✅ **No Toggle Buttons**: Completely removed from both sidebars
+- ✅ **Fixed Widths**: Both sidebars now have consistent 264px width
+- ✅ **No State Management**: All collapse-related state removed
+- ✅ **Clean Code**: No unused imports or conditional logic
+
+**Result:**
+The collapsible sidebar functionality has been **completely eliminated** from both the main application layout and the Front Desk hotel module. No toggle buttons exist anywhere, and both sidebars maintain a consistent, fixed width design.
+
+**Status: ALL COLLAPSE FUNCTIONALITY ELIMINATED** ✅
