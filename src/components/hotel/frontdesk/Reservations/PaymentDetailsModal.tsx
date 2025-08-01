@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import { Reservation, Guest, Room } from '../../../../lib/hotel/types';
 import { calculatePricing } from '../../../../lib/hotel/pricingCalculator';
+import { generatePDFInvoice, generateInvoiceNumber } from '../../../../lib/pdfInvoiceGenerator';
+import hotelNotification from '../../../../lib/notifications';
 
 interface PaymentDetailsModalProps {
   isOpen: boolean;
@@ -50,9 +52,26 @@ export default function PaymentDetailsModal({
   );
 
   const handlePrintInvoice = () => {
-    console.log('Printing PDF invoice for reservation:', reservation.id);
-    // TODO: Implement PDF generation
-    alert('PDF invoice generation coming soon!');
+    try {
+      // Generate unique invoice number
+      const invoiceNumber = generateInvoiceNumber(reservation);
+      const invoiceDate = new Date();
+      
+      // Generate PDF invoice
+      generatePDFInvoice({
+        reservation,
+        guest,
+        room,
+        invoiceNumber,
+        invoiceDate
+      });
+      
+      // Show success notification
+      hotelNotification.success('Invoice Generated', `PDF invoice saved as Hotel_Porec_Invoice_${invoiceNumber}_${guest.name.replace(/\s+/g, '_')}.pdf`);
+    } catch (error) {
+      console.error('Error generating PDF invoice:', error);
+      hotelNotification.error('PDF Generation Failed', 'There was an error generating the PDF invoice. Please try again.');
+    }
   };
 
   const handleSendEmail = () => {
