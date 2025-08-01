@@ -278,43 +278,23 @@ function ReservationBlock({
         {/* Country flag */}
         <span className="text-sm flex-shrink-0">{flag}</span>
         
-        {/* Adaptive drag handle based on reservation length */}
-        {isShortReservation ? (
-          // For short reservations (1-2 days): Guest name is draggable
-          <div className="flex items-center space-x-1 flex-1 min-w-0">
-            <div
-              ref={(el) => {
-                drag(el); // Guest name area is draggable
-                dragHandleRef.current = el;
-              }}
-              className="flex items-center space-x-1 cursor-move hover:bg-white/20 rounded px-1 py-0.5 transition-colors flex-1 min-w-0"
-              title={`Drag "${guest?.name || 'Guest'}" to move reservation`}
-            >
-              <Move className="h-3 w-3 text-gray-400 hover:text-gray-600 flex-shrink-0" />
-              <span className="truncate font-medium">
-                {guest?.name || 'Guest'}
-              </span>
-            </div>
+        {/* Guest name - always visible */}
+        <span className="truncate font-medium flex-1 min-w-0">
+          {guest?.name || 'Guest'}
+        </span>
+        
+        {/* Drag handle for longer reservations only */}
+        {!isShortReservation && (
+          <div
+            ref={(el) => {
+              drag(el); // Only the drag handle is draggable
+              dragHandleRef.current = el;
+            }}
+            className="bg-white/95 backdrop-blur-sm border border-gray-200/60 rounded-md p-1 hover:bg-white hover:border-gray-300 cursor-move transition-all duration-200 flex-shrink-0 shadow-sm hover:shadow-md"
+            title="⋮⋮ Drag to move reservation"
+          >
+            <Move className="h-3 w-3 text-gray-500 hover:text-gray-700" />
           </div>
-        ) : (
-          // For longer reservations (3+ days): Modern drag handle + separate name
-          <>
-            <div
-              ref={(el) => {
-                drag(el); // Only the drag handle is draggable
-                dragHandleRef.current = el;
-              }}
-              className="bg-white/95 backdrop-blur-sm border border-gray-200/60 rounded-md p-1 hover:bg-white hover:border-gray-300 cursor-move transition-all duration-200 flex-shrink-0 shadow-sm hover:shadow-md"
-              title="⋮⋮ Drag to move reservation"
-            >
-              <Move className="h-3 w-3 text-gray-500 hover:text-gray-700" />
-            </div>
-            
-            {/* Guest name */}
-            <span className="truncate font-medium flex-1 min-w-0">
-              {guest?.name || 'Guest'}
-            </span>
-          </>
         )}
         
         {/* Occupancy icons */}
@@ -338,6 +318,20 @@ function ReservationBlock({
           )}
         </div>
       </div>
+      
+      {/* Top drag handle for short reservations - half visible tab */}
+      {isShortReservation && (
+        <div
+          ref={(el) => {
+            drag(el); // Top drag handle for short reservations
+            dragHandleRef.current = el;
+          }}
+          className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-white/95 backdrop-blur-sm border border-gray-200/60 rounded-t-md px-2 py-1 cursor-move transition-all duration-200 shadow-sm hover:shadow-md hover:bg-white hover:border-gray-300 z-10"
+          title="⋮⋮ Drag to move reservation"
+        >
+          <Move className="h-3 w-3 text-gray-500 hover:text-gray-700" />
+        </div>
+      )}
       
       {/* Always visible resize handles for better UX */}
       <div className={`absolute inset-y-0 left-0 w-2 cursor-ew-resize transition-all duration-200 pointer-events-auto ${
