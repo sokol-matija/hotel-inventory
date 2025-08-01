@@ -351,6 +351,15 @@ function ReservationBlock({
           : 'bg-blue-300/60 hover:bg-blue-400/90 border-r border-blue-400/40'
       }`}
            title="⟷ Resize: Drag to change check-in date"
+           onContextMenu={(e) => {
+             if (!isResizing) {
+               // Let the event bubble up to the parent card
+               return;
+             } else {
+               e.preventDefault();
+               e.stopPropagation();
+             }
+           }}
            onMouseEnter={(e) => {
              if (!isResizing) {
                gsap.to(e.currentTarget, { 
@@ -410,6 +419,15 @@ function ReservationBlock({
           : 'bg-blue-300/60 hover:bg-blue-400/90 border-l border-blue-400/40'
       }`}
            title="⟷ Resize: Drag to change check-out date"
+           onContextMenu={(e) => {
+             if (!isResizing) {
+               // Let the event bubble up to the parent card
+               return;
+             } else {
+               e.preventDefault();
+               e.stopPropagation();
+             }
+           }}
            onMouseEnter={(e) => {
              if (!isResizing) {
                gsap.to(e.currentTarget, { 
