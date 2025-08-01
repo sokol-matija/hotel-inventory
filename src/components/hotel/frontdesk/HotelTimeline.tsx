@@ -139,7 +139,7 @@ function ReservationBlock({
   const blockRef = useRef<HTMLDivElement>(null);
 
   // Setup drag functionality - MUST be at the top level before any early returns
-  const [{ isDragging }, drag] = useDrag(() => ({
+  const [{ isDragging }, drag, dragPreview] = useDrag(() => ({
     type: ItemTypes.RESERVATION,
     item: {
       reservationId: reservation.id,
@@ -153,6 +153,10 @@ function ReservationBlock({
       isDragging: !!monitor.isDragging(),
     }),
   }), [reservation, room, guest]);
+
+  // Refs for drag handle and card
+  const dragHandleRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   // BULLETPROOF: Direct day index calculation
   const checkInDate = startOfDay(reservation.checkIn);
@@ -229,10 +233,11 @@ function ReservationBlock({
   return (
     <div
       ref={(el) => {
-        drag(el);
+        dragPreview(el); // Set drag preview to entire card
         blockRef.current = el;
+        cardRef.current = el;
       }}
-      className={`rounded cursor-move hover:shadow-md border flex items-center px-2 text-xs font-medium overflow-hidden group z-10 pointer-events-auto ${
+      className={`rounded cursor-pointer hover:shadow-md border flex items-center px-1 text-xs font-medium overflow-hidden group z-10 pointer-events-auto ${
         isDragging ? 'opacity-50 ring-2 ring-blue-400' : isResizing ? 'ring-2 ring-purple-400' : ''
       }`}
       style={{
@@ -257,12 +262,21 @@ function ReservationBlock({
         setContextMenuPos({ x: e.clientX, y: e.clientY });
         setShowContextMenu(true);
       }}
-      title={`${guest?.name || 'Guest'} - ${reservation.numberOfGuests} guests ${isDragging ? '(Dragging...)' : '(Click for details, drag to move, right-click for options)'}`}
+      title={`${guest?.name || 'Guest'} - ${reservation.numberOfGuests} guests ${isDragging ? '(Dragging...)' : '(Click for details, right-click for options)'}`}
     >
       {/* Main content */}
       <div className="flex items-center space-x-1 min-w-0 flex-1">
-        {/* Drag handle */}
-        <Move className="h-3 w-3 opacity-40 flex-shrink-0" />
+        {/* Drag handle - Only this icon is draggable */}
+        <div
+          ref={(el) => {
+            drag(el); // Only the drag handle is draggable
+            dragHandleRef.current = el;
+          }}
+          className="p-1 hover:bg-gray-100/80 rounded cursor-move transition-colors flex-shrink-0"
+          title="⋮⋮ Drag to move reservation"
+        >
+          <Move className="h-3 w-3 text-gray-400 hover:text-gray-600" />
+        </div>
         
         {/* Country flag */}
         <span className="text-sm flex-shrink-0">{flag}</span>
