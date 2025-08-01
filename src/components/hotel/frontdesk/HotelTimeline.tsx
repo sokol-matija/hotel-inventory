@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { format, addDays, startOfDay, isSameDay } from 'date-fns';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
+import { gsap } from 'gsap';
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import { Button } from '../../ui/button';
 import { Badge } from '../../ui/badge';
@@ -133,6 +134,9 @@ function ReservationBlock({
   // Resize state
   const [isResizing, setIsResizing] = useState(false);
   const [resizeType, setResizeType] = useState<'left' | 'right' | null>(null);
+  
+  // Animation ref
+  const blockRef = useRef<HTMLDivElement>(null);
 
   // Setup drag functionality - MUST be at the top level before any early returns
   const [{ isDragging }, drag] = useDrag(() => ({
@@ -159,21 +163,11 @@ function ReservationBlock({
   const startDayIndex = Math.floor((checkInDate.getTime() - timelineStart.getTime()) / (24 * 60 * 60 * 1000));
   const endDayIndex = Math.floor((checkOutDate.getTime() - timelineStart.getTime()) / (24 * 60 * 60 * 1000));
   
-  // Don't render if completely outside visible timeline
-  if (startDayIndex >= 14 || endDayIndex <= 0) {
-    return null;
-  }
-  
-  // Clamp to visible range
+  // Clamp to visible range (need these for useEffect dependencies)
   const visibleStartDay = Math.max(0, startDayIndex);
   const visibleEndDay = Math.min(13, endDayIndex - 1); // End day is exclusive for checkout
   
-  // Skip if no width
-  if (visibleEndDay < visibleStartDay) {
-    return null;
-  }
-  
-  // BULLETPROOF: CSS Grid positioning
+  // BULLETPROOF: CSS Grid positioning (need these for useEffect dependencies)
   // Grid columns: 1=rooms, 2=day0, 3=day1, ..., 15=day13
   const gridColumnStart = visibleStartDay + 2; // day 0 = column 2
   const gridColumnEnd = visibleEndDay + 3;     // day 1 = column 3 (end is exclusive)
@@ -181,10 +175,64 @@ function ReservationBlock({
   const statusColors = RESERVATION_STATUS_COLORS[reservation.status as ReservationStatus] || RESERVATION_STATUS_COLORS.confirmed;
   const flag = getCountryFlag(guest?.nationality || '');
   
+  // Animation effects - MUST be before any early returns to satisfy Rules of Hooks
+  useEffect(() => {
+    if (blockRef.current && !isDragging && !isResizing) {
+      // Smooth animation when position updates after drop
+      gsap.fromTo(blockRef.current, 
+        { 
+          scale: 0.95,
+          boxShadow: '0 4px 20px rgba(59, 130, 246, 0.3)',
+          y: -2
+        },
+        { 
+          scale: 1,
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+          y: 0,
+          duration: 0.4,
+          ease: 'back.out(1.2)'
+        }
+      );
+    }
+  }, [gridColumnStart, gridColumnEnd, isDragging, isResizing]);
+
+  // Initial entrance animation - MUST be before any early returns to satisfy Rules of Hooks
+  useEffect(() => {
+    if (blockRef.current) {
+      gsap.fromTo(blockRef.current,
+        { 
+          opacity: 0,
+          scale: 0.8,
+          y: 10
+        },
+        { 
+          opacity: 1,
+          scale: 1,
+          y: 0,
+          duration: 0.3,
+          ease: 'power2.out'
+        }
+      );
+    }
+  }, []);
+
+  // Don't render if completely outside visible timeline
+  if (startDayIndex >= 14 || endDayIndex <= 0) {
+    return null;
+  }
+  
+  // Skip if no width
+  if (visibleEndDay < visibleStartDay) {
+    return null;
+  }
+
   return (
     <div
-      ref={drag as any}
-      className={`rounded cursor-move hover:shadow-md transition-all duration-200 border flex items-center px-2 text-xs font-medium overflow-hidden group z-10 pointer-events-auto ${
+      ref={(el) => {
+        drag(el);
+        blockRef.current = el;
+      }}
+      className={`rounded cursor-move hover:shadow-md border flex items-center px-2 text-xs font-medium overflow-hidden group z-10 pointer-events-auto ${
         isDragging ? 'opacity-50 ring-2 ring-blue-400' : isResizing ? 'ring-2 ring-purple-400' : ''
       }`}
       style={{
@@ -246,13 +294,31 @@ function ReservationBlock({
         </div>
       </div>
       
-      {/* Always visible resize handles */}
-      <div className={`absolute inset-y-0 left-0 w-1 cursor-ew-resize transition-colors border-r pointer-events-auto ${
+      {/* Always visible resize handles with hover animation */}
+      <div className={`absolute inset-y-0 left-0 w-1 cursor-ew-resize transition-all duration-200 border-r pointer-events-auto ${
         isResizing && resizeType === 'left' 
-          ? 'bg-purple-400 border-purple-600' 
-          : 'bg-white/40 hover:bg-white/60 border-white/60'
+          ? 'bg-purple-400 border-purple-600 w-2' 
+          : 'bg-white/40 hover:bg-white/80 hover:w-2 border-white/60'
       }`}
            title="Drag to change check-in date"
+           onMouseEnter={(e) => {
+             if (!isResizing) {
+               gsap.to(e.currentTarget, { 
+                 scale: 1.2, 
+                 duration: 0.2, 
+                 ease: 'power2.out' 
+               });
+             }
+           }}
+           onMouseLeave={(e) => {
+             if (!isResizing) {
+               gsap.to(e.currentTarget, { 
+                 scale: 1, 
+                 duration: 0.2, 
+                 ease: 'power2.out' 
+               });
+             }
+           }}
            onMouseDown={(e) => {
              e.stopPropagation(); // Prevent main drag
              setIsResizing(true);
@@ -288,12 +354,30 @@ function ReservationBlock({
            }}
       ></div>
       
-      <div className={`absolute inset-y-0 right-0 w-1 cursor-ew-resize transition-colors border-l pointer-events-auto ${
+      <div className={`absolute inset-y-0 right-0 w-1 cursor-ew-resize transition-all duration-200 border-l pointer-events-auto ${
         isResizing && resizeType === 'right' 
-          ? 'bg-purple-400 border-purple-600' 
-          : 'bg-white/40 hover:bg-white/60 border-white/60'
+          ? 'bg-purple-400 border-purple-600 w-2' 
+          : 'bg-white/40 hover:bg-white/80 hover:w-2 border-white/60'
       }`}
            title="Drag to change check-out date"
+           onMouseEnter={(e) => {
+             if (!isResizing) {
+               gsap.to(e.currentTarget, { 
+                 scale: 1.2, 
+                 duration: 0.2, 
+                 ease: 'power2.out' 
+               });
+             }
+           }}
+           onMouseLeave={(e) => {
+             if (!isResizing) {
+               gsap.to(e.currentTarget, { 
+                 scale: 1, 
+                 duration: 0.2, 
+                 ease: 'power2.out' 
+               });
+             }
+           }}
            onMouseDown={(e) => {
              e.stopPropagation(); // Prevent main drag
              setIsResizing(true);
