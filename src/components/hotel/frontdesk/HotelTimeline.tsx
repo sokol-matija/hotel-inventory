@@ -259,19 +259,24 @@ function ReservationBlock({
         zIndex: isDragging ? 50 : 5 // Higher z-index when dragging
       }}
       onClick={(e) => {
-        // Prevent click-to-view if clicking on resize handles
+        // Prevent click-to-view if dragging, resizing, or clicking resize handles
         const target = e.target as HTMLElement;
         const isResizeHandle = target.closest('[title*="Resize:"]') || 
                               target.classList.contains('cursor-ew-resize');
         
-        if (!isDragging && !isResizeHandle) {
+        if (!isDragging && !isResizing && !isResizeHandle) {
           onReservationClick(reservation);
         }
       }}
       onContextMenu={(e) => {
         e.preventDefault();
-        setContextMenuPos({ x: e.clientX, y: e.clientY });
-        setShowContextMenu(true);
+        e.stopPropagation();
+        
+        // Only show context menu if not currently dragging or resizing
+        if (!isDragging && !isResizing) {
+          setContextMenuPos({ x: e.clientX, y: e.clientY });
+          setShowContextMenu(true);
+        }
       }}
       title={`${guest?.name || 'Guest'} - ${reservation.numberOfGuests} guests ${isDragging ? '(Dragging...)' : '(Click for details, right-click for options)'}`}
     >
@@ -330,10 +335,10 @@ function ReservationBlock({
             drag(el); // Top drag handle for short reservations
             dragHandleRef.current = el;
           }}
-          className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-6 h-6 bg-white/95 backdrop-blur-sm border border-gray-200/60 rounded-full flex items-center justify-center cursor-move transition-all duration-200 shadow-sm hover:shadow-md hover:bg-white hover:border-gray-300 z-10"
+          className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-6 h-6 bg-white/70 backdrop-blur-sm border border-gray-200/40 rounded-full flex items-center justify-center cursor-move transition-all duration-200 shadow-sm hover:shadow-md hover:bg-white/90 hover:border-gray-300/60 z-10"
           title="+ Drag to move reservation"
         >
-          <Plus className="h-3 w-3 text-gray-500 hover:text-gray-700" />
+          <Plus className="h-3 w-3 text-gray-400/70 hover:text-gray-600" />
         </div>
       )}
       
