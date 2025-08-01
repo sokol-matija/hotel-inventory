@@ -179,6 +179,10 @@ function ReservationBlock({
   const statusColors = RESERVATION_STATUS_COLORS[reservation.status as ReservationStatus] || RESERVATION_STATUS_COLORS.confirmed;
   const flag = getCountryFlag(guest?.nationality || '');
   
+  // Calculate reservation length for adaptive UI
+  const reservationDays = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (24 * 60 * 60 * 1000));
+  const isShortReservation = reservationDays <= 2; // 1-2 day reservations
+  
   // Animation effects - MUST be before any early returns to satisfy Rules of Hooks
   useEffect(() => {
     if (blockRef.current && !isDragging && !isResizing) {
@@ -270,26 +274,48 @@ function ReservationBlock({
       title={`${guest?.name || 'Guest'} - ${reservation.numberOfGuests} guests ${isDragging ? '(Dragging...)' : '(Click for details, right-click for options)'}`}
     >
       {/* Main content */}
-      <div className="flex items-center space-x-2 min-w-0 flex-1">
+      <div className="flex items-center space-x-1 min-w-0 flex-1">
         {/* Country flag */}
         <span className="text-sm flex-shrink-0">{flag}</span>
         
-        {/* Modern drag handle - Only this area is draggable */}
-        <div
-          ref={(el) => {
-            drag(el); // Only the drag handle is draggable
-            dragHandleRef.current = el;
-          }}
-          className="bg-white/95 backdrop-blur-sm border border-gray-200/60 rounded-md p-1.5 hover:bg-white hover:border-gray-300 cursor-move transition-all duration-200 flex-shrink-0 shadow-sm hover:shadow-md"
-          title="⋮⋮ Drag to move reservation"
-        >
-          <Move className="h-4 w-4 text-gray-500 hover:text-gray-700" />
-        </div>
-        
-        {/* Guest name */}
-        <span className="truncate font-medium">
-          {guest?.name || 'Guest'}
-        </span>
+        {/* Adaptive drag handle based on reservation length */}
+        {isShortReservation ? (
+          // For short reservations (1-2 days): Guest name is draggable
+          <div className="flex items-center space-x-1 flex-1 min-w-0">
+            <div
+              ref={(el) => {
+                drag(el); // Guest name area is draggable
+                dragHandleRef.current = el;
+              }}
+              className="flex items-center space-x-1 cursor-move hover:bg-white/20 rounded px-1 py-0.5 transition-colors flex-1 min-w-0"
+              title={`Drag "${guest?.name || 'Guest'}" to move reservation`}
+            >
+              <Move className="h-3 w-3 text-gray-400 hover:text-gray-600 flex-shrink-0" />
+              <span className="truncate font-medium">
+                {guest?.name || 'Guest'}
+              </span>
+            </div>
+          </div>
+        ) : (
+          // For longer reservations (3+ days): Modern drag handle + separate name
+          <>
+            <div
+              ref={(el) => {
+                drag(el); // Only the drag handle is draggable
+                dragHandleRef.current = el;
+              }}
+              className="bg-white/95 backdrop-blur-sm border border-gray-200/60 rounded-md p-1 hover:bg-white hover:border-gray-300 cursor-move transition-all duration-200 flex-shrink-0 shadow-sm hover:shadow-md"
+              title="⋮⋮ Drag to move reservation"
+            >
+              <Move className="h-3 w-3 text-gray-500 hover:text-gray-700" />
+            </div>
+            
+            {/* Guest name */}
+            <span className="truncate font-medium flex-1 min-w-0">
+              {guest?.name || 'Guest'}
+            </span>
+          </>
+        )}
         
         {/* Occupancy icons */}
         <div className="flex items-center space-x-1 flex-shrink-0">
