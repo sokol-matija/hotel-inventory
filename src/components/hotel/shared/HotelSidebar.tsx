@@ -9,6 +9,7 @@ import {
   Users, 
   CreditCard, 
   FileText,
+  Mail,
   LogOut,
   UserCheck,
   ArrowLeft
@@ -39,6 +40,12 @@ const hotelSidebarItems = [
     path: '/hotel/front-desk/reports', 
     icon: FileText,
     label: 'Reports'
+  },
+  { 
+    key: 'emailTest', 
+    path: '/hotel/front-desk/email-test', 
+    icon: Mail,
+    label: 'Email Test'
   }
 ]
 

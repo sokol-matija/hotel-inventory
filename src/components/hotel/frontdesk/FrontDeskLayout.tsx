@@ -9,6 +9,7 @@ import CalendarView from './CalendarView';
 import GuestsPage from './GuestsPage';
 import PaymentsPage from './PaymentsPage';
 import ReportsPage from './ReportsPage';
+import EmailTestPage from './EmailTestPage';
 
 export default function FrontDeskLayout() {
   const { user } = useAuth();
@@ -66,6 +67,7 @@ export default function FrontDeskLayout() {
               <Route path="guests" element={<GuestsPage />} />
               <Route path="payments" element={<PaymentsPage />} />
               <Route path="reports" element={<ReportsPage />} />
+              <Route path="email-test" element={<EmailTestPage />} />
               <Route path="*" element={<Navigate to="/hotel/front-desk" replace />} />
             </Routes>
           </div>

@@ -26,3 +26,5 @@ yarn-error.log*
 add_fridges_freezers.sql
 
 logs/
+
+.env
