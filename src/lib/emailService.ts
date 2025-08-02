@@ -93,7 +93,7 @@ export class HotelEmailService {
             max-width: 600px; 
             margin: 0 auto;
             background-color: #f8fafc;
-            background-image: url('https://gkbpthurkucotikjefra.supabase.co/storage/v1/object/public/hotel-assets/mozaik_gp1%20copy.png');
+            background-image: url('https://gkbpthurkucotikjefra.supabase.co/storage/v1/object/public/hotel-assets/mozaik_gp1_copy.png');
             background-repeat: no-repeat;
             background-position: bottom right;
             background-size: 300px;
@@ -107,11 +107,12 @@ export class HotelEmailService {
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
         .header { 
-            background: linear-gradient(135deg, #1E40AF, #3B82F6); 
-            color: white; 
+            background: white; 
+            color: #1F2937; 
             padding: 30px 25px; 
             text-align: center;
             position: relative;
+            border-bottom: 3px solid #3B82F6;
         }
         .logo { 
             max-width: 200px; 

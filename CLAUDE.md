@@ -1,7 +1,7 @@
 # Hotel Inventory Management System - Claude Context
 
 ## Project Overview
-A comprehensive hotel inventory management system built with React 19 and Supabase. The system provides role-based access control, real-time inventory tracking, expiration monitoring, and push notifications for hotel staff.
+A comprehensive hotel inventory management system built with React 19 and Supabase. The system provides real-time inventory tracking, expiration monitoring, push notifications, and a complete hotel management front desk system with professional email communication.
 
 ## Core Principles (From User Instructions)
 1. **Simplicity First**: Every change should impact as little code as possible
@@ -10,6 +10,29 @@ A comprehensive hotel inventory management system built with React 19 and Supaba
 4. **Task-Driven Development**: Plan tasks in todo.md, track progress, provide high-level summaries
 
 ## Recent Major Improvements
+
+### Multi-Language Email System Implementation (February 2025)
+- **New Feature**: Comprehensive guest email communication system with Hotel Porec branding
+- **Implementation**: Supabase Edge Functions + Resend API for reliable email delivery
+- **Features Added**:
+  - **Multi-Language Support**: Welcome emails in English, German, and Italian
+  - **Three Email Types**: Welcome, Thank You, and Summer Season Reminder emails
+  - **Professional Design**: HTML templates with responsive layout and hotel branding
+  - **Real Hotel Assets**: Hotel Porec logo and mosaic background from Supabase storage
+  - **Testing Interface**: Email test page in Front Desk module for investor demonstrations
+  - **Template Features**: Check-in instructions, breakfast times, local attractions, contact info
+- **Technical**: Fixed CORS issues, implemented secure backend email sending, proper image hosting
+
+### Hotel Management System Implementation (January 2025)
+- **Major Feature**: Complete hotel front desk system with professional calendar interface
+- **Implementation**: React Big Calendar + React DnD for drag & drop reservations
+- **Features Added**:
+  - **Timeline Calendar**: 14-day view with 46 Hotel Porec rooms across 4 floors
+  - **Reservation Management**: Drag & drop bookings, guest profiles, check-in/check-out
+  - **PDF Invoices**: Croatian fiscal compliance with jsPDF, real hotel information
+  - **Custom Notifications**: GSAP-powered hotel-themed notification system
+  - **Module Architecture**: Expandable design for future channel manager and finance modules
+- **Data**: Real Hotel Porec business data, seasonal pricing, Croatian tax structure
 
 ### Authentication System Optimization (January 2025)
 - **Problem**: Overcomplicated AuthProvider with complex user profile fetching causing UI freeze on tab switching
@@ -32,10 +55,15 @@ A comprehensive hotel inventory management system built with React 19 and Supaba
 - **Create React App** with CRACO configuration
 
 ### Key Features
-- **i18next**: Multi-language support (Croatian, German, English)
+- **i18next**: Multi-language support (Croatian, German, English, Italian)
 - **@dnd-kit**: Drag & drop for inventory reordering
+- **react-dnd**: Hotel reservation drag & drop system
 - **Web Push API**: Browser notifications with service worker
 - **Radix UI**: Accessible component primitives
+- **GSAP**: Smooth animations and custom notification system
+- **jsPDF**: Professional PDF invoice generation
+- **React Big Calendar**: Hotel front desk timeline interface
+- **Resend API**: Professional email delivery service
 
 ## File Structure & Important Files
 
@@ -49,6 +77,15 @@ A comprehensive hotel inventory management system built with React 19 and Supaba
 - `src/components/locations/LocationDetail.tsx`: Drag-drop inventory management
 - `src/components/settings/SettingsPage.tsx`: Notification preferences
 - `src/lib/supabase.ts`: Database client and type definitions
+
+### Hotel Management System (`src/components/hotel/`)
+- `ModuleSelector.tsx`: Hotel module selection landing page
+- `frontdesk/FrontDeskCalendar.tsx`: Professional 14-day timeline calendar
+- `frontdesk/EmailTestPage.tsx`: Multi-language email testing interface
+- `shared/HotelLayout.tsx`: Shared hotel module layout with sidebar
+- `src/lib/emailService.ts`: **COMPLETE EMAIL SYSTEM** - Multi-language templates with Supabase integration
+- `src/lib/hotel/`: Hotel-specific types, data, and utilities
+- `src/lib/notifications.ts`: **CUSTOM NOTIFICATION SYSTEM** - GSAP-powered hotel-themed notifications
 
 ### Critical Files to Monitor
 - `src/components/auth/AuthProvider.tsx`: **ULTRA-SIMPLIFIED (38 lines)** - NEVER re-complicate
