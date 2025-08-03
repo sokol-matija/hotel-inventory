@@ -169,7 +169,7 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
         setInvoices([]);
       }
     } else {
-      // Generate sample invoices from checked-out reservations
+      // Generate sample invoices from checked-out reservations if none exist
       generateSampleFinancialData();
     }
 
@@ -317,8 +317,11 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
       return invoice;
     });
 
-    setInvoices(sampleInvoices);
-    saveInvoicesToStorage(sampleInvoices);
+    // Only add sample invoices if none exist yet
+    if (invoices.length === 0) {
+      setInvoices(sampleInvoices);
+      saveInvoicesToStorage(sampleInvoices);
+    }
   };
 
   // Update reservation status with optimistic updates

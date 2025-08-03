@@ -3,6 +3,7 @@ import { useHotel } from '../../../lib/hotel/state/HotelContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import { Badge } from '../../ui/badge';
 import { Button } from '../../ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../ui/dialog';
 import { 
   Calendar, 
   DollarSign, 
@@ -11,14 +12,23 @@ import {
   Filter,
   Download,
   Eye,
-  CreditCard
+  CreditCard,
+  X,
+  Clock,
+  CheckCircle
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { Invoice, Guest, Room, Reservation } from '../../../lib/hotel/types';
+import { generatePDFInvoice, generateInvoiceNumber } from '../../../lib/pdfInvoiceGenerator';
+import { SAMPLE_RESERVATIONS } from '../../../lib/hotel/sampleData';
+import hotelNotification from '../../../lib/notifications';
 
 export default function InvoiceHistoryPage() {
   const { invoices, guests, rooms, getInvoicesByDateRange, getUnpaidInvoices } = useHotel();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [showInvoiceDetails, setShowInvoiceDetails] = useState(false);
 
   // Filter invoices based on search and status
   const filteredInvoices = invoices.filter(invoice => {
@@ -54,6 +64,55 @@ export default function InvoiceHistoryPage() {
 
   const getRoomNumber = (roomId: string) => {
     return rooms.find(r => r.id === roomId)?.number || 'Unknown Room';
+  };
+
+  const handleViewInvoice = (invoice: Invoice) => {
+    setSelectedInvoice(invoice);
+    setShowInvoiceDetails(true);
+  };
+
+  const handleDownloadPDF = (invoice: Invoice) => {
+    try {
+      // Find related reservation
+      const reservation = SAMPLE_RESERVATIONS.find(r => r.id === invoice.reservationId);
+      const guest = guests.find(g => g.id === invoice.guestId);
+      const room = rooms.find(r => r.id === invoice.roomId);
+
+      if (!reservation || !guest || !room) {
+        hotelNotification.error(
+          'PDF Generation Failed',
+          'Missing reservation, guest, or room data for invoice generation.',
+          4000
+        );
+        return;
+      }
+
+      // Generate PDF using existing generator
+      generatePDFInvoice({
+        reservation,
+        guest,
+        room,
+        invoiceNumber: invoice.invoiceNumber,
+        invoiceDate: invoice.issueDate
+      });
+
+      hotelNotification.success(
+        'PDF Downloaded',
+        `Invoice ${invoice.invoiceNumber} has been downloaded successfully.`,
+        3000
+      );
+    } catch (error) {
+      console.error('Failed to generate PDF:', error);
+      hotelNotification.error(
+        'PDF Generation Failed',
+        'An error occurred while generating the PDF. Please try again.',
+        4000
+      );
+    }
+  };
+
+  const getReservationDetails = (invoice: Invoice) => {
+    return SAMPLE_RESERVATIONS.find(r => r.id === invoice.reservationId);
   };
 
   return (
@@ -203,10 +262,20 @@ export default function InvoiceHistoryPage() {
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex space-x-2">
-                        <Button variant="ghost" size="sm">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleViewInvoice(invoice)}
+                          className="hover:bg-blue-50"
+                        >
                           <Eye className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="sm">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleDownloadPDF(invoice)}
+                          className="hover:bg-green-50"
+                        >
                           <Download className="w-4 h-4" />
                         </Button>
                       </div>
@@ -225,6 +294,234 @@ export default function InvoiceHistoryPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Invoice Details Modal */}
+      <Dialog open={showInvoiceDetails} onOpenChange={setShowInvoiceDetails}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span>Invoice Details - {selectedInvoice?.invoiceNumber}</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowInvoiceDetails(false)}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedInvoice && (
+            <div className="space-y-6">
+              {/* Invoice Header */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Invoice Information</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Invoice Number:</span>
+                      <span className="font-medium">{selectedInvoice.invoiceNumber}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Issue Date:</span>
+                      <span className="font-medium">{format(selectedInvoice.issueDate, 'MMM dd, yyyy')}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Due Date:</span>
+                      <span className="font-medium">{format(selectedInvoice.dueDate, 'MMM dd, yyyy')}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Status:</span>
+                      <Badge className={statusColors[selectedInvoice.status]}>
+                        {selectedInvoice.status.charAt(0).toUpperCase() + selectedInvoice.status.slice(1)}
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Guest & Room Details</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Guest Name:</span>
+                      <span className="font-medium">{getGuestName(selectedInvoice.guestId)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Room Number:</span>
+                      <span className="font-medium">{getRoomNumber(selectedInvoice.roomId)}</span>
+                    </div>
+                    {(() => {
+                      const reservation = getReservationDetails(selectedInvoice);
+                      return reservation ? (
+                        <>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Check-in:</span>
+                            <span className="font-medium">{format(reservation.checkIn, 'MMM dd, yyyy')}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Check-out:</span>
+                            <span className="font-medium">{format(reservation.checkOut, 'MMM dd, yyyy')}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Nights:</span>
+                            <span className="font-medium">
+                              {Math.ceil((reservation.checkOut.getTime() - reservation.checkIn.getTime()) / (1000 * 60 * 60 * 24))}
+                            </span>
+                          </div>
+                        </>
+                      ) : null;
+                    })()}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Charges Breakdown */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Charges Breakdown</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span>Room Charges (Subtotal):</span>
+                      <span>€{selectedInvoice.subtotal.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>VAT (25%):</span>
+                      <span>€{selectedInvoice.vatAmount.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Tourism Tax:</span>
+                      <span>€{selectedInvoice.tourismTax.toFixed(2)}</span>
+                    </div>
+                    {selectedInvoice.petFee > 0 && (
+                      <div className="flex justify-between">
+                        <span>Pet Fee:</span>
+                        <span>€{selectedInvoice.petFee.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {selectedInvoice.parkingFee > 0 && (
+                      <div className="flex justify-between">
+                        <span>Parking Fee:</span>
+                        <span>€{selectedInvoice.parkingFee.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {selectedInvoice.additionalCharges > 0 && (
+                      <div className="flex justify-between">
+                        <span>Additional Charges:</span>
+                        <span>€{selectedInvoice.additionalCharges.toFixed(2)}</span>
+                      </div>
+                    )}
+                    <hr className="my-3" />
+                    <div className="flex justify-between text-lg font-bold">
+                      <span>Total Amount:</span>
+                      <span>€{selectedInvoice.totalAmount.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-lg">
+                      <span>Remaining Balance:</span>
+                      <span className={selectedInvoice.remainingAmount > 0 ? 'text-red-600 font-medium' : 'text-green-600'}>
+                        €{selectedInvoice.remainingAmount.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Payment History */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Payment History</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {selectedInvoice.payments && selectedInvoice.payments.length > 0 ? (
+                    <div className="space-y-3">
+                      {selectedInvoice.payments.map((payment, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div className="flex items-center space-x-3">
+                            <CheckCircle className="w-5 h-5 text-green-600" />
+                            <div>
+                              <p className="font-medium">€{payment.amount.toFixed(2)}</p>
+                              <p className="text-sm text-gray-600">
+                                {payment.method.charAt(0).toUpperCase() + payment.method.slice(1)} • {format(payment.receivedDate, 'MMM dd, yyyy')}
+                              </p>
+                              {payment.notes && (
+                                <p className="text-xs text-gray-500">{payment.notes}</p>
+                              )}
+                            </div>
+                          </div>
+                          <Badge variant="outline" className="text-green-600 border-green-600">
+                            {payment.status.charAt(0).toUpperCase() + payment.status.slice(1)}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-6">
+                      <Clock className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                      <p className="text-gray-500">No payments recorded for this invoice</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Croatian Fiscal Information */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Croatian Fiscal Compliance</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Hotel OIB:</span>
+                    <span className="font-medium">{selectedInvoice.fiscalData.oib}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">JIR (Unique Receipt ID):</span>
+                    <span className="font-mono text-sm">{selectedInvoice.fiscalData.jir}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">ZKI (Security Code):</span>
+                    <span className="font-mono text-sm">{selectedInvoice.fiscalData.zki}</span>
+                  </div>
+                  {selectedInvoice.fiscalData.fiscalReceiptUrl && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Fiscal Receipt:</span>
+                      <a 
+                        href={selectedInvoice.fiscalData.fiscalReceiptUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline text-sm"
+                      >
+                        View Receipt
+                      </a>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end space-x-3 pt-4 border-t">
+                <Button
+                  variant="outline"
+                  onClick={() => handleDownloadPDF(selectedInvoice)}
+                  className="flex items-center space-x-2"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Download PDF</span>
+                </Button>
+                <Button
+                  onClick={() => setShowInvoiceDetails(false)}
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
