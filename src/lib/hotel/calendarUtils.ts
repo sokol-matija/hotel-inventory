@@ -2,7 +2,7 @@
 import { CalendarEvent, Reservation, ReservationStatus } from './types';
 import { HOTEL_POREC_ROOMS } from './hotelData';
 import { SAMPLE_GUESTS } from './sampleData';
-import { addDays, isSameDay, isWithinInterval } from 'date-fns';
+import { addDays, isSameDay, isWithinInterval, startOfDay } from 'date-fns';
 
 // Status color mapping for reservation blocks
 export const RESERVATION_STATUS_COLORS = {
@@ -150,6 +150,115 @@ export function isRoomAvailable(
   });
   
   return conflictingReservations.length === 0;
+}
+
+/**
+ * Get all occupied dates for a specific room within a date range
+ * Returns array of Date objects representing days that are occupied
+ */
+export function getRoomOccupiedDates(
+  reservations: Reservation[],
+  roomId: string,
+  startDate: Date,
+  endDate: Date
+): Date[] {
+  const occupiedDates: Date[] = [];
+  
+  // Get reservations for this room in the date range
+  const roomReservations = reservations.filter(reservation => {
+    if (reservation.roomId !== roomId) return false;
+    if (reservation.status === 'checked-out') return false; // Past reservations don't block
+    
+    // Check if reservation overlaps with our date range
+    const reservationStart = startOfDay(reservation.checkIn);
+    const reservationEnd = startOfDay(reservation.checkOut);
+    const rangeStart = startOfDay(startDate);
+    const rangeEnd = startOfDay(endDate);
+    
+    return (
+      (reservationStart >= rangeStart && reservationStart <= rangeEnd) ||
+      (reservationEnd >= rangeStart && reservationEnd <= rangeEnd) ||
+      (reservationStart <= rangeStart && reservationEnd >= rangeEnd)
+    );
+  });
+  
+  // For each reservation, add all occupied dates
+  roomReservations.forEach(reservation => {
+    const checkIn = startOfDay(reservation.checkIn);
+    const checkOut = startOfDay(reservation.checkOut);
+    
+    // Add all dates from check-in to check-out (exclusive of check-out date)
+    let currentDate = new Date(checkIn);
+    while (currentDate < checkOut) {
+      // Only add dates within our search range
+      if (currentDate >= startOfDay(startDate) && currentDate <= startOfDay(endDate)) {
+        occupiedDates.push(new Date(currentDate));
+      }
+      currentDate = addDays(currentDate, 1);
+    }
+  });
+  
+  // Remove duplicates and sort
+  const uniqueDates = Array.from(new Set(occupiedDates.map(date => date.getTime())))
+    .map(time => new Date(time))
+    .sort((a, b) => a.getTime() - b.getTime());
+  
+  return uniqueDates;
+}
+
+/**
+ * Get the maximum available check-out date for a room given a check-in date
+ * Returns null if no restriction (room is available for extended periods)
+ */
+export function getMaxCheckoutDate(
+  reservations: Reservation[],
+  roomId: string,
+  checkInDate: Date
+): Date | null {
+  const checkIn = startOfDay(checkInDate);
+  
+  // Find the next reservation that starts after our check-in date
+  const futureReservations = reservations
+    .filter(reservation => {
+      if (reservation.roomId !== roomId) return false;
+      if (reservation.status === 'checked-out') return false;
+      
+      const reservationStart = startOfDay(reservation.checkIn);
+      return reservationStart > checkIn;
+    })
+    .sort((a, b) => a.checkIn.getTime() - b.checkIn.getTime());
+  
+  // If there's a future reservation, the max checkout is the day before it starts
+  if (futureReservations.length > 0) {
+    const nextReservationStart = startOfDay(futureReservations[0].checkIn);
+    return nextReservationStart;
+  }
+  
+  // No future reservations found - no restriction
+  return null;
+}
+
+/**
+ * Check if a specific date is available for a room
+ * Useful for individual date checking in date pickers
+ */
+export function isDateAvailableForRoom(
+  reservations: Reservation[],
+  roomId: string,
+  date: Date
+): boolean {
+  const targetDate = startOfDay(date);
+  
+  return !reservations.some(reservation => {
+    if (reservation.roomId !== roomId) return false;
+    if (reservation.status === 'checked-out') return false;
+    
+    const checkIn = startOfDay(reservation.checkIn);
+    const checkOut = startOfDay(reservation.checkOut);
+    
+    // Date is occupied if it's between check-in (inclusive) and check-out (exclusive)
+    return targetDate >= checkIn && targetDate < checkOut;
+  });
 }
 
 // Get room occupancy for a specific date

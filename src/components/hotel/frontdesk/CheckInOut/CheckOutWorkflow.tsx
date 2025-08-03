@@ -149,14 +149,45 @@ export default function CheckOutWorkflow({
     
     try {
       setIsProcessing(true);
-      await updateReservation(reservation.id, { status: 'checked-in' }); // Keep checked-in but payment is processed
-      setPaymentStatus('checked-in'); // This indicates payment is complete
       
-      hotelNotification.success(
-        'Payment Marked as Paid',
-        `Payment for ${guest?.name} has been marked as completed.`,
-        3000
-      );
+      // Update reservation payment status
+      await updateReservation(reservation.id, { status: 'checked-in' }); // Mark payment as complete
+      setPaymentStatus('checked-in'); // Update local state
+      
+      // Automatically generate invoice when payment is marked as paid
+      try {
+        console.log('Auto-generating invoice for paid guest...');
+        const invoice = await createInvoice(reservation.id);
+        console.log('Invoice generated successfully:', invoice.invoiceNumber);
+        
+        // Process payment for the full amount
+        await addPayment({
+          invoiceId: invoice.id,
+          amount: invoice.totalAmount + additionalCharges,
+          method: 'card', // Default to card payment - could be made configurable
+          status: 'paid',
+          receivedDate: new Date(),
+          processedDate: new Date(),
+          processedBy: 'Front Desk Staff',
+          notes: `Payment processed during stay - ${guest?.name}`,
+          reference: `PAYMENT-${Date.now()}`
+        });
+        
+        console.log('Payment processed and invoice created:', invoice.invoiceNumber);
+        
+        hotelNotification.success(
+          'Payment Processed & Invoice Created',
+          `Payment marked as paid for ${guest?.name}. Invoice ${invoice.invoiceNumber} created and available in Finance module.`,
+          5000
+        );
+      } catch (invoiceError) {
+        console.error('Failed to generate invoice:', invoiceError);
+        hotelNotification.warning(
+          'Payment Marked but Invoice Failed',
+          `Payment marked as paid for ${guest?.name}, but invoice generation failed. Please create manually from Finance module.`,
+          4000
+        );
+      }
     } catch (error) {
       console.error('Failed to update payment status:', error);
       hotelNotification.error(
@@ -201,32 +232,17 @@ export default function CheckOutWorkflow({
           const invoice = await createInvoice(reservation.id);
           console.log('Invoice generated successfully:', invoice.invoiceNumber);
           
-          // Process payment for the full amount (checkout means guest paid)
-          await addPayment({
-            invoiceId: invoice.id,
-            amount: invoice.totalAmount,
-            method: 'card', // Default to card payment
-            status: 'paid',
-            receivedDate: new Date(),
-            processedDate: new Date(),
-            processedBy: 'Front Desk Staff', // Could be made dynamic with user context
-            notes: `Payment processed during checkout - ${guest?.name}`,
-            reference: `CHECKOUT-${Date.now()}`
-          });
-          
-          console.log('Payment processed successfully for invoice:', invoice.invoiceNumber);
-          
-          // Show success notification with finance module link
+          // Show success notification - invoice created but payment still pending
           hotelNotification.success(
-            'Invoice Generated & Payment Processed',
-            `Invoice ${invoice.invoiceNumber} created and marked as PAID for ${guest?.name}. View in Finance → Invoice History.`,
+            'Invoice Generated',
+            `Invoice ${invoice.invoiceNumber} created for ${guest?.name}. Payment can be processed using "Mark as Paid" button after POS transaction.`,
             6000
           );
         } catch (error) {
-          console.error('Failed to generate invoice or process payment:', error);
+          console.error('Failed to generate invoice:', error);
           hotelNotification.error(
-            'Invoice/Payment Processing Failed',
-            'Failed to generate invoice or process payment. Please handle manually from the Finance module.',
+            'Invoice Generation Failed',
+            'Failed to generate invoice. Please try again or handle manually from the Finance module.',
             5000
           );
         }

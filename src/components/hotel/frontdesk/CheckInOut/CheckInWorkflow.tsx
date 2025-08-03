@@ -78,10 +78,10 @@ export default function CheckInWorkflow({
       },
       {
         id: 'payment',
-        title: 'Verify Payment',
-        description: 'Confirm reservation payment and any outstanding balance',
-        completed: reservation.status !== 'incomplete-payment',
-        required: true,
+        title: 'Note Payment Status',
+        description: `Payment status: ${reservation.status === 'checked-out' ? 'Already paid' : 'Will pay at checkout'}`,
+        completed: true, // Always completed since payment is not required for check-in
+        required: false, // Not required - guests can pay at checkout
         icon: CreditCard
       },
       {

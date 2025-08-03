@@ -4,12 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import { Button } from '../../ui/button';
 import { Badge } from '../../ui/badge';
 import { Input } from '../../ui/input';
+import { SmartDatePicker } from '../../ui/smart-date-picker';
+import { CalendarDatePicker } from '../../ui/calendar-date-picker';
 import { Label } from '../../ui/label';
 import { Textarea } from '../../ui/textarea';
 import { 
   X, 
-  Users, 
-  Baby, 
   Heart, 
   Car, 
   Calendar as CalendarIcon,
@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { Room, Guest, GuestChild, ReservationStatus, Reservation } from '../../../lib/hotel/types';
 import { SAMPLE_GUESTS } from '../../../lib/hotel/sampleData';
-import { formatRoomNumber, getRoomTypeDisplay } from '../../../lib/hotel/calendarUtils';
+import { formatRoomNumber, getRoomTypeDisplay, getMaxCheckoutDate } from '../../../lib/hotel/calendarUtils';
 import { calculatePricing } from '../../../lib/hotel/pricingCalculator';
 import { getCountryFlag } from '../../../lib/hotel/countryFlags';
 
@@ -296,6 +296,16 @@ export default function CreateBookingModal({
     return conflictingReservation;
   }, [formData.checkIn, formData.checkOut, room.id, existingReservations]);
 
+  // Calculate maximum checkout date based on next reservation
+  const maxCheckoutDate = useMemo(() => {
+    if (!formData.checkIn) return null;
+    
+    const checkInDate = new Date(formData.checkIn);
+    const maxDate = getMaxCheckoutDate(existingReservations, room.id, checkInDate);
+    
+    return maxDate ? format(maxDate, 'yyyy-MM-dd') : null;
+  }, [formData.checkIn, room.id, existingReservations]);
+
   // Calculate pricing
   const pricingData = useMemo(() => {
     try {
@@ -493,24 +503,29 @@ export default function CreateBookingModal({
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <Label htmlFor="checkIn">Check-in Date *</Label>
-                      <Input
+                      <CalendarDatePicker
                         id="checkIn"
-                        type="date"
+                        label="Check-in Date"
                         value={formData.checkIn}
+                        onChange={(value) => setFormData(prev => ({ ...prev, checkIn: value }))}
                         min={format(new Date(), 'yyyy-MM-dd')}
-                        onChange={(e) => setFormData(prev => ({ ...prev, checkIn: e.target.value }))}
+                        required
+                        reservations={existingReservations}
+                        roomId={room.id}
                         className={dateConflict ? 'border-red-500 focus:border-red-500' : ''}
                       />
                     </div>
                     <div>
-                      <Label htmlFor="checkOut">Check-out Date *</Label>
-                      <Input
+                      <SmartDatePicker
                         id="checkOut"
-                        type="date"
+                        label="Check-out Date"
                         value={formData.checkOut}
+                        onChange={(value) => setFormData(prev => ({ ...prev, checkOut: value }))}
                         min={formData.checkIn || format(addDays(new Date(), 1), 'yyyy-MM-dd')}
-                        onChange={(e) => setFormData(prev => ({ ...prev, checkOut: e.target.value }))}
+                        max={maxCheckoutDate || undefined}
+                        required
+                        reservations={existingReservations}
+                        roomId={room.id}
                         className={dateConflict ? 'border-red-500 focus:border-red-500' : ''}
                       />
                     </div>

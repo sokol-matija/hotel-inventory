@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -15,11 +15,13 @@ import {
   Download,
   Calculator,
   Users,
-  Calendar
+  Calendar,
+  CheckCircle
 } from 'lucide-react';
 import { Reservation, Guest, Room } from '../../../../lib/hotel/types';
 import { calculatePricing } from '../../../../lib/hotel/pricingCalculator';
 import { generatePDFInvoice, generateInvoiceNumber } from '../../../../lib/pdfInvoiceGenerator';
+import { useHotel } from '../../../../lib/hotel/state/HotelContext';
 import hotelNotification from '../../../../lib/notifications';
 
 interface PaymentDetailsModalProps {
@@ -37,6 +39,10 @@ export default function PaymentDetailsModal({
   guest,
   room
 }: PaymentDetailsModalProps) {
+  const { updateReservation, generateInvoice: createInvoice, addPayment } = useHotel();
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState(reservation.status);
+
   // Recalculate pricing to get detailed breakdown
   const pricingDetails = calculatePricing(
     reservation.roomId,
@@ -71,6 +77,57 @@ export default function PaymentDetailsModal({
     } catch (error) {
       console.error('Error generating PDF invoice:', error);
       hotelNotification.error('PDF Generation Failed', 'There was an error generating the PDF invoice. Please try again.');
+    }
+  };
+
+  const handleMarkAsPaid = async () => {
+    try {
+      setIsProcessing(true);
+      
+      // Update reservation status to checked-out (indicating payment complete)
+      await updateReservation(reservation.id, { status: 'checked-out' });
+      setPaymentStatus('checked-out');
+      
+      // Automatically generate invoice when payment is marked as paid
+      try {
+        console.log('Auto-generating invoice for paid guest...');
+        const invoice = await createInvoice(reservation.id);
+        
+        // Process payment for the full amount
+        await addPayment({
+          invoiceId: invoice.id,
+          amount: invoice.totalAmount + (reservation.additionalCharges || 0),
+          method: 'card',
+          status: 'paid',
+          receivedDate: new Date(),
+          processedDate: new Date(),
+          processedBy: 'Front Desk Staff',
+          notes: `Payment processed via payment breakdown - ${guest.name}`,
+          reference: `PAYMENT-${Date.now()}`
+        });
+        
+        hotelNotification.success(
+          'Payment Processed & Invoice Created',
+          `Payment marked as paid for ${guest.name}. Invoice ${invoice.invoiceNumber} created and available in Finance module.`,
+          5000
+        );
+      } catch (invoiceError) {
+        console.error('Failed to generate invoice:', invoiceError);
+        hotelNotification.warning(
+          'Payment Marked but Invoice Failed',
+          `Payment marked as paid for ${guest.name}, but invoice generation failed. Please create manually from Finance module.`,
+          4000
+        );
+      }
+    } catch (error) {
+      console.error('Failed to update payment status:', error);
+      hotelNotification.error(
+        'Failed to Update Payment',
+        'Unable to mark payment as paid. Please try again.',
+        3000
+      );
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -263,18 +320,32 @@ export default function PaymentDetailsModal({
                   <CreditCard className="h-5 w-5 text-gray-500" />
                   <div>
                     <div className="font-medium">
-                      {reservation.status === 'incomplete-payment' ? 'Payment Pending' : 'Paid'}
+                      {paymentStatus === 'checked-out' ? 'Payment Complete' : 'Payment Pending'}
                     </div>
                     <div className="text-sm text-gray-500">
                       Booking made on {reservation.bookingDate.toLocaleDateString()}
                     </div>
                   </div>
                 </div>
-                <Badge
-                  variant={reservation.status === 'incomplete-payment' ? 'destructive' : 'default'}
-                >
-                  {reservation.status === 'incomplete-payment' ? 'PENDING' : 'PAID'}
-                </Badge>
+                <div className="flex items-center space-x-3">
+                  <Badge
+                    variant={paymentStatus === 'checked-out' ? 'default' : 'destructive'}
+                  >
+                    {paymentStatus === 'checked-out' ? 'PAID' : 'PENDING'}
+                  </Badge>
+                  
+                  {paymentStatus !== 'checked-out' && (
+                    <Button
+                      onClick={handleMarkAsPaid}
+                      disabled={isProcessing}
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      {isProcessing ? 'Processing...' : 'Mark as Paid'}
+                    </Button>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
