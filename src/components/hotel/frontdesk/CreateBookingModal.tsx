@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { addDays, format, differenceInDays } from 'date-fns';
+import { addDays, format, differenceInDays, startOfDay } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import { Button } from '../../ui/button';
 import { Badge } from '../../ui/badge';
@@ -17,7 +17,7 @@ import {
   Minus,
   CreditCard
 } from 'lucide-react';
-import { Room, Guest, GuestChild, ReservationStatus } from '../../../lib/hotel/types';
+import { Room, Guest, GuestChild, ReservationStatus, Reservation } from '../../../lib/hotel/types';
 import { SAMPLE_GUESTS } from '../../../lib/hotel/sampleData';
 import { formatRoomNumber, getRoomTypeDisplay } from '../../../lib/hotel/calendarUtils';
 import { calculatePricing } from '../../../lib/hotel/pricingCalculator';
@@ -28,6 +28,8 @@ interface CreateBookingModalProps {
   onClose: () => void;
   room: Room;
   onCreateBooking: (bookingData: any) => void;
+  preSelectedDates?: {checkIn: Date, checkOut: Date} | null;
+  existingReservations?: Reservation[];
 }
 
 interface BookingFormData {
@@ -233,7 +235,9 @@ export default function CreateBookingModal({
   isOpen, 
   onClose, 
   room, 
-  onCreateBooking 
+  onCreateBooking,
+  preSelectedDates,
+  existingReservations = []
 }: CreateBookingModalProps) {
   const [formData, setFormData] = useState<BookingFormData>({
     selectedGuest: null,
@@ -252,9 +256,45 @@ export default function CreateBookingModal({
     specialRequests: '',
     hasPets: false,
     needsParking: false,
-    status: 'incomplete-payment',
+    status: 'confirmed',
     bookingSource: 'direct'
   });
+
+  // Pre-populate dates when provided from drag-to-create
+  useEffect(() => {
+    if (preSelectedDates) {
+      setFormData(prev => ({
+        ...prev,
+        checkIn: format(preSelectedDates.checkIn, 'yyyy-MM-dd'),
+        checkOut: format(preSelectedDates.checkOut, 'yyyy-MM-dd')
+      }));
+    }
+  }, [preSelectedDates]);
+
+  // Date conflict validation
+  const dateConflict = useMemo(() => {
+    if (!formData.checkIn || !formData.checkOut) return null;
+    
+    const checkInDate = startOfDay(new Date(formData.checkIn));
+    const checkOutDate = startOfDay(new Date(formData.checkOut));
+    
+    // Check for conflicts with existing reservations in the same room
+    const conflictingReservation = existingReservations.find(reservation => {
+      if (reservation.roomId !== room.id) return false;
+      
+      const existingCheckIn = startOfDay(reservation.checkIn);
+      const existingCheckOut = startOfDay(reservation.checkOut);
+      
+      // Check for date overlap
+      return (
+        (checkInDate >= existingCheckIn && checkInDate < existingCheckOut) ||
+        (checkOutDate > existingCheckIn && checkOutDate <= existingCheckOut) ||
+        (checkInDate <= existingCheckIn && checkOutDate >= existingCheckOut)
+      );
+    });
+    
+    return conflictingReservation;
+  }, [formData.checkIn, formData.checkOut, room.id, existingReservations]);
 
   // Calculate pricing
   const pricingData = useMemo(() => {
@@ -286,6 +326,8 @@ export default function CreateBookingModal({
 
   // Validation
   const isFormValid = useMemo(() => {
+    const hasDateConflict = !!dateConflict;
+    
     if (formData.isNewGuest) {
       return formData.newGuestData.name.trim() !== '' &&
              formData.newGuestData.email.trim() !== '' &&
@@ -293,16 +335,18 @@ export default function CreateBookingModal({
              formData.checkOut !== '' &&
              new Date(formData.checkIn) < new Date(formData.checkOut) &&
              formData.adults > 0 &&
-             (formData.adults + formData.children.length) <= room.maxOccupancy;
+             (formData.adults + formData.children.length) <= room.maxOccupancy &&
+             !hasDateConflict;
     } else {
       return formData.selectedGuest !== null &&
              formData.checkIn !== '' &&
              formData.checkOut !== '' &&
              new Date(formData.checkIn) < new Date(formData.checkOut) &&
              formData.adults > 0 &&
-             (formData.adults + formData.children.length) <= room.maxOccupancy;
+             (formData.adults + formData.children.length) <= room.maxOccupancy &&
+             !hasDateConflict;
     }
-  }, [formData, room.maxOccupancy]);
+  }, [formData, room.maxOccupancy, dateConflict]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -456,6 +500,7 @@ export default function CreateBookingModal({
                         value={formData.checkIn}
                         min={format(new Date(), 'yyyy-MM-dd')}
                         onChange={(e) => setFormData(prev => ({ ...prev, checkIn: e.target.value }))}
+                        className={dateConflict ? 'border-red-500 focus:border-red-500' : ''}
                       />
                     </div>
                     <div>
@@ -466,9 +511,26 @@ export default function CreateBookingModal({
                         value={formData.checkOut}
                         min={formData.checkIn || format(addDays(new Date(), 1), 'yyyy-MM-dd')}
                         onChange={(e) => setFormData(prev => ({ ...prev, checkOut: e.target.value }))}
+                        className={dateConflict ? 'border-red-500 focus:border-red-500' : ''}
                       />
                     </div>
                   </div>
+                  
+                  {/* Date conflict warning */}
+                  {dateConflict && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                      <div className="flex items-center space-x-2">
+                        <X className="h-4 w-4 text-red-500" />
+                        <span className="text-sm text-red-700 font-medium">
+                          Date Conflict Detected
+                        </span>
+                      </div>
+                      <p className="text-sm text-red-600 mt-1">
+                        This room is already booked during the selected dates. 
+                        Please choose different dates or select another room.
+                      </p>
+                    </div>
+                  )}
                   
                   {nights > 0 && (
                     <div className="text-sm text-gray-600 flex items-center space-x-1">
@@ -675,7 +737,12 @@ export default function CreateBookingModal({
           <div className="flex items-center justify-between pt-6 border-t">
             <div className="text-sm text-gray-500">
               {!isFormValid && (
-                <span className="text-red-500">Please fill in all required fields</span>
+                <span className="text-red-500">
+                  {dateConflict 
+                    ? "Please resolve the date conflict before creating the booking" 
+                    : "Please fill in all required fields"
+                  }
+                </span>
               )}
             </div>
             

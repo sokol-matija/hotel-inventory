@@ -20,7 +20,10 @@ import {
   ChevronRight as ChevronRightIcon,
   Move,
   Plus,
-  Dog
+  Dog,
+  DollarSign,
+  MousePointer2,
+  Square
 } from 'lucide-react';
 import { HOTEL_POREC_ROOMS, getRoomsByFloor } from '../../../lib/hotel/hotelData';
 import { SAMPLE_GUESTS } from '../../../lib/hotel/sampleData';
@@ -420,12 +423,12 @@ function ReservationBlock({
              setResizeType('left');
              
              const handleResize = (moveEvent: MouseEvent) => {
-               const timelineElement = document.querySelector('.grid.grid-cols-\\[240px_repeat\\(14\\,minmax\\(60px\\,1fr\\)\\)\\]');
-               if (!timelineElement) return;
-               
-               const rect = timelineElement.getBoundingClientRect();
-               const columnWidth = (rect.width - 240) / 14; // Subtract room column width
-               const mouseX = moveEvent.clientX - rect.left - 240; // Relative to first date column
+               const timelineElement = document.querySelector('.grid[class*="grid-cols-"][class*="180px"]');
+              if (!timelineElement) return;
+              
+              const rect = timelineElement.getBoundingClientRect();
+              const columnWidth = (rect.width - 180) / 14; // Subtract room column width
+               const mouseX = moveEvent.clientX - rect.left - 180; // Relative to first date column
                const newDayIndex = Math.floor(mouseX / columnWidth);
                const clampedDayIndex = Math.max(0, Math.min(13, newDayIndex));
                
@@ -479,12 +482,12 @@ function ReservationBlock({
              setResizeType('right');
              
              const handleResize = (moveEvent: MouseEvent) => {
-               const timelineElement = document.querySelector('.grid.grid-cols-\\[240px_repeat\\(14\\,minmax\\(60px\\,1fr\\)\\)\\]');
-               if (!timelineElement) return;
-               
-               const rect = timelineElement.getBoundingClientRect();
-               const columnWidth = (rect.width - 240) / 14; // Subtract room column width
-               const mouseX = moveEvent.clientX - rect.left - 240; // Relative to first date column
+               const timelineElement = document.querySelector('.grid[class*="grid-cols-"][class*="180px"]');
+              if (!timelineElement) return;
+              
+              const rect = timelineElement.getBoundingClientRect();
+              const columnWidth = (rect.width - 180) / 14; // Subtract room column width
+               const mouseX = moveEvent.clientX - rect.left - 180; // Relative to first date column
                const newDayIndex = Math.floor(mouseX / columnWidth) + 1; // +1 because checkout is next day
                const clampedDayIndex = Math.max(1, Math.min(14, newDayIndex));
                
@@ -754,19 +757,37 @@ function ReservationBlock({
   );
 }
 
-// CLEAN REWRITE: Split day cell with LEFT/RIGHT drop zones
+// Enhanced date cell with drag-to-create functionality
 function DroppableDateCell({ 
   room, 
   dayIndex, 
   date, 
   onMoveReservation,
-  existingReservations = []
+  existingReservations = [],
+  // New props for drag-to-create
+  isDragCreateMode,
+  isDragCreating,
+  dragCreateStart,
+  dragCreateEnd,
+  dragCreatePreview,
+  onDragCreateStart,
+  onDragCreateMove,
+  onDragCreateEnd
 }: {
   room: Room;
   dayIndex: number;
   date: Date;
   onMoveReservation: (reservationId: string, newRoomId: string, newCheckIn: Date, newCheckOut: Date) => void;
   existingReservations?: Reservation[];
+  // New props for drag-to-create
+  isDragCreateMode?: boolean;
+  isDragCreating?: boolean;
+  dragCreateStart?: {roomId: string, dayIndex: number} | null;
+  dragCreateEnd?: {roomId: string, dayIndex: number} | null;
+  dragCreatePreview?: {roomId: string, startDay: number, endDay: number} | null;
+  onDragCreateStart?: (roomId: string, dayIndex: number) => void;
+  onDragCreateMove?: (roomId: string, dayIndex: number) => void;
+  onDragCreateEnd?: (roomId: string, dayIndex: number) => void;
 }) {
   const isWeekend = date.getDay() === 0 || date.getDay() === 6;
   
@@ -775,7 +796,16 @@ function DroppableDateCell({
     res.roomId === room.id && 
     isSameDay(startOfDay(res.checkIn), date)
   );
-  
+
+  // Check if this cell is part of the drag preview
+  const isInDragPreview = dragCreatePreview && 
+    dragCreatePreview.roomId === room.id && 
+    dayIndex >= dragCreatePreview.startDay && 
+    dayIndex <= dragCreatePreview.endDay;
+
+  // Check if this cell is available for drag creation
+  const isAvailableForDragCreate = isDragCreateMode && !hasExistingReservation;
+
   // LEFT HALF - Where reservations start (check-in zone)
   const [{ isOverLeft, canDropLeft }, dropLeft] = useDrop(() => ({
     accept: ItemTypes.RESERVATION,
@@ -805,19 +835,52 @@ function DroppableDateCell({
     }),
   }), [room, dayIndex, date, onMoveReservation, hasExistingReservation]);
 
+  // Handle drag-to-create mouse events
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (isDragCreateMode && isAvailableForDragCreate && onDragCreateStart) {
+      e.preventDefault();
+      onDragCreateStart(room.id, dayIndex);
+    }
+  };
+
+  const handleMouseEnter = () => {
+    if (isDragCreating && isAvailableForDragCreate && onDragCreateMove) {
+      onDragCreateMove(room.id, dayIndex);
+    }
+  };
+
+  const handleMouseUp = () => {
+    if (isDragCreating && isAvailableForDragCreate && onDragCreateEnd) {
+      onDragCreateEnd(room.id, dayIndex);
+    }
+  };
+
   return (
     <div 
       ref={dropLeft as any}
       className={`h-12 border-r border-gray-200 transition-all duration-200 relative ${
-        isOverLeft && canDropLeft 
+        isInDragPreview
+          ? 'bg-blue-200 border-2 border-blue-400'
+          : isOverLeft && canDropLeft 
           ? 'bg-green-100 border-2 border-green-400' 
           : isOverLeft && !canDropLeft 
           ? 'bg-red-100 border-2 border-red-400' 
+          : isAvailableForDragCreate
+          ? 'bg-blue-50/50 hover:bg-blue-100/70 cursor-crosshair'
           : isWeekend
           ? 'bg-orange-50/20'
           : 'bg-white hover:bg-blue-50/30'
       }`}
-      title={canDropLeft ? `Drop here for check-in on ${format(date, 'MMM dd')}` : 'Cannot drop here'}
+      title={
+        isAvailableForDragCreate 
+          ? `Drag to create reservation starting ${format(date, 'MMM dd')}`
+          : canDropLeft 
+          ? `Drop here for check-in on ${format(date, 'MMM dd')}` 
+          : 'Cannot drop here'
+      }
+      onMouseDown={handleMouseDown}
+      onMouseEnter={handleMouseEnter}
+      onMouseUp={handleMouseUp}
     >
       {/* Dotted circle indicator when dragging over valid drop zone */}
       {isOverLeft && canDropLeft && (
@@ -847,7 +910,16 @@ function RoomRow({
   onMoveReservation,
   isFullscreen = false,
   onUpdateReservationStatus,
-  onDeleteReservation
+  onDeleteReservation,
+  // New props for drag-to-create
+  isDragCreateMode,
+  isDragCreating,
+  dragCreateStart,
+  dragCreateEnd,
+  dragCreatePreview,
+  onDragCreateStart,
+  onDragCreateMove,
+  onDragCreateEnd
 }: {
   room: Room;
   reservations: Reservation[];
@@ -857,6 +929,15 @@ function RoomRow({
   isFullscreen?: boolean;
   onUpdateReservationStatus?: (id: string, status: ReservationStatus) => Promise<void>;
   onDeleteReservation?: (id: string) => Promise<void>;
+  // New props for drag-to-create
+  isDragCreateMode?: boolean;
+  isDragCreating?: boolean;
+  dragCreateStart?: {roomId: string, dayIndex: number} | null;
+  dragCreateEnd?: {roomId: string, dayIndex: number} | null;
+  dragCreatePreview?: {roomId: string, startDay: number, endDay: number} | null;
+  onDragCreateStart?: (roomId: string, dayIndex: number) => void;
+  onDragCreateMove?: (roomId: string, dayIndex: number) => void;
+  onDragCreateEnd?: (roomId: string, dayIndex: number) => void;
 }) {
   // Find reservations for this room
   const roomReservations = reservations.filter(r => r.roomId === room.id);
@@ -893,6 +974,14 @@ function RoomRow({
               date={cellDate}
               onMoveReservation={onMoveReservation}
               existingReservations={reservations}
+              isDragCreateMode={isDragCreateMode}
+              isDragCreating={isDragCreating}
+              dragCreateStart={dragCreateStart}
+              dragCreateEnd={dragCreateEnd}
+              dragCreatePreview={dragCreatePreview}
+              onDragCreateStart={onDragCreateStart}
+              onDragCreateMove={onDragCreateMove}
+              onDragCreateEnd={onDragCreateEnd}
             />
           );
         })}
@@ -934,7 +1023,16 @@ function FloorSection({
   onMoveReservation,
   isFullscreen = false,
   onUpdateReservationStatus,
-  onDeleteReservation
+  onDeleteReservation,
+  // New props for drag-to-create
+  isDragCreateMode,
+  isDragCreating,
+  dragCreateStart,
+  dragCreateEnd,
+  dragCreatePreview,
+  onDragCreateStart,
+  onDragCreateMove,
+  onDragCreateEnd
 }: {
   floor: number;
   rooms: Room[];
@@ -947,6 +1045,15 @@ function FloorSection({
   isFullscreen?: boolean;
   onUpdateReservationStatus?: (id: string, status: ReservationStatus) => Promise<void>;
   onDeleteReservation?: (id: string) => Promise<void>;
+  // New props for drag-to-create
+  isDragCreateMode?: boolean;
+  isDragCreating?: boolean;
+  dragCreateStart?: {roomId: string, dayIndex: number} | null;
+  dragCreateEnd?: {roomId: string, dayIndex: number} | null;
+  dragCreatePreview?: {roomId: string, startDay: number, endDay: number} | null;
+  onDragCreateStart?: (roomId: string, dayIndex: number) => void;
+  onDragCreateMove?: (roomId: string, dayIndex: number) => void;
+  onDragCreateEnd?: (roomId: string, dayIndex: number) => void;
 }) {
   const floorName = floor === 4 ? 'Rooftop Premium' : `Floor ${floor}`;
   const occupiedRooms = rooms.filter(room => 
@@ -998,6 +1105,14 @@ function FloorSection({
               isFullscreen={isFullscreen}
               onUpdateReservationStatus={onUpdateReservationStatus}
               onDeleteReservation={onDeleteReservation}
+              isDragCreateMode={isDragCreateMode}
+              isDragCreating={isDragCreating}
+              dragCreateStart={dragCreateStart}
+              dragCreateEnd={dragCreateEnd}
+              dragCreatePreview={dragCreatePreview}
+              onDragCreateStart={onDragCreateStart}
+              onDragCreateMove={onDragCreateMove}
+              onDragCreateEnd={onDragCreateEnd}
             />
           ))}
         </div>
@@ -1013,7 +1128,9 @@ function RoomOverviewFloorSection({
   isExpanded, 
   onToggle,
   occupancyData,
-  onRoomClick 
+  onRoomClick,
+  onUpdateReservationStatus,
+  onDeleteReservation
 }: {
   floor: number;
   rooms: Room[];
@@ -1021,10 +1138,28 @@ function RoomOverviewFloorSection({
   onToggle: () => void;
   occupancyData: Record<string, any>;
   onRoomClick: (room: Room, reservation?: any) => void;
+  onUpdateReservationStatus?: (id: string, status: ReservationStatus) => Promise<void>;
+  onDeleteReservation?: (id: string) => Promise<void>;
 }) {
   const floorName = floor === 4 ? 'Rooftop Premium' : `Floor ${floor}`;
   const occupiedRooms = rooms.filter(room => occupancyData[room.id]);
   const occupancyRate = rooms.length > 0 ? (occupiedRooms.length / rooms.length) * 100 : 0;
+  
+  // Context menu state
+  const [contextMenu, setContextMenu] = useState<{
+    show: boolean;
+    x: number;
+    y: number;
+    reservation: Reservation | null;
+  }>({
+    show: false,
+    x: 0,
+    y: 0,
+    reservation: null
+  });
+  
+  // Flag to prevent click through when closing context menu
+  const [isClosingContextMenu, setIsClosingContextMenu] = useState(false);
   
   return (
     <Card className="mb-4">
@@ -1079,9 +1214,26 @@ function RoomOverviewFloorSection({
                     borderColor: statusColors.borderColor,
                     backgroundColor: `${statusColors.backgroundColor}10`
                   } : {}}
-                  onClick={() => onRoomClick(room, reservation)}
+                  onClick={(e) => {
+                    if (!isClosingContextMenu) {
+                      onRoomClick(room, reservation);
+                    }
+                  }}
+                  onContextMenu={(e) => {
+                    if (isOccupied && reservation) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      
+                      setContextMenu({
+                        show: true,
+                        x: e.clientX,
+                        y: e.clientY,
+                        reservation: reservation
+                      });
+                    }
+                  }}
                   title={isOccupied 
-                    ? `View reservation details for ${guest?.name || 'Guest'}`
+                    ? `View reservation details for ${guest?.name || 'Guest'} (Right-click for options)`
                     : `Create new booking for ${formatRoomNumber(room)}`
                   }
                 >
@@ -1089,6 +1241,17 @@ function RoomOverviewFloorSection({
                   {isOccupied && reservation && (
                     <div className="absolute top-2 right-2 text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded">
                       €{reservation.totalAmount}
+                    </div>
+                  )}
+                  
+                  {/* Payment status icon */}
+                  {isOccupied && reservation && (
+                    <div className={`absolute top-8 right-2 w-6 h-6 rounded-full flex items-center justify-center ${
+                      reservation.status === 'checked-out' 
+                        ? 'bg-green-100 text-green-600' 
+                        : 'bg-red-100 text-red-600'
+                    }`} title={reservation.status === 'checked-out' ? 'Payment Complete' : 'Payment Pending'}>
+                      <DollarSign className="h-3 w-3" />
                     </div>
                   )}
                   
@@ -1152,6 +1315,110 @@ function RoomOverviewFloorSection({
           </div>
         </CardContent>
       )}
+      
+      {/* Context Menu for Room Overview */}
+      {contextMenu.show && contextMenu.reservation && (
+        <>
+          {/* Backdrop to close menu */}
+          <div 
+            className="fixed inset-0 z-40" 
+            onClick={() => {
+              setIsClosingContextMenu(true);
+              setContextMenu({ show: false, x: 0, y: 0, reservation: null });
+              // Reset flag after a short delay
+              setTimeout(() => setIsClosingContextMenu(false), 100);
+            }}
+          />
+          
+          {/* Context Menu */}
+          <div 
+            className="fixed bg-white rounded-lg shadow-xl border border-gray-200 py-2 min-w-[180px] z-[9999]"
+            style={{ 
+              left: contextMenu.x, 
+              top: contextMenu.y
+            }}
+          >
+            <button 
+              className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3"
+              onClick={async () => {
+                if (contextMenu.reservation && onUpdateReservationStatus) {
+                  try {
+                    await onUpdateReservationStatus(contextMenu.reservation.id, 'checked-in');
+                  } catch (error) {
+                    console.error('Failed to check in guest:', error);
+                  }
+                }
+                setContextMenu({ show: false, x: 0, y: 0, reservation: null });
+              }}
+            >
+              <span className="text-green-600">✓</span>
+              <span>Fast Check-in</span>
+            </button>
+            
+            <button 
+              className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3"
+              onClick={async () => {
+                if (contextMenu.reservation && onUpdateReservationStatus) {
+                  try {
+                    await onUpdateReservationStatus(contextMenu.reservation.id, 'checked-out');
+                  } catch (error) {
+                    console.error('Failed to check out guest:', error);
+                  }
+                }
+                setContextMenu({ show: false, x: 0, y: 0, reservation: null });
+              }}
+            >
+              <span className="text-blue-600">↗</span>
+              <span>Fast Check-out</span>
+            </button>
+
+            <div className="border-t border-gray-100 my-1"></div>
+            
+            <button 
+              className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3"
+              onClick={() => {
+                alert('Invoice creation feature coming soon!');
+                setContextMenu({ show: false, x: 0, y: 0, reservation: null });
+              }}
+            >
+              <span className="text-purple-600">📄</span>
+              <span>Create Invoice</span>
+            </button>
+            
+            <button 
+              className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3"
+              onClick={() => {
+                alert('Payment tracking feature coming soon!');
+                setContextMenu({ show: false, x: 0, y: 0, reservation: null });
+              }}
+            >
+              <span className="text-yellow-600">💰</span>
+              <span>Mark as Paid</span>
+            </button>
+
+            <div className="border-t border-gray-100 my-1"></div>
+            
+            <button 
+              className="w-full text-left px-4 py-2 text-sm hover:bg-red-50 text-red-600 flex items-center space-x-3"
+              onClick={async () => {
+                if (contextMenu.reservation && onDeleteReservation) {
+                  if (window.confirm(`Are you sure you want to delete the reservation for ${contextMenu.reservation.guestId}?`)) {
+                    try {
+                      await onDeleteReservation(contextMenu.reservation.id);
+                    } catch (error) {
+                      console.error('Failed to delete reservation:', error);
+                    }
+                  }
+                }
+                setContextMenu({ show: false, x: 0, y: 0, reservation: null });
+              }}
+            >
+              <span className="text-red-600">×</span>
+              <span>Delete Reservation</span>
+            </button>
+          </div>
+        </>
+      )}
     </Card>
   );
 }
@@ -1176,6 +1443,32 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
   const [showReservationPopup, setShowReservationPopup] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [showCreateBooking, setShowCreateBooking] = useState(false);
+  const [overviewDate, setOverviewDate] = useState(new Date());
+  
+  // Drag-to-create reservation states
+  const [isDragCreateMode, setIsDragCreateMode] = useState(false);
+  const [isDragCreating, setIsDragCreating] = useState(false);
+  const [dragCreateStart, setDragCreateStart] = useState<{roomId: string, dayIndex: number} | null>(null);
+  const [dragCreateEnd, setDragCreateEnd] = useState<{roomId: string, dayIndex: number} | null>(null);
+  const [dragCreatePreview, setDragCreatePreview] = useState<{roomId: string, startDay: number, endDay: number} | null>(null);
+  const [dragCreateDates, setDragCreateDates] = useState<{checkIn: Date, checkOut: Date} | null>(null);
+  
+  // Global mouse event listener for drag-to-create
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      if (isDragCreating) {
+        setIsDragCreating(false);
+        setDragCreateStart(null);
+        setDragCreateEnd(null);
+        setDragCreatePreview(null);
+      }
+    };
+
+    if (isDragCreating) {
+      document.addEventListener('mouseup', handleGlobalMouseUp);
+      return () => document.removeEventListener('mouseup', handleGlobalMouseUp);
+    }
+  }, [isDragCreating]);
   
   // Group rooms by floor
   const roomsByFloor = useMemo(() => {
@@ -1187,13 +1480,16 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
     };
   }, []);
   
-  // Get current occupancy data for today
+  // Get current occupancy data for the overview date
   const currentOccupancy = useMemo(() => {
-    const today = new Date();
+    const targetDate = startOfDay(overviewDate);
     const occupancy: Record<string, any> = {};
     
     reservations.forEach(reservation => {
-      if (today >= reservation.checkIn && today < reservation.checkOut) {
+      const checkInDate = startOfDay(reservation.checkIn);
+      const checkOutDate = startOfDay(reservation.checkOut);
+      
+      if (targetDate >= checkInDate && targetDate < checkOutDate) {
         occupancy[reservation.roomId] = {
           reservation,
           status: reservation.status
@@ -1202,7 +1498,7 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
     });
     
     return occupancy;
-  }, [reservations]);
+  }, [reservations, overviewDate]);
   
   const toggleFloor = (floor: number) => {
     setExpandedFloors(prev => ({
@@ -1225,6 +1521,16 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
       setCurrentDate(prev => addDays(prev, 14));
     } else if (action === 'TODAY') {
       setCurrentDate(new Date());
+    }
+  };
+
+  const handleOverviewNavigate = (action: 'PREV' | 'NEXT' | 'TODAY') => {
+    if (action === 'PREV') {
+      setOverviewDate(prev => addDays(prev, -1));
+    } else if (action === 'NEXT') {
+      setOverviewDate(prev => addDays(prev, 1));
+    } else if (action === 'TODAY') {
+      setOverviewDate(new Date());
     }
   };
   
@@ -1281,6 +1587,52 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
     }
   };
 
+  // Drag-to-create handlers
+  const handleDragCreateStart = (roomId: string, dayIndex: number) => {
+    setIsDragCreating(true);
+    setDragCreateStart({ roomId, dayIndex });
+    setDragCreateEnd({ roomId, dayIndex });
+    setDragCreatePreview({ roomId, startDay: dayIndex, endDay: dayIndex });
+  };
+
+  const handleDragCreateMove = (roomId: string, dayIndex: number) => {
+    if (isDragCreating && dragCreateStart && dragCreateStart.roomId === roomId) {
+      setDragCreateEnd({ roomId, dayIndex });
+      const startDay = Math.min(dragCreateStart.dayIndex, dayIndex);
+      const endDay = Math.max(dragCreateStart.dayIndex, dayIndex);
+      setDragCreatePreview({ roomId, startDay, endDay });
+    }
+  };
+
+  const handleDragCreateEnd = (roomId: string, dayIndex: number) => {
+    if (isDragCreating && dragCreateStart && dragCreatePreview) {
+      setIsDragCreating(false);
+      
+      // Calculate the dates
+      const startDay = dragCreatePreview.startDay;
+      const endDay = dragCreatePreview.endDay;
+      const checkInDate = addDays(currentDate, startDay);
+      const checkOutDate = addDays(currentDate, endDay + 1); // +1 because checkout is next day
+      
+      checkInDate.setHours(15, 0, 0, 0); // 3 PM check-in
+      checkOutDate.setHours(11, 0, 0, 0); // 11 AM check-out
+      
+      // Find the room and open booking modal
+      const room = HOTEL_POREC_ROOMS.find(r => r.id === roomId);
+      if (room) {
+        setSelectedRoom(room);
+        // Store the dates to pre-populate the modal
+        setDragCreateDates({ checkIn: checkInDate, checkOut: checkOutDate });
+        setShowCreateBooking(true);
+      }
+      
+      // Reset drag states
+      setDragCreateStart(null);
+      setDragCreateEnd(null);
+      setDragCreatePreview(null);
+    }
+  };
+
   const handleCreateBooking = async (bookingData: any) => {
     try {
       console.log('Creating booking:', bookingData);
@@ -1326,6 +1678,7 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
       // Close modal and show success
       setShowCreateBooking(false);
       setSelectedRoom(null);
+      setDragCreateDates(null); // Clear drag create dates
       
       // Show custom notification
       hotelNotification.success(
@@ -1388,6 +1741,21 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
           </div>
           
           <div className="flex items-center space-x-2">
+            <Button 
+              variant={isDragCreateMode ? "default" : "outline"} 
+              onClick={() => {
+                setIsDragCreateMode(!isDragCreateMode);
+                // Reset any active drag states when toggling
+                setIsDragCreating(false);
+                setDragCreateStart(null);
+                setDragCreateEnd(null);
+                setDragCreatePreview(null);
+              }}
+              className={isDragCreateMode ? "bg-blue-600 text-white" : ""}
+            >
+              {isDragCreateMode ? <Square className="h-4 w-4" /> : <MousePointer2 className="h-4 w-4" />}
+              {isDragCreateMode ? 'Exit Drag Mode' : 'Drag to Create'}
+            </Button>
             {onToggleFullscreen && (
               <Button variant="outline" onClick={onToggleFullscreen}>
                 {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
@@ -1400,10 +1768,39 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
         {/* Room Status Overview for Today */}
         {!isFullscreen && (
           <div className="p-4 bg-gray-50">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center space-x-2 mb-4">
-              <CalendarIcon className="h-5 w-5" />
-              <span>Room Status Overview - {format(new Date(), 'MMMM dd, yyyy')}</span>
-            </h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center space-x-2">
+                <CalendarIcon className="h-5 w-5" />
+                <span>Room Status Overview - {format(overviewDate, 'MMMM dd, yyyy')}</span>
+              </h3>
+              
+              <div className="flex items-center space-x-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => handleOverviewNavigate('PREV')}
+                  title="Previous day"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => handleOverviewNavigate('TODAY')}
+                  title="Today"
+                >
+                  Today
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => handleOverviewNavigate('NEXT')}
+                  title="Next day"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
             
             <div className="space-y-4">
               {Object.entries(roomsByFloor).map(([floor, rooms]) => (
@@ -1415,6 +1812,8 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
                   onToggle={() => toggleOverviewFloor(parseInt(floor))}
                   occupancyData={currentOccupancy}
                   onRoomClick={handleRoomClick}
+                  onUpdateReservationStatus={updateReservationStatus}
+                  onDeleteReservation={deleteReservation}
                 />
               ))}
             </div>
@@ -1445,6 +1844,14 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
                 isFullscreen={isFullscreen}
                 onUpdateReservationStatus={updateReservationStatus}
                 onDeleteReservation={deleteReservation}
+                isDragCreateMode={isDragCreateMode}
+                isDragCreating={isDragCreating}
+                dragCreateStart={dragCreateStart}
+                dragCreateEnd={dragCreateEnd}
+                dragCreatePreview={dragCreatePreview}
+                onDragCreateStart={handleDragCreateStart}
+                onDragCreateMove={handleDragCreateMove}
+                onDragCreateEnd={handleDragCreateEnd}
               />
             ))}
           </div>
@@ -1470,9 +1877,12 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
           onClose={() => {
             setShowCreateBooking(false);
             setSelectedRoom(null);
+            setDragCreateDates(null); // Clear drag create dates when closing
           }}
           room={selectedRoom}
           onCreateBooking={handleCreateBooking}
+          preSelectedDates={dragCreateDates} // Pass pre-selected dates from drag
+          existingReservations={reservations} // Pass existing reservations for conflict checking
         />
       )}
       </div>
