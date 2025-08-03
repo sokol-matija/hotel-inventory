@@ -51,8 +51,16 @@ function generateThermalReceiptHTML(data: FiscalPrintData): string {
         @media print {
           @page {
             size: 80mm auto;
-            margin: 0;
-            padding: 0;
+            margin: 0 !important;
+            padding: 0 !important;
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
+          }
+          
+          * {
+            margin: 0 !important;
+            padding: 0 !important;
+            box-sizing: border-box !important;
           }
           
           body {
@@ -350,6 +358,48 @@ function generateThermalReceiptHTML(data: FiscalPrintData): string {
         ✂ -------------------------------- ✂
       </div>
     </body>
+    
+    <script>
+      // Configure print settings for thermal paper
+      function configurePrintSettings() {
+        // Try to set print margins to 0
+        if (window.print) {
+          // Add print event listeners
+          window.addEventListener('beforeprint', function() {
+            console.log('Printing thermal receipt...');
+            document.title = 'Thermal Receipt - ${order.orderNumber}';
+          });
+          
+          window.addEventListener('afterprint', function() {
+            console.log('Print dialog closed');
+            // Close window after printing
+            setTimeout(() => {
+              window.close();
+            }, 1000);
+          });
+        }
+      }
+      
+      // Auto-print when page loads
+      window.addEventListener('load', function() {
+        configurePrintSettings();
+        
+        // Small delay to ensure CSS is loaded
+        setTimeout(() => {
+          if (window.print) {
+            window.print();
+          }
+        }, 500);
+      });
+      
+      // Fallback if auto-print doesn't work
+      document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.key === 'p') {
+          e.preventDefault();
+          window.print();
+        }
+      });
+    </script>
     </html>
   `;
 }
@@ -428,11 +478,42 @@ function generateSimpleTestHTML(): string {
 }
 
 /**
- * Print using Windows-optimized browser printing
+ * Print using Windows-optimized browser printing with thermal paper support
  */
 function printHTMLContent(htmlContent: string): Promise<boolean> {
   return new Promise((resolve) => {
-    // Create hidden iframe for printing
+    console.log('🖨️ Opening thermal receipt for printing...');
+    console.log('📋 Thermal Printer Setup Instructions:');
+    console.log('1. ✅ Make sure Bixolon SRP-350II is your default printer');
+    console.log('2. ✅ When print dialog opens, select your thermal printer');
+    console.log('3. ✅ Set paper size to "Receipt", "80mm", or "Custom"');
+    console.log('4. ✅ Set all margins to 0 or "Minimum"');
+    console.log('5. ✅ DISABLE "Fit to page" or "Scale to fit"');
+    console.log('6. ✅ Ensure "Actual size" or "100%" is selected');
+    
+    // Try window method first (better for printer settings)
+    try {
+      const printWindow = window.open('', '_blank', 'width=320,height=700,scrollbars=yes,resizable=yes,menubar=no,toolbar=no');
+      
+      if (printWindow) {
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
+        printWindow.focus();
+        
+        // Auto-print is handled by the script in the HTML
+        setTimeout(() => {
+          console.log('✅ Receipt window opened - check your print dialog!');
+          console.log('🔧 If still printing A4: In print dialog → More settings → Paper size → Receipt/80mm');
+        }, 700);
+        
+        resolve(true);
+        return;
+      }
+    } catch (windowError) {
+      console.warn('Window method failed, trying iframe method:', windowError);
+    }
+    
+    // Fallback to iframe method
     const printFrame = document.createElement('iframe');
     printFrame.style.position = 'absolute';
     printFrame.style.top = '-1000px';
@@ -445,6 +526,7 @@ function printHTMLContent(htmlContent: string): Promise<boolean> {
     const printDocument = printFrame.contentDocument || printFrame.contentWindow?.document;
     if (!printDocument) {
       document.body.removeChild(printFrame);
+      console.error('❌ Failed to create print document');
       resolve(false);
       return;
     }
@@ -459,12 +541,14 @@ function printHTMLContent(htmlContent: string): Promise<boolean> {
         if (printFrame.contentWindow) {
           printFrame.contentWindow.focus();
           printFrame.contentWindow.print();
+          console.log('✅ Print dialog should appear - select thermal printer and check paper size!');
           resolve(true);
         } else {
+          console.error('❌ No print window available');
           resolve(false);
         }
       } catch (error) {
-        console.error('Print error:', error);
+        console.error('❌ Print error:', error);
         resolve(false);
       }
       
@@ -511,6 +595,21 @@ export async function printFiscalTestReceipt(data: FiscalPrintData): Promise<boo
  */
 export async function printWindowsReceipt(data: PrintReceiptData): Promise<boolean> {
   try {
+    // Show instructions to user
+    const userConfirmed = window.confirm(
+      '🖨️ THERMAL PRINTER SETUP:\n\n' +
+      '✅ Is your Bixolon SRP-350II connected and turned on?\n' +
+      '✅ Is it set as the default printer in Windows?\n' +
+      '✅ Do you have the thermal paper loaded (80mm width)?\n\n' +
+      'Click OK to continue with printing.\n' +
+      'Click Cancel to check your printer setup first.'
+    );
+    
+    if (!userConfirmed) {
+      console.log('🚫 User cancelled printing to check printer setup');
+      return false;
+    }
+    
     const fiscalData: FiscalPrintData = {
       ...data,
       hotelInfo: {
@@ -521,9 +620,30 @@ export async function printWindowsReceipt(data: PrintReceiptData): Promise<boole
     };
     
     const htmlContent = generateThermalReceiptHTML(fiscalData);
-    return await printHTMLContent(htmlContent);
+    const success = await printHTMLContent(htmlContent);
+    
+    if (success) {
+      console.log('✅ Print initiated successfully');
+      // Show post-print instructions
+      setTimeout(() => {
+        alert(
+          '📄 PRINT DIALOG TIPS:\n\n' +
+          '🔧 If the receipt prints on A4 paper instead of thermal:\n' +
+          '1. In the print dialog, click "More settings"\n' +
+          '2. Change "Paper size" from "A4" to "Receipt" or "80mm"\n' +
+          '3. Set "Margins" to "Minimum" or "None"\n' +
+          '4. Make sure "Scale" is set to "100%" or "Actual size"\n' +
+          '5. DISABLE "Fit to page"\n\n' +
+          '💡 You can also set these as defaults in your printer properties!'
+        );
+      }, 1000);
+    }
+    
+    return success;
   } catch (error) {
     console.error('Windows receipt print error:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    alert(`❌ Printing failed: ${errorMessage}`);
     return false;
   }
 }
