@@ -18,7 +18,8 @@ import {
   DollarSign,
   Shield,
   Wifi,
-  Coffee
+  Coffee,
+  Printer
 } from 'lucide-react'
 
 // Hotel Front Desk specific navigation items
@@ -46,6 +47,12 @@ const frontDeskSidebarItems = [
     path: '/hotel/front-desk/room-service', 
     icon: Coffee,
     label: 'Room Service'
+  },
+  { 
+    key: 'printertest', 
+    path: '/hotel/front-desk/printer-test', 
+    icon: Printer,
+    label: 'Printer Test'
   },
   { 
     key: 'reports', 

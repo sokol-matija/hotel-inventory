@@ -1,4 +1,5 @@
 import { PrintReceiptData } from '../hotel/orderTypes';
+import { printWindowsReceipt } from './windowsPrinter';
 
 /**
  * Bixolon Printer Integration
@@ -309,12 +310,20 @@ export async function printReceipt(
   data: PrintReceiptData,
   options: {
     printerIP?: string;
-    preferredMethod?: 'network' | 'browser' | 'escpos';
+    preferredMethod?: 'network' | 'browser' | 'escpos' | 'windows';
   } = {}
 ): Promise<boolean> {
-  const { printerIP, preferredMethod = 'browser' } = options;
+  const { printerIP, preferredMethod = 'windows' } = options;
   
   try {
+    // Try Windows WinPrint first (best for thermal printers)
+    if (preferredMethod === 'windows' || !printerIP) {
+      const windowsSuccess = await printWindowsReceipt(data);
+      if (windowsSuccess) {
+        return true;
+      }
+    }
+    
     // Try network printing if IP is provided
     if (printerIP && (preferredMethod === 'network' || preferredMethod === 'escpos')) {
       const networkSuccess = await printViaNetwork(printerIP, data);
@@ -323,7 +332,7 @@ export async function printReceipt(
       }
     }
     
-    // Fallback to browser printing
+    // Fallback to basic browser printing
     printViaBrowser(data);
     return true;
     
