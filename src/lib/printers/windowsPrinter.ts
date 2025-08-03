@@ -412,6 +412,155 @@ function generateThermalReceiptHTML(data: FiscalPrintData): string {
 }
 
 /**
+ * Generate raw text receipt for generic thermal drivers
+ * This bypasses HTML/CSS issues and works directly with printer drivers
+ */
+function generateRawTextReceipt(order: any, hotelInfo: any, timestamp: Date): string {
+  const dateStr = timestamp.toLocaleDateString('hr-HR', { day: '2-digit', month: '2-digit', year: '2-digit' });
+  const timeStr = timestamp.toLocaleTimeString('hr-HR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  
+  const vatBreakdown = calculateCroatianVAT(order);
+  
+  // Create raw text with proper spacing (each line max 32 characters for 80mm)
+  const receipt = `
+             HOTEL POREČ
+           HP "DUGA" D.O.O.
+         Rade Končara 1 Poreč
+          OIB 87246357068
+     TEL-FAX 00385 52 451-811
+
+------------------------------------------------
+
+Z Zaključak dana ${dateStr} ${timeStr} SEF
+                          ${dateStr}
+
+
+Z Kasa 2
+
+Z Broj ${generateReceiptNumber()} računi 1 ${generateSequenceNumber()}
+
+
+Z Total                     ${order.totalAmount.toFixed(2)}
+Z Piće 25%PDV+PNP          ${vatBreakdown.drinks25.toFixed(2)}
+Z Piće 25%PDV               0.00
+Z Hrana 13%PDV             ${vatBreakdown.food13.toFixed(2)}
+Z Roba  5%PDV               0.00
+Z Roba 25%PDV               0.00
+
+
+${order.items.map((item: any, index: number) => 
+  `${index + 9}${item.itemName.toUpperCase().padEnd(20)} ${item.quantity}.000${item.totalPrice.toFixed(2).padStart(6)}`
+).join('\n')}
+
+
+Korisnik BRAN
+G                          ${order.totalAmount.toFixed(2)}
+________________________________________________
+                           ${order.totalAmount.toFixed(2)}
+
+
+Netto                      ${vatBreakdown.net.toFixed(2)}
+PDV  5%    0.00 osnovica    0.00
+PDV 13%    ${vatBreakdown.vat13.toFixed(2)} osnovica    ${vatBreakdown.food13Net.toFixed(2)}
+PDV 25%    ${vatBreakdown.vat25.toFixed(2)} osnovica    ${vatBreakdown.drinks25Net.toFixed(2)}
+PNP  3%    ${vatBreakdown.pnp.toFixed(2)} osnovica    ${vatBreakdown.drinks25Net.toFixed(2)}
+================================================
+Total                      ${order.totalAmount.toFixed(2)}
+
+
+Podaci do ovog datuma su fiskalizirani.
+
+${order.paymentMethod !== 'room_bill' ? 
+  `\n        ${order.paymentMethod === 'immediate_cash' ? 'GOTOVINA PRIMLJENA' : 'KARTICA'}\n` : ''}
+
+           Hvala na posjeti!
+         Thank you for your visit!
+
+
+
+    ✂ ---------------------------- ✂
+
+`.trim();
+
+  return receipt;
+}
+
+/**
+ * Generate HTML wrapper for raw text receipt (preserves formatting)
+ */
+function generateRawTextReceiptHTML(order: any, hotelInfo: any, timestamp: Date): string {
+  const textContent = generateRawTextReceipt(order, hotelInfo, timestamp);
+  
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Thermal Receipt - ${order.orderNumber}</title>
+      <style>
+        @media print {
+          @page {
+            size: 80mm auto;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+          
+          * {
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+          
+          body {
+            width: 80mm;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            line-height: 1.1;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            color: black;
+            background: white;
+            padding: 2mm;
+          }
+        }
+        
+        @media screen {
+          body {
+            width: 80mm;
+            margin: 20px auto;
+            padding: 10px;
+            border: 1px solid #ccc;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            line-height: 1.1;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            background: white;
+          }
+        }
+      </style>
+    </head>
+    <body>${textContent}</body>
+    
+    <script>
+      window.addEventListener('load', function() {
+        setTimeout(() => {
+          if (window.print) {
+            window.print();
+          }
+        }, 500);
+        
+        window.addEventListener('afterprint', function() {
+          setTimeout(() => {
+            window.close();
+          }, 1000);
+        });
+      });
+    </script>
+    </html>
+  `;
+}
+
+/**
  * Generate simple test receipt HTML
  */
 function generateSimpleTestHTML(): string {
@@ -589,7 +738,8 @@ export async function printTestReceipt(): Promise<boolean> {
  */
 export async function printFiscalTestReceipt(data: FiscalPrintData): Promise<boolean> {
   try {
-    const htmlContent = generateThermalReceiptHTML(data);
+    // Use raw text format for better generic driver compatibility
+    const htmlContent = generateRawTextReceiptHTML(data.order, data.hotelInfo, data.timestamp);
     return await printHTMLContent(htmlContent);
   } catch (error) {
     console.error('Fiscal receipt print error:', error);
@@ -604,12 +754,15 @@ export async function printWindowsReceipt(data: PrintReceiptData): Promise<boole
   try {
     // Show instructions to user
     const userConfirmed = window.confirm(
-      '🖨️ THERMAL PRINTER SETUP:\n\n' +
-      '✅ Is your Bixolon SRP-350II connected and turned on?\n' +
-      '✅ Is it set as the default printer in Windows?\n' +
-      '✅ Do you have the thermal paper loaded (80mm width)?\n\n' +
-      'Click OK to continue with printing.\n' +
-      'Click Cancel to check your printer setup first.'
+      '🖨️ IMPROVED THERMAL PRINTING:\n\n' +
+      '✅ Now using RAW TEXT format for better generic driver support\n' +
+      '✅ Proper spacing and empty lines preserved\n' +
+      '✅ Professional formatting that matches preview\n\n' +
+      '📋 Is your Bixolon SRP-350II ready?\n' +
+      '✅ Connected and turned on?\n' +
+      '✅ Set as default printer?\n' +
+      '✅ Thermal paper loaded (80mm)?\n\n' +
+      'Click OK to print with improved formatting!'
     );
     
     if (!userConfirmed) {
@@ -626,7 +779,8 @@ export async function printWindowsReceipt(data: PrintReceiptData): Promise<boole
       }
     };
     
-    const htmlContent = generateThermalReceiptHTML(fiscalData);
+    // Use raw text format for better generic driver compatibility
+    const htmlContent = generateRawTextReceiptHTML(fiscalData.order, fiscalData.hotelInfo, fiscalData.timestamp);
     const success = await printHTMLContent(htmlContent);
     
     if (success) {
