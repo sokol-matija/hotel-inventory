@@ -119,7 +119,11 @@ function generateThermalReceiptHTML(data: FiscalPrintData): string {
           }
           
           .spacer {
-            margin: 3mm 0;
+            margin: 2mm 0;
+          }
+          
+          .spacer-large {
+            margin: 4mm 0;
           }
           
           .fiscal-line {
@@ -233,7 +237,7 @@ function generateThermalReceiptHTML(data: FiscalPrintData): string {
       <div class="left">Z Zaključak dana ${dateStr} ${timeStr} SEF</div>
       <div class="right">${dateStr}</div>
       
-      <div class="spacer"></div>
+      <div class="spacer-large"></div>
       
       <div class="left">Z Kasa 2</div>
       
@@ -298,7 +302,7 @@ function generateThermalReceiptHTML(data: FiscalPrintData): string {
       
       <div class="right bold large">${order.totalAmount.toFixed(2)}</div>
       
-      <div class="spacer"></div>
+      <div class="spacer-large"></div>
       
       <!-- VAT Breakdown -->
       <div class="fiscal-line">
@@ -346,14 +350,14 @@ function generateThermalReceiptHTML(data: FiscalPrintData): string {
       ` : ''}
       
       <!-- Footer -->
-      <div class="spacer"></div>
+      <div class="spacer-large"></div>
       <div class="center">
         <div class="bold">Hvala na posjeti!</div>
         <div class="bold">Thank you for your visit!</div>
       </div>
       
       <!-- Cut line -->
-      <div class="spacer"></div>
+      <div class="spacer-large"></div>
       <div class="center small">
         ✂ -------------------------------- ✂
       </div>
@@ -383,6 +387,9 @@ function generateThermalReceiptHTML(data: FiscalPrintData): string {
       // Auto-print when page loads
       window.addEventListener('load', function() {
         configurePrintSettings();
+        
+        // Hide URL bar and browser elements
+        history.replaceState(null, '', 'about:blank');
         
         // Small delay to ensure CSS is loaded
         setTimeout(() => {
@@ -493,7 +500,7 @@ function printHTMLContent(htmlContent: string): Promise<boolean> {
     
     // Try window method first (better for printer settings)
     try {
-      const printWindow = window.open('', '_blank', 'width=320,height=700,scrollbars=yes,resizable=yes,menubar=no,toolbar=no');
+      const printWindow = window.open('', '_blank', 'width=320,height=700,scrollbars=no,resizable=no,menubar=no,toolbar=no,location=no,status=no');
       
       if (printWindow) {
         printWindow.document.write(htmlContent);
