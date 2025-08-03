@@ -17,7 +17,8 @@ import {
   TrendingUp,
   DollarSign,
   Shield,
-  Wifi
+  Wifi,
+  Coffee
 } from 'lucide-react'
 
 // Hotel Front Desk specific navigation items
@@ -39,6 +40,12 @@ const frontDeskSidebarItems = [
     path: '/hotel/front-desk/payments', 
     icon: CreditCard,
     label: 'Payments'
+  },
+  { 
+    key: 'roomservice', 
+    path: '/hotel/front-desk/room-service', 
+    icon: Coffee,
+    label: 'Room Service'
   },
   { 
     key: 'reports', 

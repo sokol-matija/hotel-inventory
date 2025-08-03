@@ -111,60 +111,46 @@ export const ROOM_TYPES = {
   }
 } as const;
 
-// Generate realistic room distribution for Hotel Porec (46 rooms)
+// Generate Hotel Porec room configuration (55 rooms total: 18×3 floors + 1 rooftop)
 function generateHotelRooms(): Room[] {
   const rooms: Room[] = [];
   
-  // Floor 1: Rooms 101-115 (15 rooms) - Mixed types
-  const floor1Types: RoomType[] = [
-    'double', 'double', 'double', 'double', 'double', // 5 double rooms
-    'triple', 'triple', 'triple', // 3 triple rooms
-    'single', 'single', // 2 single rooms  
-    'family', 'family', // 2 family rooms
-    'big-double', 'big-double', // 2 big double rooms
-    'apartment' // 1 apartment
+  // Room type pattern for each floor (18 rooms per floor):
+  // Room 1: Family Room
+  // Rooms 2-5: Double Rooms
+  // Rooms 6-7: Triple Rooms
+  // Rooms 8-14: Double Rooms
+  // Rooms 15-16: Triple Rooms
+  // Room 17: Double Room
+  // Room 18: Single Room
+  const floorPattern: RoomType[] = [
+    'family',    // Room 1
+    'double',    // Room 2
+    'double',    // Room 3
+    'double',    // Room 4
+    'double',    // Room 5
+    'triple',    // Room 6
+    'triple',    // Room 7
+    'double',    // Room 8
+    'double',    // Room 9
+    'double',    // Room 10
+    'double',    // Room 11
+    'double',    // Room 12
+    'double',    // Room 13
+    'double',    // Room 14
+    'triple',    // Room 15
+    'triple',    // Room 16
+    'double',    // Room 17
+    'single'     // Room 18
   ];
   
-  floor1Types.forEach((type, index) => {
-    const roomNumber = `10${(index + 1).toString().padStart(1, '0')}`;
-    if (parseInt(roomNumber) <= 115) {
-      rooms.push(createRoom(roomNumber, 1, type));
-    }
-  });
-  
-  // Floor 2: Rooms 201-215 (15 rooms) - Similar distribution
-  const floor2Types: RoomType[] = [
-    'double', 'double', 'double', 'double', 'double', // 5 double rooms
-    'triple', 'triple', 'triple', // 3 triple rooms
-    'single', 'single', // 2 single rooms
-    'family', 'family', // 2 family rooms
-    'big-double', 'big-single', // 1 big double, 1 big single
-    'apartment' // 1 apartment
-  ];
-  
-  floor2Types.forEach((type, index) => {
-    const roomNumber = `20${(index + 1).toString().padStart(1, '0')}`;
-    if (parseInt(roomNumber) <= 215) {
-      rooms.push(createRoom(roomNumber, 2, type));
-    }
-  });
-  
-  // Floor 3: Rooms 301-315 (15 rooms) - Similar distribution
-  const floor3Types: RoomType[] = [
-    'double', 'double', 'double', 'double', // 4 double rooms
-    'triple', 'triple', 'triple', // 3 triple rooms
-    'single', 'single', 'single', // 3 single rooms
-    'family', 'family', // 2 family rooms
-    'big-double', 'big-single', // 1 big double, 1 big single
-    'apartment' // 1 apartment
-  ];
-  
-  floor3Types.forEach((type, index) => {
-    const roomNumber = `30${(index + 1).toString().padStart(1, '0')}`;
-    if (parseInt(roomNumber) <= 315) {
-      rooms.push(createRoom(roomNumber, 3, type));
-    }
-  });
+  // Floors 1, 2, 3: Each has 18 rooms following the pattern
+  for (let floor = 1; floor <= 3; floor++) {
+    floorPattern.forEach((type, index) => {
+      const roomNumber = `${floor}${(index + 1).toString().padStart(2, '0')}`;
+      rooms.push(createRoom(roomNumber, floor, type));
+    });
+  }
   
   // Floor 4: Room 401 - Premium Rooftop Apartment (1 room)
   rooms.push(createRoom('401', 4, 'rooftop-apartment', true));
