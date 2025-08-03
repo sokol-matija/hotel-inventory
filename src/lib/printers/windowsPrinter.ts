@@ -22,17 +22,31 @@ interface FiscalPrintData extends PrintReceiptData {
 }
 
 /**
- * Generate Windows-optimized thermal receipt HTML
+ * Generate Croatian fiscal receipt HTML matching Hotel Poreč format
  */
 function generateThermalReceiptHTML(data: FiscalPrintData): string {
   const { order, hotelInfo } = data;
+  const currentDate = new Date();
+  const dateStr = currentDate.toLocaleDateString('hr-HR', { 
+    day: '2-digit', 
+    month: '2-digit', 
+    year: '2-digit' 
+  });
+  const timeStr = currentDate.toLocaleTimeString('hr-HR', { 
+    hour: '2-digit', 
+    minute: '2-digit', 
+    second: '2-digit' 
+  });
+  
+  // Calculate VAT breakdown for Croatian fiscal compliance
+  const vatBreakdown = calculateCroatianVAT(order);
   
   return `
     <!DOCTYPE html>
     <html>
     <head>
       <meta charset="UTF-8">
-      <title>Fiscal Receipt - ${order.orderNumber}</title>
+      <title>Fiskalni Račun - ${order.orderNumber}</title>
       <style>
         @media print {
           @page {
@@ -46,72 +60,32 @@ function generateThermalReceiptHTML(data: FiscalPrintData): string {
             margin: 0;
             padding: 2mm;
             font-family: 'Courier New', 'Consolas', monospace;
-            font-size: 11px;
-            line-height: 1.1;
+            font-size: 10px;
+            line-height: 1.0;
             color: black;
             background: white;
           }
           
           .center { text-align: center; }
+          .left { text-align: left; }
+          .right { text-align: right; }
           .bold { font-weight: bold; }
-          .large { font-size: 14px; font-weight: bold; }
           .small { font-size: 9px; }
           
-          .separator { 
-            border-top: 1px dashed black; 
+          .line {
+            border-bottom: 1px solid black;
+            margin: 1mm 0;
+          }
+          
+          .spacer {
             margin: 2mm 0;
-            width: 100%;
           }
           
-          .double-separator { 
-            border-top: 2px solid black; 
-            margin: 3mm 0;
-            width: 100%;
-          }
-          
-          .item-row {
+          .fiscal-line {
             display: flex;
             justify-content: space-between;
-            margin: 1mm 0;
-            font-size: 10px;
-          }
-          
-          .item-name {
-            flex: 1;
-            padding-right: 2mm;
-          }
-          
-          .item-qty {
-            width: 15mm;
-            text-align: center;
-          }
-          
-          .item-price {
-            width: 20mm;
-            text-align: right;
-          }
-          
-          .total-row {
-            display: flex;
-            justify-content: space-between;
-            font-weight: bold;
-            margin: 1mm 0;
-          }
-          
-          .fiscal-info {
+            margin: 0.5mm 0;
             font-size: 9px;
-            margin: 2mm 0;
-          }
-          
-          .qr-placeholder {
-            width: 25mm;
-            height: 25mm;
-            border: 1px solid black;
-            margin: 2mm auto;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 8px;
           }
         }
         
@@ -122,162 +96,169 @@ function generateThermalReceiptHTML(data: FiscalPrintData): string {
             padding: 10px;
             border: 1px solid #ccc;
             font-family: 'Courier New', monospace;
-            font-size: 11px;
+            font-size: 10px;
             background: white;
           }
           
           .center { text-align: center; }
+          .left { text-align: left; }
+          .right { text-align: right; }
           .bold { font-weight: bold; }
-          .large { font-size: 14px; font-weight: bold; }
           .small { font-size: 9px; }
           
-          .separator { 
-            border-top: 1px dashed black; 
-            margin: 5px 0;
+          .line {
+            border-bottom: 1px solid black;
+            margin: 3px 0;
           }
           
-          .double-separator { 
-            border-top: 2px solid black; 
-            margin: 8px 0;
+          .spacer {
+            margin: 6px 0;
           }
           
-          .item-row, .total-row {
+          .fiscal-line {
             display: flex;
             justify-content: space-between;
-            margin: 2px 0;
-          }
-          
-          .qr-placeholder {
-            width: 60px;
-            height: 60px;
-            border: 1px solid black;
-            margin: 10px auto;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 8px;
+            margin: 1px 0;
+            font-size: 9px;
           }
         }
       </style>
     </head>
     <body>
-      <!-- Hotel Header -->
-      <div class="center large">${hotelInfo.name}</div>
-      <div class="center small">${hotelInfo.address}</div>
-      <div class="center small">Tel: ${hotelInfo.phone}</div>
-      <div class="center small">Email: ${hotelInfo.email}</div>
-      <div class="center small bold">OIB: ${hotelInfo.oib}</div>
+      <!-- Hotel Header - Exact format from your receipt -->
+      <div class="center bold">HOTEL POREČ</div>
+      <div class="center">HP "DUGA" D.O.O.</div>
+      <div class="center">Rade Končara 1 Poreč</div>
+      <div class="center">OIB ${hotelInfo.oib}</div>
+      <div class="center">TEL-FAX 00385 52 451-811</div>
       
-      <div class="double-separator"></div>
+      <div class="spacer"></div>
       
-      <!-- Receipt Type -->
-      <div class="center bold">FISKALNI RAČUN</div>
-      <div class="center bold">FISCAL RECEIPT</div>
-      <div class="center small">ROOM SERVICE / USLUGA SOBE</div>
+      <!-- Date and register info -->
+      <div class="left">Z Zaključak dana ${dateStr} ${timeStr} SEF</div>
+      <div class="right">${dateStr}</div>
       
-      <div class="separator"></div>
+      <div class="spacer"></div>
       
-      <!-- Order Info -->
-      <div class="fiscal-info">
-        <div>Račun br./Invoice No: <span class="bold">${hotelInfo.fiscalNumber}</span></div>
-        <div>Narudžba/Order: <span class="bold">${order.orderNumber}</span></div>
-        <div>Soba/Room: <span class="bold">${order.roomNumber}</span></div>
-        <div>Gost/Guest: <span class="bold">${order.guestName}</span></div>
-        <div>Datum/Date: <span class="bold">${order.orderedAt.toLocaleDateString('hr-HR')}</span></div>
-        <div>Vrijeme/Time: <span class="bold">${order.orderedAt.toLocaleTimeString('hr-HR')}</span></div>
+      <div class="left">Z Kasa 2</div>
+      
+      <div class="spacer"></div>
+      
+      <div class="left">Z Broj ${generateReceiptNumber()} računi 1 ${generateSequenceNumber()}</div>
+      
+      <div class="spacer"></div>
+      
+      <!-- Totals by category -->
+      <div class="fiscal-line">
+        <span>Z Total</span>
+        <span>${order.totalAmount.toFixed(2)}</span>
       </div>
       
-      <div class="separator"></div>
-      
-      <!-- Items Header -->
-      <div class="item-row bold small">
-        <span class="item-name">STAVKA/ITEM</span>
-        <span class="item-qty">KOL/QTY</span>
-        <span class="item-price">UKUPNO/TOTAL</span>
+      <div class="fiscal-line">
+        <span>Z Piće 25%PDV+PNP</span>
+        <span>${vatBreakdown.drinks25.toFixed(2)}</span>
       </div>
       
-      <div class="separator"></div>
+      <div class="fiscal-line">
+        <span>Z Piće 25%PDV</span>
+        <span>0.00</span>
+      </div>
+      
+      <div class="fiscal-line">
+        <span>Z Hrana 13%PDV</span>
+        <span>${vatBreakdown.food13.toFixed(2)}</span>
+      </div>
+      
+      <div class="fiscal-line">
+        <span>Z Roba  5%PDV</span>
+        <span>0.00</span>
+      </div>
+      
+      <div class="fiscal-line">
+        <span>Z Roba 25%PDV</span>
+        <span>0.00</span>
+      </div>
+      
+      <div class="spacer"></div>
       
       <!-- Order Items -->
-      ${order.items.map(item => `
-        <div class="item-row">
-          <span class="item-name">${item.itemName}</span>
-          <span class="item-qty">${item.quantity}x</span>
-          <span class="item-price">€${item.totalPrice.toFixed(2)}</span>
-        </div>
-        <div class="item-row small">
-          <span class="item-name">  @€${item.price.toFixed(2)}/${item.unit}</span>
-          <span class="item-qty"></span>
-          <span class="item-price"></span>
+      ${order.items.map((item, index) => `
+        <div class="fiscal-line">
+          <span>${index + 9}</span>
+          <span>${item.itemName.toUpperCase()}</span>
+          <span>${item.quantity}.000</span>
+          <span>${item.totalPrice.toFixed(2)}</span>
         </div>
       `).join('')}
       
-      <div class="separator"></div>
+      <div class="spacer"></div>
       
-      <!-- Totals -->
-      <div class="total-row">
-        <span>Neto/Subtotal:</span>
-        <span>€${order.subtotal.toFixed(2)}</span>
+      <div class="left">Korisnik BRAN</div>
+      <div class="fiscal-line">
+        <span>G</span>
+        <span>${order.totalAmount.toFixed(2)}</span>
       </div>
       
-      <div class="total-row">
-        <span>PDV 25%/VAT 25%:</span>
-        <span>€${order.tax.toFixed(2)}</span>
+      <div class="line"></div>
+      
+      <div class="right bold">${order.totalAmount.toFixed(2)}</div>
+      
+      <div class="spacer"></div>
+      
+      <!-- VAT Breakdown -->
+      <div class="fiscal-line">
+        <span>Netto</span>
+        <span>${vatBreakdown.net.toFixed(2)}</span>
       </div>
       
-      <div class="double-separator"></div>
-      
-      <div class="total-row large">
-        <span>UKUPNO/TOTAL:</span>
-        <span>€${order.totalAmount.toFixed(2)}</span>
+      <div class="fiscal-line">
+        <span>PDV  5%</span>
+        <span>0.00 osnovica</span>
+        <span>0.00</span>
       </div>
       
-      <div class="separator"></div>
-      
-      <!-- Payment Info -->
-      <div class="fiscal-info">
-        <div>Način plaćanja/Payment:</div>
-        <div class="bold center">
-          ${order.paymentMethod === 'room_bill' ? 'RAČUN SOBE / ROOM BILL' :
-            order.paymentMethod === 'immediate_cash' ? 'GOTOVINA / CASH' :
-            'KARTICA / CARD'}
-        </div>
-        <div>Status: <span class="bold">${order.paymentStatus.toUpperCase()}</span></div>
+      <div class="fiscal-line">
+        <span>PDV 13%</span>
+        <span>${vatBreakdown.vat13.toFixed(2)} osnovica</span>
+        <span>${vatBreakdown.food13Net.toFixed(2)}</span>
       </div>
       
-      ${order.notes ? `
-        <div class="separator"></div>
-        <div class="fiscal-info">
-          <div>Napomene/Notes:</div>
-          <div class="small">${order.notes}</div>
+      <div class="fiscal-line">
+        <span>PDV 25%</span>
+        <span>${vatBreakdown.vat25.toFixed(2)} osnovica</span>
+        <span>${vatBreakdown.drinks25Net.toFixed(2)}</span>
+      </div>
+      
+      <div class="fiscal-line">
+        <span>PNP  3%</span>
+        <span>${vatBreakdown.pnp.toFixed(2)} osnovica</span>
+        <span>${vatBreakdown.drinks25Net.toFixed(2)}</span>
+      </div>
+      
+      <div class="line"></div>
+      
+      <div class="fiscal-line bold">
+        <span>Total</span>
+        <span>${order.totalAmount.toFixed(2)}</span>
+      </div>
+      
+      <div class="spacer"></div>
+      
+      <div class="center small">Podaci do ovog datuma su fiskalizirani.</div>
+      
+      <!-- Payment Method -->
+      ${order.paymentMethod !== 'room_bill' ? `
+        <div class="spacer"></div>
+        <div class="center">
+          ${order.paymentMethod === 'immediate_cash' ? 'GOTOVINA PRIMLJENA' : 'KARTICA'}
         </div>
       ` : ''}
       
-      <div class="separator"></div>
-      
-      <!-- QR Code Placeholder -->
-      <div class="qr-placeholder">
-        QR KOD<br>
-        FISKALNI<br>
-        BROJ
-      </div>
-      
       <!-- Footer -->
+      <div class="spacer"></div>
       <div class="center small">
         <div>Hvala na posjeti!</div>
         <div>Thank you for your visit!</div>
-        <div class="bold">Hotel Poreč</div>
-      </div>
-      
-      <div class="center small fiscal-info">
-        <div>Fiskalizovano sa: FINA</div>
-        <div>JIR: ${generateJIR()}</div>
-        <div>ZKI: ${generateZKI()}</div>
-      </div>
-      
-      <!-- Cut line -->
-      <div style="margin-top: 5mm; text-align: center; font-size: 8px;">
-        ✂ ---------------------------------- ✂
       </div>
     </body>
     </html>
@@ -445,7 +426,7 @@ export async function printWindowsReceipt(data: PrintReceiptData): Promise<boole
       ...data,
       hotelInfo: {
         ...data.hotelInfo,
-        oib: '12345678901', // Hotel Poreč OIB
+        oib: '87246357068', // Hotel Poreč real OIB from receipt
         fiscalNumber: generateFiscalNumber()
       }
     };
@@ -456,6 +437,64 @@ export async function printWindowsReceipt(data: PrintReceiptData): Promise<boole
     console.error('Windows receipt print error:', error);
     return false;
   }
+}
+
+/**
+ * Calculate Croatian VAT breakdown for fiscal compliance
+ */
+function calculateCroatianVAT(order: any) {
+  let drinks25 = 0;
+  let food13 = 0;
+  
+  // Categorize items by Croatian VAT rates
+  order.items.forEach((item: any) => {
+    if (item.category.toLowerCase().includes('beverage') || 
+        item.category.toLowerCase().includes('drink') ||
+        item.itemName.toLowerCase().includes('pivo') ||
+        item.itemName.toLowerCase().includes('vino') ||
+        item.itemName.toLowerCase().includes('sok')) {
+      drinks25 += item.totalPrice;
+    } else {
+      food13 += item.totalPrice;
+    }
+  });
+  
+  const drinks25Net = drinks25 / 1.28; // Remove 25% VAT + 3% PNP
+  const food13Net = food13 / 1.13; // Remove 13% VAT
+  
+  const vat25 = drinks25Net * 0.25;
+  const vat13 = food13Net * 0.13;
+  const pnp = drinks25Net * 0.03;
+  
+  const net = drinks25Net + food13Net;
+  
+  return {
+    drinks25,
+    food13,
+    drinks25Net,
+    food13Net,
+    vat25,
+    vat13,
+    pnp,
+    net
+  };
+}
+
+/**
+ * Generate receipt number in Croatian format
+ */
+function generateReceiptNumber(): string {
+  const today = new Date();
+  const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 86400000);
+  return dayOfYear.toString();
+}
+
+/**
+ * Generate sequence number for fiscal receipts
+ */
+function generateSequenceNumber(): string {
+  const random = Math.floor(Math.random() * 999) + 600;
+  return `${random}-${random}`;
 }
 
 /**
