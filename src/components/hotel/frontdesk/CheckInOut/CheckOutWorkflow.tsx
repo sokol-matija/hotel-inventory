@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { Reservation, Guest, Room } from '../../../../lib/hotel/types';
 import { useHotel } from '../../../../lib/hotel/state/HotelContext';
+import hotelNotification from '../../../../lib/notifications';
 import { SAMPLE_GUESTS } from '../../../../lib/hotel/sampleData';
 import { HOTEL_POREC_ROOMS } from '../../../../lib/hotel/hotelData';
 
@@ -48,7 +49,7 @@ export default function CheckOutWorkflow({
   onClose,
   reservation
 }: CheckOutWorkflowProps) {
-  const { updateReservationStatus, isUpdating } = useHotel();
+  const { updateReservationStatus, isUpdating, generateInvoice: createInvoice, addPayment } = useHotel();
   const [checkOutSteps, setCheckOutSteps] = useState<CheckOutStep[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [checkOutNotes, setCheckOutNotes] = useState('');
@@ -151,8 +152,40 @@ export default function CheckOutWorkflow({
       
       // Generate invoice if requested
       if (generateInvoice) {
-        console.log('Generating invoice for guest...');
-        // TODO: Integrate with PDF invoice generation
+        try {
+          console.log('Generating invoice for guest...');
+          const invoice = await createInvoice(reservation.id);
+          console.log('Invoice generated successfully:', invoice.invoiceNumber);
+          
+          // Process payment for the full amount (checkout means guest paid)
+          await addPayment({
+            invoiceId: invoice.id,
+            amount: invoice.totalAmount,
+            method: 'card', // Default to card payment
+            status: 'paid',
+            receivedDate: new Date(),
+            processedDate: new Date(),
+            processedBy: 'Front Desk Staff', // Could be made dynamic with user context
+            notes: `Payment processed during checkout - ${guest?.name}`,
+            reference: `CHECKOUT-${Date.now()}`
+          });
+          
+          console.log('Payment processed successfully for invoice:', invoice.invoiceNumber);
+          
+          // Show success notification with finance module link
+          hotelNotification.success(
+            'Invoice Generated & Payment Processed',
+            `Invoice ${invoice.invoiceNumber} created and marked as PAID for ${guest?.name}. View in Finance → Invoice History.`,
+            6000
+          );
+        } catch (error) {
+          console.error('Failed to generate invoice or process payment:', error);
+          hotelNotification.error(
+            'Invoice/Payment Processing Failed',
+            'Failed to generate invoice or process payment. Please handle manually from the Finance module.',
+            5000
+          );
+        }
       }
       
       // Close workflow
