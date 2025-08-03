@@ -1564,18 +1564,81 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
       const newRoom = HOTEL_POREC_ROOMS.find(r => r.id === newRoomId);
       const oldRoom = HOTEL_POREC_ROOMS.find(r => r.id === reservation.roomId);
 
-      await updateReservation(reservationId, {
+      if (!newRoom || !oldRoom) {
+        throw new Error('Room not found');
+      }
+
+      // Check if room type is changing
+      const isRoomTypeChange = oldRoom.type !== newRoom.type;
+      
+      let shouldProceed = true;
+      let updatedReservationData: any = {
         roomId: newRoomId,
         checkIn: newCheckIn,
         checkOut: newCheckOut
-      });
+      };
 
-      // Show success notification
-      hotelNotification.success(
-        'Reservation Moved Successfully!',
-        `${guest?.name || 'Guest'} moved from ${formatRoomNumber(oldRoom!)} to ${formatRoomNumber(newRoom!)} • ${newCheckIn.toLocaleDateString()} - ${newCheckOut.toLocaleDateString()}`,
-        5
-      );
+      if (isRoomTypeChange) {
+        // Calculate new pricing for the different room type
+        const { calculatePricing } = await import('../../../lib/hotel/pricingCalculator');
+        
+        try {
+          const newPricing = calculatePricing(
+            newRoomId,
+            newCheckIn,
+            newCheckOut,
+            reservation.adults,
+            reservation.children,
+            {
+              hasPets: reservation.petFee > 0,
+              needsParking: reservation.parkingFee > 0,
+              additionalCharges: reservation.additionalCharges
+            }
+          );
+
+          const oldPricing = reservation.totalAmount;
+          const priceDifference = newPricing.total - oldPricing;
+          const isMoreExpensive = priceDifference > 0;
+
+          // Show confirmation dialog with pricing information
+          const confirmMessage = isMoreExpensive
+            ? `Moving from ${oldRoom.nameEnglish} to ${newRoom.nameEnglish} will increase the price by €${priceDifference.toFixed(2)}.\n\nOld total: €${oldPricing.toFixed(2)}\nNew total: €${newPricing.total.toFixed(2)}\n\nDo you want to proceed with this room change?`
+            : `Moving from ${oldRoom.nameEnglish} to ${newRoom.nameEnglish} will decrease the price by €${Math.abs(priceDifference).toFixed(2)}.\n\nOld total: €${oldPricing.toFixed(2)}\nNew total: €${newPricing.total.toFixed(2)}\n\nDo you want to proceed with this room change?`;
+
+          shouldProceed = window.confirm(confirmMessage);
+
+          if (shouldProceed) {
+            // Update reservation data with new pricing
+            updatedReservationData = {
+              ...updatedReservationData,
+              totalAmount: newPricing.total,
+              subtotal: newPricing.subtotal,
+              fees: newPricing.fees
+            };
+          }
+        } catch (pricingError) {
+          console.error('Failed to calculate new pricing:', pricingError);
+          // Still ask for confirmation even if pricing calculation fails
+          shouldProceed = window.confirm(
+            `Moving from ${oldRoom.nameEnglish} to ${newRoom.nameEnglish} will change the room type and may affect pricing.\n\nDo you want to proceed with this room change?`
+          );
+        }
+      }
+
+      if (shouldProceed) {
+        await updateReservation(reservationId, updatedReservationData);
+
+        const successMessage = isRoomTypeChange 
+          ? `${guest?.name || 'Guest'} moved from ${formatRoomNumber(oldRoom)} to ${formatRoomNumber(newRoom)} with updated pricing • ${newCheckIn.toLocaleDateString()} - ${newCheckOut.toLocaleDateString()}`
+          : `${guest?.name || 'Guest'} moved from ${formatRoomNumber(oldRoom)} to ${formatRoomNumber(newRoom)} • ${newCheckIn.toLocaleDateString()} - ${newCheckOut.toLocaleDateString()}`;
+
+        // Show success notification
+        hotelNotification.success(
+          'Reservation Moved Successfully!',
+          successMessage,
+          5
+        );
+      }
 
     } catch (error) {
       console.error('Error moving reservation:', error);
