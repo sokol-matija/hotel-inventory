@@ -58,34 +58,107 @@ function generateThermalReceiptHTML(data: FiscalPrintData): string {
           body {
             width: 80mm;
             margin: 0;
-            padding: 2mm;
+            padding: 4mm 3mm;
             font-family: 'Courier New', 'Consolas', monospace;
-            font-size: 10px;
-            line-height: 1.0;
+            font-size: 12px;
+            line-height: 1.2;
             color: black;
             background: white;
           }
           
-          .center { text-align: center; }
-          .left { text-align: left; }
-          .right { text-align: right; }
-          .bold { font-weight: bold; }
-          .small { font-size: 9px; }
+          .center { 
+            text-align: center; 
+            width: 100%;
+          }
+          .left { 
+            text-align: left; 
+            width: 100%;
+          }
+          .right { 
+            text-align: right; 
+            width: 100%;
+          }
+          .bold { 
+            font-weight: bold; 
+          }
+          .small { 
+            font-size: 10px; 
+          }
+          .large {
+            font-size: 14px;
+            font-weight: bold;
+          }
           
           .line {
+            width: 100%;
             border-bottom: 1px solid black;
-            margin: 1mm 0;
+            margin: 2mm 0;
+            height: 1px;
+          }
+          
+          .double-line {
+            width: 100%;
+            border-bottom: 2px solid black;
+            margin: 3mm 0;
+            height: 2px;
+          }
+          
+          .dashed-line {
+            width: 100%;
+            border-bottom: 1px dashed black;
+            margin: 2mm 0;
+            height: 1px;
           }
           
           .spacer {
-            margin: 2mm 0;
+            margin: 3mm 0;
           }
           
           .fiscal-line {
             display: flex;
             justify-content: space-between;
-            margin: 0.5mm 0;
-            font-size: 9px;
+            width: 100%;
+            margin: 1mm 0;
+            font-size: 11px;
+          }
+          
+          .fiscal-line-left {
+            flex: 1;
+            text-align: left;
+          }
+          
+          .fiscal-line-right {
+            text-align: right;
+            min-width: 20mm;
+          }
+          
+          .item-line {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin: 1mm 0;
+            font-size: 11px;
+          }
+          
+          .item-number {
+            width: 8mm;
+            text-align: left;
+          }
+          
+          .item-name {
+            flex: 1;
+            text-align: left;
+            padding: 0 2mm;
+          }
+          
+          .item-qty {
+            width: 12mm;
+            text-align: right;
+          }
+          
+          .item-price {
+            width: 15mm;
+            text-align: right;
           }
         }
         
@@ -96,43 +169,57 @@ function generateThermalReceiptHTML(data: FiscalPrintData): string {
             padding: 10px;
             border: 1px solid #ccc;
             font-family: 'Courier New', monospace;
-            font-size: 10px;
+            font-size: 12px;
             background: white;
           }
           
-          .center { text-align: center; }
-          .left { text-align: left; }
-          .right { text-align: right; }
+          .center { text-align: center; width: 100%; }
+          .left { text-align: left; width: 100%; }
+          .right { text-align: right; width: 100%; }
           .bold { font-weight: bold; }
-          .small { font-size: 9px; }
+          .small { font-size: 10px; }
+          .large { font-size: 14px; font-weight: bold; }
           
-          .line {
-            border-bottom: 1px solid black;
-            margin: 3px 0;
-          }
-          
-          .spacer {
-            margin: 6px 0;
-          }
+          .line { border-bottom: 1px solid black; margin: 3px 0; width: 100%; }
+          .double-line { border-bottom: 2px solid black; margin: 5px 0; width: 100%; }
+          .dashed-line { border-bottom: 1px dashed black; margin: 3px 0; width: 100%; }
+          .spacer { margin: 6px 0; }
           
           .fiscal-line {
             display: flex;
             justify-content: space-between;
-            margin: 1px 0;
-            font-size: 9px;
+            width: 100%;
+            margin: 2px 0;
+            font-size: 11px;
           }
+          
+          .fiscal-line-left { flex: 1; text-align: left; }
+          .fiscal-line-right { text-align: right; min-width: 20mm; }
+          
+          .item-line {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin: 2px 0;
+            font-size: 11px;
+          }
+          
+          .item-number { width: 8mm; text-align: left; }
+          .item-name { flex: 1; text-align: left; padding: 0 2mm; }
+          .item-qty { width: 12mm; text-align: right; }
+          .item-price { width: 15mm; text-align: right; }
         }
       </style>
     </head>
     <body>
-      <!-- Hotel Header - Exact format from your receipt -->
-      <div class="center bold">HOTEL POREČ</div>
-      <div class="center">HP "DUGA" D.O.O.</div>
+      <!-- Hotel Header -->
+      <div class="center large bold">HOTEL POREČ</div>
+      <div class="center bold">HP "DUGA" D.O.O.</div>
       <div class="center">Rade Končara 1 Poreč</div>
       <div class="center">OIB ${hotelInfo.oib}</div>
       <div class="center">TEL-FAX 00385 52 451-811</div>
       
-      <div class="spacer"></div>
+      <div class="dashed-line"></div>
       
       <!-- Date and register info -->
       <div class="left">Z Zaključak dana ${dateStr} ${timeStr} SEF</div>
@@ -150,44 +237,44 @@ function generateThermalReceiptHTML(data: FiscalPrintData): string {
       
       <!-- Totals by category -->
       <div class="fiscal-line">
-        <span>Z Total</span>
-        <span>${order.totalAmount.toFixed(2)}</span>
+        <div class="fiscal-line-left">Z Total</div>
+        <div class="fiscal-line-right">${order.totalAmount.toFixed(2)}</div>
       </div>
       
       <div class="fiscal-line">
-        <span>Z Piće 25%PDV+PNP</span>
-        <span>${vatBreakdown.drinks25.toFixed(2)}</span>
+        <div class="fiscal-line-left">Z Piće 25%PDV+PNP</div>
+        <div class="fiscal-line-right">${vatBreakdown.drinks25.toFixed(2)}</div>
       </div>
       
       <div class="fiscal-line">
-        <span>Z Piće 25%PDV</span>
-        <span>0.00</span>
+        <div class="fiscal-line-left">Z Piće 25%PDV</div>
+        <div class="fiscal-line-right">0.00</div>
       </div>
       
       <div class="fiscal-line">
-        <span>Z Hrana 13%PDV</span>
-        <span>${vatBreakdown.food13.toFixed(2)}</span>
+        <div class="fiscal-line-left">Z Hrana 13%PDV</div>
+        <div class="fiscal-line-right">${vatBreakdown.food13.toFixed(2)}</div>
       </div>
       
       <div class="fiscal-line">
-        <span>Z Roba  5%PDV</span>
-        <span>0.00</span>
+        <div class="fiscal-line-left">Z Roba  5%PDV</div>
+        <div class="fiscal-line-right">0.00</div>
       </div>
       
       <div class="fiscal-line">
-        <span>Z Roba 25%PDV</span>
-        <span>0.00</span>
+        <div class="fiscal-line-left">Z Roba 25%PDV</div>
+        <div class="fiscal-line-right">0.00</div>
       </div>
       
       <div class="spacer"></div>
       
       <!-- Order Items -->
       ${order.items.map((item, index) => `
-        <div class="fiscal-line">
-          <span>${index + 9}</span>
-          <span>${item.itemName.toUpperCase()}</span>
-          <span>${item.quantity}.000</span>
-          <span>${item.totalPrice.toFixed(2)}</span>
+        <div class="item-line">
+          <div class="item-number">${index + 9}</div>
+          <div class="item-name">${item.itemName.toUpperCase()}</div>
+          <div class="item-qty">${item.quantity}.000</div>
+          <div class="item-price">${item.totalPrice.toFixed(2)}</div>
         </div>
       `).join('')}
       
@@ -195,51 +282,47 @@ function generateThermalReceiptHTML(data: FiscalPrintData): string {
       
       <div class="left">Korisnik BRAN</div>
       <div class="fiscal-line">
-        <span>G</span>
-        <span>${order.totalAmount.toFixed(2)}</span>
+        <div class="fiscal-line-left">G</div>
+        <div class="fiscal-line-right">${order.totalAmount.toFixed(2)}</div>
       </div>
       
       <div class="line"></div>
       
-      <div class="right bold">${order.totalAmount.toFixed(2)}</div>
+      <div class="right bold large">${order.totalAmount.toFixed(2)}</div>
       
       <div class="spacer"></div>
       
       <!-- VAT Breakdown -->
       <div class="fiscal-line">
-        <span>Netto</span>
-        <span>${vatBreakdown.net.toFixed(2)}</span>
+        <div class="fiscal-line-left">Netto</div>
+        <div class="fiscal-line-right">${vatBreakdown.net.toFixed(2)}</div>
       </div>
       
-      <div class="fiscal-line">
-        <span>PDV  5%</span>
-        <span>0.00 osnovica</span>
-        <span>0.00</span>
+      <div class="fiscal-line small">
+        <div class="fiscal-line-left">PDV  5%</div>
+        <div class="fiscal-line-right">0.00 osnovica 0.00</div>
       </div>
       
-      <div class="fiscal-line">
-        <span>PDV 13%</span>
-        <span>${vatBreakdown.vat13.toFixed(2)} osnovica</span>
-        <span>${vatBreakdown.food13Net.toFixed(2)}</span>
+      <div class="fiscal-line small">
+        <div class="fiscal-line-left">PDV 13%</div>
+        <div class="fiscal-line-right">${vatBreakdown.vat13.toFixed(2)} osnovica ${vatBreakdown.food13Net.toFixed(2)}</div>
       </div>
       
-      <div class="fiscal-line">
-        <span>PDV 25%</span>
-        <span>${vatBreakdown.vat25.toFixed(2)} osnovica</span>
-        <span>${vatBreakdown.drinks25Net.toFixed(2)}</span>
+      <div class="fiscal-line small">
+        <div class="fiscal-line-left">PDV 25%</div>
+        <div class="fiscal-line-right">${vatBreakdown.vat25.toFixed(2)} osnovica ${vatBreakdown.drinks25Net.toFixed(2)}</div>
       </div>
       
-      <div class="fiscal-line">
-        <span>PNP  3%</span>
-        <span>${vatBreakdown.pnp.toFixed(2)} osnovica</span>
-        <span>${vatBreakdown.drinks25Net.toFixed(2)}</span>
+      <div class="fiscal-line small">
+        <div class="fiscal-line-left">PNP  3%</div>
+        <div class="fiscal-line-right">${vatBreakdown.pnp.toFixed(2)} osnovica ${vatBreakdown.drinks25Net.toFixed(2)}</div>
       </div>
       
-      <div class="line"></div>
+      <div class="double-line"></div>
       
-      <div class="fiscal-line bold">
-        <span>Total</span>
-        <span>${order.totalAmount.toFixed(2)}</span>
+      <div class="fiscal-line bold large">
+        <div class="fiscal-line-left">Total</div>
+        <div class="fiscal-line-right">${order.totalAmount.toFixed(2)}</div>
       </div>
       
       <div class="spacer"></div>
@@ -249,16 +332,22 @@ function generateThermalReceiptHTML(data: FiscalPrintData): string {
       <!-- Payment Method -->
       ${order.paymentMethod !== 'room_bill' ? `
         <div class="spacer"></div>
-        <div class="center">
+        <div class="center bold">
           ${order.paymentMethod === 'immediate_cash' ? 'GOTOVINA PRIMLJENA' : 'KARTICA'}
         </div>
       ` : ''}
       
       <!-- Footer -->
       <div class="spacer"></div>
+      <div class="center">
+        <div class="bold">Hvala na posjeti!</div>
+        <div class="bold">Thank you for your visit!</div>
+      </div>
+      
+      <!-- Cut line -->
+      <div class="spacer"></div>
       <div class="center small">
-        <div>Hvala na posjeti!</div>
-        <div>Thank you for your visit!</div>
+        ✂ -------------------------------- ✂
       </div>
     </body>
     </html>
