@@ -12,7 +12,8 @@ import {
   UserCheck,
   Globe,
   Settings,
-  Building2
+  Building2,
+  ShoppingCart
 } from 'lucide-react'
 
 const sidebarItems = [
@@ -30,6 +31,11 @@ const sidebarItems = [
     key: 'items', 
     path: '/items', 
     icon: Package
+  },
+  { 
+    key: 'orders', 
+    path: '/orders', 
+    icon: ShoppingCart
   },
   { 
     key: 'globalView', 

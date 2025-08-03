@@ -7,6 +7,7 @@ import Dashboard from './components/dashboard/Dashboard';
 import LocationsPage from './components/locations/LocationsPage';
 import LocationDetail from './components/locations/LocationDetail';
 import ItemsPage from './components/items/ItemsPage';
+import OrdersPage from './components/orders/OrdersPage';
 import GlobalView from './components/global/GlobalView';
 import LocationManagement from './components/admin/LocationManagement';
 import AuditLogPage from './components/audit/AuditLogPage';
@@ -72,6 +73,7 @@ function AppRoutes() {
         <Route path="locations" element={<LocationsPage />} />
         <Route path="locations/:id" element={<LocationDetail />} />
         <Route path="items" element={<ItemsPage />} />
+        <Route path="orders" element={<OrdersPage />} />
         <Route path="global" element={<GlobalView />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="admin/locations" element={<LocationManagement />} />
