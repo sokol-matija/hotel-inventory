@@ -21,7 +21,9 @@ import {
   Car,
   Star,
   Receipt,
-  MessageSquare
+  MessageSquare,
+  Mail,
+  Download
 } from 'lucide-react';
 import { Reservation, Guest, Room } from '../../../../lib/hotel/types';
 import { useHotel } from '../../../../lib/hotel/state/HotelContext';
@@ -49,7 +51,7 @@ export default function CheckOutWorkflow({
   onClose,
   reservation
 }: CheckOutWorkflowProps) {
-  const { updateReservationStatus, isUpdating, generateInvoice: createInvoice, addPayment } = useHotel();
+  const { updateReservationStatus, updateReservation, isUpdating, generateInvoice: createInvoice, addPayment } = useHotel();
   const [checkOutSteps, setCheckOutSteps] = useState<CheckOutStep[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [checkOutNotes, setCheckOutNotes] = useState('');
@@ -57,10 +59,18 @@ export default function CheckOutWorkflow({
   const [additionalCharges, setAdditionalCharges] = useState(0);
   const [guestSatisfaction, setGuestSatisfaction] = useState<number>(5);
   const [generateInvoice, setGenerateInvoice] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<string>(reservation?.status || 'incomplete-payment');
 
   // Find associated guest and room data
   const guest = reservation ? SAMPLE_GUESTS.find(g => g.id === reservation.guestId) : null;
   const room = reservation ? HOTEL_POREC_ROOMS.find(r => r.id === reservation.roomId) : null;
+
+  // Update payment status when reservation changes
+  useEffect(() => {
+    if (reservation) {
+      setPaymentStatus(reservation.status);
+    }
+  }, [reservation]);
 
   // Initialize check-out steps
   useEffect(() => {
@@ -132,6 +142,40 @@ export default function CheckOutWorkflow({
     setCheckOutSteps(prev => prev.map(step =>
       step.id === stepId ? { ...step, completed: !step.completed } : step
     ));
+  };
+
+  const handleMarkAsPaid = async () => {
+    if (!reservation) return;
+    
+    try {
+      setIsProcessing(true);
+      await updateReservation(reservation.id, { status: 'checked-in' }); // Keep checked-in but payment is processed
+      setPaymentStatus('checked-in'); // This indicates payment is complete
+      
+      hotelNotification.success(
+        'Payment Marked as Paid',
+        `Payment for ${guest?.name} has been marked as completed.`,
+        3000
+      );
+    } catch (error) {
+      console.error('Failed to update payment status:', error);
+      hotelNotification.error(
+        'Failed to Update Payment',
+        'Unable to mark payment as paid. Please try again.',
+        3000
+      );
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleSendInvoiceEmail = () => {
+    // Placeholder for future email functionality
+    hotelNotification.info(
+      'Email Feature Coming Soon',
+      'PDF invoice email functionality will be available in a future update.',
+      4000
+    );
   };
 
   const canCompleteCheckOut = () => {
@@ -275,7 +319,21 @@ export default function CheckOutWorkflow({
                     <span>Payment Summary</span>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
+                <CardContent className="space-y-4">
+                  {/* Payment Status Display */}
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
+                    <div className="flex items-center space-x-2">
+                      <CreditCard className="h-4 w-4" />
+                      <span className="text-sm font-medium">Payment Status:</span>
+                    </div>
+                    <Badge 
+                      variant={paymentStatus === 'incomplete-payment' ? "destructive" : "default"}
+                      className="text-xs"
+                    >
+                      {paymentStatus === 'incomplete-payment' ? 'PAYMENT PENDING' : 'PAYMENT COMPLETE'}
+                    </Badge>
+                  </div>
+
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span>Original Booking</span>
@@ -299,6 +357,31 @@ export default function CheckOutWorkflow({
                       <span>Total Amount</span>
                       <span>€{getTotalAmount().toFixed(2)}</span>
                     </div>
+                  </div>
+
+                  {/* Payment Actions */}
+                  <div className="space-y-3 pt-2 border-t">
+                    {paymentStatus === 'incomplete-payment' && (
+                      <Button
+                        onClick={handleMarkAsPaid}
+                        disabled={isProcessing}
+                        className="w-full bg-green-600 hover:bg-green-700 text-white"
+                        size="sm"
+                      >
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Mark as Paid (After POS Payment)
+                      </Button>
+                    )}
+                    
+                    <Button
+                      onClick={handleSendInvoiceEmail}
+                      variant="outline"
+                      className="w-full"
+                      size="sm"
+                    >
+                      <Mail className="h-4 w-4 mr-2" />
+                      Send PDF Invoice to Email
+                    </Button>
                   </div>
                   
                   <div className="mt-4">

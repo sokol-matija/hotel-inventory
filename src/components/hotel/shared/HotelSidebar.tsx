@@ -57,16 +57,10 @@ const frontDeskSidebarItems = [
 // Hotel Finance specific navigation items
 const financeSidebarItems = [
   { 
-    key: 'invoiceHistory', 
+    key: 'invoicePayment', 
     path: '/hotel/finance', 
     icon: Receipt,
-    label: 'Invoice History'
-  },
-  { 
-    key: 'paymentTracking', 
-    path: '/hotel/finance/payment-tracking', 
-    icon: DollarSign,
-    label: 'Payment Tracking'
+    label: 'Invoice & Payment Management'
   },
   { 
     key: 'revenueAnalytics', 

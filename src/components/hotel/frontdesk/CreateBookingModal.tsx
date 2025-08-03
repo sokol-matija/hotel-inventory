@@ -252,7 +252,7 @@ export default function CreateBookingModal({
     specialRequests: '',
     hasPets: false,
     needsParking: false,
-    status: 'confirmed',
+    status: 'incomplete-payment',
     bookingSource: 'direct'
   });
 

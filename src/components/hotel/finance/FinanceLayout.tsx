@@ -5,8 +5,7 @@ import { useAuth } from '../../auth/AuthProvider';
 import { HotelProvider } from '../../../lib/hotel/state/HotelContext';
 import HotelSidebar from '../shared/HotelSidebar';
 import MobileNav from '../../layout/MobileNav';
-import InvoiceHistoryPage from './InvoiceHistoryPage';
-import PaymentTrackingPage from './PaymentTrackingPage';
+import InvoicePaymentPage from './InvoicePaymentPage';
 import RevenueAnalyticsPage from './RevenueAnalyticsPage';
 import FiscalCompliancePage from './FiscalCompliancePage';
 import EracuniTestPage from './EracuniTestPage';
@@ -63,9 +62,8 @@ export default function FinanceLayout() {
           {/* Content Area with Internal Routes */}
           <div className="flex-1 overflow-auto">
             <Routes>
-              <Route index element={<InvoiceHistoryPage />} />
-              <Route path="invoices" element={<InvoiceHistoryPage />} />
-              <Route path="payment-tracking" element={<PaymentTrackingPage />} />
+              <Route index element={<InvoicePaymentPage />} />
+              <Route path="invoices" element={<InvoicePaymentPage />} />
               <Route path="revenue-analytics" element={<RevenueAnalyticsPage />} />
               <Route path="fiscal-compliance" element={<FiscalCompliancePage />} />
               <Route path="eracuni-test" element={<EracuniTestPage />} />
