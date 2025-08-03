@@ -89,7 +89,7 @@ export default function ModuleSelector() {
       title: 'Finance',
       description: 'Croatian fiscal e-računi and financial management',
       icon: <CreditCard className="h-6 w-6" />,
-      available: false,
+      available: true,
       onClick: () => navigate('/hotel/finance')
     },
     {

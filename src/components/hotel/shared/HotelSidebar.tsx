@@ -12,11 +12,16 @@ import {
   Mail,
   LogOut,
   UserCheck,
-  ArrowLeft
+  ArrowLeft,
+  Receipt,
+  TrendingUp,
+  DollarSign,
+  Shield,
+  Wifi
 } from 'lucide-react'
 
 // Hotel Front Desk specific navigation items
-const hotelSidebarItems = [
+const frontDeskSidebarItems = [
   { 
     key: 'reservations', 
     path: '/hotel/front-desk', 
@@ -49,6 +54,40 @@ const hotelSidebarItems = [
   }
 ]
 
+// Hotel Finance specific navigation items
+const financeSidebarItems = [
+  { 
+    key: 'invoiceHistory', 
+    path: '/hotel/finance', 
+    icon: Receipt,
+    label: 'Invoice History'
+  },
+  { 
+    key: 'paymentTracking', 
+    path: '/hotel/finance/payment-tracking', 
+    icon: DollarSign,
+    label: 'Payment Tracking'
+  },
+  { 
+    key: 'revenueAnalytics', 
+    path: '/hotel/finance/revenue-analytics', 
+    icon: TrendingUp,
+    label: 'Revenue Analytics'
+  },
+  { 
+    key: 'fiscalCompliance', 
+    path: '/hotel/finance/fiscal-compliance', 
+    icon: Shield,
+    label: 'Fiscal Compliance'
+  },
+  { 
+    key: 'eracuniTest', 
+    path: '/hotel/finance/eracuni-test', 
+    icon: Wifi,
+    label: 'E-Računi Test'
+  }
+]
+
 export default function HotelSidebar() {
   const { user, signOut } = useAuth()
   const location = useLocation()
@@ -56,6 +95,17 @@ export default function HotelSidebar() {
   const { t } = useTranslation()
 
   if (!user) return null
+
+  // Determine current module based on path
+  const isFinanceModule = location.pathname.startsWith('/hotel/finance')
+  const isFrontDeskModule = location.pathname.startsWith('/hotel/front-desk')
+  
+  // Get appropriate sidebar items and module info
+  const sidebarItems = isFinanceModule ? financeSidebarItems : frontDeskSidebarItems
+  const moduleTitle = isFinanceModule ? 'Finance' : 'Front Desk'
+  const moduleSubtitle = isFinanceModule ? 'Croatian e-računi & Finance' : 'Hotel Management'
+  const userRole = isFinanceModule ? 'Finance Manager' : 'Front Desk Staff'
+  const logoClickPath = isFinanceModule ? '/hotel/finance' : '/hotel/front-desk'
 
   return (
     <div className="w-64 bg-white border-r border-gray-200 h-screen flex flex-col relative overflow-hidden">
@@ -77,7 +127,7 @@ export default function HotelSidebar() {
           <div className="flex items-center justify-center">
             <div 
               className="w-full h-20 flex items-center justify-center cursor-pointer"
-              onClick={() => navigate('/hotel/front-desk')}
+              onClick={() => navigate(logoClickPath)}
             >
               <img 
                 src="/LOGO1-hires.png" 
@@ -89,16 +139,17 @@ export default function HotelSidebar() {
           
           {/* Module Title */}
           <div className="text-center mt-3">
-            <h2 className="text-lg font-semibold text-gray-900">Front Desk</h2>
-            <p className="text-sm text-gray-600">Hotel Management</p>
+            <h2 className="text-lg font-semibold text-gray-900">{moduleTitle}</h2>
+            <p className="text-sm text-gray-600">{moduleSubtitle}</p>
           </div>
         </div>
 
         <nav className="flex-1 px-4 space-y-2">
-          {hotelSidebarItems.map((item) => {
+          {sidebarItems.map((item) => {
             const Icon = item.icon
             const isActive = location.pathname === item.path || 
-              (item.path === '/hotel/front-desk' && location.pathname === '/hotel/front-desk')
+              (item.path === '/hotel/front-desk' && location.pathname === '/hotel/front-desk') ||
+              (item.path === '/hotel/finance' && location.pathname === '/hotel/finance')
             
             return (
               <Link
@@ -137,7 +188,7 @@ export default function HotelSidebar() {
                 {user.email}
               </p>
               <p className="text-sm text-gray-600">
-                Front Desk Staff
+                {userRole}
               </p>
             </div>
           </div>

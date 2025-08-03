@@ -11,6 +11,19 @@ A comprehensive hotel inventory management system built with React 19 and Supaba
 
 ## Recent Major Improvements
 
+### Croatian E-Računi Finance System Implementation (January 2025)
+- **NEW MAJOR FEATURE**: Complete Croatian fiscal compliance and e-računi integration
+- **Implementation**: Full UBL 2.1 XML generation + FINA SOAP client for Hotel Porec
+- **Features Added**:
+  - **Croatian Fiscal Compliance**: OIB validation, 25% VAT, tourism tax (€1.35/night)
+  - **UBL 2.1 XML Generation**: Croatian CIUS-compliant invoice format
+  - **FINA Integration**: Complete SOAP client with demo/production modes
+  - **Finance Module Navigation**: Unique sidebar with Invoice History, Payment Tracking, Revenue Analytics, Fiscal Compliance, E-Računi Test
+  - **Testing Infrastructure**: Complete e-računi test center with XML preview and download
+  - **Hotel-Specific Features**: Room-based billing, multi-night stays, additional services
+- **Technical**: Croatian invoice numbering (HP-YYYY-XXXXXX), EUR currency, Hotel Porec business data
+- **Status**: Build successful, ready for testing, production-ready with proper certificates
+
 ### Multi-Language Email System Implementation (February 2025)
 - **New Feature**: Comprehensive guest email communication system with Hotel Porec branding
 - **Implementation**: Supabase Edge Functions + Resend API for reliable email delivery

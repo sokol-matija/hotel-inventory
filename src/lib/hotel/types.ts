@@ -236,4 +236,175 @@ export const HOTEL_CONSTANTS = {
   CHILDREN_HALF_PRICE_AGE: 7,
   CHILDREN_DISCOUNT_AGE: 14,
   MIN_NIGHTS_NO_SUPPLEMENT: 3
-} as const;;
+} as const;
+
+// Financial Management - Invoice and Payment Tracking
+export type PaymentMethod = 'cash' | 'card' | 'bank-transfer' | 'booking-com' | 'other';
+export type PaymentStatus = 'pending' | 'partial' | 'paid' | 'refunded' | 'cancelled';
+export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
+
+export interface Invoice {
+  id: string;
+  invoiceNumber: string; // Croatian fiscal format: YYYY-NNN-NNNN
+  reservationId: string; // Links to existing reservation
+  guestId: string; // Links to existing guest
+  roomId: string; // Links to existing room
+  
+  // Invoice dates
+  issueDate: Date;
+  dueDate: Date;
+  paidDate?: Date;
+  
+  // Status tracking
+  status: InvoiceStatus;
+  
+  // Financial details (copies from reservation for audit trail)
+  subtotal: number;
+  vatAmount: number;
+  tourismTax: number;
+  petFee: number;
+  parkingFee: number;
+  additionalCharges: number;
+  totalAmount: number;
+  
+  // Croatian fiscal compliance
+  fiscalData: {
+    oib: string; // Hotel's OIB tax ID
+    jir: string; // Jedinstveni identifikator računa (JIR)
+    zki: string; // Zaštitni kod izdavatelja (ZKI)
+    fiscalReceiptUrl?: string; // URL to fiscal receipt
+    operatorOib?: string; // Operator's OIB who issued invoice
+  };
+  
+  // Payment tracking
+  payments: Payment[];
+  remainingAmount: number;
+  
+  // Metadata
+  notes: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Payment {
+  id: string;
+  invoiceId: string;
+  amount: number;
+  method: PaymentMethod;
+  status: PaymentStatus;
+  
+  // Payment details
+  transactionId?: string;
+  reference?: string;
+  receivedDate: Date;
+  processedDate?: Date;
+  
+  // Bank/card details (anonymized)
+  cardLastFour?: string;
+  bankReference?: string;
+  
+  // Metadata
+  processedBy: string; // Staff member who processed
+  notes: string;
+  createdAt: Date;
+}
+
+export interface FiscalRecord {
+  id: string;
+  invoiceId: string;
+  
+  // Croatian fiscal compliance details
+  jir: string; // Jedinstveni identifikator računa
+  zki: string; // Zaštitni kod izdavatelja
+  fiscalReceiptNumber: string;
+  operatorOib: string;
+  
+  // Submission details
+  submittedAt: Date;
+  fiscalResponse: any; // Raw response from Croatian fiscal system
+  isValid: boolean;
+  
+  // Audit trail
+  createdAt: Date;
+}
+
+export interface RevenueAnalytics {
+  period: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  startDate: Date;
+  endDate: Date;
+  
+  // Revenue breakdown
+  totalRevenue: number;
+  roomRevenue: number;
+  taxRevenue: number;
+  additionalRevenue: number;
+  
+  // Tax breakdown
+  vatCollected: number;
+  tourismTaxCollected: number;
+  
+  // Booking sources
+  directBookings: number;
+  bookingComRevenue: number;
+  otherSourcesRevenue: number;
+  
+  // Payment methods
+  cashPayments: number;
+  cardPayments: number;
+  bankTransfers: number;
+  onlinePayments: number;
+  
+  // Statistics
+  totalInvoices: number;
+  averageBookingValue: number;
+  occupancyRate: number;
+  
+  // Croatian fiscal compliance
+  fiscalReportsGenerated: number;
+  fiscalSubmissions: number;
+}
+
+// Extended Hotel Context with Financial Management
+export interface FinancialHotelContextType extends HotelContextType {
+  // Financial data
+  invoices: Invoice[];
+  payments: Payment[];
+  fiscalRecords: FiscalRecord[];
+  revenueAnalytics: RevenueAnalytics[];
+  
+  // Financial actions - Invoices
+  generateInvoice: (reservationId: string) => Promise<Invoice>;
+  updateInvoiceStatus: (invoiceId: string, status: InvoiceStatus) => Promise<void>;
+  getInvoicesByGuest: (guestId: string) => Invoice[];
+  getInvoicesByDateRange: (start: Date, end: Date) => Invoice[];
+  getOverdueInvoices: () => Invoice[];
+  
+  // Financial actions - Payments
+  addPayment: (payment: Omit<Payment, 'id' | 'createdAt'>) => Promise<void>;
+  updatePaymentStatus: (paymentId: string, status: PaymentStatus) => Promise<void>;
+  getPaymentsByInvoice: (invoiceId: string) => Payment[];
+  getPaymentsByMethod: (method: PaymentMethod) => Payment[];
+  
+  // Revenue analytics
+  calculateRevenueAnalytics: (
+    period: 'daily' | 'weekly' | 'monthly' | 'yearly',
+    startDate: Date,
+    endDate: Date
+  ) => RevenueAnalytics;
+  
+  // Croatian fiscal compliance
+  submitFiscalRecord: (invoiceId: string) => Promise<FiscalRecord>;
+  validateFiscalCompliance: (invoiceId: string) => Promise<boolean>;
+  generateFiscalReport: (startDate: Date, endDate: Date) => Promise<any>;
+  
+  // Financial utilities
+  getTotalRevenue: (startDate: Date, endDate: Date) => number;
+  getUnpaidInvoices: () => Invoice[];
+  getPaymentSummary: (startDate: Date, endDate: Date) => {
+    total: number;
+    cash: number;
+    card: number;
+    bank: number;
+    online: number;
+  };
+}

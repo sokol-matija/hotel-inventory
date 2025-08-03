@@ -13,6 +13,7 @@ import AuditLogPage from './components/audit/AuditLogPage';
 import SettingsPage from './components/settings/SettingsPage';
 import ModuleSelector from './components/hotel/ModuleSelector';
 import FrontDeskLayout from './components/hotel/frontdesk/FrontDeskLayout';
+import FinanceLayout from './components/hotel/finance/FinanceLayout';
 import { ToastProvider } from './components/ui/toast';
 import { Toaster } from './components/Toaster';
 
@@ -52,6 +53,11 @@ function AppRoutes() {
       <Route path="/hotel/front-desk/*" element={
         <ProtectedRoute>
           <FrontDeskLayout />
+        </ProtectedRoute>
+      } />
+      <Route path="/hotel/finance/*" element={
+        <ProtectedRoute>
+          <FinanceLayout />
         </ProtectedRoute>
       } />
       
