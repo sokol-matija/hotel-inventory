@@ -69,15 +69,15 @@ export const SAMPLE_GUESTS: Guest[] = [
   },
   {
     id: 'guest-4',
-    name: 'Giuseppe Bianchi',
-    email: 'g.bianchi@yahoo.it',
-    phone: '+39-02-98765432',
-    emergencyContact: 'Anna Bianchi +39-02-11111111',
-    nationality: 'Italian',
+    name: 'Emma Johnson',
+    email: 'emma.johnson@gmail.com',
+    phone: '+44-161-2345678',
+    emergencyContact: 'Michael Johnson +44-161-8765432',
+    nationality: 'British',
     preferredLanguage: 'en',
     hasPets: false,
     children: [],
-    totalStays: 1,
+    totalStays: 2,
     isVip: false
   },
   
@@ -429,6 +429,32 @@ export function generateDemoReservations(): Reservation[] {
   
   // Add some specific showcase reservations for the demo
   const showcaseReservations = [
+    // SAME-DAY TURNOVER DEMO: Room 301 - Guest checking out today at 11 AM
+    createReservation(
+      'guest-4', // Emma Johnson
+      'room-301', 
+      subDays(today, 2), // Checked in 2 days ago
+      today,             // Checking out TODAY at 11 AM
+      1,
+      [],
+      'checked-in',
+      'booking.com',
+      'Early check-out requested - 10:30 AM'
+    ),
+    
+    // SAME-DAY TURNOVER DEMO: Room 301 - New guest checking in TODAY at 3 PM
+    createReservation(
+      'guest-9', // Pierre Dubois (French guest)
+      'room-301',
+      today,             // Checking in TODAY at 3 PM
+      addDays(today, 3), // Checking out in 3 days
+      1,
+      [],
+      'confirmed',
+      'direct',
+      'Same-day check-in after turnover - requested late afternoon arrival'
+    ),
+    
     // VIP guest in premium suite
     createReservation(
       'guest-1', // Hans Mueller (VIP)
@@ -501,10 +527,16 @@ function createReservation(
   specialRequests?: string,
   options?: { hasPets?: boolean; needsParking?: boolean; additionalCharges?: number }
 ): Reservation {
+  // Normalize check-in/check-out times for half-day positioning
+  const normalizedCheckIn = new Date(checkIn);
+  normalizedCheckIn.setHours(15, 0, 0, 0); // 3:00 PM check-in
+  
+  const normalizedCheckOut = new Date(checkOut);
+  normalizedCheckOut.setHours(11, 0, 0, 0); // 11:00 AM check-out
   // Calculate pricing automatically
   let pricing;
   try {
-    pricing = calculatePricing(roomId, checkIn, checkOut, adults, children, options);
+    pricing = calculatePricing(roomId, normalizedCheckIn, normalizedCheckOut, adults, children, options);
   } catch (error) {
     // Fallback pricing if calculation fails
     pricing = {
@@ -526,8 +558,8 @@ function createReservation(
     id: reservationId,
     roomId,
     guestId,
-    checkIn,
-    checkOut,
+    checkIn: normalizedCheckIn,
+    checkOut: normalizedCheckOut,
     numberOfGuests: adults + children.length,
     adults,
     children,
@@ -550,7 +582,7 @@ function createReservation(
     totalAmount: pricing.total,
     
     // Metadata
-    bookingDate: subDays(checkIn, Math.floor(Math.random() * 30) + 1), // Booked 1-30 days in advance
+    bookingDate: subDays(normalizedCheckIn, Math.floor(Math.random() * 30) + 1), // Booked 1-30 days in advance
     lastModified: new Date(),
     notes: ''
   };

@@ -75,8 +75,8 @@ function TimelineHeader({
         </div>
       </div>
       
-      {/* Date headers */}
-      <div className="grid grid-cols-[180px_repeat(14,minmax(45px,1fr))] border-b border-gray-200 relative z-20">
+      {/* Date headers - Updated for half-day system */}
+      <div className="grid grid-cols-[180px_repeat(28,minmax(22px,1fr))] border-b border-gray-200 relative z-20">
         <div className="p-2 bg-gray-50 border-r border-gray-200 font-medium text-gray-700 text-sm">
           Rooms
         </div>
@@ -85,26 +85,55 @@ function TimelineHeader({
           const isWeekend = date.getDay() === 0 || date.getDay() === 6; // Sunday = 0, Saturday = 6
           
           return (
-            <div 
-              key={index}
-              className={`p-2 text-center border-r border-gray-200 ${
-                isToday 
-                  ? 'bg-blue-50 font-semibold text-blue-700' 
-                  : isWeekend
-                  ? 'bg-orange-50 text-orange-700 font-medium'
-                  : 'bg-gray-50 text-gray-700'
-              }`}
-            >
-            <div className="text-xs font-medium">
-              {format(date, 'EEE')}
-            </div>
-            <div className="text-sm">
-              {format(date, 'dd')}
-            </div>
-            <div className="text-xs opacity-75">
-              {format(date, 'MMM')}
-            </div>
-          </div>
+            <React.Fragment key={index}>
+              {/* First half of day (Check-out zone) */}
+              <div 
+                className={`p-1 text-center border-r border-gray-300 ${
+                  isToday 
+                    ? 'bg-blue-50 font-semibold text-blue-700' 
+                    : isWeekend
+                    ? 'bg-orange-50 text-orange-700 font-medium'
+                    : 'bg-gray-50 text-gray-700'
+                } relative`}
+                title={`${format(date, 'MMM dd')} - Morning (Check-out)`}
+              >
+                <div className="text-xs font-medium">
+                  {format(date, 'EEE')}
+                </div>
+                <div className="text-sm">
+                  {format(date, 'dd')}
+                </div>
+                <div className="text-xs opacity-75">
+                  AM
+                </div>
+                {/* Visual indicator for check-out zone */}
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-red-300 opacity-50"></div>
+              </div>
+              
+              {/* Second half of day (Check-in zone) */}
+              <div 
+                className={`p-1 text-center border-r border-gray-200 ${
+                  isToday 
+                    ? 'bg-blue-50 font-semibold text-blue-700' 
+                    : isWeekend
+                    ? 'bg-orange-50 text-orange-700 font-medium'
+                    : 'bg-gray-50 text-gray-700'
+                } relative`}
+                title={`${format(date, 'MMM dd')} - Afternoon (Check-in)`}
+              >
+                <div className="text-xs font-medium">
+                  {index === 0 ? format(date, 'EEE') : ''}
+                </div>
+                <div className="text-sm">
+                  {index === 0 ? format(date, 'dd') : ''}
+                </div>
+                <div className="text-xs opacity-75">
+                  PM
+                </div>
+                {/* Visual indicator for check-in zone */}
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-300 opacity-50"></div>
+              </div>
+            </React.Fragment>
           );
         })}
       </div>
@@ -193,7 +222,7 @@ function ReservationBlock({
   const dragHandleRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  // BULLETPROOF: Direct day index calculation
+  // HALF-DAY SYSTEM: Calculate precise positioning for check-in/check-out
   const checkInDate = startOfDay(reservation.checkIn);
   const checkOutDate = startOfDay(reservation.checkOut);
   const timelineStart = startOfDay(startDate);
@@ -202,14 +231,20 @@ function ReservationBlock({
   const startDayIndex = Math.floor((checkInDate.getTime() - timelineStart.getTime()) / (24 * 60 * 60 * 1000));
   const endDayIndex = Math.floor((checkOutDate.getTime() - timelineStart.getTime()) / (24 * 60 * 60 * 1000));
   
-  // Clamp to visible range (need these for useEffect dependencies)
-  const visibleStartDay = Math.max(0, startDayIndex);
-  const visibleEndDay = Math.min(13, endDayIndex - 1); // End day is exclusive for checkout
+  // HALF-DAY POSITIONING:
+  // Check-in always starts in second half of day (PM)
+  // Check-out always ends in first half of day (AM)
+  const startHalfDayIndex = startDayIndex * 2 + 1; // Second half (PM) = day * 2 + 1
+  const endHalfDayIndex = endDayIndex * 2;         // First half (AM) = day * 2
   
-  // BULLETPROOF: CSS Grid positioning (need these for useEffect dependencies)
-  // Grid columns: 1=rooms, 2=day0, 3=day1, ..., 15=day13
-  const gridColumnStart = visibleStartDay + 2; // day 0 = column 2
-  const gridColumnEnd = visibleEndDay + 3;     // day 1 = column 3 (end is exclusive)
+  // Clamp to visible range (need these for useEffect dependencies)
+  const visibleStartHalfDay = Math.max(0, startHalfDayIndex);
+  const visibleEndHalfDay = Math.min(27, endHalfDayIndex - 1); // End is exclusive, max is 27 (day 13 PM)
+  
+  // CSS Grid positioning for half-day system
+  // Grid columns: 1=rooms, 2=day0_AM, 3=day0_PM, 4=day1_AM, 5=day1_PM, ..., 29=day13_PM
+  const gridColumnStart = visibleStartHalfDay + 2; // day 0 PM = column 3
+  const gridColumnEnd = visibleEndHalfDay + 3;     // day 1 AM = column 4 (end is exclusive)
   
   const statusColors = RESERVATION_STATUS_COLORS[reservation.status as ReservationStatus] || RESERVATION_STATUS_COLORS.confirmed;
   const flag = getCountryFlag(guest?.nationality || '');
@@ -265,7 +300,7 @@ function ReservationBlock({
   }
   
   // Skip if no width
-  if (visibleEndDay < visibleStartDay) {
+  if (visibleEndHalfDay < visibleStartHalfDay) {
     return null;
   }
 
@@ -757,10 +792,12 @@ function ReservationBlock({
   );
 }
 
-// Enhanced date cell with drag-to-create functionality
+// Enhanced date cell with drag-to-create functionality - Updated for half-day system
 function DroppableDateCell({ 
   room, 
   dayIndex, 
+  halfDayIndex,
+  isSecondHalf,
   date, 
   onMoveReservation,
   existingReservations = [],
@@ -776,6 +813,8 @@ function DroppableDateCell({
 }: {
   room: Room;
   dayIndex: number;
+  halfDayIndex: number;
+  isSecondHalf: boolean;
   date: Date;
   onMoveReservation: (reservationId: string, newRoomId: string, newCheckIn: Date, newCheckOut: Date) => void;
   existingReservations?: Reservation[];
@@ -791,11 +830,22 @@ function DroppableDateCell({
 }) {
   const isWeekend = date.getDay() === 0 || date.getDay() === 6;
   
-  // Check if this date already has a reservation for this room
-  const hasExistingReservation = existingReservations.some(res => 
-    res.roomId === room.id && 
-    isSameDay(startOfDay(res.checkIn), date)
-  );
+  // Check if this half-day slot already has a reservation for this room
+  const hasExistingReservation = existingReservations.some(res => {
+    const resCheckInDate = startOfDay(res.checkIn);
+    const resCheckOutDate = startOfDay(res.checkOut);
+    const resStartDay = Math.floor((resCheckInDate.getTime() - startOfDay(date).getTime()) / (24 * 60 * 60 * 1000));
+    const resEndDay = Math.floor((resCheckOutDate.getTime() - startOfDay(date).getTime()) / (24 * 60 * 60 * 1000));
+    
+    // For same room, check if this half-day slot conflicts
+    if (res.roomId === room.id && resStartDay <= dayIndex && resEndDay > dayIndex) {
+      // If it's the start day and second half, or end day and first half, or any day in between
+      if (dayIndex === resStartDay && isSecondHalf) return true;
+      if (dayIndex === resEndDay && !isSecondHalf) return true;
+      if (dayIndex > resStartDay && dayIndex < resEndDay) return true;
+    }
+    return false;
+  });
 
   // Check if this cell is part of the drag preview
   const isInDragPreview = dragCreatePreview && 
@@ -806,34 +856,48 @@ function DroppableDateCell({
   // Check if this cell is available for drag creation
   const isAvailableForDragCreate = isDragCreateMode && !hasExistingReservation;
 
-  // LEFT HALF - Where reservations start (check-in zone)
-  const [{ isOverLeft, canDropLeft }, dropLeft] = useDrop(() => ({
+  // Drop zone for half-day positioning
+  const [{ isOver, canDrop }, drop] = useDrop(() => ({
     accept: ItemTypes.RESERVATION,
     drop: (item: any) => {
       const originalDuration = Math.ceil((item.checkOut.getTime() - item.checkIn.getTime()) / (24 * 60 * 60 * 1000));
       
-      // Set check-in to 3:00 PM on dropped date
-      const newCheckIn = new Date(date);
-      newCheckIn.setHours(15, 0, 0, 0);
-      
-      // Set check-out to 11:00 AM after original duration
-      const newCheckOut = addDays(newCheckIn, originalDuration);
-      newCheckOut.setHours(11, 0, 0, 0);
-      
-      
-      onMoveReservation(item.reservationId, room.id, newCheckIn, newCheckOut);
+      if (isSecondHalf) {
+        // Dropped on second half (PM) - this is check-in zone
+        const newCheckIn = new Date(date);
+        newCheckIn.setHours(15, 0, 0, 0); // 3:00 PM check-in
+        
+        const newCheckOut = addDays(newCheckIn, originalDuration);
+        newCheckOut.setHours(11, 0, 0, 0); // 11:00 AM check-out
+        
+        onMoveReservation(item.reservationId, room.id, newCheckIn, newCheckOut);
+      } else {
+        // Dropped on first half (AM) - this should adjust end date
+        // Calculate new check-out date based on this being the check-out day
+        const newCheckOut = new Date(date);
+        newCheckOut.setHours(11, 0, 0, 0); // 11:00 AM check-out
+        
+        const newCheckIn = addDays(newCheckOut, -originalDuration);
+        newCheckIn.setHours(15, 0, 0, 0); // 3:00 PM check-in (duration days before)
+        
+        onMoveReservation(item.reservationId, room.id, newCheckIn, newCheckOut);
+      }
     },
     canDrop: (item: any) => {
-      // Can't drop if there's already a reservation starting on this date in this room
-      // Can't drop on same room/same date as current position
-      return !hasExistingReservation && 
-             !(item.currentRoomId === room.id && isSameDay(item.checkIn, date));
+      // Can't drop if there's already a reservation in this half-day slot
+      // Can't drop on same room/same half-day as current position
+      const isSamePosition = item.currentRoomId === room.id && 
+                            isSameDay(item.checkIn, date) && 
+                            ((isSecondHalf && item.checkIn.getHours() >= 12) || 
+                             (!isSecondHalf && item.checkIn.getHours() < 12));
+      
+      return !hasExistingReservation && !isSamePosition;
     },
     collect: (monitor) => ({
-      isOverLeft: !!monitor.isOver(),
-      canDropLeft: !!monitor.canDrop(),
+      isOver: !!monitor.isOver(),
+      canDrop: !!monitor.canDrop(),
     }),
-  }), [room, dayIndex, date, onMoveReservation, hasExistingReservation]);
+  }), [room, dayIndex, halfDayIndex, isSecondHalf, date, onMoveReservation, hasExistingReservation]);
 
   // Handle drag-to-create mouse events
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -857,25 +921,27 @@ function DroppableDateCell({
 
   return (
     <div 
-      ref={dropLeft as any}
+      ref={drop as any}
       className={`h-12 border-r border-gray-200 transition-all duration-200 relative ${
         isInDragPreview
           ? 'bg-blue-200 border-2 border-blue-400'
-          : isOverLeft && canDropLeft 
+          : isOver && canDrop 
           ? 'bg-green-100 border-2 border-green-400' 
-          : isOverLeft && !canDropLeft 
+          : isOver && !canDrop 
           ? 'bg-red-100 border-2 border-red-400' 
           : isAvailableForDragCreate
           ? 'bg-blue-50/50 hover:bg-blue-100/70 cursor-crosshair'
           : isWeekend
           ? 'bg-orange-50/20'
-          : 'bg-white hover:bg-blue-50/30'
+          : isSecondHalf 
+          ? 'bg-green-50/20 hover:bg-green-50/40' // Check-in zone (PM)
+          : 'bg-red-50/20 hover:bg-red-50/40'     // Check-out zone (AM)
       }`}
       title={
         isAvailableForDragCreate 
-          ? `Drag to create reservation starting ${format(date, 'MMM dd')}`
-          : canDropLeft 
-          ? `Drop here for check-in on ${format(date, 'MMM dd')}` 
+          ? `Drag to create reservation starting ${format(date, 'MMM dd')} ${isSecondHalf ? 'PM' : 'AM'}`
+          : canDrop 
+          ? `Drop here for ${isSecondHalf ? 'check-in' : 'check-out'} on ${format(date, 'MMM dd')} ${isSecondHalf ? 'PM' : 'AM'}` 
           : 'Cannot drop here'
       }
       onMouseDown={handleMouseDown}
@@ -883,20 +949,32 @@ function DroppableDateCell({
       onMouseUp={handleMouseUp}
     >
       {/* Dotted circle indicator when dragging over valid drop zone */}
-      {isOverLeft && canDropLeft && (
+      {isOver && canDrop && (
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="w-4 h-4 border-2 border-dashed border-green-500 rounded-full bg-green-100/50"></div>
         </div>
       )}
       
       {/* Invalid drop indicator */}
-      {isOverLeft && !canDropLeft && (
+      {isOver && !canDrop && (
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="w-4 h-4 border-2 border-dashed border-red-500 rounded-full bg-red-100/50">
             <div className="w-full h-full flex items-center justify-center text-red-500 text-xs">×</div>
           </div>
         </div>
       )}
+      
+      {/* Half-day visual indicator */}
+      <div className={`absolute bottom-0 left-0 right-0 h-0.5 ${
+        isSecondHalf ? 'bg-green-400' : 'bg-red-400'
+      } opacity-60`}></div>
+      
+      {/* Small time indicator in corner */}
+      <div className={`absolute top-0 right-0 text-xs px-1 text-gray-500 ${
+        isSecondHalf ? 'text-green-600' : 'text-red-600'
+      }`}>
+        {isSecondHalf ? 'PM' : 'AM'}
+      </div>
     </div>
   );
 }
@@ -944,8 +1022,8 @@ function RoomRow({
   
   return (
     <div className="relative border-b border-gray-100 hover:bg-gray-50">
-      {/* Background grid for drop zones */}
-      <div className="grid grid-cols-[180px_repeat(14,minmax(45px,1fr))]">
+      {/* Background grid for drop zones - Updated for half-day system */}
+      <div className="grid grid-cols-[180px_repeat(28,minmax(22px,1fr))]">
         {/* Room info */}
         <div className="p-2 border-r border-gray-200 flex items-center justify-between h-12">
           <div>
@@ -963,14 +1041,18 @@ function RoomRow({
           )}
         </div>
         
-        {/* Date cells */}
-        {Array.from({ length: 14 }, (_, dayIndex) => {
+        {/* Date cells - Updated for half-day system */}
+        {Array.from({ length: 28 }, (_, halfDayIndex) => {
+          const dayIndex = Math.floor(halfDayIndex / 2);
+          const isSecondHalf = halfDayIndex % 2 === 1;
           const cellDate = addDays(startDate, dayIndex);
           return (
             <DroppableDateCell
-              key={dayIndex}
+              key={halfDayIndex}
               room={room}
               dayIndex={dayIndex}
+              halfDayIndex={halfDayIndex}
+              isSecondHalf={isSecondHalf}
               date={cellDate}
               onMoveReservation={onMoveReservation}
               existingReservations={reservations}
@@ -987,8 +1069,8 @@ function RoomRow({
         })}
       </div>
       
-      {/* Reservation blocks overlaid on the same grid */}
-      <div className="absolute inset-0 grid grid-cols-[180px_repeat(14,minmax(45px,1fr))] pointer-events-none">
+      {/* Reservation blocks overlaid on the same grid - Updated for half-day system */}
+      <div className="absolute inset-0 grid grid-cols-[180px_repeat(28,minmax(22px,1fr))] pointer-events-none">
         {roomReservations.map(reservation => {
           const guest = SAMPLE_GUESTS.find(g => g.id === reservation.guestId);
           return (
