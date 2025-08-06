@@ -8,7 +8,7 @@ import MobileNav from '../../layout/MobileNav';
 import InvoicePaymentPage from './InvoicePaymentPage';
 import RevenueAnalyticsPage from './RevenueAnalyticsPage';
 import FiscalCompliancePage from './FiscalCompliancePage';
-import EracuniTestPage from './EracuniTestPage';
+import FiscalizationTestPage from './EracuniTestPage'; // Renamed: now uses proven fiscalization system
 
 export default function FinanceLayout() {
   const { user } = useAuth();
@@ -66,7 +66,8 @@ export default function FinanceLayout() {
               <Route path="invoices" element={<InvoicePaymentPage />} />
               <Route path="revenue-analytics" element={<RevenueAnalyticsPage />} />
               <Route path="fiscal-compliance" element={<FiscalCompliancePage />} />
-              <Route path="eracuni-test" element={<EracuniTestPage />} />
+              <Route path="eracuni-test" element={<FiscalizationTestPage />} />
+              <Route path="fiscalization-test" element={<FiscalizationTestPage />} />
               <Route path="*" element={<Navigate to="/hotel/finance" replace />} />
             </Routes>
           </div>

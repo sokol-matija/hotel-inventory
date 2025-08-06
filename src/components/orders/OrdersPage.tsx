@@ -183,12 +183,63 @@ export default function OrdersPage() {
     setOrderItems(orderItems.filter(item => item.itemId !== itemId));
   };
 
-  const calculateOrderTotal = () => {
-    const subtotal = orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
-    const tax = subtotal * 0.25; // 25% VAT for Croatia
-    const total = subtotal + tax;
+  // Croatian VAT calculation with PNP (matches printed receipt)
+  const calculateCroatianVAT = () => {
+    let drinks25 = 0;
+    let food13 = 0;
     
-    return { subtotal, tax, total };
+    // Categorize items by Croatian VAT rates (same logic as printer)
+    orderItems.forEach((item) => {
+      if (item.category.toLowerCase().includes('beverage') || 
+          item.category.toLowerCase().includes('drink') ||
+          item.itemName.toLowerCase().includes('pivo') ||
+          item.itemName.toLowerCase().includes('vino') ||
+          item.itemName.toLowerCase().includes('sok') ||
+          item.itemName.toLowerCase().includes('jana')) {
+        drinks25 += item.totalPrice;
+      } else {
+        food13 += item.totalPrice;
+      }
+    });
+    
+    const drinks25Net = drinks25 / 1.28; // Remove 25% VAT + 3% PNP
+    const food13Net = food13 / 1.13; // Remove 13% VAT
+    
+    const vat25 = drinks25Net * 0.25;
+    const vat13 = food13Net * 0.13;
+    const pnp = drinks25Net * 0.03; // 3% PNP tourism tax
+    
+    const net = drinks25Net + food13Net;
+    const totalVat = vat25 + vat13;
+    const total = net + totalVat + pnp;
+    
+    return {
+      drinks25,
+      food13,
+      net,
+      vat25,
+      vat13,
+      pnp,
+      totalVat,
+      total,
+      hasBeverages: drinks25 > 0,
+      hasFood: food13 > 0
+    };
+  };
+
+  const calculateOrderTotal = () => {
+    const croatianVat = calculateCroatianVAT();
+    
+    return {
+      subtotal: croatianVat.net,
+      vat25: croatianVat.vat25,
+      vat13: croatianVat.vat13,
+      pnp: croatianVat.pnp,
+      totalVat: croatianVat.totalVat,
+      total: croatianVat.total,
+      hasBeverages: croatianVat.hasBeverages,
+      hasFood: croatianVat.hasFood
+    };
   };
 
   const processOrder = async () => {
@@ -214,9 +265,9 @@ export default function OrdersPage() {
           guestName: 'Staff Order',
           orderedAt: new Date(),
           items: orderItems,
-          subtotal: totals.subtotal,
-          tax: totals.tax,
-          totalAmount: totals.total,
+                  subtotal: totals.subtotal,
+        tax: totals.totalVat + totals.pnp,
+        totalAmount: totals.total,
           paymentMethod: (paymentMethod === 'cash' ? 'immediate_cash' : 'immediate_card') as 'immediate_cash' | 'immediate_card',
           paymentStatus: 'paid' as const,
           orderStatus: 'delivered' as const,
@@ -422,17 +473,45 @@ export default function OrdersPage() {
                     ))}
                   </div>
 
-                  {/* Order Totals */}
+                  {/* Order Totals - Croatian Tax Breakdown */}
                   <div className="border-t pt-4 space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span>Subtotal:</span>
+                      <span>Net (Netto):</span>
                       <span>{formatCurrency(totals.subtotal)}</span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span>VAT (25%):</span>
-                      <span>{formatCurrency(totals.tax)}</span>
-                    </div>
-                    <div className="flex justify-between font-bold">
+                    
+                    {/* Show VAT breakdown only for applicable categories */}
+                    {totals.hasFood && totals.vat13 > 0 && (
+                      <div className="flex justify-between text-sm text-gray-600">
+                        <span>VAT 13% (Food):</span>
+                        <span>{formatCurrency(totals.vat13)}</span>
+                      </div>
+                    )}
+                    
+                    {totals.hasBeverages && totals.vat25 > 0 && (
+                      <div className="flex justify-between text-sm text-gray-600">
+                        <span>VAT 25% (Beverages):</span>
+                        <span>{formatCurrency(totals.vat25)}</span>
+                      </div>
+                    )}
+                    
+                    {/* Show PNP only for beverages */}
+                    {totals.hasBeverages && totals.pnp > 0 && (
+                      <div className="flex justify-between text-sm text-orange-600 font-medium">
+                        <span>PNP 3% (Tourism Tax):</span>
+                        <span>{formatCurrency(totals.pnp)}</span>
+                      </div>
+                    )}
+                    
+                    {/* Total VAT combined */}
+                    {totals.totalVat > 0 && (
+                      <div className="flex justify-between text-sm border-t pt-2">
+                        <span>Total VAT + PNP:</span>
+                        <span>{formatCurrency(totals.totalVat + totals.pnp)}</span>
+                      </div>
+                    )}
+                    
+                    <div className="flex justify-between font-bold text-lg border-t pt-2">
                       <span>Total:</span>
                       <span>{formatCurrency(totals.total)}</span>
                     </div>

@@ -92,7 +92,13 @@ const financeSidebarItems = [
     key: 'eracuniTest', 
     path: '/hotel/finance/eracuni-test', 
     icon: Wifi,
-    label: 'E-Računi Test'
+    label: 'Croatian Fiscalization'
+  },
+  { 
+    key: 'fiscalizationTest', 
+    path: '/hotel/finance/fiscalization-test', 
+    icon: Shield,
+    label: 'Fiscalization Test'
   }
 ]
 

@@ -9,6 +9,8 @@
  */
 
 import { PrintReceiptData } from '../hotel/orderTypes';
+import { HotelEracuniService } from '../eracuni/eracuniService';
+import { EracuniInvoice, EracuniResponse } from '../eracuni/types';
 
 interface FiscalPrintData extends PrintReceiptData {
   hotelInfo: {

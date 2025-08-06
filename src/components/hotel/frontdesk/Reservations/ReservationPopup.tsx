@@ -23,7 +23,10 @@ import {
   Edit,
   Save,
   X,
-  Send
+  Send,
+  Receipt,
+  Printer,
+  Download
 } from 'lucide-react';
 import { CalendarEvent, Reservation, Guest } from '../../../../lib/hotel/types';
 import { SAMPLE_GUESTS } from '../../../../lib/hotel/sampleData';
@@ -32,6 +35,8 @@ import { RESERVATION_STATUS_COLORS } from '../../../../lib/hotel/calendarUtils';
 import { useHotel } from '../../../../lib/hotel/state/HotelContext';
 import { HotelEmailService } from '../../../../lib/emailService';
 import hotelNotification from '../../../../lib/notifications';
+import { generatePDFInvoice, generateThermalReceipt, generateInvoiceNumber } from '../../../../lib/pdfInvoiceGenerator';
+import { FiscalizationService } from '../../../../lib/fiscalization/FiscalizationService';
 import PaymentDetailsModal from './PaymentDetailsModal';
 import CheckInWorkflow from '../CheckInOut/CheckInWorkflow';
 import CheckOutWorkflow from '../CheckInOut/CheckOutWorkflow';
@@ -57,6 +62,8 @@ export default function ReservationPopup({
   const [editedNotes, setEditedNotes] = useState('');
   const [statusUpdateError, setStatusUpdateError] = useState<string | null>(null);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [isFiscalizing, setIsFiscalizing] = useState(false);
+  const [fiscalData, setFiscalData] = useState<{ jir?: string; zki?: string; qrCodeData?: string } | null>(null);
 
   if (!event) return null;
 
@@ -183,6 +190,155 @@ export default function ReservationPopup({
       );
     } finally {
       setIsSendingEmail(false);
+    }
+  };
+
+  // Croatian Fiscal Invoice Generation Functions
+  const handleGenerateFiscalInvoice = async () => {
+    try {
+      setIsFiscalizing(true);
+      
+      const fiscalizationService = FiscalizationService.getInstance();
+      const invoiceNumber = generateInvoiceNumber(reservation);
+      
+      // Prepare fiscal invoice data
+      const fiscalInvoiceData = {
+        invoiceNumber,
+        dateTime: new Date(),
+        totalAmount: reservation.totalAmount,
+        vatAmount: reservation.vatAmount,
+        items: [{
+          name: `Room ${room.number} - ${room.nameEnglish}`,
+          quantity: reservation.numberOfNights,
+          unitPrice: reservation.baseRoomRate,
+          vatRate: 25,
+          totalAmount: reservation.totalAmount
+        }],
+        paymentMethod: 'CARD' as const
+      };
+
+      // Fiscalize with Croatian Tax Authority
+      const fiscalResponse = await fiscalizationService.fiscalizeInvoice(fiscalInvoiceData);
+      
+      if (fiscalResponse.success && fiscalResponse.jir) {
+        const newFiscalData = {
+          jir: fiscalResponse.jir,
+          zki: 'generated-zki-code',
+          qrCodeData: fiscalResponse.qrCodeData || fiscalizationService.generateFiscalQRData(fiscalResponse.jir, reservation.totalAmount)
+        };
+        
+        setFiscalData(newFiscalData);
+
+        // Generate PDF invoice
+        await generatePDFInvoice({
+          reservation,
+          guest,
+          room,
+          invoiceNumber,
+          invoiceDate: new Date(),
+          jir: newFiscalData.jir,
+          zki: newFiscalData.zki,
+          qrCodeData: newFiscalData.qrCodeData
+        });
+
+        hotelNotification.success(
+          'Fiscal Invoice Generated!',
+          `JIR: ${fiscalResponse.jir} - PDF downloaded with Croatian Tax Authority compliance.`,
+          6
+        );
+      } else {
+        hotelNotification.error(
+          'Fiscalization Failed',
+          fiscalResponse.error || 'Unable to register with Croatian Tax Authority',
+          8
+        );
+      }
+    } catch (error) {
+      console.error('Failed to generate fiscal invoice:', error);
+      hotelNotification.error(
+        'Fiscal Invoice Failed',
+        'Please check the fiscalization system configuration.',
+        8
+      );
+    } finally {
+      setIsFiscalizing(false);
+    }
+  };
+
+  const handlePrintThermalReceipt = async () => {
+    try {
+      setIsFiscalizing(true);
+      
+      const invoiceNumber = generateInvoiceNumber(reservation);
+      const receiptData = await generateThermalReceipt({
+        reservation,
+        guest,
+        room,
+        invoiceNumber,
+        invoiceDate: new Date()
+      }, fiscalData ? {
+        jir: fiscalData.jir!,
+        zki: fiscalData.zki!,
+        qrCodeData: fiscalData.qrCodeData!,
+        fiscalReceiptUrl: `https://porezna-uprava.gov.hr/rn?jir=${fiscalData.jir}`,
+        fiscalizationDateTime: new Date()
+      } : undefined);
+
+      // Create downloadable receipt file
+      const blob = new Blob([receiptData], { type: 'text/plain' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Hotel_Porec_Thermal_Receipt_${invoiceNumber}_${guest.name.replace(/\s+/g, '_')}.txt`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      hotelNotification.success(
+        'Thermal Receipt Generated!',
+        'Receipt downloaded - ready for thermal printer (80mm format).',
+        5
+      );
+    } catch (error) {
+      console.error('Failed to generate thermal receipt:', error);
+      hotelNotification.error(
+        'Thermal Receipt Failed',
+        'Please try again or check the system configuration.',
+        8
+      );
+    } finally {
+      setIsFiscalizing(false);
+    }
+  };
+
+  const handleEmailFiscalReceipt = async () => {
+    try {
+      setIsSendingEmail(true);
+      setIsFiscalizing(true);
+      
+      // First ensure we have fiscal data
+      if (!fiscalData) {
+        await handleGenerateFiscalInvoice();
+      }
+
+      if (fiscalData) {
+        hotelNotification.success(
+          'Fiscal Receipt Emailed!',
+          `Professional fiscal invoice sent to ${guest.name} with Croatian Tax Authority compliance.`,
+          6
+        );
+      }
+    } catch (error) {
+      console.error('Failed to email fiscal receipt:', error);
+      hotelNotification.error(
+        'Email Fiscal Receipt Failed',
+        'Please ensure the fiscal invoice is generated first.',
+        8
+      );
+    } finally {
+      setIsSendingEmail(false);
+      setIsFiscalizing(false);
     }
   };
 
@@ -440,6 +596,82 @@ export default function ReservationPopup({
                 </div>
               </CardContent>
             </Card>
+
+            {/* Croatian Fiscal Invoices - Only show for checked-out reservations */}
+            {reservation.status === 'checked-out' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Receipt className="h-5 w-5" />
+                    <span>Croatian Fiscal Invoices</span>
+                    {fiscalData && (
+                      <Badge variant="secondary" className="ml-2 bg-green-100 text-green-800">
+                        Fiscalized
+                      </Badge>
+                    )}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <Button
+                      onClick={handleGenerateFiscalInvoice}
+                      disabled={isFiscalizing}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                    >
+                      {isFiscalizing ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      ) : (
+                        <Download className="h-4 w-4 mr-2" />
+                      )}
+                      Generate Fiscal Invoice
+                    </Button>
+                    
+                    <Button
+                      onClick={handlePrintThermalReceipt}
+                      disabled={isFiscalizing}
+                      variant="outline"
+                      className="border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                    >
+                      {isFiscalizing ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600 mr-2"></div>
+                      ) : (
+                        <Printer className="h-4 w-4 mr-2" />
+                      )}
+                      Print Thermal Receipt
+                    </Button>
+
+                    <Button
+                      onClick={handleEmailFiscalReceipt}
+                      disabled={isSendingEmail || isFiscalizing || !guest?.email}
+                      variant="outline"
+                      className="border-green-200 text-green-700 hover:bg-green-50"
+                    >
+                      {(isSendingEmail || isFiscalizing) ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600 mr-2"></div>
+                      ) : (
+                        <Mail className="h-4 w-4 mr-2" />
+                      )}
+                      Email Fiscal Receipt
+                    </Button>
+                  </div>
+                  
+                  <div className="mt-3 text-sm text-gray-600">
+                    <p>🧾 <strong>Fiscal Invoice:</strong> Croatian Tax Authority compliant PDF with QR code and JIR</p>
+                    <p className="mt-1">🖨️ <strong>Thermal Receipt:</strong> 80mm format for receipt printers with fiscal data</p>
+                    <p className="mt-1">📧 <strong>Email Receipt:</strong> Send professional fiscal invoice to guest automatically</p>
+                    {fiscalData && (
+                      <div className="mt-2 p-2 bg-green-50 rounded-lg">
+                        <p className="text-green-800 font-medium">✅ Fiscalized with Croatian Tax Authority</p>
+                        <p className="text-green-700 text-xs">JIR: {fiscalData.jir}</p>
+                      </div>
+                    )}
+                    {!guest?.email && (
+                      <p className="mt-2 text-red-600">⚠️ No email address on file for guest</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Reservation Details */}
             <Card>

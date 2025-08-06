@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+    <soap:Body>
+        <tns:RacunZahtjev Id="signXmlId1754464994424" xmlns:tns="http://www.apis-it.hr/fin/2012/types/f73">
+            <tns:Zaglavlje>
+                <tns:IdPoruke>1c005767-01e2-4ac3-929d-31230c7ae964</tns:IdPoruke>
+                <tns:DatumVrijeme>06.08.2025T09:23:14</tns:DatumVrijeme>
+            </tns:Zaglavlje>
+            <tns:Racun>
+                <tns:Oib>37014645007</tns:Oib>
+                <tns:USustavuPDV>true</tns:USustavuPDV>
+                <tns:DatVrijeme>06.08.2025T09:23:14</tns:DatVrijeme>
+                <tns:OznakaSlijednosti>N</tns:OznakaSlijednosti>
+                <tns:BrRac>
+                    <tns:BrOznRac>HP-2025-S2001234</tns:BrOznRac>
+                    <tns:OznPosPr>POSL1</tns:OznPosPr>
+                    <tns:OznNapUr>2</tns:OznNapUr>
+                </tns:BrRac>
+                <tns:Racun>
+                    <tns:IznosUkupno>-50.00</tns:IznosUkupno>
+                    <tns:NacinPlac>G</tns:NacinPlac>
+                    <tns:OibOper>37014645007</tns:OibOper>
+                    <tns:ZastKod>test-storno-zki-placeholder</tns:ZastKod>
+                    <tns:NakDan>false</tns:NakDan>
+                    <tns:StornoRacun>1722951000000-A1B2C3D4</tns:StornoRacun>
+                    <tns:StornoRazlog>Partial refund - room service cancelled</tns:StornoRazlog>
+                </tns:Racun>
+            </tns:Racun>
+            <ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+                <ds:SignedInfo>
+                    <ds:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
+                    <ds:SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/>
+                    <ds:Reference URI="#signXmlId1754464994424">
+                        <ds:Transforms>
+                            <ds:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/>
+                            <ds:Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
+                        </ds:Transforms>
+                        <ds:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/>
+                        <ds:DigestValue>PLACEHOLDER_DIGEST</ds:DigestValue>
+                    </ds:Reference>
+                </ds:SignedInfo>
+                <ds:SignatureValue>PLACEHOLDER_SIGNATURE</ds:SignatureValue>
+                <ds:KeyInfo>
+                    <ds:X509Data>
+                        <ds:X509Certificate>PLACEHOLDER_CERTIFICATE</ds:X509Certificate>
+                    </ds:X509Data>
+                </ds:KeyInfo>
+            </ds:Signature>
+        </tns:RacunZahtjev>
+    </soap:Body>
+</soap:Envelope>

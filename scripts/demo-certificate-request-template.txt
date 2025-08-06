@@ -1,0 +1,37 @@
+Croatian FINA Demo Certificate Request Template
+==============================================
+
+EMAIL TO: fiskalizacija.help@apis-it.hr
+SUBJECT: Zahtjev za demo certifikat - Hotel Porec
+
+---
+
+Poštovani,
+
+Molimo izdavanje demo certifikata za testiranje fiskalizacije.
+
+PODACI O TVRTKI:
+- Naziv tvrtke: Hotel Porec
+- OIB: 87246357068
+- Adresa: Rade Končara 1, 52440 Poreč
+- Djelatnost: Hotelijerstvo
+
+TEHNIČKI PODACI:
+- Svrha: Testiranje fiskalizacije aplikacije
+- Trenutni certifikat: FISKAL_3.p12 (produkcijski, važeći do 27.12.2027)
+- Test endpoint: https://cistest.apis-it.hr:8449/FiskalizacijaServiceTest
+- Razvojno okruženje: Node.js aplikacija
+- Status: s004 greška riješena, potreban demo certifikat za s002
+
+ZAHTJEV:
+Potreban nam je demo certifikat izdanat od "Fina Demo CA 2020" za testno 
+okruženje koji će biti kompatibilan s TEST endpointom.
+
+KONTAKT:
+- Email: [your-email]
+- Telefon: [your-phone]
+
+Molimo informaciju o proceduri i potrebnoj dokumentaciji.
+
+Hvala unaprijed.
+

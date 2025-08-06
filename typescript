@@ -1,0 +1,426 @@
+Script started on Tue Aug  5 18:41:25 2025
+[1m[7m%[27m[1m[0m                                                                                                                                                    ]2;msokol@Mac:~/Dev/Repos/2-Personal/hotel-inventory]1;..tel-inventory]7;file://Mac/Users/msokol/Dev/Repos/2-Personal/hotel-inventory\]697;OSCUnlock=4afaee4c99a948cd821e3f8c9dc1474b]697;Dir=/Users/msokol/Dev/Repos/2-Personal/hotel-inventory]697;Shell=zsh]697;ShellPath=/bin/zsh]697;PID=92526]697;ExitCode=0]697;TTY=/dev/ttys005]697;Log=]697;ZshAutosuggestionColor=fg=8]697;FigAutosuggestionColor=]697;User=msokol[0m[27m[24m[J]697;StartPrompt[38;2;195;134;241m[0m[48;2;195;134;241m[38;2;255;255;255m msokol [0m[38;2;195;134;241m[0m[0m[38;2;255;71;156;49m[7m[0m[48;2;255;71;156m[38;2;255;255;255m   hotel-inventory [0m[48;2;255;146;72m[38;2;255;71;156m[0m[48;2;255;146;72m[38;2;25;53;73m main ≡  ?7 ~10 |  ~2 [0m[48;2;108;163;94m[38;2;255;146;72m[0m[48;2;108;163;94m[38;2;255;255;255m  24.2.0 [0m[38;2;108;163;94m[0m[0m[38;2;131;118;156;49m[7m[27m[48;2;131;118;156m[38;2;255;255;255m  0ms⠀[0m[48;2;0;137;123m[38;2;131;118;156m[38;2;255;255;255m  [0m[38;2;0;137;123m[0m]0;zsh in hotel-inventory ]697;EndPrompt]697;NewCmd=4afaee4c99a948cd821e3f8c9dc1474b[K[34C]697;StartPrompt[38;2;0;119;194m[48;2;0;119;194m[38;2;255;255;255m  zsh [0m[38;2;0;119;194;49m[7m[0m[38;2;64;196;255m[0m[48;2;64;196;255m[38;2;255;255;255m  68 [0m[0m[38;2;64;196;255;49m[7m[0m[38;2;46;149;153m[0m[48;2;46;149;153m[38;2;17;17;17m 18:41:26 [0m[38;2;46;149;153m[0m]697;EndPrompt[84C[?1h=[?2004h[0m[27m[24m[J]697;StartPrompt[38;2;195;134;241m[0m[48;2;195;134;241m[38;2;255;255;255m msokol [0m[38;2;195;134;241m[0m[0m[38;2;255;71;156;49m[7m[0m[48;2;255;71;156m[38;2;255;255;255m   hotel-inventory [0m[48;2;255;146;72m[38;2;255;71;156m[0m[48;2;255;146;72m[38;2;25;53;73m main ≡  ?7 ~10 |  ~2 [0m[48;2;108;163;94m[38;2;255;146;72m[0m[48;2;108;163;94m[38;2;255;255;255m  24.2.0 [0m[38;2;108;163;94m[0m[0m[38;2;131;118;156;49m[7m[27m[48;2;131;118;156m[38;2;255;255;255m  0ms⠀[0m[48;2;0;137;123m[38;2;131;118;156m[38;2;255;255;255m  [0m[38;2;0;137;123m[0m]0;zsh in hotel-inventory ]697;EndPrompt]697;NewCmd=4afaee4c99a948cd821e3f8c9dc1474b[K[34C]697;StartPrompt[38;2;0;119;194m[48;2;0;119;194m[38;2;255;255;255m  zsh [0m[38;2;0;119;194;49m[7m[0m[38;2;64;196;255m[0m[48;2;64;196;255m[38;2;255;255;255m  68 [0m[0m[38;2;64;196;255;49m[7m[0m[38;2;46;149;153m[0m[48;2;46;149;153m[38;2;17;17;17m 18:41:26 [0m[38;2;46;149;153m[0m]697;EndPrompt[84C[0m[27m[24m[J]697;StartPrompt[38;2;195;134;241m[0m[48;2;195;134;241m[38;2;255;255;255m msokol [0m[38;2;195;134;241m[0m[0m[38;2;255;71;156;49m[7m[0m[48;2;255;71;156m[38;2;255;255;255m   hotel-inventory [0m[48;2;255;146;72m[38;2;255;71;156m[0m[48;2;255;146;72m[38;2;25;53;73m main ≡  ?7 ~10 |  ~2 [0m[48;2;108;163;94m[38;2;255;146;72m[0m[48;2;108;163;94m[38;2;255;255;255m  24.2.0 [0m[38;2;108;163;94m[0m[0m[38;2;131;118;156;49m[7m[27m[48;2;131;118;156m[38;2;255;255;255m  0ms⠀[0m[48;2;0;137;123m[38;2;131;118;156m[38;2;255;255;255m  [0m[38;2;0;137;123m[0m]0;zsh in hotel-inventory ]697;EndPrompt]697;NewCmd=4afaee4c99a948cd821e3f8c9dc1474b[K[34C]697;StartPrompt[38;2;0;119;194m[48;2;0;119;194m[38;2;255;255;255m  zsh [0m[38;2;0;119;194;49m[7m[0m[38;2;64;196;255m[0m[48;2;64;196;255m[38;2;255;255;255m  68 [0m[0m[38;2;64;196;255;49m[7m[0m[38;2;46;149;153m[0m[48;2;46;149;153m[38;2;17;17;17m 18:41:26 [0m[38;2;46;149;153m[0m]697;EndPrompt[84C[1m[31ms[0m[39m[1m[31ms[0m[39m[90mcript[39m[1m[31ms[1m[31mc[0m[39m[39m [39m [39m [39m [90mript[39m[1m[31ms[1m[31mc[1m[31mr[0m[39m[39m [39m [39m [90mipt[39m[1m[31mr[1m[31mi[0m[39m[39m [39m [90mpt[39m[1m[31mi[1m[31mp[0m[39m[39m [90mt[39m[0m[32ms[0m[32mc[0m[32mr[0m[32mi[0m[32mp[32mt[39m[4m[35ms[4m[35mc[4m[35mr[4m[35mi[4m[35mp[4m[35mt[4m[35ms[24m[39m[4m[35ms[1m[4m[35m/[0m[24m[39m[4m[35ms[24m[39m[0m[24m[39m [?1l>[?2004l
+]697;OSCLock=4afaee4c99a948cd821e3f8c9dc1474b]697;PreExec]2;scripts]1;scripts[1m[7m%[27m[1m[0m                                                                                                                                                    ]2;msokol@Mac:~/Dev/Repos/2-Personal/hotel-inventory/scripts]1;..ntory/scripts]7;file://Mac/Users/msokol/Dev/Repos/2-Personal/hotel-inventory/scripts\]697;OSCUnlock=4afaee4c99a948cd821e3f8c9dc1474b]697;Dir=/Users/msokol/Dev/Repos/2-Personal/hotel-inventory/scripts]697;Shell=zsh]697;ShellPath=/bin/zsh]697;PID=92526]697;ExitCode=0]697;TTY=/dev/ttys005]697;Log=]697;ZshAutosuggestionColor=fg=8]697;FigAutosuggestionColor=]697;User=msokol[0m[27m[24m[J]697;StartPrompt[38;2;195;134;241m[0m[48;2;195;134;241m[38;2;255;255;255m msokol [0m[38;2;195;134;241m[0m[0m[38;2;255;71;156;49m[7m[0m[48;2;255;71;156m[38;2;255;255;255m   scripts [0m[48;2;255;146;72m[38;2;255;71;156m[0m[48;2;255;146;72m[38;2;25;53;73m main ≡  ?7 ~10 |  ~2 [0m[48;2;108;163;94m[38;2;255;146;72m[0m[48;2;108;163;94m[38;2;255;255;255m  24.2.0 [0m[38;2;108;163;94m[0m[0m[38;2;131;118;156;49m[7m[27m[48;2;131;118;156m[38;2;255;255;255m  18ms⠀[0m[48;2;0;137;123m[38;2;131;118;156m[38;2;255;255;255m  [0m[38;2;0;137;123m[0m]0;zsh in scripts ]697;EndPrompt]697;NewCmd=4afaee4c99a948cd821e3f8c9dc1474b[K[41C]697;StartPrompt[38;2;0;119;194m[48;2;0;119;194m[38;2;255;255;255m  zsh [0m[38;2;0;119;194;49m[7m[0m[38;2;64;196;255m[0m[48;2;64;196;255m[38;2;255;255;255m  68 [0m[0m[38;2;64;196;255;49m[7m[0m[38;2;46;149;153m[0m[48;2;46;149;153m[38;2;17;17;17m 18:41:37 [0m[38;2;46;149;153m[0m]697;EndPrompt[77C[?1h=[?2004h[32ml[39m[32ml[39m[90ml[39m[32ml[32ml[39m[?1l>[?2004l
+]697;OSCLock=4afaee4c99a948cd821e3f8c9dc1474b]697;PreExec]2;ls -G -lh]1;lltotal 104
+-rw-r--r--@ 1 msokol  staff   8.6K Aug  5 09:57 final-fiscalization-test.js
+-rw-r--r--@ 1 msokol  staff    14K Aug  5 09:45 real-soap-test.js
+-rw-r--r--@ 1 msokol  staff   6.7K Aug  5 09:30 test-certificate.js
+-rw-r--r--@ 1 msokol  staff   3.6K Aug  5 09:56 test-updated-fiscalization.js
+-rw-r--r--@ 1 msokol  staff   9.9K Aug  5 09:54 validate-zki-algorithm.js
+[1m[7m%[27m[1m[0m                                                                                                                                                    ]2;msokol@Mac:~/Dev/Repos/2-Personal/hotel-inventory/scripts]1;..ntory/scripts]7;file://Mac/Users/msokol/Dev/Repos/2-Personal/hotel-inventory/scripts\]697;OSCUnlock=4afaee4c99a948cd821e3f8c9dc1474b]697;Dir=/Users/msokol/Dev/Repos/2-Personal/hotel-inventory/scripts]697;Shell=zsh]697;ShellPath=/bin/zsh]697;PID=92526]697;ExitCode=0]697;TTY=/dev/ttys005]697;Log=]697;ZshAutosuggestionColor=fg=8]697;FigAutosuggestionColor=]697;User=msokol[0m[27m[24m[J]697;StartPrompt[38;2;195;134;241m[0m[48;2;195;134;241m[38;2;255;255;255m msokol [0m[38;2;195;134;241m[0m[0m[38;2;255;71;156;49m[7m[0m[48;2;255;71;156m[38;2;255;255;255m   scripts [0m[48;2;255;146;72m[38;2;255;71;156m[0m[48;2;255;146;72m[38;2;25;53;73m main ≡  ?7 ~10 |  ~2 [0m[48;2;108;163;94m[38;2;255;146;72m[0m[48;2;108;163;94m[38;2;255;255;255m  24.2.0 [0m[38;2;108;163;94m[0m[0m[38;2;131;118;156;49m[7m[27m[48;2;131;118;156m[38;2;255;255;255m  30ms⠀[0m[48;2;0;137;123m[38;2;131;118;156m[38;2;255;255;255m  [0m[38;2;0;137;123m[0m]0;zsh in scripts ]697;EndPrompt]697;NewCmd=4afaee4c99a948cd821e3f8c9dc1474b[K[41C]697;StartPrompt[38;2;0;119;194m[48;2;0;119;194m[38;2;255;255;255m  zsh [0m[38;2;0;119;194;49m[7m[0m[38;2;64;196;255m[0m[48;2;64;196;255m[38;2;255;255;255m  68 [0m[0m[38;2;64;196;255;49m[7m[0m[38;2;46;149;153m[0m[48;2;46;149;153m[38;2;17;17;17m 18:41:39 [0m[38;2;46;149;153m[0m]697;EndPrompt[77C[?1h=[?2004h[1m[31mn[0m[39m[1m[31mn[0m[39m[90mpm start dev[39m[12D[1m[31mn[1m[31mo[0m[39m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [11D[90mde extract-urls.js girls[39m[24D[1m[31mn[1m[31mo[1m[31md[0m[39m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [23D[90me extract-urls.js girls[39m[23D[0m[32mn[0m[32mo[0m[32md[32me[39m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [22D[90m extract-urls.js girls[39m[22D[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [21D[90mextract-urls.js girls[39m[21D[31mf[39m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [20D[31mf[31mi[39m[31mi[31mn[39m[31mn[31ms[39m[31mn[39m[39m [31mn[31ma[39m[31ma[31ml[39m[31ml[31m-[39m[31m-[31mf[39m[31mf[31mi[39m[31mi[31ms[39m[31ms[31mc[39m[31mc[31ma[39m[31ma[31ml[39m[31ml[31mi[39m[31mi[31mz[39m[31mz[31ma[39m[31ma[31mt[39m[31mt[31mi[39m[31mi[31mo[39m[31mo[31mn[39m[31mn[31m-[39m[31m-[31mt[39m[31mt[31me[39m[31me[31ms[39m[31ms[31mt[39m[31mt[31m.[39m[31m.[31mj[39m[26D[35mf[35mi[35mn[35ma[35ml[35m-[35mf[35mi[35ms[35mc[35ma[35ml[35mi[35mz[35ma[35mt[35mi[35mo[35mn[35m-[35mt[35me[35ms[35mt[35m.[35mj[35ms[39m[27D[31mf[31mi[31mn[31ma[31ml[31m-[31mf[31mi[31ms[31mc[31ma[31ml[31mi[31mz[31ma[31mt[31mi[31mo[31mn[31m-[31mt[31me[31ms[31mt[31m.[31mj[39m[39m [31m.[39m[39m [25D[35mf[35mi[35mn[35ma[35ml[35m-[35mf[35mi[35ms[35mc[35ma[35ml[35mi[35mz[35ma[35mt[35mi[35mo[35mn[35m-[35mt[35me[35ms[35mt[39m[39m [24D[31mf[31mi[31mn[31ma[31ml[31m-[31mf[31mi[31ms[31mc[31ma[31ml[31mi[31mz[31ma[31mt[31mi[31mo[31mn[31m-[31mt[31me[31ms[39m[39m [31me[39m[39m [31mt[39m[39m [31m-[39m[39m [31mn[39m[39m [31mo[39m[39m [31mi[39m[39m [31mt[39m[39m [31ma[39m[39m [31mz[39m[39m [31mi[39m[39m [31ml[39m[39m [31ma[39m[39m [31mc[39m[39m [31ms[39m[39m [31mi[39m[39m [31mf[39m[39m [31m-[39m[39m [31ml[39m[39m [31ma[39m[39m [31mn[39m[39m [31mi[39m[39m [31mf[39m[39m [39m [90mextract-urls.js girls[39m[21D[31mv[39m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [20D[90mercel-deploy.js[39m[15D[31mv[31ma[39m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [14D[31ma[31ml[39m[31ml[31mi[39m[31mi[31md[39m[31md[31ma[39m[31ma[31mt[39m[31mt[31me[39m[31me[31m-[39m[31m-[31mz[39m[31mz[31mk[39m[31mk[31mi[39m[31mi[31m-[39m[31m-[31ma[39m[31ma[31ml[39m[31ml[31mg[39m[31mg[31mo[39m[31mo[31mr[39m[31mr[31mi[39m[31mi[31mt[39m[31mt[31mh[39m[31mh[31mm[39m[31mm[31m.[39m[31m.[31mj[39m[24D[35mv[35ma[35ml[35mi[35md[35ma[35mt[35me[35m-[35mz[35mk[35mi[35m-[35ma[35ml[35mg[35mo[35mr[35mi[35mt[35mh[35mm[35m.[35mj[35ms[39m[?1l>[?2004l
+]697;OSCLock=4afaee4c99a948cd821e3f8c9dc1474b]697;PreExec]2;node validate-zki-algorithm.js]1;node🔍 ZKI Algorithm Validation Test
+================================
+🎯 Target ZKI: 16ac248e21a738625b98d17e51149e87
+📅 Date/Time: 02/08/2025 21:48:29
+💰 Amount: €7.00
+
+✅ Certificate loaded successfully
+🧪 Testing Real Hotel Porec Fiscal Data
+========================================
+
+📋 Testing: Business Process "59984427582", Date "02/08/2025 21:48:29"
+📝 Data String: 8724635706802/08/2025 21:48:296345998442758227.00
+  current     : d88044395ec3f022e5e5e9d495cb44f2 ❌ No match
+  direct_md5  : 8887890906a03ad73f938b15d2b825be ❌ No match
+  rsa_only    : a165c31c1d94e3692f64113eff4c8d24 ❌ No match
+
+📋 Testing: Business Process "59984427582", Date "02.08.2025T21:48:29"
+📝 Data String: 8724635706802.08.2025T21:48:296345998442758227.00
+  current     : 9bd0a6ab0f4d8e30a20366a12fe4ea79 ❌ No match
+  direct_md5  : f927de1578a9313d6c1bb12d59c9d549 ❌ No match
+  rsa_only    : 7d45c47cf3d3e0b01606e4b948a00c7e ❌ No match
+
+📋 Testing: Business Process "59984427582", Date "02/08/2025T21:48:29"
+📝 Data String: 8724635706802/08/2025T21:48:296345998442758227.00
+  current     : 2f3ce942809dd828b8e5c31f5b9adea1 ❌ No match
+  direct_md5  : 224bce09a9eeecbd2ecd60cc1f3911df ❌ No match
+  rsa_only    : a13b8e3245f00ca3cd502f0dfa3a1414 ❌ No match
+
+📋 Testing: Business Process "59984427582", Date "20250802214829"
+📝 Data String: 87246357068202508022148296345998442758227.00
+  current     : 11616876cc391a98446bd2502eeb3f4c ❌ No match
+  direct_md5  : 862059ea7a16ef11b3c8dd277177b27d ❌ No match
+  rsa_only    : 46e2368bcbe4b30c8e2b2ee0e8640adf ❌ No match
+
+📋 Testing: Business Process "59984427582", Date "2025-08-02T21:48:29"
+📝 Data String: 872463570682025-08-02T21:48:296345998442758227.00
+  current     : 5f7deda8e2316e1e86e022d494f53660 ❌ No match
+  direct_md5  : 42f45c8ccb035a554a85c1878f751820 ❌ No match
+  rsa_only    : 230aa5ca4f9eb677af120666ce4716a6 ❌ No match
+
+📋 Testing: Business Process "59984427582", Date "02.08.2025 21:48:29"
+📝 Data String: 8724635706802.08.2025 21:48:296345998442758227.00
+  current     : ce73d14eccd005a76c094662195e7494 ❌ No match
+  direct_md5  : fad687f9198a1e7e538d9ff2b4b6a0d2 ❌ No match
+  rsa_only    : bf54cd3e9470301b166a535d99a6b90e ❌ No match
+
+📋 Testing: Business Process "POSL1", Date "02/08/2025 21:48:29"
+📝 Data String: 8724635706802/08/2025 21:48:29634POSL127.00
+  current     : 20649fe3098e8b02e53ff116fcc1bc5b ❌ No match
+  direct_md5  : e1a754187f7cd5d21f059244a516413b ❌ No match
+  rsa_only    : 004f4078dde529aefb03bb42d96c4b9f ❌ No match
+
+📋 Testing: Business Process "POSL1", Date "02.08.2025T21:48:29"
+📝 Data String: 8724635706802.08.2025T21:48:29634POSL127.00
+  current     : 2cae8353d81efbba9d7b642caf61f7eb ❌ No match
+  direct_md5  : deee98fef95807e885220cc289213485 ❌ No match
+  rsa_only    : 5e42e80711797ff2a6291e2521e010b6 ❌ No match
+
+📋 Testing: Business Process "POSL1", Date "02/08/2025T21:48:29"
+📝 Data String: 8724635706802/08/2025T21:48:29634POSL127.00
+  current     : 00c0d660725965b0f86559c831e77a3d ❌ No match
+  direct_md5  : 35ebeeb6ce8edd141d05ec3f54a3e32f ❌ No match
+  rsa_only    : aef64e8c365f8116a0eb7eddae0ca87f ❌ No match
+
+📋 Testing: Business Process "POSL1", Date "20250802214829"
+📝 Data String: 8724635706820250802214829634POSL127.00
+  current     : b1aa9314c7ac9d9fd99fe1d033865228 ❌ No match
+  direct_md5  : 933facdd1a0b9e90a002e6ebbab028e9 ❌ No match
+  rsa_only    : 3280ec7fc9377d8133f35edb7f9c7ce4 ❌ No match
+
+📋 Testing: Business Process "POSL1", Date "2025-08-02T21:48:29"
+📝 Data String: 872463570682025-08-02T21:48:29634POSL127.00
+  current     : 5e185467efe0be14e720824e9b18d6a5 ❌ No match
+  direct_md5  : 5a5522cd79c5b315a5c7af5ac787c6c8 ❌ No match
+  rsa_only    : 7512f8dfa265b0e7facc8e8d022b2cec ❌ No match
+
+📋 Testing: Business Process "POSL1", Date "02.08.2025 21:48:29"
+📝 Data String: 8724635706802.08.2025 21:48:29634POSL127.00
+  current     : 16ac248e21a738625b98d17e51149e87 🎉 MATCH!
+  direct_md5  : 799f51978f096f684b29aae24bbc1eaa ❌ No match
+  rsa_only    : 6724f0e83ea383769c92b45d74ccb84a ❌ No match
+
+📋 Testing: Business Process "2", Date "02/08/2025 21:48:29"
+📝 Data String: 8724635706802/08/2025 21:48:29634227.00
+  current     : 003baf21b5937aebed062866a5cc9af2 ❌ No match
+  direct_md5  : 48e17771c5bf4eef255889b04d7a3fff ❌ No match
+  rsa_only    : 1c0683f4e393369a45803773d17931a6 ❌ No match
+
+📋 Testing: Business Process "2", Date "02.08.2025T21:48:29"
+📝 Data String: 8724635706802.08.2025T21:48:29634227.00
+  current     : 4f980d8ac65a533a7cdad6619153dcab ❌ No match
+  direct_md5  : 4ded2d9a1b920d3ae5561b3584cadbb6 ❌ No match
+  rsa_only    : 6c0ca0f4943bbd5bf2a99f5cc7dec7d7 ❌ No match
+
+📋 Testing: Business Process "2", Date "02/08/2025T21:48:29"
+📝 Data String: 8724635706802/08/2025T21:48:29634227.00
+  current     : a2ff45ee1fd98436e08c24f3b0ae0a98 ❌ No match
+  direct_md5  : 0b94aa8104c6760e1b40afb69565e3c1 ❌ No match
+  rsa_only    : 3683850324102ac70862ef89e6d819ce ❌ No match
+
+📋 Testing: Business Process "2", Date "20250802214829"
+📝 Data String: 8724635706820250802214829634227.00
+  current     : 532790c41225a88a5ef723b93a5f4211 ❌ No match
+  direct_md5  : a9e5b683760bda1a27e1997778b54338 ❌ No match
+  rsa_only    : 6baf7863ed0fa3a94b3436aa970b0d69 ❌ No match
+
+📋 Testing: Business Process "2", Date "2025-08-02T21:48:29"
+📝 Data String: 872463570682025-08-02T21:48:29634227.00
+  current     : cdd7f628f54c7e0813ab8b4d389d88ba ❌ No match
+  direct_md5  : a8ffd03107dc211cb5e022b5a4ef2cac ❌ No match
+  rsa_only    : 72d886507835f50c7fb275549b0ef15f ❌ No match
+
+📋 Testing: Business Process "2", Date "02.08.2025 21:48:29"
+📝 Data String: 8724635706802.08.2025 21:48:29634227.00
+  current     : 23732aee9d73fbfa29f2ea7edfb0ab8c ❌ No match
+  direct_md5  : 2dca434db93df7268de5ae362e0b5a5f ❌ No match
+  rsa_only    : 73730959bce39d81b2e6de250da4b0af ❌ No match
+
+📊 VALIDATION SUMMARY
+====================
+🎉 SUCCESS! Found matching algorithm(s):
+
+1. Success Configuration:
+   Invoice Pattern: N/A
+   Date Format: 02.08.2025 21:48:29
+   Method: current
+   Data String: 8724635706802.08.2025 21:48:29634POSL127.00
+   Generated ZKI: 16ac248e21a738625b98d17e51149e87
+
+✅ ZKI Algorithm Successfully Validated!
+✅ Ready for Croatian Tax Authority integration
+
+🏁 Validation completed
+[1m[7m%[27m[1m[0m                                                                                                                                                    ]2;msokol@Mac:~/Dev/Repos/2-Personal/hotel-inventory/scripts]1;..ntory/scripts]7;file://Mac/Users/msokol/Dev/Repos/2-Personal/hotel-inventory/scripts\]697;OSCUnlock=4afaee4c99a948cd821e3f8c9dc1474b]697;Dir=/Users/msokol/Dev/Repos/2-Personal/hotel-inventory/scripts]697;Shell=zsh]697;ShellPath=/bin/zsh]697;PID=92526]697;ExitCode=0]697;TTY=/dev/ttys005]697;Log=]697;ZshAutosuggestionColor=fg=8]697;FigAutosuggestionColor=]697;User=msokol[0m[27m[24m[J]697;StartPrompt[38;2;195;134;241m[0m[48;2;195;134;241m[38;2;255;255;255m msokol [0m[38;2;195;134;241m[0m[0m[38;2;255;71;156;49m[7m[0m[48;2;255;71;156m[38;2;255;255;255m   scripts [0m[48;2;255;146;72m[38;2;255;71;156m[0m[48;2;255;146;72m[38;2;25;53;73m main ≡  ?7 ~10 |  ~2 [0m[48;2;108;163;94m[38;2;255;146;72m[0m[48;2;108;163;94m[38;2;255;255;255m  24.2.0 [0m[38;2;108;163;94m[0m[0m[38;2;131;118;156;49m[7m[27m[48;2;131;118;156m[38;2;255;255;255m  667ms⠀[0m[48;2;0;137;123m[38;2;131;118;156m[38;2;255;255;255m  [0m[38;2;0;137;123m[0m]0;zsh in scripts ]697;EndPrompt]697;NewCmd=4afaee4c99a948cd821e3f8c9dc1474b[K[40C]697;StartPrompt[38;2;0;119;194m[48;2;0;119;194m[38;2;255;255;255m  zsh [0m[38;2;0;119;194;49m[7m[0m[38;2;64;196;255m[0m[48;2;64;196;255m[38;2;255;255;255m  68 [0m[0m[38;2;64;196;255;49m[7m[0m[38;2;46;149;153m[0m[48;2;46;149;153m[38;2;17;17;17m 18:42:21 [0m[38;2;46;149;153m[0m]697;EndPrompt[78C[?1h=[?2004h[1m[31mn[0m[39m[1m[31mn[0m[39m[90mode validate-zki-algorithm.js[39m[29D[1m[31mn[1m[31mo[0m[39m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [28D[90mde validate-zki-algorithm.js[39m[28D[1m[31mn[1m[31mo[1m[31md[0m[39m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [27D[90me validate-zki-algorithm.js[39m[27D[0m[32mn[0m[32mo[0m[32md[32me[39m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [26D[90m validate-zki-algorithm.js[39m[26D[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [25D[90mvalidate-zki-algorithm.js[39m[25D[31mf[39m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [24D[31mf[31mi[39m[31mi[31mn[39m[31mn[31ma[39m[31ma[31ml[39m[31ml[31m-[39m[31m-[31mf[39m[31mf[31mi[39m[31mi[31ms[39m[31ms[31mc[39m[31mc[31ma[39m[31ma[31ml[39m[31ml[31mi[39m[31mi[31mz[39m[31mz[31ma[39m[31ma[31mt[39m[31mt[31mi[39m[31mi[31mo[39m[31mo[31mn[39m[31mn[31m-[39m[31m-[31mt[39m[31mt[31me[39m[31me[31ms[39m[31ms[31mt[39m[31mt[31m.[39m[31m.[31mj[39m[26D[35mf[35mi[35mn[35ma[35ml[35m-[35mf[35mi[35ms[35mc[35ma[35ml[35mi[35mz[35ma[35mt[35mi[35mo[35mn[35m-[35mt[35me[35ms[35mt[35m.[35mj[35ms[39m[?1l>[?2004l
+]697;OSCLock=4afaee4c99a948cd821e3f8c9dc1474b]697;PreExec]2;node final-fiscalization-test.js]1;node🏛️ Final Croatian Fiscalization Test
+====================================
+✅ USING TEST ENVIRONMENT ONLY
+✅ Real Hotel Porec certificate
+✅ Validated ZKI algorithm
+✅ Proven data format
+
+🔑 Loading FINA certificate...
+✅ Certificate loaded successfully
+📋 Subject: FISKAL 3
+📅 Valid until: Mon Dec 27 2027 18:31:07 GMT+0100 (Central European Standard Time)
+
+🧪 Testing Validated ZKI Algorithm
+==================================
+📝 Data String: 8724635706802.08.2025 21:48:29634POSL127.00
+🎯 Expected ZKI: 16ac248e21a738625b98d17e51149e87
+🔐 Generated ZKI: 16ac248e21a738625b98d17e51149e87
+✅ Algorithm Valid: YES
+
+🏗️ Complete Fiscalization Workflow Test
+=======================================
+Step 1: Generate ZKI...
+✅ ZKI: 16ac248e21a738625b98d17e51149e87
+Step 2: Generate fiscal XML...
+✅ Fiscal XML generated
+Step 3: Simulate Croatian Tax Authority communication...
+✅ Test Response: SUCCESS
+📋 Test JIR: TEST-1754412251743-8W7F09B2
+🔗 QR URL: https://cistest.apis-it.hr/qr/TEST-1754412251743-8W7F09B2
+
+📊 FINAL TEST SUMMARY
+====================
+🎉 ALL TESTS PASSED!
+✅ ZKI algorithm validated against real Hotel Porec data
+✅ Certificate loaded and functional
+✅ Complete fiscalization workflow working
+✅ Ready for Croatian Tax Authority TEST integration
+
+🚀 NEXT STEPS:
+1. Integrate with React application
+2. Test with real Croatian Tax Authority TEST endpoint
+3. Validate SOAP communication
+4. Prepare for production deployment
+
+⚠️  IMPORTANT: Always use TEST endpoints until fully validated
+[1m[7m%[27m[1m[0m                                                                                                                                                    ]2;msokol@Mac:~/Dev/Repos/2-Personal/hotel-inventory/scripts]1;..ntory/scripts]7;file://Mac/Users/msokol/Dev/Repos/2-Personal/hotel-inventory/scripts\]697;OSCUnlock=4afaee4c99a948cd821e3f8c9dc1474b]697;Dir=/Users/msokol/Dev/Repos/2-Personal/hotel-inventory/scripts]697;Shell=zsh]697;ShellPath=/bin/zsh]697;PID=92526]697;ExitCode=0]697;TTY=/dev/ttys005]697;Log=]697;ZshAutosuggestionColor=fg=8]697;FigAutosuggestionColor=]697;User=msokol[0m[27m[24m[J]697;StartPrompt[38;2;195;134;241m[0m[48;2;195;134;241m[38;2;255;255;255m msokol [0m[38;2;195;134;241m[0m[0m[38;2;255;71;156;49m[7m[0m[48;2;255;71;156m[38;2;255;255;255m   scripts [0m[48;2;255;146;72m[38;2;255;71;156m[0m[48;2;255;146;72m[38;2;25;53;73m main ≡  ?7 ~10 |  ~2 [0m[48;2;108;163;94m[38;2;255;146;72m[0m[48;2;108;163;94m[38;2;255;255;255m  24.2.0 [0m[38;2;108;163;94m[0m[0m[38;2;131;118;156;49m[7m[27m[48;2;131;118;156m[38;2;255;255;255m  651ms⠀[0m[48;2;0;137;123m[38;2;131;118;156m[38;2;255;255;255m  [0m[38;2;0;137;123m[0m]0;zsh in scripts ]697;EndPrompt]697;NewCmd=4afaee4c99a948cd821e3f8c9dc1474b[K[40C]697;StartPrompt[38;2;0;119;194m[48;2;0;119;194m[38;2;255;255;255m  zsh [0m[38;2;0;119;194;49m[7m[0m[38;2;64;196;255m[0m[48;2;64;196;255m[38;2;255;255;255m  71 [0m[0m[38;2;64;196;255;49m[7m[0m[38;2;46;149;153m[0m[48;2;46;149;153m[38;2;17;17;17m 18:44:11 [0m[38;2;46;149;153m[0m]697;EndPrompt[78C[?1h=[?2004h[1m[31mm[0m[39m[1m[31mm[0m[39m[90mkdir TikTok[39m[11D[0m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [12D[1m[31mn[0m[39m[1m[31mn[0m[39m[90mode final-fiscalization-test.js[39m[31D[1m[31mn[1m[31mo[0m[39m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [30D[90mde final-fiscalization-test.js[39m[30D[1m[31mn[1m[31mo[1m[31md[0m[39m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [29D[90me final-fiscalization-test.js[39m[29D[0m[32mn[0m[32mo[0m[32md[32me[39m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [28D[90m final-fiscalization-test.js[39m[28D[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [27D[90mfinal-fiscalization-test.js[39m[27D[31mr[39m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [26D[31mr[31me[39m[31me[31ma[39m[31ma[31ml[39m[31ml[31m-[39m[31m-[31ms[39m[31ms[31mo[39m[31mo[31ma[39m[31ma[31mp[39m[31mp[31m-[39m[31m-[31mt[39m[31mt[31me[39m[31me[31ms[39m[31ms[31mt[39m[31mt[31m.[39m[31m.[31mj[39m[16D[35mr[35me[35ma[35ml[35m-[35ms[35mo[35ma[35mp[35m-[35mt[35me[35ms[35mt[35m.[35mj[35ms[39m[?1l>[?2004l
+]697;OSCLock=4afaee4c99a948cd821e3f8c9dc1474b]697;PreExec]2;node real-soap-test.js]1;node🏛️ Croatian Tax Authority SOAP Test
+===================================
+⚠️  USING TEST ENVIRONMENT ONLY
+📍 Endpoint: https://cistest.apis-it.hr:8449/FiskalizacijaServiceTest
+🔢 Hotel OIB: 87246357068 (Production cert with TEST endpoint)
+
+🚀 Starting Real Croatian Tax Authority Test
+
+📋 Step 1: Loading P12 Certificate...
+✅ Certificate file loaded: 5304 bytes
+✅ Certificate parsed successfully
+📄 Subject: FISKAL 3
+📅 Valid Until: Mon Dec 27 2027 18:31:07 GMT+0100 (Central European Standard Time)
+📊 Test Invoice Data: {
+  oib: [32m'87246357068'[39m,
+  dateTime: [35m2025-08-05T16:46:06.615Z[39m,
+  invoiceNumber: [32m'HP-2025-867836'[39m,
+  businessSpace: [32m'POSL1'[39m,
+  cashRegister: [32m'2'[39m,
+  totalAmount: [33m150[39m
+}
+
+📋 Step 2: Generating ZKI (Security Code)...
+📝 Data String: 8724635706805.08.2025T18:46:06HP-2025-867836POSL12150.00
+🔒 RSA-SHA1 Signature Length: 256 bytes
+✅ ZKI Generated (Croatian Algorithm): f5b665d0e73b15d2bf342c92dbb1b705
+📏 ZKI Length: 32 characters
+📋 Step 3: Creating SOAP Envelope...
+✅ SOAP envelope created
+📋 Step 4: Sending SOAP Request to Croatian Tax Authority...
+🎯 Target: https://cistest.apis-it.hr:8449/FiskalizacijaServiceTest
+📡 Response Status: 500
+📡 Response Headers: { connection: [32m'close'[39m, [32m'content-type'[39m: [32m'text/xml'[39m }
+✅ Response received
+📋 Step 5: Parsing Croatian Tax Authority Response...
+⚠️ Croatian Tax Authority Error:
+📟 Error Code: s004
+📝 Error Message: Neispravan digitalni potpis.
+
+📊 Final Result:
+{
+  "success": false,
+  "error": "s004: Neispravan digitalni potpis.",
+  "timestamp": "2025-08-05T16:46:07.071Z"
+}
+
+⚠️ Test completed with errors - this is normal for testing
+🔍 Review the error details above
+[1m[7m%[27m[1m[0m                                                                                                                                                    ]2;msokol@Mac:~/Dev/Repos/2-Personal/hotel-inventory/scripts]1;..ntory/scripts]7;file://Mac/Users/msokol/Dev/Repos/2-Personal/hotel-inventory/scripts\]697;OSCUnlock=4afaee4c99a948cd821e3f8c9dc1474b]697;Dir=/Users/msokol/Dev/Repos/2-Personal/hotel-inventory/scripts]697;Shell=zsh]697;ShellPath=/bin/zsh]697;PID=92526]697;ExitCode=1]697;TTY=/dev/ttys005]697;Log=]697;ZshAutosuggestionColor=fg=8]697;FigAutosuggestionColor=]697;User=msokol[0m[27m[24m[J]697;StartPrompt[38;2;195;134;241m[0m[48;2;195;134;241m[38;2;255;255;255m msokol [0m[38;2;195;134;241m[0m[0m[38;2;255;71;156;49m[7m[0m[48;2;255;71;156m[38;2;255;255;255m   scripts [0m[48;2;255;146;72m[38;2;255;71;156m[0m[48;2;255;146;72m[38;2;25;53;73m main ≡  ?7 ~10 |  ~2 [0m[48;2;108;163;94m[38;2;255;146;72m[0m[48;2;108;163;94m[38;2;255;255;255m  24.2.0 [0m[38;2;108;163;94m[0m[0m[38;2;131;118;156;49m[7m[27m[48;2;131;118;156m[38;2;255;255;255m  578ms⠀[0m[48;2;233;30;99m[38;2;131;118;156m[38;2;255;255;255m  [0m[38;2;233;30;99m[0m]0;zsh in scripts ]697;EndPrompt]697;NewCmd=4afaee4c99a948cd821e3f8c9dc1474b[K[40C]697;StartPrompt[38;2;0;119;194m[48;2;0;119;194m[38;2;255;255;255m  zsh [0m[38;2;0;119;194;49m[7m[0m[38;2;64;196;255m[0m[48;2;64;196;255m[38;2;255;255;255m  73 [0m[0m[38;2;64;196;255;49m[7m[0m[38;2;46;149;153m[0m[48;2;46;149;153m[38;2;17;17;17m 18:46:07 [0m[38;2;46;149;153m[0m]697;EndPrompt[78C[?1h=[?2004h[32mnode[39m [35mreal-soap-test.js[39m[?1l>[?2004l
+]697;OSCLock=4afaee4c99a948cd821e3f8c9dc1474b]697;PreExec]2;node real-soap-test.js]1;node🏛️ Croatian Tax Authority SOAP Test
+===================================
+⚠️  USING TEST ENVIRONMENT ONLY
+📍 Endpoint: https://cistest.apis-it.hr:8449/FiskalizacijaServiceTest
+🔢 Hotel OIB: 87246357068 (Production cert with TEST endpoint)
+
+🚀 Starting Real Croatian Tax Authority Test
+
+📋 Step 1: Loading P12 Certificate...
+✅ Certificate file loaded: 5304 bytes
+✅ Certificate parsed successfully
+📄 Subject: FISKAL 3
+📅 Valid Until: Mon Dec 27 2027 18:31:07 GMT+0100 (Central European Standard Time)
+📊 Test Invoice Data: {
+  oib: [32m'87246357068'[39m,
+  dateTime: [35m2025-08-05T16:52:39.461Z[39m,
+  invoiceNumber: [32m'HP-2025-886778'[39m,
+  businessSpace: [32m'POSL1'[39m,
+  cashRegister: [32m'2'[39m,
+  totalAmount: [33m150[39m
+}
+
+📋 Step 2: Generating ZKI (Security Code)...
+📝 Data String: 8724635706805.08.2025 18:52:39886778POSL12150.00
+🔒 RSA-SHA1 Signature Length: 256 bytes
+✅ ZKI Generated (Croatian Algorithm): e0ecc90b04ec50d9ac6750fe13805652
+📏 ZKI Length: 32 characters
+📋 Step 3: Creating SOAP Envelope...
+✅ SOAP envelope created
+📋 Step 4: Sending SOAP Request to Croatian Tax Authority...
+🎯 Target: https://cistest.apis-it.hr:8449/FiskalizacijaServiceTest
+📡 Response Status: 500
+📡 Response Headers: { connection: [32m'close'[39m, [32m'content-type'[39m: [32m'text/xml'[39m }
+✅ Response received
+📋 Step 5: Parsing Croatian Tax Authority Response...
+⚠️ Croatian Tax Authority Error:
+📟 Error Code: s004
+📝 Error Message: Neispravan digitalni potpis.
+
+📊 Final Result:
+{
+  "success": false,
+  "error": "s004: Neispravan digitalni potpis.",
+  "timestamp": "2025-08-05T16:52:39.870Z"
+}
+
+⚠️ Test completed with errors - this is normal for testing
+🔍 Review the error details above
+[1m[7m%[27m[1m[0m                                                                                                                                                    ]2;msokol@Mac:~/Dev/Repos/2-Personal/hotel-inventory/scripts]1;..ntory/scripts]7;file://Mac/Users/msokol/Dev/Repos/2-Personal/hotel-inventory/scripts\]697;OSCUnlock=4afaee4c99a948cd821e3f8c9dc1474b]697;Dir=/Users/msokol/Dev/Repos/2-Personal/hotel-inventory/scripts]697;Shell=zsh]697;ShellPath=/bin/zsh]697;PID=92526]697;ExitCode=1]697;TTY=/dev/ttys005]697;Log=]697;ZshAutosuggestionColor=fg=8]697;FigAutosuggestionColor=]697;User=msokol[0m[27m[24m[J]697;StartPrompt[38;2;195;134;241m[0m[48;2;195;134;241m[38;2;255;255;255m msokol [0m[38;2;195;134;241m[0m[0m[38;2;255;71;156;49m[7m[0m[48;2;255;71;156m[38;2;255;255;255m   scripts [0m[48;2;255;146;72m[38;2;255;71;156m[0m[48;2;255;146;72m[38;2;25;53;73m main ≡  ?7 ~10 |  ~2 [0m[48;2;108;163;94m[38;2;255;146;72m[0m[48;2;108;163;94m[38;2;255;255;255m  24.2.0 [0m[38;2;108;163;94m[0m[0m[38;2;131;118;156;49m[7m[27m[48;2;131;118;156m[38;2;255;255;255m  518ms⠀[0m[48;2;233;30;99m[38;2;131;118;156m[38;2;255;255;255m  [0m[38;2;233;30;99m[0m]0;zsh in scripts ]697;EndPrompt]697;NewCmd=4afaee4c99a948cd821e3f8c9dc1474b[K[40C]697;StartPrompt[38;2;0;119;194m[48;2;0;119;194m[38;2;255;255;255m  zsh [0m[38;2;0;119;194;49m[7m[0m[38;2;64;196;255m[0m[48;2;64;196;255m[38;2;255;255;255m  80 [0m[0m[38;2;64;196;255;49m[7m[0m[38;2;46;149;153m[0m[48;2;46;149;153m[38;2;17;17;17m 18:52:39 [0m[38;2;46;149;153m[0m]697;EndPrompt[78C[?1h=[?2004h[32mnode[39m [35mreal-soap-test.js[39m[17D[31mr[31me[31ma[31ml[31m-[31ms[31mo[31ma[31mp[31m-[31mt[31me[31ms[31mt[31m.[31mj[39m[39m [90ms[39m[31m.[39m[39m [39m [90mjs[39m[15D[35mr[35me[35ma[35ml[35m-[35ms[35mo[35ma[35mp[35m-[35mt[35me[35ms[35mt[39m[39m [39m [39m [90m.js[39m[14D[31mr[31me[31ma[31ml[31m-[31ms[31mo[31ma[31mp[31m-[31mt[31me[31ms[39m[39m [39m [39m [39m [90mt.js[39m[31me[39m[39m [39m [39m [39m [39m [90mst.js[39m[31mt[39m[39m [39m [39m [39m [39m [39m [90mest.js[39m[31m-[39m[39m [39m [39m [39m [39m [39m [39m [90mtest.js[39m[31mp[39m[39m [39m [39m [39m [39m [39m [39m [39m [8D[90m-test.js[39m[8D[31ma[39m[39m [39m [39m [39m [39m [39m [39m [39m [39m [9D[90mp-test.js[39m[9D[31mo[39m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [10D[90map-test.js[39m[10D[31ms[39m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [11D[90moap-test.js[39m[11D[31m-[39m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [12D[90msoap-test.js[39m[12D[31ml[39m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [13D[90m-soap-test.js[39m[13D[31ma[39m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [14D[90ml-soap-test.js[39m[14D[31me[39m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [15D[90mal-soap-test.js[39m[15D[31mr[39m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [16D[90meal-soap-test.js[39m[16D[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [17D[90mreal-soap-test.js[39m[17D[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [18D[90m real-soap-test.js[39m[18D[1m[31mn[1m[31mo[1m[31md[0m[39m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [19D[90me real-soap-test.js[39m[19D[1m[31mn[1m[31mo[0m[39m[0m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [20D[90mde real-soap-test.js[39m[20D[1m[31mn[0m[39m[0m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [21D[1m[31mn[0m[39m[90mode real-soap-test.js[39m[21D[0m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [22D[1m[31mn[0m[39m[1m[31mn[0m[39m[90mode real-soap-test.js[39m[21D[1m[31mn[1m[31mo[0m[39m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [20D[90mde real-soap-test.js[39m[20D[1m[31mn[1m[31mo[1m[31md[0m[39m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [19D[90me real-soap-test.js[39m[19D[0m[32mn[0m[32mo[0m[32md[32me[39m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [18D[90m real-soap-test.js[39m[18D[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [17D[90mreal-soap-test.js[39m[17D[39mc[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [16D[90mreal-soap-test.js[39m[17D[39mo[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [16D[90mreal-soap-test.js[39m[17D[39mr[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [16D[90mreal-soap-test.js[39m[17D[39mr[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [16D[90mreal-soap-test.js[39m[17D[39me[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [16D[90mreal-soap-test.js[39m[17D[39mc[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [16D[90mreal-soap-test.js[39m[17D[39mt[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [16D[90mreal-soap-test.js[39m[17D[39me[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [16D[90mreal-soap-test.js[39m[17D[39md[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [16D[90mreal-soap-test.js[39m[17D[39m-[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [16D[90mreal-soap-test.js[39m[17D[39ms[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [16D[90mreal-soap-test.js[39m[17D[39mo[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [16D[90mreal-soap-test.js[39m[17D[39ma[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [16D[90mreal-soap-test.js[39m[17D[39mp[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [16D[90mreal-soap-test.js[39m[17D[39m-[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [16D[90mreal-soap-test.js[39m[17D[39mt[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [16D[90mreal-soap-test.js[39m[17D[39me[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [16D[90mreal-soap-test.js[39m[17D[39ms[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [16D[90mreal-soap-test.js[39m[K[17D[39mt[K[16C]697;StartPrompt[38;2;0;119;194m[48;2;0;119;194m[38;2;255;255;255m  zsh [0m[38;2;0;119;194;49m[7m[0m[38;2;64;196;255m[0m[48;2;64;196;255m[38;2;255;255;255m  80 [0m[0m[38;2;64;196;255;49m[7m[0m[38;2;46;149;153m[0m[48;2;46;149;153m[38;2;17;17;17m 18:52:39 [0m[38;2;46;149;153m[0m]697;EndPrompt[102C[90mreal-soap-test.js[39m[K[17D[39m.[K[15C]697;StartPrompt[38;2;0;119;194m[48;2;0;119;194m[38;2;255;255;255m  zsh [0m[38;2;0;119;194;49m[7m[0m[38;2;64;196;255m[0m[48;2;64;196;255m[38;2;255;255;255m  80 [0m[0m[38;2;64;196;255;49m[7m[0m[38;2;46;149;153m[0m[48;2;46;149;153m[38;2;17;17;17m 18:52:39 [0m[38;2;46;149;153m[0m]697;EndPrompt[103C[90mreal-soap-test.js[39m[K[17D[39mj[K[14C]697;StartPrompt[38;2;0;119;194m[48;2;0;119;194m[38;2;255;255;255m  zsh [0m[38;2;0;119;194;49m[7m[0m[38;2;64;196;255m[0m[48;2;64;196;255m[38;2;255;255;255m  80 [0m[0m[38;2;64;196;255;49m[7m[0m[38;2;46;149;153m[0m[48;2;46;149;153m[38;2;17;17;17m 18:52:39 [0m[38;2;46;149;153m[0m]697;EndPrompt[104C[90mreal-soap-test.js[39m[K[17D[21D[35mc[35mo[35mr[35mr[35me[35mc[35mt[35me[35md[35m-[35ms[35mo[35ma[35mp[35m-[35mt[35me[35ms[35mt[35m.[35mj[35ms[39m[K[13C]697;StartPrompt[38;2;0;119;194m[48;2;0;119;194m[38;2;255;255;255m  zsh [0m[38;2;0;119;194;49m[7m[0m[38;2;64;196;255m[0m[48;2;64;196;255m[38;2;255;255;255m  80 [0m[0m[38;2;64;196;255;49m[7m[0m[38;2;46;149;153m[0m[48;2;46;149;153m[38;2;17;17;17m 18:52:39 [0m[38;2;46;149;153m[0m]697;EndPrompt[105C[?1l>[?2004l
+]697;OSCLock=4afaee4c99a948cd821e3f8c9dc1474b]697;PreExec]2;node corrected-soap-test.js]1;node🔧 Corrected Croatian Tax Authority SOAP Test
+============================================
+📋 Based on DOS system analysis and documentation
+📍 Endpoint: https://cistest.apis-it.hr:8449/FiskalizacijaServiceTest
+
+🚀 Starting Corrected Croatian Tax Authority Test
+
+📋 Step 1: Loading P12 Certificate...
+✅ Certificate loaded successfully
+📄 Subject: FISKAL 3
+📅 Valid Until: Mon Dec 27 2027 18:31:07 GMT+0100 (Central European Standard Time)
+📊 Test Invoice Data: {
+  oib: [32m'87246357068'[39m,
+  dateTime: [35m2025-08-05T18:03:53.519Z[39m,
+  invoiceNumber: [33m8416[39m,
+  businessSpace: [32m'POSL1'[39m,
+  cashRegister: [32m'2'[39m,
+  totalAmount: [33m50[39m
+}
+
+📋 Step 2: Generating ZKI (Security Code)...
+📝 ZKI Data String: 8724635706805.08.2025 20:03:538416POSL1250.00
+🔒 ZKI Generated: 68f7adcbd2ffbc34f880538b41da35f1
+📋 Step 3: Creating Corrected SOAP Envelope...
+✅ Corrected SOAP envelope created
+📋 Step 4: Sending Corrected SOAP Request...
+🎯 Target: https://cistest.apis-it.hr:8449/FiskalizacijaServiceTest
+📡 Response Status: 500
+📡 Response Headers: { connection: [32m'close'[39m, [32m'content-type'[39m: [32m'text/xml'[39m }
+✅ Response received
+📋 Step 5: Parsing Croatian Tax Authority Response...
+📄 Full response for analysis:
+<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/2001/XMLSchema"><soap:Body><tns:RacunOdgovor Id="G0x7fe67c4f6900-4D" xsi:schemaLocation="http://www.apis-it.hr/fin/2012/types/f73 ../schema/FiskalizacijaSchema.xsd " xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:tns="http://www.apis-it.hr/fin/2012/types/f73"><tns:Zaglavlje><tns:IdPoruke>HP17544170335536265EION</tns:IdPoruke><tns:DatumVrijeme>05.08.2025T20:03:54</tns:DatumVrijeme></tns:Zaglavlje><tns:Greske><tns:Greska><tns:SifraGreske>s004</tns:SifraGreske><tns:PorukaGreske>Neispravan digitalni potpis.</tns:PorukaGreske></tns:Greska></tns:Greske><Signature xmlns="http://www.w3.org/2000/09/xmldsig#">
+<SignedInfo>
+  <CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/>
+  <SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/>
+  <Reference URI="#G0x7fe67c4f6900-4D">
+    <Transforms>
+      <Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/>
+      <Transform Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/>
+    </Transforms>
+    <DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/>
+    <DigestValue>Q3r5aRPrDJAKPoK3UK9IzpwU5iQ=</DigestValue>
+  </Reference>
+</SignedInfo>
+    <SignatureValue>bDRMe+OJa3KWDM5MdWPhzbuRdxTJvoWrR0LmizMvU+rsTgAFqK06Wjt+x6kBn4CxYV38WkqobUAf2CE3gBr0T1vcwkK/ErY4ib20PpWpX9K381JlJEHMSEb2FgI2uLasOCqDH3LKlkzJWp+VyKCgEq5LvcSMDYe7cJ+XS4WaFxygWvM3A68GKFYAvwRg7YfcGsAP/zvKylQhnxg4Cse0mvDcg2wgaFsuw5F+2PKbqqj9aSUG/5eMVRG6dNGnqKuBYPM8zG0javdJswdMEwDpLHDaobgNHAo7MipXERk2pOnx82XKtA1QhzwUn2z7ZuN0IvDuHVZtII36nAIHRIFdDw==</SignatureValue><KeyInfo><X509Data><X509Certificate>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</X509Certificate><X509IssuerSerial><X509IssuerName>CN=Fina Demo CA 2020, O=Financijska agencija, C=HR</X509IssuerName><X509SerialNumber>325450325973957308031939306065516468253</X509SerialNumber></X509IssuerSerial></X509Data></KeyInfo></Signature></tns:RacunOdgovor></soap:Body></soap:Envelope>
+⚠️ Croatian Tax Authority Error (RacunOdgovor format):
+📟 Error Code: s004
+📝 Error Message: Neispravan digitalni potpis.
+
+📊 Final Result:
+{
+  "success": false,
+  "error": "s004: Neispravan digitalni potpis.",
+  "timestamp": "2025-08-05T18:03:53.899Z"
+}
+
+⚠️ Still getting errors - need further SOAP format refinement
+🔍 Check error details above for specific issues
+[1m[7m%[27m[1m[0m                                                                                                                                                    ]2;msokol@Mac:~/Dev/Repos/2-Personal/hotel-inventory/scripts]1;..ntory/scripts]7;file://Mac/Users/msokol/Dev/Repos/2-Personal/hotel-inventory/scripts\]697;OSCUnlock=4afaee4c99a948cd821e3f8c9dc1474b]697;Dir=/Users/msokol/Dev/Repos/2-Personal/hotel-inventory/scripts]697;Shell=zsh]697;ShellPath=/bin/zsh]697;PID=92526]697;ExitCode=0]697;TTY=/dev/ttys005]697;Log=]697;ZshAutosuggestionColor=fg=8]697;FigAutosuggestionColor=]697;User=msokol[0m[27m[24m[J]697;StartPrompt[38;2;195;134;241m[0m[48;2;195;134;241m[38;2;255;255;255m msokol [0m[38;2;195;134;241m[0m[0m[38;2;255;71;156;49m[7m[0m[48;2;255;71;156m[38;2;255;255;255m   scripts [0m[48;2;255;146;72m[38;2;255;71;156m[0m[48;2;255;146;72m[38;2;25;53;73m main ≡  ?9 ~11 |  ~2 [0m[48;2;108;163;94m[38;2;255;146;72m[0m[48;2;108;163;94m[38;2;255;255;255m  24.2.0 [0m[38;2;108;163;94m[0m[0m[38;2;131;118;156;49m[7m[27m[48;2;131;118;156m[38;2;255;255;255m  524ms⠀[0m[48;2;0;137;123m[38;2;131;118;156m[38;2;255;255;255m  [0m[38;2;0;137;123m[0m]0;zsh in scripts ]697;EndPrompt]697;NewCmd=4afaee4c99a948cd821e3f8c9dc1474b[K[40C]697;StartPrompt[38;2;0;119;194m[48;2;0;119;194m[38;2;255;255;255m  zsh [0m[38;2;0;119;194;49m[7m[0m[38;2;255;87;34m[0m[48;2;255;87;34m[38;2;255;255;255m  80 [0m[0m[38;2;255;87;34;49m[7m[0m[38;2;46;149;153m[0m[48;2;46;149;153m[38;2;17;17;17m 20:03:53 [0m[38;2;46;149;153m[0m]697;EndPrompt[78C[?1h=[?2004h[32mnode[39m [35mcorrected-soap-test.js[39m[22D[35mr[35me[35ma[35ml[35m-[35ms[35mo[35ma[35mp[35m-[35mt[35me[35ms[35mt[35m.[35mj[35ms[39m[39m [39m [39m [39m [39m [17D[31mr[31me[31ma[31ml[31m-[31ms[31mo[31ma[31mp[31m-[31mt[31me[31ms[31mt[31m.[31mj[39m[39m [90ms[39m[31m.[39m[39m [39m [90mjs[39m[15D[35mr[35me[35ma[35ml[35m-[35ms[35mo[35ma[35mp[35m-[35mt[35me[35ms[35mt[39m[39m [39m [39m [90m.js[39m[14D[31mr[31me[31ma[31ml[31m-[31ms[31mo[31ma[31mp[31m-[31mt[31me[31ms[39m[39m [39m [39m [39m [90mt.js[39m[31me[39m[39m [39m [39m [39m [39m [90mst.js[39m[31mt[39m[39m [39m [39m [39m [39m [39m [90mest.js[39m[31m-[39m[39m [39m [39m [39m [39m [39m [39m [90mtest.js[39m[31mp[39m[39m [39m [39m [39m [39m [39m [39m [39m [8D[90m-test.js[39m[8D[31ma[39m[39m [39m [39m [39m [39m [39m [39m [39m [39m [9D[90mp-test.js[39m[9D[31mo[39m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [10D[90map-test.js[39m[10D[31ms[39m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [11D[90moap-test.js[39m[11D[31m-[39m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [12D[90msoap-test.js[39m[12D[31ml[39m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [13D[90m-soap-test.js[39m[13D[31ma[39m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [14D[90ml-soap-test.js[39m[14D[31me[39m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [15D[90mal-soap-test.js[39m[15D[31mr[39m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [16D[90meal-soap-test.js[39m[16D[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [17D[90mcorrected-soap-test.js[39m[22D[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [23D[90m corrected-soap-test.js[39m[23D[1m[31mn[1m[31mo[1m[31md[0m[39m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [24D[90me corrected-soap-test.js[39m[24D[1m[31mn[1m[31mo[0m[39m[0m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [25D[90mde corrected-soap-test.js[39m[25D[1m[31mn[0m[39m[0m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [26D[1m[31mn[0m[39m[90mode corrected-soap-test.js[39m[26D[0m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [27D[1m[31mn[0m[39m[1m[31mn[0m[39m[90mode corrected-soap-test.js[39m[26D[1m[31mn[1m[31mo[0m[39m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [25D[90mde corrected-soap-test.js[39m[25D[1m[31mn[1m[31mo[1m[31md[0m[39m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [24D[90me corrected-soap-test.js[39m[24D[0m[32mn[0m[32mo[0m[32md[32me[39m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [23D[90m corrected-soap-test.js[39m[23D[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [22D[90mcorrected-soap-test.js[39m[22D[39mc[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [21D[90mcorrected-soap-test.js[39m[22D[39mo[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [21D[90mcorrected-soap-test.js[39m[22D[39mr[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [21D[90mcorrected-soap-test.js[39m[22D[39mr[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [21D[90mcorrected-soap-test.js[39m[22D[39me[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [21D[90mcorrected-soap-test.js[39m[22D[39mc[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [21D[90mcorrected-soap-test.js[39m[22D[39mt[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [21D[90mcorrected-soap-test.js[39m[22D[39me[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [21D[90mcorrected-soap-test.js[39m[22D[39md[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [21D[90mcorrected-soap-test.js[39m[22D[39m-[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [21D[90mcorrected-soap-test.js[39m[22D[39mc[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [21D[90mcorrected-soap-test.js[39m[22D[39mr[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [21D[90mcorrected-soap-test.js[39m[22D[39mo[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [21D[90mcorrected-soap-test.js[39m[K[22D[39ma[K[21C]697;StartPrompt[38;2;0;119;194m[48;2;0;119;194m[38;2;255;255;255m  zsh [0m[38;2;0;119;194;49m[7m[0m[38;2;255;87;34m[0m[48;2;255;87;34m[38;2;255;255;255m  80 [0m[0m[38;2;255;87;34;49m[7m[0m[38;2;46;149;153m[0m[48;2;46;149;153m[38;2;17;17;17m 20:03:53 [0m[38;2;46;149;153m[0m]697;EndPrompt[97C[90mcorrected-soap-test.js[39m[K[22D[39mt[K[20C]697;StartPrompt[38;2;0;119;194m[48;2;0;119;194m[38;2;255;255;255m  zsh [0m[38;2;0;119;194;49m[7m[0m[38;2;255;87;34m[0m[48;2;255;87;34m[38;2;255;255;255m  80 [0m[0m[38;2;255;87;34;49m[7m[0m[38;2;46;149;153m[0m[48;2;46;149;153m[38;2;17;17;17m 20:03:53 [0m[38;2;46;149;153m[0m]697;EndPrompt[98C[90mcorrected-soap-test.js[39m[K[22D[39mi[K[19C]697;StartPrompt[38;2;0;119;194m[48;2;0;119;194m[38;2;255;255;255m  zsh [0m[38;2;0;119;194;49m[7m[0m[38;2;255;87;34m[0m[48;2;255;87;34m[38;2;255;255;255m  80 [0m[0m[38;2;255;87;34;49m[7m[0m[38;2;46;149;153m[0m[48;2;46;149;153m[38;2;17;17;17m 20:03:53 [0m[38;2;46;149;153m[0m]697;EndPrompt[99C[90mcorrected-soap-test.js[39m[K[22D[39ma[K[18C]697;StartPrompt[38;2;0;119;194m[48;2;0;119;194m[38;2;255;255;255m  zsh [0m[38;2;0;119;194;49m[7m[0m[38;2;255;87;34m[0m[48;2;255;87;34m[38;2;255;255;255m  80 [0m[0m[38;2;255;87;34;49m[7m[0m[38;2;46;149;153m[0m[48;2;46;149;153m[38;2;17;17;17m 20:03:53 [0m[38;2;46;149;153m[0m]697;EndPrompt[100C[90mcorrected-soap-test.js[39m[K[22D[39mn[K[17C]697;StartPrompt[38;2;0;119;194m[48;2;0;119;194m[38;2;255;255;255m  zsh [0m[38;2;0;119;194;49m[7m[0m[38;2;255;87;34m[0m[48;2;255;87;34m[38;2;255;255;255m  80 [0m[0m[38;2;255;87;34;49m[7m[0m[38;2;46;149;153m[0m[48;2;46;149;153m[38;2;17;17;17m 20:03:53 [0m[38;2;46;149;153m[0m]697;EndPrompt[101C[90mcorrected-soap-test.js[39m[K[22D[39m-[K[16C]697;StartPrompt[38;2;0;119;194m[48;2;0;119;194m[38;2;255;255;255m  zsh [0m[38;2;0;119;194;49m[7m[0m[38;2;255;87;34m[0m[48;2;255;87;34m[38;2;255;255;255m  80 [0m[0m[38;2;255;87;34;49m[7m[0m[38;2;46;149;153m[0m[48;2;46;149;153m[38;2;17;17;17m 20:03:53 [0m[38;2;46;149;153m[0m]697;EndPrompt[102C[90mcorrected-soap-test.js[39m[K[22D[39ms[K[15C]697;StartPrompt[38;2;0;119;194m[48;2;0;119;194m[38;2;255;255;255m  zsh [0m[38;2;0;119;194;49m[7m[0m[38;2;255;87;34m[0m[48;2;255;87;34m[38;2;255;255;255m  80 [0m[0m[38;2;255;87;34;49m[7m[0m[38;2;46;149;153m[0m[48;2;46;149;153m[38;2;17;17;17m 20:03:53 [0m[38;2;46;149;153m[0m]697;EndPrompt[103C[90mcorrected-soap-test.js[39m[K[22D[39mo[K[14C]697;StartPrompt[38;2;0;119;194m[48;2;0;119;194m[38;2;255;255;255m  zsh [0m[38;2;0;119;194;49m[7m[0m[38;2;255;87;34m[0m[48;2;255;87;34m[38;2;255;255;255m  80 [0m[0m[38;2;255;87;34;49m[7m[0m[38;2;46;149;153m[0m[48;2;46;149;153m[38;2;17;17;17m 20:03:53 [0m[38;2;46;149;153m[0m]697;EndPrompt[104C[90mcorrected-soap-test.js[39m[K[22D[39ma[K[13C]697;StartPrompt[38;2;0;119;194m[48;2;0;119;194m[38;2;255;255;255m  zsh [0m[38;2;0;119;194;49m[7m[0m[38;2;255;87;34m[0m[48;2;255;87;34m[38;2;255;255;255m  80 [0m[0m[38;2;255;87;34;49m[7m[0m[38;2;46;149;153m[0m[48;2;46;149;153m[38;2;17;17;17m 20:03:53 [0m[38;2;46;149;153m[0m]697;EndPrompt[105C[90mcorrected-soap-test.js[39m[K[22D[39mp[K[12C]697;StartPrompt[38;2;0;119;194m[48;2;0;119;194m[38;2;255;255;255m  zsh [0m[38;2;0;119;194;49m[7m[0m[38;2;255;87;34m[0m[48;2;255;87;34m[38;2;255;255;255m  80 [0m[0m[38;2;255;87;34;49m[7m[0m[38;2;46;149;153m[0m[48;2;46;149;153m[38;2;17;17;17m 20:03:53 [0m[38;2;46;149;153m[0m]697;EndPrompt[106C[90mcorrected-soap-test.js[39m[K[22D[39m.[K[11C]697;StartPrompt[38;2;0;119;194m[48;2;0;119;194m[38;2;255;255;255m  zsh [0m[38;2;0;119;194;49m[7m[0m[38;2;255;87;34m[0m[48;2;255;87;34m[38;2;255;255;255m  80 [0m[0m[38;2;255;87;34;49m[7m[0m[38;2;46;149;153m[0m[48;2;46;149;153m[38;2;17;17;17m 20:03:53 [0m[38;2;46;149;153m[0m]697;EndPrompt[107C[90mcorrected-soap-test.js[39m[K[22D[39mj[K[10C]697;StartPrompt[38;2;0;119;194m[48;2;0;119;194m[38;2;255;255;255m  zsh [0m[38;2;0;119;194;49m[7m[0m[38;2;255;87;34m[0m[48;2;255;87;34m[38;2;255;255;255m  80 [0m[0m[38;2;255;87;34;49m[7m[0m[38;2;46;149;153m[0m[48;2;46;149;153m[38;2;17;17;17m 20:03:53 [0m[38;2;46;149;153m[0m]697;EndPrompt[108C[90mcorrected-soap-test.js[39m[K[22D[25D[35mc[35mo[35mr[35mr[35me[35mc[35mt[35me[35md[35m-[35mc[35mr[35mo[35ma[35mt[35mi[35ma[35mn[35m-[35ms[35mo[35ma[35mp[35m.[35mj[35ms[39m[K[9C]697;StartPrompt[38;2;0;119;194m[48;2;0;119;194m[38;2;255;255;255m  zsh [0m[38;2;0;119;194;49m[7m[0m[38;2;255;87;34m[0m[48;2;255;87;34m[38;2;255;255;255m  80 [0m[0m[38;2;255;87;34;49m[7m[0m[38;2;46;149;153m[0m[48;2;46;149;153m[38;2;17;17;17m 20:03:53 [0m[38;2;46;149;153m[0m]697;EndPrompt[109C[?1l>[?2004l
+]697;OSCLock=4afaee4c99a948cd821e3f8c9dc1474b]697;PreExec]2;node corrected-croatian-soap.js]1;node🔧 CORRECTED Croatian Tax Authority SOAP Client (s004 Fix)
+=========================================================
+📋 Based on official Technical Specification v1.3
+📍 Endpoint: https://cistest.apis-it.hr:8449/FiskalizacijaServiceTest
+🎯 Target: Resolve s004 "Neispravan digitalni potpis" error
+
+🚀 Starting CORRECTED Croatian Tax Authority Test (s004 Fix)
+
+📋 Step 1: Loading P12 Certificate...
+✅ Certificate loaded successfully
+📄 Subject: FISKAL 3
+📅 Valid Until: Mon Dec 27 2027 18:31:07 GMT+0100 (Central European Standard Time)
+📊 Test Invoice Data (Corrected Format):
+   OIB: 87246357068 (11 digits)
+   DateTime: 05.08.2025T20:04:16 (XML format)
+   Invoice Number: 9297 (no leading zeros)
+   Business Space: POSL1
+   Cash Register: 2 (no leading zeros)
+   Total Amount: 75.50 (###.## format)
+
+📋 Step 2: Generating ZKI (Protective Code)...
+📝 ZKI Data String: 8724635706805.08.2025 20:04:169297POSL1275.50
+🔒 ZKI Generated: ca790b0b1ce111a30827236b8088d12c
+📏 ZKI Length: 32 characters (must be 32)
+📋 Step 3: Creating CORRECTED SOAP Envelope (s004 Fix)...
+✅ CORRECTED SOAP envelope created
+🆔 Sign XML ID: signXmlId1754417056502
+📧 Message ID: b62e47e8-8041-4fb2-a6e6-e0c2c1aeedc7
+🔧 Key fixes applied:
+   ✓ Exclusive canonicalization (http://www.w3.org/2001/10/xml-exc-c14n#)
+   ✓ RSA-SHA1 signature method (NOT SHA256)
+   ✓ SHA1 digest method
+   ✓ Correct transform order (enveloped → exclusive c14n)
+   ✓ Matching Id and Reference URI
+   ✓ Proper XML datetime format (dd.mm.yyyyThh:mm:ss)
+📋 Step 4: Sending CORRECTED SOAP Request...
+🎯 Target: https://cistest.apis-it.hr:8449/FiskalizacijaServiceTest
+🔧 This request should resolve s004 error
+📡 Response Status: 500
+📡 Response Headers: { connection: [32m'close'[39m, [32m'content-type'[39m: [32m'text/xml'[39m }
+✅ Response received
+📋 Step 5: Parsing Croatian Tax Authority Response...
+📄 Full XML Response:
+============================================================
+<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/2001/XMLSchema"><soap:Body><tns:RacunOdgovor Id="G0x7fe697522900-4D" xsi:schemaLocation="http://www.apis-it.hr/fin/2012/types/f73 ../schema/FiskalizacijaSchema.xsd " xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:tns="http://www.apis-it.hr/fin/2012/types/f73"><tns:Zaglavlje><tns:IdPoruke>b62e47e8-8041-4fb2-a6e6-e0c2c1aeedc7</tns:IdPoruke><tns:DatumVrijeme>05.08.2025T20:04:16</tns:DatumVrijeme></tns:Zaglavlje><tns:Greske><tns:Greska><tns:SifraGreske>s002</tns:SifraGreske><tns:PorukaGreske>Certifikat nije izdan od strane demo potpisnika pouzdanog izdavatelja certifikata u RH ili je istekao ili je ukinut.</tns:PorukaGreske></tns:Greska></tns:Greske><Signature xmlns="http://www.w3.org/2000/09/xmldsig#">
+<SignedInfo>
+  <CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/>
+  <SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/>
+  <Reference URI="#G0x7fe697522900-4D">
+    <Transforms>
+      <Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/>
+      <Transform Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/>
+    </Transforms>
+    <DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/>
+    <DigestValue>qIBt3M4OOrqopzrm+HVMssvTNGk=</DigestValue>
+  </Reference>
+</SignedInfo>
+    <SignatureValue>ch+Y33e7btFuXysfCjQ5hurBg6NW5atSy8w68xF+kuQw/0sMD0iaqPDbsMydYJO92t4/8l7Rb6PYBZd9Fznjc2wyNRwDgg+SY3/Nrpu3t8SP8YPDf0mN1HblP6oECoTIChTDoOT93RIJaPTbXL6ZK37jcyBtvhWwFfwOpxdYzGE4fPD3k+mTY6+68SHJbAi4DifbC91LE9+Ri+Hpel/EKv+cq7soNjUDeek5D1YqvmrnKLUPatZhf292EPNYO0zD4so/6+000v5FxF1KbktzzfcNO2zxmqQeZWZcbaP+qbGwq2WB+KcOSegu+g7XRz9N/NNxx7p4GI9UCWtJR6KTbw==</SignatureValue><KeyInfo><X509Data><X509Certificate>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</X509Certificate><X509IssuerSerial><X509IssuerName>CN=Fina Demo CA 2020, O=Financijska agencija, C=HR</X509IssuerName><X509SerialNumber>325450325973957308031939306065516468253</X509SerialNumber></X509IssuerSerial></X509Data></KeyInfo></Signature></tns:RacunOdgovor></soap:Body></soap:Envelope>
+============================================================
+⚠️ Croatian Tax Authority Error:
+📟 Error Code: s002
+📝 Error Message: Certifikat nije izdan od strane demo potpisnika pouzdanog izdavatelja certifikata u RH ili je istekao ili je ukinut.
+
+📊 Final Result:
+{
+  "success": false,
+  "error": "s002: Certifikat nije izdan od strane demo potpisnika pouzdanog izdavatelja certifikata u RH ili je istekao ili je ukinut.",
+  "errorCode": "s002",
+  "timestamp": "2025-08-05T18:04:16.806Z"
+}
+
+⚠️ Different error - check Croatian Tax Authority response above
+[1m[7m%[27m[1m[0m                                                                                                                                                    ]2;msokol@Mac:~/Dev/Repos/2-Personal/hotel-inventory/scripts]1;..ntory/scripts]7;file://Mac/Users/msokol/Dev/Repos/2-Personal/hotel-inventory/scripts\]697;OSCUnlock=4afaee4c99a948cd821e3f8c9dc1474b]697;Dir=/Users/msokol/Dev/Repos/2-Personal/hotel-inventory/scripts]697;Shell=zsh]697;ShellPath=/bin/zsh]697;PID=92526]697;ExitCode=0]697;TTY=/dev/ttys005]697;Log=]697;ZshAutosuggestionColor=fg=8]697;FigAutosuggestionColor=]697;User=msokol[0m[27m[24m[J]697;StartPrompt[38;2;195;134;241m[0m[48;2;195;134;241m[38;2;255;255;255m msokol [0m[38;2;195;134;241m[0m[0m[38;2;255;71;156;49m[7m[0m[48;2;255;71;156m[38;2;255;255;255m   scripts [0m[48;2;255;146;72m[38;2;255;71;156m[0m[48;2;255;146;72m[38;2;25;53;73m main ≡  ?9 ~11 |  ~2 [0m[48;2;108;163;94m[38;2;255;146;72m[0m[48;2;108;163;94m[38;2;255;255;255m  24.2.0 [0m[38;2;108;163;94m[0m[0m[38;2;131;118;156;49m[7m[27m[48;2;131;118;156m[38;2;255;255;255m  451ms⠀[0m[48;2;0;137;123m[38;2;131;118;156m[38;2;255;255;255m  [0m[38;2;0;137;123m[0m]0;zsh in scripts ]697;EndPrompt]697;NewCmd=4afaee4c99a948cd821e3f8c9dc1474b[K[40C]697;StartPrompt[38;2;0;119;194m[48;2;0;119;194m[38;2;255;255;255m  zsh [0m[38;2;0;119;194;49m[7m[0m[38;2;255;87;34m[0m[48;2;255;87;34m[38;2;255;255;255m  80 [0m[0m[38;2;255;87;34;49m[7m[0m[38;2;46;149;153m[0m[48;2;46;149;153m[38;2;17;17;17m 20:04:16 [0m[38;2;46;149;153m[0m]697;EndPrompt[78C[?1h=[?2004h[32mh[39m[32mh[39m[90mp[39m[32mh[32mp[39m[?1l>[?2004l
+]697;OSCLock=4afaee4c99a948cd821e3f8c9dc1474b]697;PreExec]2;cd "/Users/msokol/Dev/Repos/2-Personal/hotel-inventory"]1;hp[1m[7m%[27m[1m[0m                                                                                                                                                    ]2;msokol@Mac:~/Dev/Repos/2-Personal/hotel-inventory]1;..tel-inventory]7;file://Mac/Users/msokol/Dev/Repos/2-Personal/hotel-inventory\]697;OSCUnlock=4afaee4c99a948cd821e3f8c9dc1474b]697;Dir=/Users/msokol/Dev/Repos/2-Personal/hotel-inventory]697;Shell=zsh]697;ShellPath=/bin/zsh]697;PID=92526]697;ExitCode=0]697;TTY=/dev/ttys005]697;Log=]697;ZshAutosuggestionColor=fg=8]697;FigAutosuggestionColor=]697;User=msokol[0m[27m[24m[J]697;StartPrompt[38;2;195;134;241m[0m[48;2;195;134;241m[38;2;255;255;255m msokol [0m[38;2;195;134;241m[0m[0m[38;2;255;71;156;49m[7m[0m[48;2;255;71;156m[38;2;255;255;255m   hotel-inventory [0m[48;2;255;146;72m[38;2;255;71;156m[0m[48;2;255;146;72m[38;2;25;53;73m main ≡  ?13 ~13 |  ~2 [0m[48;2;108;163;94m[38;2;255;146;72m[0m[48;2;108;163;94m[38;2;255;255;255m  24.2.0 [0m[38;2;108;163;94m[0m[0m[38;2;131;118;156;49m[7m[27m[48;2;131;118;156m[38;2;255;255;255m  18ms⠀[0m[48;2;0;137;123m[38;2;131;118;156m[38;2;255;255;255m  [0m[38;2;0;137;123m[0m]0;zsh in hotel-inventory ]697;EndPrompt]697;NewCmd=4afaee4c99a948cd821e3f8c9dc1474b[K[34C]697;StartPrompt[38;2;0;119;194m[48;2;0;119;194m[38;2;255;255;255m  zsh [0m[38;2;0;119;194;49m[7m[0m[38;2;243;105;67m[0m[48;2;243;105;67m[38;2;255;255;255m 35 [0m[0m[38;2;243;105;67;49m[7m[0m[38;2;46;149;153m[0m[48;2;46;149;153m[38;2;17;17;17m 11:20:36 [0m[38;2;46;149;153m[0m]697;EndPrompt[86C[?1h=[?2004h[32mc[39m[32mc[39m[90mcm[39m[1m[31mc[1m[31ml[0m[39m[39m [90ms-r[39m[1m[31mc[1m[31ml[1m[31mo[0m[39m[39m [39m [1m[31mo[1m[31ms[0m[39m[1m[31ms[1m[31me[0m[39m [1m[31ms[0m[39m[0m[39m [1m[31mo[0m[39m[0m[39m [1m[31mc[1m[31ml[0m[39m[0m[39m [90ms-r[39m[0m[32mc[39m[0m[39m [39m [39m [39m [32mc[39m[90mcm[39m[39m [39m [39m [32mc[39m[32mc[39m[90mcm[39m[32mc[32mu[39m[39m [90mrsor .[39m[1m[31mc[1m[31mu[1m[31mr[0m[39m[39m [39m [39m [39m [39m [90msor .[39m[0m[32mc[0m[32mu[39m[0m[39m [39m [39m [39m [39m [39m [90mrsor .[39m[32mc[39m[39m [39m [39m [39m [39m [39m [39m [32mc[39m[90mcm[39m[39m [39m [39m [32mc[39m[32mc[39m[90mcm[39m[32mc[39m[39m [39m [?1l>[?2004l
+]697;OSCLock=4afaee4c99a948cd821e3f8c9dc1474b]697;PreExec]2;clear]1;c[3J[H[2J[1m[7m%[27m[1m[0m                                                                                                                                                    ]2;msokol@Mac:~/Dev/Repos/2-Personal/hotel-inventory]1;..tel-inventory]7;file://Mac/Users/msokol/Dev/Repos/2-Personal/hotel-inventory\]697;OSCUnlock=4afaee4c99a948cd821e3f8c9dc1474b]697;Dir=/Users/msokol/Dev/Repos/2-Personal/hotel-inventory]697;Shell=zsh]697;ShellPath=/bin/zsh]697;PID=92526]697;ExitCode=0]697;TTY=/dev/ttys005]697;Log=]697;ZshAutosuggestionColor=fg=8]697;FigAutosuggestionColor=]697;User=msokol[0m[27m[24m[J]697;StartPrompt[38;2;195;134;241m[0m[48;2;195;134;241m[38;2;255;255;255m msokol [0m[38;2;195;134;241m[0m[0m[38;2;255;71;156;49m[7m[0m[48;2;255;71;156m[38;2;255;255;255m   hotel-inventory [0m[48;2;255;146;72m[38;2;255;71;156m[0m[48;2;255;146;72m[38;2;25;53;73m main ≡  ?13 ~13 |  ~2 [0m[48;2;108;163;94m[38;2;255;146;72m[0m[48;2;108;163;94m[38;2;255;255;255m  24.2.0 [0m[38;2;108;163;94m[0m[0m[38;2;131;118;156;49m[7m[27m[48;2;131;118;156m[38;2;255;255;255m  29ms⠀[0m[48;2;0;137;123m[38;2;131;118;156m[38;2;255;255;255m  [0m[38;2;0;137;123m[0m]0;zsh in hotel-inventory ]697;EndPrompt]697;NewCmd=4afaee4c99a948cd821e3f8c9dc1474b[K[34C]697;StartPrompt[38;2;0;119;194m[48;2;0;119;194m[38;2;255;255;255m  zsh [0m[38;2;0;119;194;49m[7m[0m[38;2;243;105;67m[0m[48;2;243;105;67m[38;2;255;255;255m 35 [0m[0m[38;2;243;105;67;49m[7m[0m[38;2;46;149;153m[0m[48;2;46;149;153m[38;2;17;17;17m 11:20:47 [0m[38;2;46;149;153m[0m]697;EndPrompt[86C[?1h=[?2004h[32mc[39m[32mc[32mu[39m[90mrsor .[39m[1m[31mc[1m[31mu[1m[31mr[0m[39m[39m [39m [39m [39m [39m [90msor .[39m[1m[31mr[1m[31ms[0m[39m[39m [39m [39m [39m [90mor .[39m[1m[31ms[1m[31mo[0m[39m[39m [39m [39m [90mr .[39m[0m[32mc[0m[32mu[0m[32mr[0m[32ms[0m[32mo[32mr[39m[39m [39m [90m .[39m[39m [39m [90m.[39m[4m[35m.[24m[39m[?1l>[?2004l
+]697;OSCLock=4afaee4c99a948cd821e3f8c9dc1474b]697;PreExec]2;cursor .]1;cursor[1m[7m%[27m[1m[0m                                                                                                                                                    ]2;msokol@Mac:~/Dev/Repos/2-Personal/hotel-inventory]1;..tel-inventory]7;file://Mac/Users/msokol/Dev/Repos/2-Personal/hotel-inventory\]697;OSCUnlock=4afaee4c99a948cd821e3f8c9dc1474b]697;Dir=/Users/msokol/Dev/Repos/2-Personal/hotel-inventory]697;Shell=zsh]697;ShellPath=/bin/zsh]697;PID=92526]697;ExitCode=0]697;TTY=/dev/ttys005]697;Log=]697;ZshAutosuggestionColor=fg=8]697;FigAutosuggestionColor=]697;User=msokol[0m[27m[24m[J]697;StartPrompt[38;2;195;134;241m[0m[48;2;195;134;241m[38;2;255;255;255m msokol [0m[38;2;195;134;241m[0m[0m[38;2;255;71;156;49m[7m[0m[48;2;255;71;156m[38;2;255;255;255m   hotel-inventory [0m[48;2;255;146;72m[38;2;255;71;156m[0m[48;2;255;146;72m[38;2;25;53;73m main ≡  ?13 ~13 |  ~2 [0m[48;2;108;163;94m[38;2;255;146;72m[0m[48;2;108;163;94m[38;2;255;255;255m  24.2.0 [0m[38;2;108;163;94m[0m[0m[38;2;131;118;156;49m[7m[27m[48;2;131;118;156m[38;2;255;255;255m  150ms⠀[0m[48;2;0;137;123m[38;2;131;118;156m[38;2;255;255;255m  [0m[38;2;0;137;123m[0m]0;zsh in hotel-inventory ]697;EndPrompt]697;NewCmd=4afaee4c99a948cd821e3f8c9dc1474b[K[33C]697;StartPrompt[38;2;0;119;194m[48;2;0;119;194m[38;2;255;255;255m  zsh [0m[38;2;0;119;194;49m[7m[0m[38;2;243;105;67m[0m[48;2;243;105;67m[38;2;255;255;255m 35 [0m[0m[38;2;243;105;67;49m[7m[0m[38;2;46;149;153m[0m[48;2;46;149;153m[38;2;17;17;17m 11:20:49 [0m[38;2;46;149;153m[0m]697;EndPrompt[87C[?1h=[?2004h
