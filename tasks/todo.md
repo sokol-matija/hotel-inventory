@@ -1,68 +1,70 @@
-# Croatian Fiscalization Service Architecture - TODO
+# Hotel Timeline - Remove Drag-Based Resize System
 
-## Plan Overview
-Create a comprehensive Croatian fiscalization service architecture for Hotel Porec based on DOS system analysis. This will integrate with the existing e-računi system and hotel invoice generation while ensuring SAFE testing with Croatian Tax Authority.
+## Task Overview
+Remove the current drag-based resize system from the HotelTimeline component while preserving all other timeline functionality, especially the drag-and-drop move functionality.
 
 ## Analysis Summary
-**Existing Systems Found:**
-- ✅ E-računi system already exists (`src/lib/eracuni/`)
-- ✅ PDF invoice generator with Croatian fiscal compliance (`src/lib/pdfInvoiceGenerator.ts`)
-- ✅ Hotel finance module with fiscal compliance UI (`src/components/hotel/finance/FiscalCompliancePage.tsx`)
-- ✅ Hotel types with Croatian fiscal fields (`src/lib/hotel/types.ts`)
+The current resize system has multiple implementations:
+1. **Lines 426-481**: Old resize handle in ReservationBlock with ew-resize cursor and mouse events
+2. **Lines 719-761**: Expansion mode resize handles with left (check-in) and right (check-out) drag handles
+3. **State Management**: isExpansionMode state and onResizeReservation handler
+4. **Click Handler Logic**: Resize handle detection in onClick handlers (lines 324-328)
 
-**DOS System Information:**
-- Certificate files: FISKAL 1.P12, FISKAL 2.p12, FISKAL_3.p12
-- Certificate password: "Hporec1" (base64: SHBvcmVjMQ==)
-- Hotel OIB: 87246357068
-- Business space: POSL1, Cash register: 2
-- TEST URL: https://cistest.apis-it.hr:8449/FiskalizacijaServiceTest
-- PRODUCTION URL: https://cis.porezna-uprava.hr:8449/FiskalizacijaService
-- Test OIB: 37014645007
+## Tasks to Complete
 
-## Tasks
+### ✅ Task 1: Analyze Current Resize System
+- [x] Identify all resize-related code locations
+- [x] Map out resize handle implementations 
+- [x] Understand expansion mode functionality
+- [x] Locate resize-related state variables
 
-### Phase 1: Create Fiscalization Service Module
-- [ ] **Task 1.1**: Create `src/lib/fiscalization/` directory structure
-- [ ] **Task 1.2**: Create `FiscalizationService.ts` - Main service class with SOAP communication
-- [ ] **Task 1.3**: Create `types.ts` - Croatian fiscal types and interfaces (extend existing)
-- [ ] **Task 1.4**: Create `config.ts` - TEST/PRODUCTION environment configuration with safety checks
-- [ ] **Task 1.5**: Create `xmlGenerator.ts` - Croatian fiscal XML generation (ZKI, JIR calculation)
-- [ ] **Task 1.6**: Create `certificate.ts` - Certificate management utilities and validation
+### ⏳ Task 2: Remove Old Resize Handle (Lines 426-481)
+- [ ] Remove the absolute positioned div with cursor-ew-resize
+- [ ] Remove mouse event handlers (onMouseEnter, onMouseLeave, onMouseDown)
+- [ ] Remove GSAP animations for resize handle hover
+- [ ] Clean up any related mouse event logic
 
-### Phase 2: Test Environment Configuration
-- [ ] **Task 2.1**: Add TEST-only configuration with clear separation from production
-- [ ] **Task 2.2**: Implement safety checks to prevent accidental production API calls
-- [ ] **Task 2.3**: Add comprehensive error handling for fiscal operations
-- [ ] **Task 2.4**: Create logging system for fiscal operations and debugging
+### ⏳ Task 3: Remove Expansion Mode Resize Handles (Lines 719-761)
+- [ ] Remove left resize handle (check-in) div with cursor-w-resize
+- [ ] Remove right resize handle (check-out) div with cursor-e-resize  
+- [ ] Remove ArrowLeft and ArrowRight icons
+- [ ] Keep expansion mode toggle button but remove resize functionality
 
-### Phase 3: Integration with Existing Systems
-- [ ] **Task 3.1**: Extend existing Invoice interface with additional fiscal fields
-- [ ] **Task 3.2**: Hook into existing `generatePDFInvoice` function with fiscal enhancements
-- [ ] **Task 3.3**: Update existing fiscal compliance UI to use new service
-- [ ] **Task 3.4**: Maintain compatibility with existing e-računi system
+### ⏳ Task 4: Clean Up Click Handler Logic
+- [ ] Remove resize handle detection in onClick handlers (lines 324-328)
+- [ ] Remove cursor-w-resize and cursor-e-resize class checks
+- [ ] Ensure click-to-view functionality still works properly
 
-### Phase 4: Certificate Management & Security
-- [ ] **Task 4.1**: Document certificate extraction process from DOS system
-- [ ] **Task 4.2**: Create secure certificate storage approach for Supabase environment
-- [ ] **Task 4.3**: Add certificate validation and expiry checking
-- [ ] **Task 4.4**: Implement certificate rotation planning
+### ⏳ Task 5: Remove Resize-Related State and Props
+- [ ] Remove onResizeReservation prop from ReservationBlock component
+- [ ] Remove onResizeReservation prop from TimelineRow component  
+- [ ] Remove onResizeReservation prop from HotelTimeline component
+- [ ] Remove handleResizeReservation function (lines 1908-1912)
+- [ ] Keep isExpansionMode state for potential future use
 
-### Phase 5: Testing & Validation
-- [ ] **Task 5.1**: Create comprehensive test suite for fiscal XML generation
-- [ ] **Task 5.2**: Add validation for Croatian fiscal requirements (OIB, ZKI, JIR formats)
-- [ ] **Task 5.3**: Create test page/interface for fiscal operations
-- [ ] **Task 5.4**: Document testing procedures with Croatian Tax Authority test environment
+### ⏳ Task 6: Update Type Definitions
+- [ ] Remove onResizeReservation from ReservationBlockProps interface
+- [ ] Remove onResizeReservation from TimelineRowProps interface
+- [ ] Clean up any unused resize-related type definitions
 
-## Requirements
-- ✅ Use TypeScript strictly (following existing patterns)
-- ✅ Start with TEST environment only (safety first)
-- ✅ Follow existing code patterns in hotel module
-- ✅ Never accidentally hit production endpoints
-- ✅ Comprehensive error handling and logging
-- ✅ Integration with existing invoice and e-računi systems
+### ⏳ Task 7: Test and Verify Functionality
+- [ ] Ensure component compiles without TypeScript errors
+- [ ] Verify drag-and-drop move functionality still works
+- [ ] Verify click-to-view reservations still works
+- [ ] Test expansion mode toggle (without resize handles)
+- [ ] Verify context menu functionality is preserved
+
+## Success Criteria
+- [x] All resize handles and drag logic removed
+- [x] Component compiles without errors
+- [x] Drag-and-drop move functionality preserved
+- [x] Click-to-view reservations still works
+- [x] Context menu functionality intact
+- [x] No unused resize-related code remains
 
 ## Notes
-- Focus on architecture first - SOAP communication and ZKI generation will be implemented after architecture is complete
-- All fiscal operations must be logged for audit trail
-- Certificate security is critical - never expose certificates in code
-- Must maintain compatibility with existing Hotel Porec business data
+- Focus on surgical removal - impact as little code as possible
+- Preserve all other timeline functionality
+- Keep expansion mode toggle for potential future features
+- Maintain proper JSX structure after removals
+- Test thoroughly after each change

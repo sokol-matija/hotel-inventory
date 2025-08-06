@@ -23,7 +23,9 @@ import {
   Dog,
   DollarSign,
   MousePointer2,
-  Square
+  Square,
+  ArrowLeftRight,
+
 } from 'lucide-react';
 import { HOTEL_POREC_ROOMS, getRoomsByFloor } from '../../../lib/hotel/hotelData';
 import { SAMPLE_GUESTS } from '../../../lib/hotel/sampleData';
@@ -33,6 +35,7 @@ import { getCountryFlag } from '../../../lib/hotel/countryFlags';
 import { CalendarEvent, ReservationStatus, Reservation, Room } from '../../../lib/hotel/types';
 import ReservationPopup from './Reservations/ReservationPopup';
 import CreateBookingModal from './CreateBookingModal';
+import RoomChangeConfirmDialog from './RoomChangeConfirmDialog';
 import hotelNotification from '../../../lib/notifications';
 
 interface HotelTimelineProps {
@@ -75,67 +78,56 @@ function TimelineHeader({
         </div>
       </div>
       
-      {/* Date headers - Updated for half-day system */}
-      <div className="grid grid-cols-[180px_repeat(28,minmax(22px,1fr))] border-b border-gray-200 relative z-20">
-        <div className="p-2 bg-gray-50 border-r border-gray-200 font-medium text-gray-700 text-sm">
-          Rooms
+      {/* Date headers - Clean design with proper grid alignment */}
+      <div className="border-b border-gray-200 relative z-20">
+        {/* Single unified header row matching body grid exactly */}
+        <div className="grid grid-cols-[180px_repeat(28,minmax(22px,1fr))] border-b border-gray-200">
+          <div className="p-3 bg-gray-50 border-r border-gray-200 font-medium text-gray-700 text-sm">
+            Rooms
+          </div>
+          {dates.map((date, index) => {
+            const isToday = isSameDay(date, new Date());
+            const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+            
+            return (
+              <React.Fragment key={index}>
+                {/* AM half (Check-out zone) */}
+                <div 
+                  className={`p-1 text-center border-r border-gray-300 text-xs ${
+                    isToday 
+                      ? 'bg-blue-50 font-semibold text-blue-700' 
+                      : isWeekend
+                      ? 'bg-orange-50 text-orange-700'
+                      : 'bg-gray-50 text-gray-600'
+                  } relative`}
+                  title={`${format(date, 'EEEE, MMMM dd, yyyy')} - Morning (Check-out at 11:00 AM)`}
+                >
+                  <div className="font-medium">{format(date, 'EEE')}</div>
+                  <div className="font-bold">{format(date, 'dd')}</div>
+                  {/* Subtle visual indicator for check-out zone */}
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-red-400 opacity-30"></div>
+                </div>
+                
+                {/* PM half (Check-in zone) */}
+                <div 
+                  className={`p-1 text-center border-r border-gray-200 text-xs ${
+                    isToday 
+                      ? 'bg-blue-50 font-semibold text-blue-700' 
+                      : isWeekend
+                      ? 'bg-orange-50 text-orange-700'
+                      : 'bg-gray-50 text-gray-600'
+                  } relative`}
+                  title={`${format(date, 'EEEE, MMMM dd, yyyy')} - Afternoon (Check-in at 3:00 PM)`}
+                >
+                  <div className="font-medium opacity-30">{format(date, 'EEE')}</div>
+                  <div className="font-bold opacity-30">{format(date, 'dd')}</div>
+                  {/* Subtle visual indicator for check-in zone */}
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-400 opacity-30"></div>
+                </div>
+              </React.Fragment>
+            );
+          })}
         </div>
-        {dates.map((date, index) => {
-          const isToday = isSameDay(date, new Date());
-          const isWeekend = date.getDay() === 0 || date.getDay() === 6; // Sunday = 0, Saturday = 6
-          
-          return (
-            <React.Fragment key={index}>
-              {/* First half of day (Check-out zone) */}
-              <div 
-                className={`p-1 text-center border-r border-gray-300 ${
-                  isToday 
-                    ? 'bg-blue-50 font-semibold text-blue-700' 
-                    : isWeekend
-                    ? 'bg-orange-50 text-orange-700 font-medium'
-                    : 'bg-gray-50 text-gray-700'
-                } relative`}
-                title={`${format(date, 'MMM dd')} - Morning (Check-out)`}
-              >
-                <div className="text-xs font-medium">
-                  {format(date, 'EEE')}
-                </div>
-                <div className="text-sm">
-                  {format(date, 'dd')}
-                </div>
-                <div className="text-xs opacity-75">
-                  AM
-                </div>
-                {/* Visual indicator for check-out zone */}
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-red-300 opacity-50"></div>
-              </div>
-              
-              {/* Second half of day (Check-in zone) */}
-              <div 
-                className={`p-1 text-center border-r border-gray-200 ${
-                  isToday 
-                    ? 'bg-blue-50 font-semibold text-blue-700' 
-                    : isWeekend
-                    ? 'bg-orange-50 text-orange-700 font-medium'
-                    : 'bg-gray-50 text-gray-700'
-                } relative`}
-                title={`${format(date, 'MMM dd')} - Afternoon (Check-in)`}
-              >
-                <div className="text-xs font-medium">
-                  {index === 0 ? format(date, 'EEE') : ''}
-                </div>
-                <div className="text-sm">
-                  {index === 0 ? format(date, 'dd') : ''}
-                </div>
-                <div className="text-xs opacity-75">
-                  PM
-                </div>
-                {/* Visual indicator for check-in zone */}
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-300 opacity-50"></div>
-              </div>
-            </React.Fragment>
-          );
-        })}
       </div>
     </div>
   );
@@ -156,7 +148,9 @@ function ReservationBlock({
   onMoveReservation,
   isFullscreen = false,
   onUpdateReservationStatus,
-  onDeleteReservation
+  onDeleteReservation,
+  isExpansionMode = false,
+  onResizeReservation
 }: {
   reservation: Reservation;
   guest: any;
@@ -167,6 +161,8 @@ function ReservationBlock({
   isFullscreen?: boolean;
   onUpdateReservationStatus?: (id: string, status: ReservationStatus) => Promise<void>;
   onDeleteReservation?: (id: string) => Promise<void>;
+  isExpansionMode?: boolean;
+  onResizeReservation?: (reservationId: string, side: 'start' | 'end', newDate: Date) => void;
 }) {
   // Context menu state - simple implementation
   const [contextMenu, setContextMenu] = useState<{
@@ -195,9 +191,6 @@ function ReservationBlock({
     });
   }, [contextMenu, reservation.id]);
 
-  // Resize state
-  const [isResizing, setIsResizing] = useState(false);
-  const [resizeType, setResizeType] = useState<'left' | 'right' | null>(null);
   
   // Animation ref
   const blockRef = useRef<HTMLDivElement>(null);
@@ -239,12 +232,12 @@ function ReservationBlock({
   
   // Clamp to visible range (need these for useEffect dependencies)
   const visibleStartHalfDay = Math.max(0, startHalfDayIndex);
-  const visibleEndHalfDay = Math.min(27, endHalfDayIndex - 1); // End is exclusive, max is 27 (day 13 PM)
+  const visibleEndHalfDay = Math.min(27, endHalfDayIndex); // Include the AM square (don't subtract 1)
   
   // CSS Grid positioning for half-day system
   // Grid columns: 1=rooms, 2=day0_AM, 3=day0_PM, 4=day1_AM, 5=day1_PM, ..., 29=day13_PM
   const gridColumnStart = visibleStartHalfDay + 2; // day 0 PM = column 3
-  const gridColumnEnd = visibleEndHalfDay + 3;     // day 1 AM = column 4 (end is exclusive)
+  const gridColumnEnd = visibleEndHalfDay + 3;     // +3 because CSS grid end is exclusive, so +1 to include AM square
   
   const statusColors = RESERVATION_STATUS_COLORS[reservation.status as ReservationStatus] || RESERVATION_STATUS_COLORS.confirmed;
   const flag = getCountryFlag(guest?.nationality || '');
@@ -255,7 +248,7 @@ function ReservationBlock({
   
   // Animation effects - MUST be before any early returns to satisfy Rules of Hooks
   useEffect(() => {
-    if (blockRef.current && !isDragging && !isResizing) {
+    if (blockRef.current && !isDragging) {
       // Smooth animation when position updates after drop
       gsap.fromTo(blockRef.current, 
         { 
@@ -272,7 +265,7 @@ function ReservationBlock({
         }
       );
     }
-  }, [gridColumnStart, gridColumnEnd, isDragging, isResizing]);
+  }, [gridColumnStart, gridColumnEnd, isDragging]);
 
   // Initial entrance animation - MUST be before any early returns to satisfy Rules of Hooks
   useEffect(() => {
@@ -312,7 +305,7 @@ function ReservationBlock({
         cardRef.current = el;
       }}
       className={`rounded cursor-pointer hover:shadow-md border flex items-center px-2 py-0.5 text-xs font-medium overflow-hidden group z-10 pointer-events-auto ${
-        isDragging ? 'opacity-50 ring-2 ring-blue-400' : isResizing ? 'ring-2 ring-purple-400' : ''
+        isDragging ? 'opacity-50 ring-2 ring-blue-400' : ''
       }`}
       style={{
         gridColumnStart: gridColumnStart,
@@ -327,12 +320,8 @@ function ReservationBlock({
         zIndex: isDragging ? 50 : 5 // Higher z-index when dragging
       }}
       onClick={(e) => {
-        // Prevent click-to-view if dragging, resizing, clicking resize handles, or closing context menu
-        const target = e.target as HTMLElement;
-        const isResizeHandle = target.closest('[title*="Resize:"]') || 
-                              target.classList.contains('cursor-ew-resize');
-        
-        if (!isDragging && !isResizing && !isResizeHandle && !isClosingContextMenu) {
+        // Prevent click-to-view if dragging or closing context menu
+        if (!isDragging && !isClosingContextMenu) {
           onReservationClick(reservation);
         }
       }}
@@ -427,124 +416,11 @@ function ReservationBlock({
         </div>
       )}
       
-      {/* Always visible resize handles for better UX */}
-      <div className={`absolute inset-y-0 left-0 w-2 cursor-ew-resize transition-all duration-200 pointer-events-auto ${
-        isResizing && resizeType === 'left' 
-          ? 'bg-purple-500 border-purple-700 w-3' 
-          : 'bg-blue-300/60 hover:bg-blue-400/90 border-r border-blue-400/40'
-      }`}
-           title="⟷ Resize: Drag to change check-in date"
-           onMouseEnter={(e) => {
-             if (!isResizing) {
-               gsap.to(e.currentTarget, { 
-                 scale: 1.2, 
-                 duration: 0.2, 
-                 ease: 'power2.out' 
-               });
-             }
-           }}
-           onMouseLeave={(e) => {
-             if (!isResizing) {
-               gsap.to(e.currentTarget, { 
-                 scale: 1, 
-                 duration: 0.2, 
-                 ease: 'power2.out' 
-               });
-             }
-           }}
-           onMouseDown={(e) => {
-             e.stopPropagation(); // Prevent main drag
-             setIsResizing(true);
-             setResizeType('left');
-             
-             const handleResize = (moveEvent: MouseEvent) => {
-               const timelineElement = document.querySelector('.grid[class*="grid-cols-"][class*="180px"]');
-              if (!timelineElement) return;
-              
-              const rect = timelineElement.getBoundingClientRect();
-              const columnWidth = (rect.width - 180) / 14; // Subtract room column width
-               const mouseX = moveEvent.clientX - rect.left - 180; // Relative to first date column
-               const newDayIndex = Math.floor(mouseX / columnWidth);
-               const clampedDayIndex = Math.max(0, Math.min(13, newDayIndex));
-               
-               const newCheckIn = addDays(startDate, clampedDayIndex);
-               newCheckIn.setHours(15, 0, 0, 0); // 3 PM check-in
-               
-               if (newCheckIn < reservation.checkOut && onMoveReservation) {
-                 onMoveReservation(reservation.id, room.id, newCheckIn, reservation.checkOut);
-               }
-             };
-             
-             const handleMouseUp = () => {
-               setIsResizing(false);
-               setResizeType(null);
-               document.removeEventListener('mousemove', handleResize);
-               document.removeEventListener('mouseup', handleMouseUp);
-             };
-             
-             document.addEventListener('mousemove', handleResize);
-             document.addEventListener('mouseup', handleMouseUp);
-           }}
-      ></div>
+
+
       
-      <div className={`absolute inset-y-0 right-0 w-2 cursor-ew-resize transition-all duration-200 pointer-events-auto ${
-        isResizing && resizeType === 'right' 
-          ? 'bg-purple-500 border-purple-700 w-3' 
-          : 'bg-blue-300/60 hover:bg-blue-400/90 border-l border-blue-400/40'
-      }`}
-           title="⟷ Resize: Drag to change check-out date"
-           onMouseEnter={(e) => {
-             if (!isResizing) {
-               gsap.to(e.currentTarget, { 
-                 scale: 1.2, 
-                 duration: 0.2, 
-                 ease: 'power2.out' 
-               });
-             }
-           }}
-           onMouseLeave={(e) => {
-             if (!isResizing) {
-               gsap.to(e.currentTarget, { 
-                 scale: 1, 
-                 duration: 0.2, 
-                 ease: 'power2.out' 
-               });
-             }
-           }}
-           onMouseDown={(e) => {
-             e.stopPropagation(); // Prevent main drag
-             setIsResizing(true);
-             setResizeType('right');
-             
-             const handleResize = (moveEvent: MouseEvent) => {
-               const timelineElement = document.querySelector('.grid[class*="grid-cols-"][class*="180px"]');
-              if (!timelineElement) return;
-              
-              const rect = timelineElement.getBoundingClientRect();
-              const columnWidth = (rect.width - 180) / 14; // Subtract room column width
-               const mouseX = moveEvent.clientX - rect.left - 180; // Relative to first date column
-               const newDayIndex = Math.floor(mouseX / columnWidth) + 1; // +1 because checkout is next day
-               const clampedDayIndex = Math.max(1, Math.min(14, newDayIndex));
-               
-               const newCheckOut = addDays(startDate, clampedDayIndex);
-               newCheckOut.setHours(11, 0, 0, 0); // 11 AM check-out
-               
-               if (newCheckOut > reservation.checkIn && onMoveReservation) {
-                 onMoveReservation(reservation.id, room.id, reservation.checkIn, newCheckOut);
-               }
-             };
-             
-             const handleMouseUp = () => {
-               setIsResizing(false);
-               setResizeType(null);
-               document.removeEventListener('mousemove', handleResize);
-               document.removeEventListener('mouseup', handleMouseUp);
-             };
-             
-             document.addEventListener('mousemove', handleResize);
-             document.addEventListener('mouseup', handleMouseUp);
-           }}
-      ></div>
+
+
       
       {/* Hover tooltip */}
       <div className="absolute top-full left-0 mt-1 bg-gray-900 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 pointer-events-none z-20 whitespace-nowrap">
@@ -553,16 +429,6 @@ function ReservationBlock({
 
       {/* Simple Context Menu */}
       {contextMenu.show && contextMenu.reservation?.id === reservation.id && (
-        (console.log('[CONTEXT MENU] Rendering context menu!', {
-          show: contextMenu.show,
-          x: contextMenu.x,
-          y: contextMenu.y,
-          reservationId: contextMenu.reservation?.id,
-          currentReservationId: reservation.id,
-          windowWidth: window.innerWidth,
-          windowHeight: window.innerHeight,
-          isFullscreen: isFullscreen
-        }), true) &&
         (isFullscreen ? createPortal(
           <>
             {/* Backdrop to close menu */}
@@ -788,6 +654,8 @@ function ReservationBlock({
         ))
       )}
 
+
+
     </div>
   );
 }
@@ -824,9 +692,9 @@ function DroppableDateCell({
   dragCreateStart?: {roomId: string, dayIndex: number} | null;
   dragCreateEnd?: {roomId: string, dayIndex: number} | null;
   dragCreatePreview?: {roomId: string, startDay: number, endDay: number} | null;
-  onDragCreateStart?: (roomId: string, dayIndex: number) => void;
-  onDragCreateMove?: (roomId: string, dayIndex: number) => void;
-  onDragCreateEnd?: (roomId: string, dayIndex: number) => void;
+  onDragCreateStart?: (roomId: string, halfDayIndex: number) => void;
+  onDragCreateMove?: (roomId: string, halfDayIndex: number) => void;
+  onDragCreateEnd?: (roomId: string, halfDayIndex: number) => void;
 }) {
   const isWeekend = date.getDay() === 0 || date.getDay() === 6;
   
@@ -847,23 +715,33 @@ function DroppableDateCell({
     return false;
   });
 
-  // Check if this cell is part of the drag preview
+  // Check if this cell is part of the drag preview (updated for half-day system)
   const isInDragPreview = dragCreatePreview && 
     dragCreatePreview.roomId === room.id && 
-    dayIndex >= dragCreatePreview.startDay && 
-    dayIndex <= dragCreatePreview.endDay;
+    isDragCreating && (
+      // For the start day, only include PM half (since we start from PM)
+      (dayIndex === dragCreatePreview.startDay && isSecondHalf) ||
+      // For middle days, include both halves
+      (dayIndex > dragCreatePreview.startDay && dayIndex < dragCreatePreview.endDay) ||
+      // For the end day, only include AM half (since we end on AM)
+      (dayIndex === dragCreatePreview.endDay && !isSecondHalf)
+    );
 
   // Check if this cell is available for drag creation
-  const isAvailableForDragCreate = isDragCreateMode && !hasExistingReservation;
+  // CONSTRAINT: Only PM cells can start drag-to-create, only AM cells can end drag-to-create
+  const isAvailableForDragCreate = isDragCreateMode && !hasExistingReservation && (
+    !isDragCreating ? isSecondHalf : // Can only start dragging from PM cells
+    true // During dragging, allow moving through any available cell
+  );
 
-  // Drop zone for half-day positioning
+  // Drop zone for half-day positioning with CONSTRAINTS
   const [{ isOver, canDrop }, drop] = useDrop(() => ({
     accept: ItemTypes.RESERVATION,
     drop: (item: any) => {
       const originalDuration = Math.ceil((item.checkOut.getTime() - item.checkIn.getTime()) / (24 * 60 * 60 * 1000));
       
       if (isSecondHalf) {
-        // Dropped on second half (PM) - this is check-in zone
+        // CONSTRAINT: PM cells only accept check-in (left edge of reservation)
         const newCheckIn = new Date(date);
         newCheckIn.setHours(15, 0, 0, 0); // 3:00 PM check-in
         
@@ -872,8 +750,7 @@ function DroppableDateCell({
         
         onMoveReservation(item.reservationId, room.id, newCheckIn, newCheckOut);
       } else {
-        // Dropped on first half (AM) - this should adjust end date
-        // Calculate new check-out date based on this being the check-out day
+        // CONSTRAINT: AM cells only accept check-out (right edge of reservation)
         const newCheckOut = new Date(date);
         newCheckOut.setHours(11, 0, 0, 0); // 11:00 AM check-out
         
@@ -884,14 +761,22 @@ function DroppableDateCell({
       }
     },
     canDrop: (item: any) => {
-      // Can't drop if there's already a reservation in this half-day slot
-      // Can't drop on same room/same half-day as current position
+      // ENHANCED CONSTRAINTS:
+      // 1. No existing reservation conflicts
+      // 2. Not same position
+      // 3. ENFORCE: PM slots only for check-in moves, AM slots only for check-out moves
+      
       const isSamePosition = item.currentRoomId === room.id && 
                             isSameDay(item.checkIn, date) && 
                             ((isSecondHalf && item.checkIn.getHours() >= 12) || 
                              (!isSecondHalf && item.checkIn.getHours() < 12));
       
-      return !hasExistingReservation && !isSamePosition;
+      // Only allow drops that make logical sense:
+      // - PM cells: for moving check-in time (left edge)
+      // - AM cells: for moving check-out time (right edge)
+      const isValidDropZone = true; // For now, allow both - we'll handle logic in drop
+      
+      return !hasExistingReservation && !isSamePosition && isValidDropZone;
     },
     collect: (monitor) => ({
       isOver: !!monitor.isOver(),
@@ -899,23 +784,37 @@ function DroppableDateCell({
     }),
   }), [room, dayIndex, halfDayIndex, isSecondHalf, date, onMoveReservation, hasExistingReservation]);
 
-  // Handle drag-to-create mouse events
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (isDragCreateMode && isAvailableForDragCreate && onDragCreateStart) {
+  // Handle two-click drag-to-create system
+  const handleClick = (e: React.MouseEvent) => {
+    if (!isDragCreateMode || !isAvailableForDragCreate) return;
+    
+    e.preventDefault();
+    
+    if (!isDragCreating) {
+      // FIRST CLICK: Start selection (only on PM cells)
+      if (isSecondHalf && onDragCreateStart) {
+        onDragCreateStart(room.id, halfDayIndex);
+      }
+    } else {
+      // SECOND CLICK: End selection (only on AM cells)
+      if (!isSecondHalf && onDragCreateEnd) {
+        onDragCreateEnd(room.id, halfDayIndex);
+      }
+    }
+  };
+
+  // Handle right-click to cancel selection
+  const handleRightClick = (e: React.MouseEvent) => {
+    if (isDragCreateMode && isDragCreating) {
       e.preventDefault();
-      onDragCreateStart(room.id, dayIndex);
+      // Cancel the current selection - will be handled by parent component
     }
   };
 
   const handleMouseEnter = () => {
+    // Show hover preview during selection
     if (isDragCreating && isAvailableForDragCreate && onDragCreateMove) {
-      onDragCreateMove(room.id, dayIndex);
-    }
-  };
-
-  const handleMouseUp = () => {
-    if (isDragCreating && isAvailableForDragCreate && onDragCreateEnd) {
-      onDragCreateEnd(room.id, dayIndex);
+      onDragCreateMove(room.id, halfDayIndex);
     }
   };
 
@@ -938,20 +837,33 @@ function DroppableDateCell({
           : 'bg-red-50/20 hover:bg-red-50/40'     // Check-out zone (AM)
       }`}
       title={
-        isAvailableForDragCreate 
-          ? `Drag to create reservation starting ${format(date, 'MMM dd')} ${isSecondHalf ? 'PM' : 'AM'}`
+        isDragCreateMode && isAvailableForDragCreate 
+          ? (!isDragCreating 
+            ? `Click to ${isSecondHalf ? 'start reservation on' : 'select'} ${format(date, 'MMM dd')} ${isSecondHalf ? 'PM (Check-in)' : 'AM'}`
+            : `Click to ${!isSecondHalf ? 'end reservation on' : 'continue to'} ${format(date, 'MMM dd')} ${!isSecondHalf ? 'AM (Check-out)' : 'PM'}`
+          )
           : canDrop 
-          ? `Drop here for ${isSecondHalf ? 'check-in' : 'check-out'} on ${format(date, 'MMM dd')} ${isSecondHalf ? 'PM' : 'AM'}` 
-          : 'Cannot drop here'
+          ? `Drop here to ${isSecondHalf ? 'move check-in to' : 'move check-out to'} ${format(date, 'MMM dd')} ${isSecondHalf ? '3:00 PM' : '11:00 AM'}` 
+          : isSecondHalf 
+          ? 'Check-in zone (PM) - Drop to move reservation start'
+          : 'Check-out zone (AM) - Drop to move reservation end'
       }
-      onMouseDown={handleMouseDown}
+      onClick={handleClick}
+      onContextMenu={handleRightClick}
       onMouseEnter={handleMouseEnter}
-      onMouseUp={handleMouseUp}
     >
-      {/* Dotted circle indicator when dragging over valid drop zone */}
+      {/* Enhanced drop zone visual feedback */}
       {isOver && canDrop && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-4 h-4 border-2 border-dashed border-green-500 rounded-full bg-green-100/50"></div>
+        <div className={`absolute inset-0 ${
+          isSecondHalf 
+            ? 'bg-green-200 border-2 border-green-400' 
+            : 'bg-red-200 border-2 border-red-400'
+        } border-dashed flex items-center justify-center`}>
+          <span className={`text-xs font-bold ${
+            isSecondHalf ? 'text-green-700' : 'text-red-700'
+          }`}>
+            {isSecondHalf ? '→ IN' : 'OUT ←'}
+          </span>
         </div>
       )}
       
@@ -964,6 +876,32 @@ function DroppableDateCell({
         </div>
       )}
       
+      {/* Two-click create visual feedback */}
+      {isDragCreateMode && isAvailableForDragCreate && !isDragCreating && (
+        <div className={`absolute inset-0 ${
+          isSecondHalf 
+            ? 'bg-green-100 border-2 border-green-300 border-dashed' 
+            : 'bg-gray-100 opacity-50'
+        } flex items-center justify-center`}>
+          {isSecondHalf && (
+            <span className="text-xs font-bold text-green-700">CLICK</span>
+          )}
+        </div>
+      )}
+      
+      {/* Active selection highlighting (after first click) */}
+      {isDragCreating && isAvailableForDragCreate && !isInDragPreview && (
+        <div className={`absolute inset-0 ${
+          !isSecondHalf 
+            ? 'bg-red-100 border-2 border-red-300 border-dashed' 
+            : 'bg-blue-100 border border-blue-200'
+        } flex items-center justify-center`}>
+          {!isSecondHalf && (
+            <span className="text-xs font-bold text-red-700">CLICK</span>
+          )}
+        </div>
+      )}
+
       {/* Half-day visual indicator */}
       <div className={`absolute bottom-0 left-0 right-0 h-0.5 ${
         isSecondHalf ? 'bg-green-400' : 'bg-red-400'
@@ -997,7 +935,10 @@ function RoomRow({
   dragCreatePreview,
   onDragCreateStart,
   onDragCreateMove,
-  onDragCreateEnd
+  onDragCreateEnd,
+  // New props for expansion mode
+  isExpansionMode,
+  onResizeReservation
 }: {
   room: Room;
   reservations: Reservation[];
@@ -1013,9 +954,12 @@ function RoomRow({
   dragCreateStart?: {roomId: string, dayIndex: number} | null;
   dragCreateEnd?: {roomId: string, dayIndex: number} | null;
   dragCreatePreview?: {roomId: string, startDay: number, endDay: number} | null;
-  onDragCreateStart?: (roomId: string, dayIndex: number) => void;
-  onDragCreateMove?: (roomId: string, dayIndex: number) => void;
-  onDragCreateEnd?: (roomId: string, dayIndex: number) => void;
+  onDragCreateStart?: (roomId: string, halfDayIndex: number) => void;
+  onDragCreateMove?: (roomId: string, halfDayIndex: number) => void;
+  onDragCreateEnd?: (roomId: string, halfDayIndex: number) => void;
+  // New props for expansion mode
+  isExpansionMode?: boolean;
+  onResizeReservation?: (reservationId: string, side: 'start' | 'end', newDate: Date) => void;
 }) {
   // Find reservations for this room
   const roomReservations = reservations.filter(r => r.roomId === room.id);
@@ -1085,6 +1029,8 @@ function RoomRow({
               isFullscreen={isFullscreen}
               onUpdateReservationStatus={onUpdateReservationStatus}
               onDeleteReservation={onDeleteReservation}
+              isExpansionMode={isExpansionMode}
+              onResizeReservation={onResizeReservation}
             />
           );
         })}
@@ -1114,7 +1060,10 @@ function FloorSection({
   dragCreatePreview,
   onDragCreateStart,
   onDragCreateMove,
-  onDragCreateEnd
+  onDragCreateEnd,
+  // New props for expansion mode
+  isExpansionMode,
+  onResizeReservation
 }: {
   floor: number;
   rooms: Room[];
@@ -1133,9 +1082,12 @@ function FloorSection({
   dragCreateStart?: {roomId: string, dayIndex: number} | null;
   dragCreateEnd?: {roomId: string, dayIndex: number} | null;
   dragCreatePreview?: {roomId: string, startDay: number, endDay: number} | null;
-  onDragCreateStart?: (roomId: string, dayIndex: number) => void;
-  onDragCreateMove?: (roomId: string, dayIndex: number) => void;
-  onDragCreateEnd?: (roomId: string, dayIndex: number) => void;
+  onDragCreateStart?: (roomId: string, halfDayIndex: number) => void;
+  onDragCreateMove?: (roomId: string, halfDayIndex: number) => void;
+  onDragCreateEnd?: (roomId: string, halfDayIndex: number) => void;
+  // New props for expansion mode
+  isExpansionMode?: boolean;
+  onResizeReservation?: (reservationId: string, side: 'start' | 'end', newDate: Date) => void;
 }) {
   const floorName = floor === 4 ? 'Rooftop Premium' : `Floor ${floor}`;
   const occupiedRooms = rooms.filter(room => 
@@ -1195,6 +1147,8 @@ function FloorSection({
               onDragCreateStart={onDragCreateStart}
               onDragCreateMove={onDragCreateMove}
               onDragCreateEnd={onDragCreateEnd}
+              isExpansionMode={isExpansionMode}
+              onResizeReservation={onResizeReservation}
             />
           ))}
         </div>
@@ -1527,6 +1481,27 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
   const [showCreateBooking, setShowCreateBooking] = useState(false);
   const [overviewDate, setOverviewDate] = useState(new Date());
   
+  // Room change confirmation dialog state
+  const [roomChangeDialog, setRoomChangeDialog] = useState<{
+    show: boolean;
+    reservationId: string;
+    currentRoom: Room | null;
+    targetRoom: Room | null;
+    newCheckIn: Date | null;
+    newCheckOut: Date | null;
+    reservation: Reservation | null;
+    guest: any;
+  }>({
+    show: false,
+    reservationId: '',
+    currentRoom: null,
+    targetRoom: null,
+    newCheckIn: null,
+    newCheckOut: null,
+    reservation: null,
+    guest: null
+  });
+  
   // Drag-to-create reservation states
   const [isDragCreateMode, setIsDragCreateMode] = useState(false);
   const [isDragCreating, setIsDragCreating] = useState(false);
@@ -1535,20 +1510,22 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
   const [dragCreatePreview, setDragCreatePreview] = useState<{roomId: string, startDay: number, endDay: number} | null>(null);
   const [dragCreateDates, setDragCreateDates] = useState<{checkIn: Date, checkOut: Date} | null>(null);
   
-  // Global mouse event listener for drag-to-create
+  // Expansion mode states
+  const [isExpansionMode, setIsExpansionMode] = useState(false);
+  
+  // Note: Removed global mouse event listener since we're using two-click system instead of drag
+
+  // Escape key listener to cancel drag-to-create
   useEffect(() => {
-    const handleGlobalMouseUp = () => {
-      if (isDragCreating) {
-        setIsDragCreating(false);
-        setDragCreateStart(null);
-        setDragCreateEnd(null);
-        setDragCreatePreview(null);
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isDragCreating) {
+        handleCancelDragCreate();
       }
     };
 
     if (isDragCreating) {
-      document.addEventListener('mouseup', handleGlobalMouseUp);
-      return () => document.removeEventListener('mouseup', handleGlobalMouseUp);
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
     }
   }, [isDragCreating]);
   
@@ -1653,74 +1630,38 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
       // Check if room type is changing
       const isRoomTypeChange = oldRoom.type !== newRoom.type;
       
-      let shouldProceed = true;
-      let updatedReservationData: any = {
+      const updatedReservationData: any = {
         roomId: newRoomId,
         checkIn: newCheckIn,
         checkOut: newCheckOut
       };
 
       if (isRoomTypeChange) {
-        // Calculate new pricing for the different room type
-        const { calculatePricing } = await import('../../../lib/hotel/pricingCalculator');
-        
-        try {
-          const newPricing = calculatePricing(
-            newRoomId,
-            newCheckIn,
-            newCheckOut,
-            reservation.adults,
-            reservation.children,
-            {
-              hasPets: reservation.petFee > 0,
-              needsParking: reservation.parkingFee > 0,
-              additionalCharges: reservation.additionalCharges
-            }
-          );
-
-          const oldPricing = reservation.totalAmount;
-          const priceDifference = newPricing.total - oldPricing;
-          const isMoreExpensive = priceDifference > 0;
-
-          // Show confirmation dialog with pricing information
-          const confirmMessage = isMoreExpensive
-            ? `Moving from ${oldRoom.nameEnglish} to ${newRoom.nameEnglish} will increase the price by €${priceDifference.toFixed(2)}.\n\nOld total: €${oldPricing.toFixed(2)}\nNew total: €${newPricing.total.toFixed(2)}\n\nDo you want to proceed with this room change?`
-            : `Moving from ${oldRoom.nameEnglish} to ${newRoom.nameEnglish} will decrease the price by €${Math.abs(priceDifference).toFixed(2)}.\n\nOld total: €${oldPricing.toFixed(2)}\nNew total: €${newPricing.total.toFixed(2)}\n\nDo you want to proceed with this room change?`;
-
-          shouldProceed = window.confirm(confirmMessage);
-
-          if (shouldProceed) {
-            // Update reservation data with new pricing
-            updatedReservationData = {
-              ...updatedReservationData,
-              totalAmount: newPricing.total,
-              subtotal: newPricing.subtotal,
-              fees: newPricing.fees
-            };
-          }
-        } catch (pricingError) {
-          console.error('Failed to calculate new pricing:', pricingError);
-          // Still ask for confirmation even if pricing calculation fails
-          shouldProceed = window.confirm(
-            `Moving from ${oldRoom.nameEnglish} to ${newRoom.nameEnglish} will change the room type and may affect pricing.\n\nDo you want to proceed with this room change?`
-          );
-        }
+        // Show custom room change dialog instead of proceeding immediately
+        setRoomChangeDialog({
+          show: true,
+          reservationId,
+          currentRoom: oldRoom,
+          targetRoom: newRoom,
+          newCheckIn,
+          newCheckOut,
+          reservation,
+          guest
+        });
+        return; // Exit early, dialog handlers will complete the move
       }
 
-      if (shouldProceed) {
-        await updateReservation(reservationId, updatedReservationData);
+      // If no room type change, proceed normally
+      await updateReservation(reservationId, updatedReservationData);
 
-        const successMessage = isRoomTypeChange 
-          ? `${guest?.name || 'Guest'} moved from ${formatRoomNumber(oldRoom)} to ${formatRoomNumber(newRoom)} with updated pricing • ${newCheckIn.toLocaleDateString()} - ${newCheckOut.toLocaleDateString()}`
-          : `${guest?.name || 'Guest'} moved from ${formatRoomNumber(oldRoom)} to ${formatRoomNumber(newRoom)} • ${newCheckIn.toLocaleDateString()} - ${newCheckOut.toLocaleDateString()}`;
+      const successMessage = `${guest?.name || 'Guest'} moved from ${formatRoomNumber(oldRoom)} to ${formatRoomNumber(newRoom)} • ${newCheckIn.toLocaleDateString()} - ${newCheckOut.toLocaleDateString()}`;
 
-        // Show success notification
-        hotelNotification.success(
-          'Reservation Moved Successfully!',
-          successMessage,
-          5
-        );
-      }
+      // Show success notification
+      hotelNotification.success(
+        'Reservation Moved Successfully!',
+        successMessage,
+        5
+      );
 
     } catch (error) {
       console.error('Error moving reservation:', error);
@@ -1732,16 +1673,88 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
     }
   };
 
-  // Drag-to-create handlers
-  const handleDragCreateStart = (roomId: string, dayIndex: number) => {
+  // Room change dialog handlers
+  const handleConfirmRoomChange = async () => {
+    if (!roomChangeDialog.reservation || !roomChangeDialog.targetRoom || !roomChangeDialog.currentRoom) return;
+    
+    try {
+      const { calculatePricing } = await import('../../../lib/hotel/pricingCalculator');
+      
+      const newPricing = calculatePricing(
+        roomChangeDialog.targetRoom.id,
+        roomChangeDialog.newCheckIn!,
+        roomChangeDialog.newCheckOut!,
+        roomChangeDialog.reservation.adults,
+        roomChangeDialog.reservation.children,
+        {
+          hasPets: roomChangeDialog.reservation.petFee > 0,
+          needsParking: roomChangeDialog.reservation.parkingFee > 0,
+          additionalCharges: roomChangeDialog.reservation.additionalCharges
+        }
+      );
+
+      const updatedReservationData = {
+        roomId: roomChangeDialog.targetRoom.id,
+        checkIn: roomChangeDialog.newCheckIn!,
+        checkOut: roomChangeDialog.newCheckOut!,
+        totalAmount: newPricing.total,
+        subtotal: newPricing.subtotal,
+        ...newPricing.fees
+      };
+
+      await updateReservation(roomChangeDialog.reservationId, updatedReservationData);
+
+      const successMessage = `${roomChangeDialog.guest?.name || 'Guest'} moved from ${formatRoomNumber(roomChangeDialog.currentRoom)} to ${formatRoomNumber(roomChangeDialog.targetRoom)} with updated pricing`;
+
+      hotelNotification.success('Room Change Successful!', successMessage, 5);
+      
+      setRoomChangeDialog({ show: false, reservationId: '', currentRoom: null, targetRoom: null, newCheckIn: null, newCheckOut: null, reservation: null, guest: null });
+    } catch (error) {
+      console.error('Error confirming room change:', error);
+      hotelNotification.error('Failed to Change Room', 'Unable to complete the room change. Please try again.', 5);
+    }
+  };
+
+  const handleFreeUpgrade = async () => {
+    if (!roomChangeDialog.reservation || !roomChangeDialog.targetRoom || !roomChangeDialog.currentRoom) return;
+    
+    try {
+      // Move to new room WITHOUT changing price (free upgrade)
+      const updatedReservationData = {
+        roomId: roomChangeDialog.targetRoom.id,
+        checkIn: roomChangeDialog.newCheckIn!,
+        checkOut: roomChangeDialog.newCheckOut!,
+        // Keep original pricing - it's a free upgrade!
+        totalAmount: roomChangeDialog.reservation.totalAmount
+      };
+
+      await updateReservation(roomChangeDialog.reservationId, updatedReservationData);
+
+      const successMessage = `${roomChangeDialog.guest?.name || 'Guest'} received a FREE UPGRADE from ${formatRoomNumber(roomChangeDialog.currentRoom)} to ${formatRoomNumber(roomChangeDialog.targetRoom)}!`;
+
+      hotelNotification.success('Free Upgrade Applied!', successMessage, 7);
+      
+      setRoomChangeDialog({ show: false, reservationId: '', currentRoom: null, targetRoom: null, newCheckIn: null, newCheckOut: null, reservation: null, guest: null });
+    } catch (error) {
+      console.error('Error applying free upgrade:', error);
+      hotelNotification.error('Failed to Apply Upgrade', 'Unable to complete the free upgrade. Please try again.', 5);
+    }
+  };
+
+  // Drag-to-create handlers (updated for half-day system)
+  const handleDragCreateStart = (roomId: string, halfDayIndex: number) => {
+    // Convert half-day index to day index (PM cell)
+    const dayIndex = Math.floor(halfDayIndex / 2);
     setIsDragCreating(true);
     setDragCreateStart({ roomId, dayIndex });
     setDragCreateEnd({ roomId, dayIndex });
     setDragCreatePreview({ roomId, startDay: dayIndex, endDay: dayIndex });
   };
 
-  const handleDragCreateMove = (roomId: string, dayIndex: number) => {
+  const handleDragCreateMove = (roomId: string, halfDayIndex: number) => {
     if (isDragCreating && dragCreateStart && dragCreateStart.roomId === roomId) {
+      // Convert half-day index to day index
+      const dayIndex = Math.floor(halfDayIndex / 2);
       setDragCreateEnd({ roomId, dayIndex });
       const startDay = Math.min(dragCreateStart.dayIndex, dayIndex);
       const endDay = Math.max(dragCreateStart.dayIndex, dayIndex);
@@ -1749,7 +1762,7 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
     }
   };
 
-  const handleDragCreateEnd = (roomId: string, dayIndex: number) => {
+  const handleDragCreateEnd = (roomId: string, halfDayIndex: number) => {
     if (isDragCreating && dragCreateStart && dragCreatePreview) {
       setIsDragCreating(false);
       
@@ -1757,7 +1770,7 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
       const startDay = dragCreatePreview.startDay;
       const endDay = dragCreatePreview.endDay;
       const checkInDate = addDays(currentDate, startDay);
-      const checkOutDate = addDays(currentDate, endDay + 1); // +1 because checkout is next day
+      const checkOutDate = addDays(currentDate, endDay); // No +1 needed - endDay is already the checkout day
       
       checkInDate.setHours(15, 0, 0, 0); // 3 PM check-in
       checkOutDate.setHours(11, 0, 0, 0); // 11 AM check-out
@@ -1776,6 +1789,21 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
       setDragCreateEnd(null);
       setDragCreatePreview(null);
     }
+  };
+
+  // Cancel drag-to-create selection (for right-click or escape)
+  const handleCancelDragCreate = () => {
+    setIsDragCreating(false);
+    setDragCreateStart(null);
+    setDragCreateEnd(null);
+    setDragCreatePreview(null);
+  };
+
+  // Handle reservation resize in expansion mode
+  const handleResizeReservation = (reservationId: string, side: 'start' | 'end', newDate: Date) => {
+    console.log('Resize reservation:', { reservationId, side, newDate });
+    // TODO: Implement resize logic with half-day constraints
+    // This will be called when user drags the arrow handles
   };
 
   const handleCreateBooking = async (bookingData: any) => {
@@ -1895,11 +1923,35 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
                 setDragCreateStart(null);
                 setDragCreateEnd(null);
                 setDragCreatePreview(null);
+                // Also disable expansion mode when entering drag mode
+                if (!isDragCreateMode) {
+                  setIsExpansionMode(false);
+                }
               }}
               className={isDragCreateMode ? "bg-blue-600 text-white" : ""}
             >
               {isDragCreateMode ? <Square className="h-4 w-4" /> : <MousePointer2 className="h-4 w-4" />}
               {isDragCreateMode ? 'Exit Drag Mode' : 'Drag to Create'}
+            </Button>
+            
+            <Button 
+              variant={isExpansionMode ? "default" : "outline"} 
+              onClick={() => {
+                setIsExpansionMode(!isExpansionMode);
+                // Reset expansion mode state when toggling
+                // Also disable drag mode when entering expansion mode
+                if (!isExpansionMode) {
+                  setIsDragCreateMode(false);
+                  setIsDragCreating(false);
+                  setDragCreateStart(null);
+                  setDragCreateEnd(null);
+                  setDragCreatePreview(null);
+                }
+              }}
+              className={isExpansionMode ? "bg-green-600 text-white" : ""}
+            >
+              {isExpansionMode ? <Square className="h-4 w-4" /> : <ArrowLeftRight className="h-4 w-4" />}
+              {isExpansionMode ? 'Exit Expand Mode' : 'Expand Reservations'}
             </Button>
             {onToggleFullscreen && (
               <Button variant="outline" onClick={onToggleFullscreen}>
@@ -1997,6 +2049,8 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
                 onDragCreateStart={handleDragCreateStart}
                 onDragCreateMove={handleDragCreateMove}
                 onDragCreateEnd={handleDragCreateEnd}
+                isExpansionMode={isExpansionMode}
+                onResizeReservation={handleResizeReservation}
               />
             ))}
           </div>
@@ -2028,6 +2082,20 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
           onCreateBooking={handleCreateBooking}
           preSelectedDates={dragCreateDates} // Pass pre-selected dates from drag
           existingReservations={reservations} // Pass existing reservations for conflict checking
+        />
+      )}
+
+      {/* Room Change Confirmation Dialog */}
+      {roomChangeDialog.show && roomChangeDialog.currentRoom && roomChangeDialog.targetRoom && roomChangeDialog.reservation && (
+        <RoomChangeConfirmDialog
+          isOpen={roomChangeDialog.show}
+          onClose={() => setRoomChangeDialog({ show: false, reservationId: '', currentRoom: null, targetRoom: null, newCheckIn: null, newCheckOut: null, reservation: null, guest: null })}
+          currentRoom={roomChangeDialog.currentRoom}
+          targetRoom={roomChangeDialog.targetRoom}
+          reservation={roomChangeDialog.reservation}
+          guest={roomChangeDialog.guest}
+          onConfirmChange={handleConfirmRoomChange}
+          onFreeUpgrade={handleFreeUpgrade}
         />
       )}
       </div>
