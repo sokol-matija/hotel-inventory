@@ -36,7 +36,9 @@ import { CalendarEvent, ReservationStatus, Reservation, Room } from '../../../li
 import ReservationPopup from './Reservations/ReservationPopup';
 import CreateBookingModal from './CreateBookingModal';
 import RoomChangeConfirmDialog from './RoomChangeConfirmDialog';
+import DrinksSelectionModal from './RoomService/DrinksSelectionModal';
 import hotelNotification from '../../../lib/notifications';
+import { OrderItem } from '../../../lib/hotel/orderTypes';
 
 interface HotelTimelineProps {
   isFullscreen?: boolean;
@@ -150,7 +152,9 @@ function ReservationBlock({
   onUpdateReservationStatus,
   onDeleteReservation,
   isExpansionMode = false,
-  onResizeReservation
+  onResizeReservation,
+  onShowDrinksModal,
+  calculateContextMenuPosition
 }: {
   reservation: Reservation;
   guest: any;
@@ -163,6 +167,8 @@ function ReservationBlock({
   onDeleteReservation?: (id: string) => Promise<void>;
   isExpansionMode?: boolean;
   onResizeReservation?: (reservationId: string, side: 'start' | 'end', newDate: Date) => void;
+  onShowDrinksModal?: (reservation: Reservation) => void;
+  calculateContextMenuPosition?: (e: React.MouseEvent, menuWidth?: number, menuHeight?: number) => { x: number; y: number };
 }) {
   // Context menu state - simple implementation
   const [contextMenu, setContextMenu] = useState<{
@@ -337,11 +343,14 @@ function ReservationBlock({
         e.preventDefault();
         e.stopPropagation();
         
-        // Show context menu at cursor position
+        // Show context menu at smart position
+        const position = calculateContextMenuPosition 
+          ? calculateContextMenuPosition(e) 
+          : { x: e.clientX, y: e.clientY }; // fallback to original positioning
         const newContextMenu = {
           show: true,
-          x: e.clientX,
-          y: e.clientY,
+          x: position.x,
+          y: position.y,
           reservation: reservation
         };
         
@@ -489,6 +498,19 @@ function ReservationBlock({
                 <span className="text-blue-600">↗</span>
                 <span>Fast Check-out</span>
               </button>
+              
+              <button 
+                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3"
+                onClick={() => {
+                  if (onShowDrinksModal && contextMenu.reservation) {
+                    onShowDrinksModal(contextMenu.reservation);
+                  }
+                  setContextMenu({ show: false, x: 0, y: 0, reservation: null });
+                }}
+              >
+                <span className="text-green-600">🍹</span>
+                <span>Add Drinks to Room Bill</span>
+              </button>
 
               <div className="border-t border-gray-100 my-1"></div>
               
@@ -514,6 +536,19 @@ function ReservationBlock({
               >
                 <span className="text-yellow-600">💰</span>
                 <span>Mark as Paid</span>
+              </button>
+              
+              <button 
+                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3"
+                onClick={() => {
+                  if (onShowDrinksModal && contextMenu.reservation) {
+                    onShowDrinksModal(contextMenu.reservation);
+                  }
+                  setContextMenu({ show: false, x: 0, y: 0, reservation: null });
+                }}
+              >
+                <span className="text-green-600">🍹</span>
+                <span>Add Drinks to Room Bill</span>
               </button>
 
               <div className="border-t border-gray-100 my-1"></div>
@@ -600,6 +635,19 @@ function ReservationBlock({
                 <span className="text-blue-600">↗</span>
                 <span>Fast Check-out</span>
               </button>
+              
+              <button 
+                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3"
+                onClick={() => {
+                  if (onShowDrinksModal && contextMenu.reservation) {
+                    onShowDrinksModal(contextMenu.reservation);
+                  }
+                  setContextMenu({ show: false, x: 0, y: 0, reservation: null });
+                }}
+              >
+                <span className="text-green-600">🍹</span>
+                <span>Add Drinks to Room Bill</span>
+              </button>
 
               <div className="border-t border-gray-100 my-1"></div>
               
@@ -625,6 +673,19 @@ function ReservationBlock({
               >
                 <span className="text-yellow-600">💰</span>
                 <span>Mark as Paid</span>
+              </button>
+              
+              <button 
+                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3"
+                onClick={() => {
+                  if (onShowDrinksModal && contextMenu.reservation) {
+                    onShowDrinksModal(contextMenu.reservation);
+                  }
+                  setContextMenu({ show: false, x: 0, y: 0, reservation: null });
+                }}
+              >
+                <span className="text-green-600">🍹</span>
+                <span>Add Drinks to Room Bill</span>
               </button>
 
               <div className="border-t border-gray-100 my-1"></div>
@@ -1019,7 +1080,9 @@ function RoomRow({
   onDragCreateEnd,
   // New props for expansion mode
   isExpansionMode,
-  onResizeReservation
+  onResizeReservation,
+  onShowDrinksModal,
+  calculateContextMenuPosition
 }: {
   room: Room;
   reservations: Reservation[];
@@ -1041,6 +1104,8 @@ function RoomRow({
   // New props for expansion mode
   isExpansionMode?: boolean;
   onResizeReservation?: (reservationId: string, side: 'start' | 'end', newDate: Date) => void;
+  onShowDrinksModal?: (reservation: Reservation) => void;
+  calculateContextMenuPosition?: (e: React.MouseEvent, menuWidth?: number, menuHeight?: number) => { x: number; y: number };
 }) {
   // Find reservations for this room
   const roomReservations = reservations.filter(r => r.roomId === room.id);
@@ -1112,6 +1177,8 @@ function RoomRow({
               onDeleteReservation={onDeleteReservation}
               isExpansionMode={isExpansionMode}
               onResizeReservation={onResizeReservation}
+              onShowDrinksModal={onShowDrinksModal}
+              calculateContextMenuPosition={calculateContextMenuPosition}
             />
           );
         })}
@@ -1144,7 +1211,9 @@ function FloorSection({
   onDragCreateEnd,
   // New props for expansion mode
   isExpansionMode,
-  onResizeReservation
+  onResizeReservation,
+  onShowDrinksModal,
+  calculateContextMenuPosition
 }: {
   floor: number;
   rooms: Room[];
@@ -1169,6 +1238,8 @@ function FloorSection({
   // New props for expansion mode
   isExpansionMode?: boolean;
   onResizeReservation?: (reservationId: string, side: 'start' | 'end', newDate: Date) => void;
+  onShowDrinksModal?: (reservation: Reservation) => void;
+  calculateContextMenuPosition?: (e: React.MouseEvent, menuWidth?: number, menuHeight?: number) => { x: number; y: number };
 }) {
   const floorName = floor === 4 ? 'Rooftop Premium' : `Floor ${floor}`;
   const occupiedRooms = rooms.filter(room => 
@@ -1230,6 +1301,8 @@ function FloorSection({
               onDragCreateEnd={onDragCreateEnd}
               isExpansionMode={isExpansionMode}
               onResizeReservation={onResizeReservation}
+              onShowDrinksModal={onShowDrinksModal}
+              calculateContextMenuPosition={calculateContextMenuPosition}
             />
           ))}
         </div>
@@ -1594,7 +1667,42 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
   // Expansion mode states
   const [isExpansionMode, setIsExpansionMode] = useState(false);
   
+  // Drinks modal state
+  const [showDrinksModal, setShowDrinksModal] = useState(false);
+  const [drinksModalReservation, setDrinksModalReservation] = useState<Reservation | null>(null);
+  
   // Note: Removed global mouse event listener since we're using two-click system instead of drag
+
+  // Smart context menu positioning
+  const calculateContextMenuPosition = (e: React.MouseEvent, menuWidth = 180, menuHeight = 300) => {
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    
+    let x = e.clientX;
+    let y = e.clientY;
+    
+    // Check if menu would go off-screen horizontally
+    if (x + menuWidth > viewportWidth) {
+      x = e.clientX - menuWidth; // Position to the left of cursor
+    }
+    
+    // Check if menu would go off-screen vertically
+    if (y + menuHeight > viewportHeight) {
+      y = e.clientY - menuHeight; // Position above cursor
+    }
+    
+    // Ensure menu doesn't go above viewport top
+    if (y < 0) {
+      y = 10; // Small margin from top
+    }
+    
+    // Ensure menu doesn't go left of viewport
+    if (x < 0) {
+      x = 10; // Small margin from left
+    }
+    
+    return { x, y };
+  };
 
   // Escape key listener to cancel drag-to-create
   useEffect(() => {
@@ -2064,6 +2172,52 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
       }
     };
   }, [selectedReservation]);
+
+  // Handle showing drinks modal
+  const handleShowDrinksModal = (reservation: Reservation) => {
+    setDrinksModalReservation(reservation);
+    setShowDrinksModal(true);
+  };
+
+  // Handle drinks order completion
+  const handleDrinksOrderComplete = async (orderItems: OrderItem[], totalAmount: number) => {
+    if (!drinksModalReservation) return;
+
+    try {
+      // Add drinks charges to reservation bill
+      const guest = SAMPLE_GUESTS.find(g => g.id === drinksModalReservation.guestId);
+      const room = HOTEL_POREC_ROOMS.find(r => r.id === drinksModalReservation.roomId);
+      
+      // Update the reservation with drinks charges
+      const updatedReservation = {
+        ...drinksModalReservation,
+        totalAmount: drinksModalReservation.totalAmount + totalAmount,
+        notes: drinksModalReservation.notes + 
+          `\nDrinks ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item => 
+            `${item.quantity}x ${item.itemName}`
+          ).join(', ')} - Total: €${totalAmount.toFixed(2)}`
+      };
+
+      await updateReservation(drinksModalReservation.id, updatedReservation);
+
+      // Show success notification
+      hotelNotification.success(
+        'Drinks Added to Bill',
+        `€${totalAmount.toFixed(2)} in drinks charges added to Room ${room ? formatRoomNumber(room) : drinksModalReservation.roomId} bill`,
+        4
+      );
+
+      setShowDrinksModal(false);
+      setDrinksModalReservation(null);
+    } catch (error) {
+      console.error('Failed to add drinks to bill:', error);
+      hotelNotification.error(
+        'Failed to Add Drinks',
+        'Unable to add drinks to room bill. Please try again.',
+        5
+      );
+    }
+  };
   
   return (
     <DndProvider backend={HTML5Backend}>
@@ -2222,6 +2376,8 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
                 onDragCreateEnd={handleDragCreateEnd}
                 isExpansionMode={isExpansionMode}
                 onResizeReservation={handleResizeReservation}
+                onShowDrinksModal={handleShowDrinksModal}
+                calculateContextMenuPosition={calculateContextMenuPosition}
               />
             ))}
           </div>
@@ -2267,6 +2423,19 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
           guest={roomChangeDialog.guest}
           onConfirmChange={handleConfirmRoomChange}
           onFreeUpgrade={handleFreeUpgrade}
+        />
+      )}
+
+      {/* Drinks Selection Modal */}
+      {showDrinksModal && drinksModalReservation && (
+        <DrinksSelectionModal
+          reservation={drinksModalReservation}
+          isOpen={showDrinksModal}
+          onClose={() => {
+            setShowDrinksModal(false);
+            setDrinksModalReservation(null);
+          }}
+          onOrderComplete={handleDrinksOrderComplete}
         />
       )}
       </div>
