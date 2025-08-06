@@ -654,7 +654,88 @@ function ReservationBlock({
         ))
       )}
 
-
+      {/* Expansion Mode Controls */}
+      {isExpansionMode && (
+        <>
+          {/* Left side controls (check-in adjustment) */}
+          <div className="absolute left-0 top-0 bottom-0 flex flex-col justify-center space-y-1 -ml-6">
+            {/* Expand left button (extend to previous day PM) */}
+            <button
+              className="w-5 h-5 bg-green-500 hover:bg-green-600 text-white rounded-full flex items-center justify-center text-xs font-bold transition-colors shadow-sm hover:shadow-md"
+              title="Expand to previous day (PM)"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (onResizeReservation && startDayIndex > 0) {
+                  const newCheckIn = addDays(reservation.checkIn, -1);
+                  newCheckIn.setHours(15, 0, 0, 0); // 3 PM
+                  onResizeReservation(reservation.id, 'start', newCheckIn);
+                }
+              }}
+              disabled={startDayIndex <= 0}
+            >
+              ←
+            </button>
+            
+            {/* Contract left button (remove one day from start) */}
+            <button
+              className="w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-bold transition-colors shadow-sm hover:shadow-md"
+              title="Contract from left (remove one day)"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (onResizeReservation && reservationDays > 1) {
+                  const newCheckIn = addDays(reservation.checkIn, 1);
+                  newCheckIn.setHours(15, 0, 0, 0); // 3 PM
+                  onResizeReservation(reservation.id, 'start', newCheckIn);
+                }
+              }}
+              disabled={reservationDays <= 1}
+            >
+              +
+            </button>
+          </div>
+          
+          {/* Right side controls (check-out adjustment) */}
+          <div className="absolute right-0 top-0 bottom-0 flex flex-col justify-center space-y-1 -mr-6">
+            {/* Expand right button (extend to next day AM) */}
+            <button
+              className="w-5 h-5 bg-green-500 hover:bg-green-600 text-white rounded-full flex items-center justify-center text-xs font-bold transition-colors shadow-sm hover:shadow-md"
+              title="Expand to next day (AM)"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (onResizeReservation && endDayIndex < 13) {
+                  const newCheckOut = addDays(reservation.checkOut, 1);
+                  newCheckOut.setHours(11, 0, 0, 0); // 11 AM
+                  onResizeReservation(reservation.id, 'end', newCheckOut);
+                }
+              }}
+              disabled={endDayIndex >= 13}
+            >
+              →
+            </button>
+            
+            {/* Contract right button (remove one day from end) */}
+            <button
+              className="w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-bold transition-colors shadow-sm hover:shadow-md"
+              title="Contract from right (remove one day)"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (onResizeReservation && reservationDays > 1) {
+                  const newCheckOut = addDays(reservation.checkOut, -1);
+                  newCheckOut.setHours(11, 0, 0, 0); // 11 AM
+                  onResizeReservation(reservation.id, 'end', newCheckOut);
+                }
+              }}
+              disabled={reservationDays <= 1}
+            >
+              -
+            </button>
+          </div>
+        </>
+      )}
 
     </div>
   );
@@ -1800,11 +1881,101 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
   };
 
   // Handle reservation resize in expansion mode
-  const handleResizeReservation = (reservationId: string, side: 'start' | 'end', newDate: Date) => {
-    console.log('Resize reservation:', { reservationId, side, newDate });
-    // TODO: Implement resize logic with half-day constraints
-    // This will be called when user drags the arrow handles
-  };
+  const handleResizeReservation = async (reservationId: string, side: 'start' | 'end', newDate: Date) => {
+    try {
+      console.log('Resize reservation:', { reservationId, side, newDate });
+      
+      const reservation = reservations.find(r => r.id === reservationId);
+      if (!reservation) {
+        throw new Error('Reservation not found');
+      }
+
+      const room = HOTEL_POREC_ROOMS.find(r => r.id === reservation.roomId);
+      const guest = SAMPLE_GUESTS.find(g => g.id === reservation.guestId);
+      
+      // Calculate new dates
+      const newCheckIn = side === 'start' ? newDate : reservation.checkIn;
+      const newCheckOut = side === 'end' ? newDate : reservation.checkOut;
+      
+      // Validate minimum stay (1 day)
+      const daysDiff = Math.ceil((newCheckOut.getTime() - newCheckIn.getTime()) / (24 * 60 * 60 * 1000));
+      if (daysDiff < 1) {
+        hotelNotification.error(
+          'Invalid Reservation Length',
+          'Minimum stay is 1 day',
+          3
+        );
+        return;
+      }
+
+      // Check for conflicts with other reservations in the same room
+      const hasConflict = reservations.some(r => 
+        r.id !== reservationId && 
+        r.roomId === reservation.roomId &&
+        (
+          (newCheckIn >= r.checkIn && newCheckIn < r.checkOut) ||
+          (newCheckOut > r.checkIn && newCheckOut <= r.checkOut) ||
+          (newCheckIn <= r.checkIn && newCheckOut >= r.checkOut)
+        )
+      );
+
+      if (hasConflict) {
+        hotelNotification.error(
+          'Booking Conflict',
+          'Another reservation conflicts with these dates',
+          4
+        );
+        return;
+      }
+
+      // Calculate new pricing
+      const { calculatePricing } = await import('../../../lib/hotel/pricingCalculator');
+      const newPricing = calculatePricing(
+        reservation.roomId,
+        newCheckIn,
+        newCheckOut,
+        reservation.adults,
+        reservation.children,
+        {
+          hasPets: reservation.petFee > 0,
+          needsParking: reservation.parkingFee > 0,
+          additionalCharges: reservation.additionalCharges
+        }
+      );
+
+      // Update reservation
+      const updatedData = {
+        checkIn: newCheckIn,
+        checkOut: newCheckOut,
+        numberOfNights: newPricing.numberOfNights,
+        subtotal: newPricing.subtotal,
+        totalAmount: newPricing.total,
+        ...newPricing.fees
+      };
+
+      await updateReservation(reservationId, updatedData);
+
+      // Show success notification with pricing info
+      const oldTotal = reservation.totalAmount;
+      const newTotal = newPricing.total;
+      const priceDiff = newTotal - oldTotal;
+      const priceChange = priceDiff > 0 ? `+€${priceDiff.toFixed(2)}` : `€${priceDiff.toFixed(2)}`;
+
+      hotelNotification.success(
+        'Reservation Updated!',
+        `${guest?.name || 'Guest'} • ${room ? formatRoomNumber(room) : 'Room'} • ${newCheckIn.toLocaleDateString()} - ${newCheckOut.toLocaleDateString()} • ${priceChange} (€${newTotal.toFixed(2)} total)`,
+        6
+      );
+
+    } catch (error) {
+      console.error('Error resizing reservation:', error);
+      hotelNotification.error(
+        'Failed to Update Reservation',
+        'Unable to change reservation dates. Please try again.',
+        4
+      );
+    }
+  };;
 
   const handleCreateBooking = async (bookingData: any) => {
     try {

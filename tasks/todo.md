@@ -1,70 +1,76 @@
-# Hotel Timeline - Remove Drag-Based Resize System
+# Hotel Timeline Expansion Controls Implementation Plan
 
-## Task Overview
-Remove the current drag-based resize system from the HotelTimeline component while preserving all other timeline functionality, especially the drag-and-drop move functionality.
+## Overview
+Implement button-based expansion controls for reservations in the HotelTimeline component. These controls will appear on reservation blocks when expansion mode is active and allow users to expand/contract reservations by clicking buttons instead of dragging.
 
-## Analysis Summary
-The current resize system has multiple implementations:
-1. **Lines 426-481**: Old resize handle in ReservationBlock with ew-resize cursor and mouse events
-2. **Lines 719-761**: Expansion mode resize handles with left (check-in) and right (check-out) drag handles
-3. **State Management**: isExpansionMode state and onResizeReservation handler
-4. **Click Handler Logic**: Resize handle detection in onClick handlers (lines 324-328)
+## Tasks
 
-## Tasks to Complete
+### ✅ 1. Analyze Current Code Structure
+- Read and understand the HotelTimeline.tsx component
+- Identify the ReservationBlock component structure
+- Understand the existing expansion mode state management
+- Review the onResizeReservation prop and its usage
 
-### ✅ Task 1: Analyze Current Resize System
-- [x] Identify all resize-related code locations
-- [x] Map out resize handle implementations 
-- [x] Understand expansion mode functionality
-- [x] Locate resize-related state variables
+### ⏳ 2. Design Expansion Controls
+- Left side controls: ← (expand left to previous day PM) and + (contract from left)
+- Right side controls: → (expand right to next day AM) and - (contract from right)
+- Controls should be small circular buttons
+- Only show when `isExpansionMode` is true
+- Style with appropriate colors (green for expand, red for contract)
 
-### ⏳ Task 2: Remove Old Resize Handle (Lines 426-481)
-- [ ] Remove the absolute positioned div with cursor-ew-resize
-- [ ] Remove mouse event handlers (onMouseEnter, onMouseLeave, onMouseDown)
-- [ ] Remove GSAP animations for resize handle hover
-- [ ] Clean up any related mouse event logic
+### ⏳ 3. Update ReservationBlock Component
+- Add expansion controls to the reservation block JSX
+- Position controls at the left and right edges of reservation blocks
+- Implement onClick handlers that call `onResizeReservation` prop
+- Ensure controls don't interfere with existing drag-and-drop functionality
+- Style controls to be clearly visible and clickable
 
-### ⏳ Task 3: Remove Expansion Mode Resize Handles (Lines 719-761)
-- [ ] Remove left resize handle (check-in) div with cursor-w-resize
-- [ ] Remove right resize handle (check-out) div with cursor-e-resize  
-- [ ] Remove ArrowLeft and ArrowRight icons
-- [ ] Keep expansion mode toggle button but remove resize functionality
+### ⏳ 4. Implement Control Logic
+- Left expand (←): Move check-in to previous day PM (15:00)
+- Left contract (+): Move check-in to next day PM (15:00)
+- Right expand (→): Move check-out to next day AM (11:00)
+- Right contract (-): Move check-out to previous day AM (11:00)
+- Handle edge cases (beginning/end of timeline, minimum stay requirements)
 
-### ⏳ Task 4: Clean Up Click Handler Logic
-- [ ] Remove resize handle detection in onClick handlers (lines 324-328)
-- [ ] Remove cursor-w-resize and cursor-e-resize class checks
-- [ ] Ensure click-to-view functionality still works properly
+### ⏳ 5. Style the Controls
+- Use consistent styling with existing codebase
+- Small circular buttons with appropriate icons
+- Green color for expansion buttons
+- Red color for contraction buttons
+- Proper hover states and transitions
+- Position controls using absolute positioning at edges
 
-### ⏳ Task 5: Remove Resize-Related State and Props
-- [ ] Remove onResizeReservation prop from ReservationBlock component
-- [ ] Remove onResizeReservation prop from TimelineRow component  
-- [ ] Remove onResizeReservation prop from HotelTimeline component
-- [ ] Remove handleResizeReservation function (lines 1908-1912)
-- [ ] Keep isExpansionMode state for potential future use
+### ⏳ 6. Handle Edge Cases
+- Prevent expansion beyond timeline boundaries
+- Prevent contraction that would make reservation too short
+- Prevent conflicts with existing reservations
+- Show appropriate feedback for invalid operations
 
-### ⏳ Task 6: Update Type Definitions
-- [ ] Remove onResizeReservation from ReservationBlockProps interface
-- [ ] Remove onResizeReservation from TimelineRowProps interface
-- [ ] Clean up any unused resize-related type definitions
+### ⏳ 7. Test Implementation
+- Test controls appear only when expansion mode is active
+- Test expansion/contraction logic works correctly
+- Verify controls don't interfere with drag-and-drop
+- Test edge cases and error handling
+- Ensure styling is consistent and responsive
 
-### ⏳ Task 7: Test and Verify Functionality
-- [ ] Ensure component compiles without TypeScript errors
-- [ ] Verify drag-and-drop move functionality still works
-- [ ] Verify click-to-view reservations still works
-- [ ] Test expansion mode toggle (without resize handles)
-- [ ] Verify context menu functionality is preserved
+## Implementation Notes
+
+- The existing `handleResizeReservation` function needs to be enhanced to actually implement the resize logic
+- Controls should be positioned using absolute positioning within the reservation block
+- Use existing icons from lucide-react for consistency
+- Follow the existing half-day system (PM for check-in, AM for check-out)
+- Maintain the existing reservation positioning math and grid system
+
+## Files to Modify
+
+1. `/Users/msokol/Dev/Repos/2-Personal/hotel-inventory/src/components/hotel/frontdesk/HotelTimeline.tsx` - Main component with ReservationBlock
 
 ## Success Criteria
-- [x] All resize handles and drag logic removed
-- [x] Component compiles without errors
-- [x] Drag-and-drop move functionality preserved
-- [x] Click-to-view reservations still works
-- [x] Context menu functionality intact
-- [x] No unused resize-related code remains
 
-## Notes
-- Focus on surgical removal - impact as little code as possible
-- Preserve all other timeline functionality
-- Keep expansion mode toggle for potential future features
-- Maintain proper JSX structure after removals
-- Test thoroughly after each change
+- [ ] Expansion controls appear only when `isExpansionMode` is true
+- [ ] Controls are positioned at the edges of reservation blocks
+- [ ] Left side has ← and + buttons, right side has → and - buttons
+- [ ] Clicking controls calls `onResizeReservation` with appropriate parameters
+- [ ] Controls have proper styling and hover states
+- [ ] Controls don't interfere with existing drag-and-drop functionality
+- [ ] Edge cases are handled gracefully
