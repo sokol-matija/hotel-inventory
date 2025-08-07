@@ -75,6 +75,16 @@ export interface Guest {
   isVip: boolean;
 }
 
+export interface RoomServiceItem {
+  id: string;
+  itemName: string;
+  category: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  orderedAt: Date;
+}
+
 export interface Reservation {
   id: string;
   roomId: string;
@@ -100,6 +110,7 @@ export interface Reservation {
   parkingFee: number;
   shortStaySuplement: number;
   additionalCharges: number;
+  roomServiceItems: RoomServiceItem[];
   totalAmount: number;
   
   // Booking metadata

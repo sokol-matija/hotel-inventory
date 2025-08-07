@@ -33,6 +33,7 @@ describe('Calendar Utils', () => {
     parkingFee: 0,
     shortStaySuplement: 0,
     additionalCharges: 0,
+    roomServiceItems: [],
     totalAmount: 179.40,
     bookingDate: new Date('2025-01-15'),
     lastModified: new Date('2025-01-15'),

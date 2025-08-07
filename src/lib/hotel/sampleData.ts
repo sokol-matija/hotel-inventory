@@ -579,6 +579,7 @@ function createReservation(
     parkingFee: pricing.fees.parking,
     shortStaySuplement: pricing.fees.shortStay,
     additionalCharges: pricing.fees.additional,
+    roomServiceItems: [],
     totalAmount: pricing.total,
     
     // Metadata
