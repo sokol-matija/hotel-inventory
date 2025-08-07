@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { Reservation, Guest, Room } from './hotel/types';
+import { Reservation, Guest, Room, RoomServiceItem } from './hotel/types';
 import { format } from 'date-fns';
 import * as QRCode from 'qrcode';
 
@@ -170,15 +170,28 @@ export async function generatePDFInvoice(data: InvoiceData): Promise<void> {
     ]);
   }
   
-  // Additional charges
+  // Additional charges (miscellaneous)
   if (reservation.additionalCharges > 0) {
     lineItems.push([
       'Additional Services',
-      'Room service, extras',
+      'Miscellaneous charges',
       '1',
       `€${reservation.additionalCharges.toFixed(2)}`,
       `€${reservation.additionalCharges.toFixed(2)}`
     ]);
+  }
+  
+  // Room service items
+  if (reservation.roomServiceItems && reservation.roomServiceItems.length > 0) {
+    reservation.roomServiceItems.forEach(item => {
+      lineItems.push([
+        'Room Service',
+        `${item.itemName} (${format(item.orderedAt, 'dd.MM.yyyy')})`,
+        `${item.quantity}`,
+        `€${item.unitPrice.toFixed(2)}`,
+        `€${item.totalPrice.toFixed(2)}`
+      ]);
+    });
   }
   
   // Subtotal before VAT
@@ -397,6 +410,13 @@ export async function generateThermalReceipt(data: InvoiceData, fiscalData?: Cro
   
   if (reservation.additionalCharges > 0) {
     addItem('Additional Services', 1, reservation.additionalCharges, reservation.additionalCharges);
+  }
+  
+  // Room service items
+  if (reservation.roomServiceItems && reservation.roomServiceItems.length > 0) {
+    reservation.roomServiceItems.forEach(item => {
+      addItem(`Room Service - ${item.itemName}`, item.quantity, item.unitPrice, item.totalPrice);
+    });
   }
   
   receipt += halfLine + '\n';
