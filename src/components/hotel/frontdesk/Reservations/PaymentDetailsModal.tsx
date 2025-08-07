@@ -18,7 +18,7 @@ import {
   Calendar,
   CheckCircle
 } from 'lucide-react';
-import { Reservation, Guest, Room } from '../../../../lib/hotel/types';
+import { Reservation, Guest, Room, RoomServiceItem } from '../../../../lib/hotel/types';
 import { calculatePricing } from '../../../../lib/hotel/pricingCalculator';
 import { generatePDFInvoice, generateInvoiceNumber } from '../../../../lib/pdfInvoiceGenerator';
 import { useHotel } from '../../../../lib/hotel/state/HotelContext';
@@ -286,13 +286,35 @@ export default function PaymentDetailsModal({
                 <div className="flex justify-between items-center">
                   <div>
                     <div className="font-medium">Additional Charges</div>
-                    <div className="text-sm text-gray-500">Room service, extras</div>
+                    <div className="text-sm text-gray-500">Miscellaneous charges</div>
                   </div>
                   <div className="font-medium">{formatCurrency(reservation.additionalCharges)}</div>
                 </div>
               )}
             </CardContent>
           </Card>
+
+          {/* Room Service Items */}
+          {reservation.roomServiceItems && reservation.roomServiceItems.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Room Service</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {reservation.roomServiceItems.map((item, index) => (
+                  <div key={item.id} className="flex justify-between items-center">
+                    <div>
+                      <div className="font-medium">{item.itemName}</div>
+                      <div className="text-sm text-gray-500">
+                        {item.quantity}x €{item.unitPrice.toFixed(2)} • {item.orderedAt.toLocaleDateString()}
+                      </div>
+                    </div>
+                    <div className="font-medium">{formatCurrency(item.totalPrice)}</div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Total Amount */}
           <Card className="bg-blue-50">

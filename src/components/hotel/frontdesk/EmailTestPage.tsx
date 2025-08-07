@@ -18,6 +18,7 @@ import {
 import { HotelEmailService, EmailLanguage, EmailType } from '../../../lib/emailService';
 import hotelNotification from '../../../lib/notifications';
 import { Reservation, Guest, Room } from '../../../lib/hotel/types';
+import { ntfyService, BookingNotificationData } from '../../../lib/ntfyService';
 
 // Test data for email testing
 const TEST_GUEST: Guest = {
@@ -88,6 +89,7 @@ const TEST_RESERVATION: Reservation = {
   parkingFee: 21, // €7 x 3 nights
   shortStaySuplement: 0,
   additionalCharges: 0,
+  roomServiceItems: [],
   totalAmount: 282.88,
   bookingDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
   lastModified: new Date(),
@@ -100,6 +102,10 @@ export default function EmailTestPage() {
   const [testEmail, setTestEmail] = useState('sokol.matija@gmail.com');
   const [selectedLanguage, setSelectedLanguage] = useState<EmailLanguage>('en');
   const [selectedEmailType, setSelectedEmailType] = useState<EmailType>('welcome');
+  
+  // Ntfy notification state
+  const [isSendingNotification, setIsSendingNotification] = useState(false);
+  const [lastNotificationResult, setLastNotificationResult] = useState<{ success: boolean; message: string } | null>(null);
 
   const handleSendTestEmail = async () => {
     setIsSending(true);
@@ -154,6 +160,56 @@ export default function EmailTestPage() {
     }
   };
 
+  const handleSendTestNotification = async () => {
+    setIsSendingNotification(true);
+    setLastNotificationResult(null);
+
+    try {
+      // Create test booking data for Room 401
+      const testBookingData: BookingNotificationData = {
+        roomNumber: '401',
+        guestName: TEST_GUEST.name,
+        checkIn: formatDate(TEST_RESERVATION.checkIn).split(', ')[1], // Extract date part
+        checkOut: formatDate(TEST_RESERVATION.checkOut).split(', ')[1],
+        nights: TEST_RESERVATION.numberOfNights,
+        adults: TEST_RESERVATION.adults,
+        children: TEST_RESERVATION.children.length,
+        bookingSource: TEST_RESERVATION.bookingSource,
+        totalAmount: TEST_RESERVATION.totalAmount
+      };
+
+      const success = await ntfyService.sendRoom401BookingNotification(testBookingData);
+      
+      const result = {
+        success,
+        message: success 
+          ? 'Test notification sent successfully to Room 401 topic!' 
+          : 'Failed to send notification. Please check console for details.'
+      };
+      
+      setLastNotificationResult(result);
+
+      if (success) {
+        hotelNotification.success(
+          'Test Notification Sent!', 
+          'Check your mobile device for the Room 401 booking notification'
+        );
+      } else {
+        hotelNotification.error('Notification Failed', result.message);
+      }
+    } catch (error) {
+      console.error('Error sending test notification:', error);
+      const errorResult = {
+        success: false,
+        message: 'Failed to send test notification. Please check the console for details.'
+      };
+      setLastNotificationResult(errorResult);
+      hotelNotification.error('Notification Error', errorResult.message);
+    } finally {
+      setIsSendingNotification(false);
+    }
+  };
+
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', {
       weekday: 'long',
@@ -166,8 +222,8 @@ export default function EmailTestPage() {
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Email System Test</h1>
-        <p className="text-gray-600">Test the hotel welcome email system with sample data</p>
+        <h1 className="text-2xl font-bold text-gray-900">Email & Notification System Test</h1>
+        <p className="text-gray-600">Test the hotel email system and Room 401 push notifications with sample data</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -505,6 +561,85 @@ export default function EmailTestPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Ntfy Notification Test */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Phone className="h-5 w-5" />
+              <span>Room 401 Notification Test</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-3 text-sm">
+              <div className="p-3 bg-blue-50 rounded-lg">
+                <p className="font-medium text-blue-900">📱 Mobile Setup Required</p>
+                <p className="text-blue-700 mt-1">
+                  Install the ntfy app and subscribe to: <code className="font-mono bg-white px-1 rounded">{ntfyService.getTopic()}</code>
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <span className="text-lg">🏨</span>
+                  <span>Test Room 401 booking notification</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-lg">📱</span>
+                  <span>Push notification to subscribed devices</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-lg">💰</span>
+                  <span>Includes guest, dates, and pricing info</span>
+                </div>
+              </div>
+            </div>
+
+            <Button 
+              onClick={handleSendTestNotification}
+              disabled={isSendingNotification}
+              className="w-full bg-purple-600 hover:bg-purple-700"
+            >
+              {isSendingNotification ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Sending Notification...
+                </>
+              ) : (
+                <>
+                  <Send className="mr-2 h-4 w-4" />
+                  Send Test Room 401 Notification
+                </>
+              )}
+            </Button>
+
+            {lastNotificationResult && (
+              <div className={`p-3 rounded-lg ${lastNotificationResult.success ? 'bg-green-50' : 'bg-red-50'}`}>
+                <div className="flex items-center space-x-2">
+                  {lastNotificationResult.success ? (
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <XCircle className="h-4 w-4 text-red-500" />
+                  )}
+                  <span className={`text-sm font-medium ${lastNotificationResult.success ? 'text-green-800' : 'text-red-800'}`}>
+                    {lastNotificationResult.success ? 'Success!' : 'Failed'}
+                  </span>
+                </div>
+                <p className={`text-sm mt-1 ${lastNotificationResult.success ? 'text-green-700' : 'text-red-700'}`}>
+                  {lastNotificationResult.message}
+                </p>
+                
+                {lastNotificationResult.success && (
+                  <div className="mt-4 p-3 bg-purple-50 rounded-lg">
+                    <p className="text-sm text-purple-800">
+                      📱 Check your phone for the Room 401 booking notification!
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

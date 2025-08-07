@@ -732,6 +732,16 @@ export default function ReservationPopup({
                     </div>
                   )}
                 </div>
+
+                {/* Room Service Notes */}
+                {reservation.notes && (
+                  <div className="space-y-2 mt-4">
+                    <div className="text-sm text-gray-500">Room Service & Additional Notes</div>
+                    <div className="text-sm text-gray-600 p-2 bg-blue-50 rounded-md whitespace-pre-line">
+                      {reservation.notes}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 

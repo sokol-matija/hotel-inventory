@@ -22,6 +22,7 @@ import { SAMPLE_GUESTS } from '../../../lib/hotel/sampleData';
 import { formatRoomNumber, getRoomTypeDisplay, getMaxCheckoutDate } from '../../../lib/hotel/calendarUtils';
 import { calculatePricing } from '../../../lib/hotel/pricingCalculator';
 import { getCountryFlag } from '../../../lib/hotel/countryFlags';
+import { ntfyService, BookingNotificationData } from '../../../lib/ntfyService';
 
 interface CreateBookingModalProps {
   isOpen: boolean;
@@ -358,7 +359,7 @@ export default function CreateBookingModal({
     }
   }, [formData, room.maxOccupancy, dateConflict]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!isFormValid || !pricingData) {
@@ -381,6 +382,30 @@ export default function CreateBookingModal({
       bookingSource: formData.bookingSource,
       pricing: pricingData
     };
+
+    // Send ntfy notification for room 401 bookings
+    const guestName = formData.isNewGuest 
+      ? formData.newGuestData.name 
+      : formData.selectedGuest?.name || 'Unknown Guest';
+
+    const notificationData: BookingNotificationData = {
+      roomNumber: room.number,
+      guestName,
+      checkIn: format(new Date(formData.checkIn), 'dd.MM.yyyy'),
+      checkOut: format(new Date(formData.checkOut), 'dd.MM.yyyy'),
+      nights: pricingData.numberOfNights,
+      adults: formData.adults,
+      children: formData.children.length,
+      bookingSource: formData.bookingSource,
+      totalAmount: pricingData.total
+    };
+
+    // Send notification (don't block booking creation if notification fails)
+    try {
+      await ntfyService.sendRoom401BookingNotification(notificationData);
+    } catch (error) {
+      console.error('Failed to send booking notification:', error);
+    }
 
     onCreateBooking(bookingData);
   };
