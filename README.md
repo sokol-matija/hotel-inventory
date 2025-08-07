@@ -1,6 +1,6 @@
 # Hotel Inventory Management System
 
-A comprehensive inventory management system built for hotel operations, featuring role-based access control, real-time tracking, and audit logging.
+A comprehensive inventory management system built for hotel operations, featuring real-time notifications, room service integration, complete hotel front desk management, and professional Croatian fiscalization compliance.
 
 ## Features
 
@@ -11,11 +11,13 @@ A comprehensive inventory management system built for hotel operations, featurin
 - **Dashboard Analytics**: Real-time overview with key metrics and alerts
 
 ### Hotel Management System
-- **Hotel Front Desk**: Professional calendar-based booking system with drag & drop reservations
+- **Hotel Front Desk**: Professional 14-day timeline calendar with smart context menus
 - **Guest Management**: Comprehensive guest profiles with contact details and booking history
-- **Email Communication**: Multi-language email templates for guest communication
+- **Email Communication**: Multi-language email templates (EN/DE/IT) for guest communication
+- **Room Service Integration**: Complete ordering system with real-time MCP inventory integration
+- **NTFY Push Notifications**: Real-time Room 401 booking alerts on mobile devices
 - **Reservation System**: Complete booking workflow with check-in/check-out processes
-- **PDF Invoice Generation**: Professional invoices with Croatian fiscal compliance
+- **PDF Invoice Generation**: Professional invoices with room service billing and Croatian fiscal compliance
 - **Module Architecture**: Modular design with inventory, front desk, and future finance/channel manager modules
 
 ### Simplified Access Control
@@ -25,11 +27,13 @@ A comprehensive inventory management system built for hotel operations, featurin
 - **No Complex Roles**: Simplified system focusing on functionality over restrictions
 
 ### Smart Alerts & Notifications
+- **NTFY Mobile Notifications**: Real-time Room 401 booking alerts with rich details
 - **Low Stock Warnings**: Automatic notifications when items fall below minimum thresholds
 - **Extended Expiration Tracking**: Monitor items expiring within 30 days with color coding
 - **Push Notifications**: Browser notifications for critical inventory alerts
 - **Severity Levels**: Critical (1 day), Warning (2-7 days), Info (8-30 days)
 - **Quick Actions**: One-click quantity adjustments from the dashboard
+- **Mobile App Integration**: Complete setup guide for iOS/Android ntfy.sh app
 
 ### Audit & Compliance
 - **Complete Audit Trail**: Track all inventory changes with user attribution
@@ -47,12 +51,13 @@ A comprehensive inventory management system built for hotel operations, featurin
 - **Internationalization**: i18next (Croatian, German, English)
 - **UI Components**: Radix UI primitives + shadcn/ui
 - **Drag & Drop**: @dnd-kit for inventory reordering, react-dnd for hotel reservations
-- **Push Notifications**: Web Push API with Service Worker
+- **Push Notifications**: Web Push API with Service Worker + NTFY mobile notifications
 - **Email Service**: Resend API with Supabase Edge Functions
-- **PDF Generation**: jsPDF with autotable for professional invoices
+- **PDF Generation**: jsPDF with autotable for professional invoices + room service billing
+- **Room Service Integration**: Real-time MCP inventory integration with stock validation
 - **Croatian Fiscalization**: Complete Tax Authority integration with s004 error resolution
-- **node-forge**: P12 certificate handling and validated cryptographic operations
-- **Calendar System**: React Big Calendar with custom hotel timeline layout
+- **node-forge**: P12 certificate handling and validated cryptographic operations  
+- **Calendar System**: React Big Calendar with custom hotel timeline layout and smart context menus
 - **Animations**: GSAP for smooth UI transitions and notifications
 
 ## Database Schema

@@ -11,6 +11,37 @@ A comprehensive hotel inventory management system built with React 19 and Supaba
 
 ## Recent Major Improvements
 
+### NTFY Push Notification System Implementation (August 2025) - NEW
+- **Real-Time Booking Alerts**: Push notifications for Room 401 bookings via ntfy.sh service
+- **Mobile Integration**: Complete mobile app setup with subscription-based notifications
+- **Features Added**:
+  - **NTFY Service Class**: Full-featured notification service with Hotel Porec branding
+  - **Room 401 Focus**: Specialized notifications for premium room bookings
+  - **Test Interface**: Integrated testing in Email Test Page for immediate verification
+  - **Rich Notifications**: Guest details, dates, pricing, and booking source in notifications
+  - **Mobile Setup Guide**: Complete documentation for iOS/Android app configuration
+- **Implementation**: Integrated into booking creation workflow with error handling
+- **Documentation**: `docs/NTFY_ROOM_401_SETUP.md` with step-by-step mobile setup
+
+### Room Service Integration System (August 2025) - NEW
+- **Complete Room Service Module**: Full-featured room service ordering and billing system
+- **MCP Inventory Integration**: Real-time connection to inventory management for accurate pricing
+- **Features Added**:
+  - **Comprehensive Orders Modal**: Search, add, modify room service items with live inventory
+  - **Automated Billing**: Room service items automatically added to guest reservations
+  - **PDF Invoice Integration**: Room service charges included in generated invoices
+  - **Real-Time Search**: Dynamic item search across all inventory categories
+  - **Quantity Management**: Stock validation and quantity controls
+  - **Price Calculation**: Automated totaling with Croatian tax compliance
+- **Components**: `src/components/hotel/frontdesk/RoomService/HotelOrdersModal.tsx`
+- **Data Types**: Extended `Reservation` interface with `RoomServiceItem[]` for complete billing
+
+### User Interface Improvements (August 2025) - NEW
+- **Right-Click Modal Repositioning**: Smart context menu positioning to prevent off-screen cutoff
+- **Applied**: Both main timeline and room status overview now use intelligent positioning
+- **Algorithm**: Automatic detection of screen boundaries with repositioning logic
+- **Result**: Context menus stay within viewport bounds on all screen sizes
+
 ### Croatian Fiscalization System - MAJOR BREAKTHROUGH (August 2025)
 - **🎉 s004 ERROR COMPLETELY RESOLVED**: Fixed "Neispravan digitalni potpis" (Invalid digital signature)
 - **BREAKTHROUGH ACHIEVEMENT**: Croatian Tax Authority now accepts our XML structure (s004 → s002 progression)
@@ -107,10 +138,13 @@ A comprehensive hotel inventory management system built with React 19 and Supaba
 
 ### Hotel Management System (`src/components/hotel/`)
 - `ModuleSelector.tsx`: Hotel module selection landing page
-- `frontdesk/FrontDeskCalendar.tsx`: Professional 14-day timeline calendar
-- `frontdesk/EmailTestPage.tsx`: Multi-language email testing interface
+- `frontdesk/HotelTimeline.tsx`: **MAIN TIMELINE COMPONENT** - 14-day calendar with smart context menus
+- `frontdesk/EmailTestPage.tsx`: **MULTI-FEATURE TEST PAGE** - Email testing + NTFY notification testing
+- `frontdesk/RoomService/HotelOrdersModal.tsx`: **ROOM SERVICE MODULE** - Complete ordering system with MCP inventory
+- `frontdesk/CreateBookingModal.tsx`: **BOOKING CREATION** - Integrated with NTFY notifications for Room 401
 - `shared/HotelLayout.tsx`: Shared hotel module layout with sidebar
 - `src/lib/emailService.ts`: **COMPLETE EMAIL SYSTEM** - Multi-language templates with Supabase integration
+- `src/lib/ntfyService.ts`: **PUSH NOTIFICATION SERVICE** - Room 401 booking alerts via ntfy.sh
 - `src/lib/hotel/`: Hotel-specific types, data, and utilities
 - `src/lib/notifications.ts`: **CUSTOM NOTIFICATION SYSTEM** - GSAP-powered hotel-themed notifications
 
@@ -125,8 +159,12 @@ A comprehensive hotel inventory management system built with React 19 and Supaba
 ### Critical Files to Monitor
 - `src/components/auth/AuthProvider.tsx`: **ULTRA-SIMPLIFIED (38 lines)** - NEVER re-complicate
 - `src/lib/pushNotifications.ts`: Push notification handling
+- `src/lib/ntfyService.ts`: **NTFY NOTIFICATION SERVICE** - Room 401 booking alerts system
+- `src/components/hotel/frontdesk/RoomService/HotelOrdersModal.tsx`: **ROOM SERVICE CORE** - MCP inventory integration
+- `src/components/hotel/frontdesk/HotelTimeline.tsx`: **TIMELINE WITH SMART MODALS** - Context menu repositioning logic
 - `public/sw.js`: Service worker for notifications
 - `supabase/functions/daily-notifications/`: Edge function for automated alerts
+- `docs/NTFY_ROOM_401_SETUP.md`: **MOBILE NOTIFICATION SETUP** - Complete user guide for push notifications
 - `src/lib/fiscalization/`: **🎉 s004 RESOLVED SYSTEM** - Production-ready with corrected XML structure
 - `src/lib/fiscalization/xmlGenerator.ts`: **CORRECTED SOAP XML** - Technical Specification v1.3 compliant
 - `src/lib/fiscalization/`: **FISCAL DATA VALIDATION** - Hotel Porec compliance validation
@@ -213,7 +251,16 @@ npm run build       # Build for production
 - Edge function for daily notifications
 - User preferences in settings page
 
-## Recent Bug Fixes (January 2025)
+## Recent Bug Fixes & Improvements (2025)
+
+### August 2025 Updates
+- **RIGHT-CLICK MODAL POSITIONING**: Fixed context menus being cut off at screen edges
+- **ROOM SERVICE INTEGRATION**: Complete MCP inventory integration with real-time stock validation
+- **NTFY PUSH NOTIFICATIONS**: Room 401 booking alerts with rich notification content
+- **PDF INVOICE ENHANCEMENT**: Room service items now included in generated invoices
+- **TYPE SYSTEM EXTENSION**: Added RoomServiceItem interface for complete billing support
+
+### January 2025 Fixes  
 - **MAJOR: UI Freeze Fix**: Replaced complex AuthProvider with 38-line simple version
 - **MAJOR: Tab Switching**: Navbar remains responsive after switching tabs - NO MORE FREEZING
 - **TypeScript Compilation**: Fixed all userProfile dependencies across components
@@ -257,7 +304,11 @@ npm run build       # Build for production
 
 ---
 
-**Last Updated**: August 5, 2025  
-**Version**: 2.4 (Croatian Fiscalization s004 Resolution)  
-**Key Achievement**: s004 "Invalid digital signature" error COMPLETELY RESOLVED  
-**Status**: Croatian Tax Authority XML structure compliant, ready for demo certificate
+**Last Updated**: August 7, 2025  
+**Version**: 2.5 (NTFY Notifications + Room Service Integration)  
+**Key Achievements**: 
+- ✅ Croatian Fiscalization s004 error COMPLETELY RESOLVED
+- ✅ NTFY Push notification system for Room 401 bookings
+- ✅ Complete room service integration with MCP inventory
+- ✅ Smart context menu positioning system
+**Status**: Full-featured hotel management system with real-time notifications and room service billing
