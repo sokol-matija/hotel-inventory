@@ -1412,6 +1412,37 @@ function RoomOverviewFloorSection({
   // Flag to prevent click through when closing context menu
   const [isClosingContextMenu, setIsClosingContextMenu] = useState(false);
   
+  // Context menu positioning function (same as in main timeline)
+  const calculateContextMenuPosition = (e: React.MouseEvent, menuWidth = 180, menuHeight = 300) => {
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    
+    let x = e.clientX;
+    let y = e.clientY;
+    
+    // Check if menu would go off-screen horizontally
+    if (x + menuWidth > viewportWidth) {
+      x = e.clientX - menuWidth; // Position to the left of cursor
+    }
+    
+    // Check if menu would go off-screen vertically
+    if (y + menuHeight > viewportHeight) {
+      y = e.clientY - menuHeight; // Position above cursor
+    }
+    
+    // Ensure menu doesn't go above viewport top
+    if (y < 0) {
+      y = 10; // Small margin from top
+    }
+    
+    // Ensure menu doesn't go left of viewport
+    if (x < 0) {
+      x = 10; // Small margin from left
+    }
+    
+    return { x, y };
+  };
+  
   return (
     <Card className="mb-4">
       <CardHeader 
@@ -1475,10 +1506,11 @@ function RoomOverviewFloorSection({
                       e.preventDefault();
                       e.stopPropagation();
                       
+                      const position = calculateContextMenuPosition(e);
                       setContextMenu({
                         show: true,
-                        x: e.clientX,
-                        y: e.clientY,
+                        x: position.x,
+                        y: position.y,
                         reservation: reservation
                       });
                     }
