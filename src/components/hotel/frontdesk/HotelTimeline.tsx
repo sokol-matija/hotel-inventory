@@ -152,6 +152,7 @@ function ReservationBlock({
   onUpdateReservationStatus,
   onDeleteReservation,
   isExpansionMode = false,
+  isMoveMode = false,
   onResizeReservation,
   onShowDrinksModal,
   calculateContextMenuPosition
@@ -166,6 +167,7 @@ function ReservationBlock({
   onUpdateReservationStatus?: (id: string, status: ReservationStatus) => Promise<void>;
   onDeleteReservation?: (id: string) => Promise<void>;
   isExpansionMode?: boolean;
+  isMoveMode?: boolean;
   onResizeReservation?: (reservationId: string, side: 'start' | 'end', newDate: Date) => void;
   onShowDrinksModal?: (reservation: Reservation) => void;
   calculateContextMenuPosition?: (e: React.MouseEvent, menuWidth?: number, menuHeight?: number) => { x: number; y: number };
@@ -398,8 +400,8 @@ function ReservationBlock({
           </div>
         </div>
         
-        {/* Drag handle for longer reservations only */}
-        {!isShortReservation && (
+        {/* Drag handle for longer reservations - show based on move mode */}
+        {!isShortReservation && isMoveMode && (
           <div
             ref={(el) => {
               drag(el); // Only the drag handle is draggable
@@ -413,8 +415,8 @@ function ReservationBlock({
         )}
       </div>
       
-      {/* Top drag handle for short reservations - small circle with plus */}
-      {isShortReservation && (
+      {/* Top drag handle for short reservations - show based on move mode */}
+      {isShortReservation && isMoveMode && (
         <div
           ref={(el) => {
             drag(el); // Top drag handle for short reservations
@@ -433,6 +435,43 @@ function ReservationBlock({
 
 
       
+      {/* Move Mode Controls - inline move buttons */}
+      {isMoveMode && (
+        <div className="flex items-center space-x-1 ml-2">
+          <button
+            className="w-4 h-4 bg-blue-500 hover:bg-blue-600 text-white rounded-sm flex items-center justify-center text-xs transition-all duration-200 shadow-sm hover:shadow-md"
+            title="Move left (previous day)"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (onMoveReservation && startDayIndex > 0) {
+                const newCheckIn = addDays(reservation.checkIn, -1);
+                const newCheckOut = addDays(reservation.checkOut, -1);
+                onMoveReservation(reservation.id, room.id, newCheckIn, newCheckOut);
+              }
+            }}
+          >
+            ←
+          </button>
+          
+          <button
+            className="w-4 h-4 bg-blue-500 hover:bg-blue-600 text-white rounded-sm flex items-center justify-center text-xs transition-all duration-200 shadow-sm hover:shadow-md"
+            title="Move right (next day)"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (onMoveReservation && endDayIndex < 13) {
+                const newCheckIn = addDays(reservation.checkIn, 1);
+                const newCheckOut = addDays(reservation.checkOut, 1);
+                onMoveReservation(reservation.id, room.id, newCheckIn, newCheckOut);
+              }
+            }}
+          >
+            →
+          </button>
+        </div>
+      )}
+
       {/* Hover tooltip */}
       <div className="absolute top-full left-0 mt-1 bg-gray-900 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 pointer-events-none z-20 whitespace-nowrap">
         {guest?.name} • {reservation.numberOfGuests} guests • {format(reservation.checkIn, 'MMM dd')} - {format(reservation.checkOut, 'MMM dd')}
@@ -695,10 +734,10 @@ function ReservationBlock({
       {isExpansionMode && (
         <>
           {/* Left side controls (check-in adjustment) */}
-          <div className="absolute left-0 top-0 bottom-0 flex flex-col justify-center space-y-1 -ml-6 z-50">
+          <div className="absolute left-1 top-0 bottom-0 flex flex-col justify-center space-y-1 z-50">
             {/* Expand left button (extend to previous day PM) */}
             <button
-              className="w-5 h-5 bg-green-500 hover:bg-green-600 text-white rounded-full flex items-center justify-center text-xs font-bold transition-all duration-200 shadow-sm hover:shadow-md hover:scale-110"
+              className="w-5 h-5 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold transition-all duration-200 shadow-sm hover:shadow-md hover:scale-110"
               title="Expand to previous day (PM)"
               onClick={(e) => {
                 e.preventDefault();
@@ -724,7 +763,7 @@ function ReservationBlock({
             
             {/* Contract left button (remove one day from start) */}
             <button
-              className="w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-bold transition-all duration-200 shadow-sm hover:shadow-md hover:scale-110"
+              className="w-5 h-5 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center text-xs font-bold transition-all duration-200 shadow-sm hover:shadow-md hover:scale-110"
               title="Contract from left (remove one day)"
               onClick={(e) => {
                 e.preventDefault();
@@ -750,10 +789,10 @@ function ReservationBlock({
           </div>
           
           {/* Right side controls (check-out adjustment) */}
-          <div className="absolute right-0 top-0 bottom-0 flex flex-col justify-center space-y-1 -mr-6 z-50">
+          <div className="absolute right-1 top-0 bottom-0 flex flex-col justify-center space-y-1 z-50">
             {/* Expand right button (extend to next day AM) */}
             <button
-              className="w-5 h-5 bg-green-500 hover:bg-green-600 text-white rounded-full flex items-center justify-center text-xs font-bold transition-all duration-200 shadow-sm hover:shadow-md hover:scale-110"
+              className="w-5 h-5 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold transition-all duration-200 shadow-sm hover:shadow-md hover:scale-110"
               title="Expand to next day (AM)"
               onClick={(e) => {
                 e.preventDefault();
@@ -779,7 +818,7 @@ function ReservationBlock({
             
             {/* Contract right button (remove one day from end) */}
             <button
-              className="w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-bold transition-all duration-200 shadow-sm hover:shadow-md hover:scale-110"
+              className="w-5 h-5 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center text-xs font-bold transition-all duration-200 shadow-sm hover:shadow-md hover:scale-110"
               title="Contract from right (remove one day)"
               onClick={(e) => {
                 e.preventDefault();
@@ -1090,7 +1129,9 @@ function RoomRow({
   isExpansionMode,
   onResizeReservation,
   onShowDrinksModal,
-  calculateContextMenuPosition
+  calculateContextMenuPosition,
+  // New props for move mode
+  isMoveMode
 }: {
   room: Room;
   reservations: Reservation[];
@@ -1114,6 +1155,8 @@ function RoomRow({
   onResizeReservation?: (reservationId: string, side: 'start' | 'end', newDate: Date) => void;
   onShowDrinksModal?: (reservation: Reservation) => void;
   calculateContextMenuPosition?: (e: React.MouseEvent, menuWidth?: number, menuHeight?: number) => { x: number; y: number };
+  // New props for move mode
+  isMoveMode?: boolean;
 }) {
   // Find reservations for this room
   const roomReservations = reservations.filter(r => r.roomId === room.id);
@@ -1186,6 +1229,7 @@ function RoomRow({
               onUpdateReservationStatus={onUpdateReservationStatus}
               onDeleteReservation={onDeleteReservation}
               isExpansionMode={isExpansionMode}
+              isMoveMode={isMoveMode}
               onResizeReservation={onResizeReservation}
               onShowDrinksModal={onShowDrinksModal}
               calculateContextMenuPosition={calculateContextMenuPosition}
@@ -1223,7 +1267,9 @@ function FloorSection({
   isExpansionMode,
   onResizeReservation,
   onShowDrinksModal,
-  calculateContextMenuPosition
+  calculateContextMenuPosition,
+  // New props for move mode
+  isMoveMode
 }: {
   floor: number;
   rooms: Room[];
@@ -1250,6 +1296,8 @@ function FloorSection({
   onResizeReservation?: (reservationId: string, side: 'start' | 'end', newDate: Date) => void;
   onShowDrinksModal?: (reservation: Reservation) => void;
   calculateContextMenuPosition?: (e: React.MouseEvent, menuWidth?: number, menuHeight?: number) => { x: number; y: number };
+  // New props for move mode
+  isMoveMode?: boolean;
 }) {
   const floorName = floor === 4 ? 'Rooftop Premium' : `Floor ${floor}`;
   const occupiedRooms = rooms.filter(room => 
@@ -1310,6 +1358,7 @@ function FloorSection({
               onDragCreateMove={onDragCreateMove}
               onDragCreateEnd={onDragCreateEnd}
               isExpansionMode={isExpansionMode}
+              isMoveMode={isMoveMode}
               onResizeReservation={onResizeReservation}
               onShowDrinksModal={onShowDrinksModal}
               calculateContextMenuPosition={calculateContextMenuPosition}
@@ -1691,6 +1740,9 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
   
   // Expansion mode states
   const [isExpansionMode, setIsExpansionMode] = useState(false);
+  
+  // Move mode states
+  const [isMoveMode, setIsMoveMode] = useState(false);
   
   // Hotel orders modal state  
   const [showHotelOrdersModal, setShowHotelOrdersModal] = useState(false);
@@ -2304,9 +2356,10 @@ Room Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item
               onClick={() => {
                 setIsExpansionMode(!isExpansionMode);
                 // Reset expansion mode state when toggling
-                // Also disable drag mode when entering expansion mode
+                // Also disable other modes when entering expansion mode
                 if (!isExpansionMode) {
                   setIsDragCreateMode(false);
+                  setIsMoveMode(false);
                   setIsDragCreating(false);
                   setDragCreateStart(null);
                   setDragCreateEnd(null);
@@ -2317,6 +2370,27 @@ Room Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item
             >
               {isExpansionMode ? <Square className="h-4 w-4" /> : <ArrowLeftRight className="h-4 w-4" />}
               {isExpansionMode ? 'Exit Expand Mode' : 'Expand Reservations'}
+            </Button>
+            
+            <Button 
+              variant={isMoveMode ? "default" : "outline"} 
+              onClick={() => {
+                setIsMoveMode(!isMoveMode);
+                // Reset move mode state when toggling
+                // Also disable other modes when entering move mode
+                if (!isMoveMode) {
+                  setIsDragCreateMode(false);
+                  setIsExpansionMode(false);
+                  setIsDragCreating(false);
+                  setDragCreateStart(null);
+                  setDragCreateEnd(null);
+                  setDragCreatePreview(null);
+                }
+              }}
+              className={isMoveMode ? "bg-purple-600 text-white" : ""}
+            >
+              {isMoveMode ? <Square className="h-4 w-4" /> : <Move className="h-4 w-4" />}
+              {isMoveMode ? 'Exit Move Mode' : 'Move Reservations'}
             </Button>
             {onToggleFullscreen && (
               <Button variant="outline" onClick={onToggleFullscreen}>
@@ -2416,6 +2490,7 @@ Room Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item
                 onDragCreateMove={handleDragCreateMove}
                 onDragCreateEnd={handleDragCreateEnd}
                 isExpansionMode={isExpansionMode}
+                isMoveMode={isMoveMode}
                 onResizeReservation={handleResizeReservation}
                 onShowDrinksModal={handleShowDrinksModal}
                 calculateContextMenuPosition={calculateContextMenuPosition}
