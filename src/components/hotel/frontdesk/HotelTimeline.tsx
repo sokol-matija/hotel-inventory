@@ -32,11 +32,11 @@ import { SAMPLE_GUESTS } from '../../../lib/hotel/sampleData';
 import { useHotel } from '../../../lib/hotel/state/HotelContext';
 import { RESERVATION_STATUS_COLORS, formatRoomNumber, getRoomTypeDisplay } from '../../../lib/hotel/calendarUtils';
 import { getCountryFlag } from '../../../lib/hotel/countryFlags';
-import { CalendarEvent, ReservationStatus, Reservation, Room } from '../../../lib/hotel/types';
+import { CalendarEvent, ReservationStatus, Reservation, Room, RoomServiceItem } from '../../../lib/hotel/types';
 import ReservationPopup from './Reservations/ReservationPopup';
 import CreateBookingModal from './CreateBookingModal';
 import RoomChangeConfirmDialog from './RoomChangeConfirmDialog';
-import DrinksSelectionModal from './RoomService/DrinksSelectionModal';
+import HotelOrdersModal from './RoomService/HotelOrdersModal';
 import hotelNotification from '../../../lib/notifications';
 import { OrderItem } from '../../../lib/hotel/orderTypes';
 
@@ -255,7 +255,7 @@ function ReservationBlock({
   // Animation effects - MUST be before any early returns to satisfy Rules of Hooks
   useEffect(() => {
     if (blockRef.current && !isDragging) {
-      // Smooth animation when position updates after drop
+      // Smooth animation when position updates after drop OR resize
       gsap.fromTo(blockRef.current, 
         { 
           scale: 0.95,
@@ -271,7 +271,7 @@ function ReservationBlock({
         }
       );
     }
-  }, [gridColumnStart, gridColumnEnd, isDragging]);
+  }, [gridColumnStart, gridColumnEnd, isDragging, reservation.checkIn.getTime(), reservation.checkOut.getTime()]);
 
   // Initial entrance animation - MUST be before any early returns to satisfy Rules of Hooks
   useEffect(() => {
@@ -310,7 +310,9 @@ function ReservationBlock({
         blockRef.current = el;
         cardRef.current = el;
       }}
-      className={`rounded cursor-pointer hover:shadow-md border flex items-center px-2 py-0.5 text-xs font-medium overflow-hidden group z-10 pointer-events-auto ${
+      className={`rounded cursor-pointer hover:shadow-md border flex items-center px-2 py-0.5 text-xs font-medium ${
+        isExpansionMode ? 'overflow-visible' : 'overflow-hidden'
+      } group z-10 pointer-events-auto ${
         isDragging ? 'opacity-50 ring-2 ring-blue-400' : ''
       }`}
       style={{
@@ -508,8 +510,8 @@ function ReservationBlock({
                   setContextMenu({ show: false, x: 0, y: 0, reservation: null });
                 }}
               >
-                <span className="text-green-600">🍹</span>
-                <span>Add Drinks to Room Bill</span>
+                <span className="text-green-600">🛎️</span>
+                <span>Add Room Service to Bill</span>
               </button>
 
               <div className="border-t border-gray-100 my-1"></div>
@@ -536,19 +538,6 @@ function ReservationBlock({
               >
                 <span className="text-yellow-600">💰</span>
                 <span>Mark as Paid</span>
-              </button>
-              
-              <button 
-                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3"
-                onClick={() => {
-                  if (onShowDrinksModal && contextMenu.reservation) {
-                    onShowDrinksModal(contextMenu.reservation);
-                  }
-                  setContextMenu({ show: false, x: 0, y: 0, reservation: null });
-                }}
-              >
-                <span className="text-green-600">🍹</span>
-                <span>Add Drinks to Room Bill</span>
               </button>
 
               <div className="border-t border-gray-100 my-1"></div>
@@ -645,8 +634,8 @@ function ReservationBlock({
                   setContextMenu({ show: false, x: 0, y: 0, reservation: null });
                 }}
               >
-                <span className="text-green-600">🍹</span>
-                <span>Add Drinks to Room Bill</span>
+                <span className="text-green-600">🛎️</span>
+                <span>Add Room Service to Bill</span>
               </button>
 
               <div className="border-t border-gray-100 my-1"></div>
@@ -673,19 +662,6 @@ function ReservationBlock({
               >
                 <span className="text-yellow-600">💰</span>
                 <span>Mark as Paid</span>
-              </button>
-              
-              <button 
-                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3"
-                onClick={() => {
-                  if (onShowDrinksModal && contextMenu.reservation) {
-                    onShowDrinksModal(contextMenu.reservation);
-                  }
-                  setContextMenu({ show: false, x: 0, y: 0, reservation: null });
-                }}
-              >
-                <span className="text-green-600">🍹</span>
-                <span>Add Drinks to Room Bill</span>
               </button>
 
               <div className="border-t border-gray-100 my-1"></div>
@@ -719,10 +695,10 @@ function ReservationBlock({
       {isExpansionMode && (
         <>
           {/* Left side controls (check-in adjustment) */}
-          <div className="absolute left-0 top-0 bottom-0 flex flex-col justify-center space-y-1 -ml-6">
+          <div className="absolute left-0 top-0 bottom-0 flex flex-col justify-center space-y-1 -ml-6 z-50">
             {/* Expand left button (extend to previous day PM) */}
             <button
-              className="w-5 h-5 bg-green-500 hover:bg-green-600 text-white rounded-full flex items-center justify-center text-xs font-bold transition-colors shadow-sm hover:shadow-md"
+              className="w-5 h-5 bg-green-500 hover:bg-green-600 text-white rounded-full flex items-center justify-center text-xs font-bold transition-all duration-200 shadow-sm hover:shadow-md hover:scale-110"
               title="Expand to previous day (PM)"
               onClick={(e) => {
                 e.preventDefault();
@@ -731,6 +707,14 @@ function ReservationBlock({
                   const newCheckIn = addDays(reservation.checkIn, -1);
                   newCheckIn.setHours(15, 0, 0, 0); // 3 PM
                   onResizeReservation(reservation.id, 'start', newCheckIn);
+                  
+                  // Visual feedback - pulse effect
+                  if (blockRef.current) {
+                    gsap.fromTo(blockRef.current, 
+                      { scale: 1 },
+                      { scale: 1.05, duration: 0.1, yoyo: true, repeat: 1 }
+                    );
+                  }
                 }
               }}
               disabled={startDayIndex <= 0}
@@ -740,7 +724,7 @@ function ReservationBlock({
             
             {/* Contract left button (remove one day from start) */}
             <button
-              className="w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-bold transition-colors shadow-sm hover:shadow-md"
+              className="w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-bold transition-all duration-200 shadow-sm hover:shadow-md hover:scale-110"
               title="Contract from left (remove one day)"
               onClick={(e) => {
                 e.preventDefault();
@@ -749,19 +733,27 @@ function ReservationBlock({
                   const newCheckIn = addDays(reservation.checkIn, 1);
                   newCheckIn.setHours(15, 0, 0, 0); // 3 PM
                   onResizeReservation(reservation.id, 'start', newCheckIn);
+                  
+                  // Visual feedback - pulse effect
+                  if (blockRef.current) {
+                    gsap.fromTo(blockRef.current, 
+                      { scale: 1 },
+                      { scale: 1.05, duration: 0.1, yoyo: true, repeat: 1 }
+                    );
+                  }
                 }
               }}
               disabled={reservationDays <= 1}
             >
-              +
+              →
             </button>
           </div>
           
           {/* Right side controls (check-out adjustment) */}
-          <div className="absolute right-0 top-0 bottom-0 flex flex-col justify-center space-y-1 -mr-6">
+          <div className="absolute right-0 top-0 bottom-0 flex flex-col justify-center space-y-1 -mr-6 z-50">
             {/* Expand right button (extend to next day AM) */}
             <button
-              className="w-5 h-5 bg-green-500 hover:bg-green-600 text-white rounded-full flex items-center justify-center text-xs font-bold transition-colors shadow-sm hover:shadow-md"
+              className="w-5 h-5 bg-green-500 hover:bg-green-600 text-white rounded-full flex items-center justify-center text-xs font-bold transition-all duration-200 shadow-sm hover:shadow-md hover:scale-110"
               title="Expand to next day (AM)"
               onClick={(e) => {
                 e.preventDefault();
@@ -770,6 +762,14 @@ function ReservationBlock({
                   const newCheckOut = addDays(reservation.checkOut, 1);
                   newCheckOut.setHours(11, 0, 0, 0); // 11 AM
                   onResizeReservation(reservation.id, 'end', newCheckOut);
+                  
+                  // Visual feedback - pulse effect
+                  if (blockRef.current) {
+                    gsap.fromTo(blockRef.current, 
+                      { scale: 1 },
+                      { scale: 1.05, duration: 0.1, yoyo: true, repeat: 1 }
+                    );
+                  }
                 }
               }}
               disabled={endDayIndex >= 13}
@@ -779,7 +779,7 @@ function ReservationBlock({
             
             {/* Contract right button (remove one day from end) */}
             <button
-              className="w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-bold transition-colors shadow-sm hover:shadow-md"
+              className="w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-bold transition-all duration-200 shadow-sm hover:shadow-md hover:scale-110"
               title="Contract from right (remove one day)"
               onClick={(e) => {
                 e.preventDefault();
@@ -788,11 +788,19 @@ function ReservationBlock({
                   const newCheckOut = addDays(reservation.checkOut, -1);
                   newCheckOut.setHours(11, 0, 0, 0); // 11 AM
                   onResizeReservation(reservation.id, 'end', newCheckOut);
+                  
+                  // Visual feedback - pulse effect
+                  if (blockRef.current) {
+                    gsap.fromTo(blockRef.current, 
+                      { scale: 1 },
+                      { scale: 1.05, duration: 0.1, yoyo: true, repeat: 1 }
+                    );
+                  }
                 }
               }}
               disabled={reservationDays <= 1}
             >
-              -
+              ←
             </button>
           </div>
         </>
@@ -1160,7 +1168,9 @@ function RoomRow({
       </div>
       
       {/* Reservation blocks overlaid on the same grid - Updated for half-day system */}
-      <div className="absolute inset-0 grid grid-cols-[180px_repeat(28,minmax(22px,1fr))] pointer-events-none">
+      <div className={`absolute inset-0 grid grid-cols-[180px_repeat(28,minmax(22px,1fr))] pointer-events-none ${
+        isExpansionMode ? 'overflow-visible' : 'overflow-hidden'
+      }`}>
         {roomReservations.map(reservation => {
           const guest = SAMPLE_GUESTS.find(g => g.id === reservation.guestId);
           return (
@@ -1320,7 +1330,8 @@ function RoomOverviewFloorSection({
   occupancyData,
   onRoomClick,
   onUpdateReservationStatus,
-  onDeleteReservation
+  onDeleteReservation,
+  onShowDrinksModal
 }: {
   floor: number;
   rooms: Room[];
@@ -1330,6 +1341,7 @@ function RoomOverviewFloorSection({
   onRoomClick: (room: Room, reservation?: any) => void;
   onUpdateReservationStatus?: (id: string, status: ReservationStatus) => Promise<void>;
   onDeleteReservation?: (id: string) => Promise<void>;
+  onShowDrinksModal?: (reservation: Reservation) => void;
 }) {
   const floorName = floor === 4 ? 'Rooftop Premium' : `Floor ${floor}`;
   const occupiedRooms = rooms.filter(room => occupancyData[room.id]);
@@ -1585,6 +1597,19 @@ function RoomOverviewFloorSection({
               <span className="text-yellow-600">💰</span>
               <span>Mark as Paid</span>
             </button>
+            
+            <button 
+              className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3"
+              onClick={() => {
+                if (contextMenu.reservation && onShowDrinksModal) {
+                  onShowDrinksModal(contextMenu.reservation);
+                }
+                setContextMenu({ show: false, x: 0, y: 0, reservation: null });
+              }}
+            >
+              <span className="text-orange-600">🍷</span>
+              <span>Add Room Service to Bill</span>
+            </button>
 
             <div className="border-t border-gray-100 my-1"></div>
             
@@ -1667,9 +1692,9 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
   // Expansion mode states
   const [isExpansionMode, setIsExpansionMode] = useState(false);
   
-  // Drinks modal state
-  const [showDrinksModal, setShowDrinksModal] = useState(false);
-  const [drinksModalReservation, setDrinksModalReservation] = useState<Reservation | null>(null);
+  // Hotel orders modal state  
+  const [showHotelOrdersModal, setShowHotelOrdersModal] = useState(false);
+  const [hotelOrdersReservation, setHotelOrdersReservation] = useState<Reservation | null>(null);
   
   // Note: Removed global mouse event listener since we're using two-click system instead of drag
 
@@ -2121,6 +2146,7 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
         parkingFee: bookingData.pricing.fees.parking,
         shortStaySuplement: bookingData.pricing.fees.shortStay,
         additionalCharges: bookingData.pricing.fees.additional,
+        roomServiceItems: [],
         totalAmount: bookingData.pricing.total,
         notes: ''
       };
@@ -2173,47 +2199,61 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
     };
   }, [selectedReservation]);
 
-  // Handle showing drinks modal
+  // Handle showing hotel orders modal
   const handleShowDrinksModal = (reservation: Reservation) => {
-    setDrinksModalReservation(reservation);
-    setShowDrinksModal(true);
+    setHotelOrdersReservation(reservation);
+    setShowHotelOrdersModal(true);
   };
 
-  // Handle drinks order completion
+  // Handle hotel orders completion
   const handleDrinksOrderComplete = async (orderItems: OrderItem[], totalAmount: number) => {
-    if (!drinksModalReservation) return;
+    if (!hotelOrdersReservation) return;
 
     try {
-      // Add drinks charges to reservation bill
-      const guest = SAMPLE_GUESTS.find(g => g.id === drinksModalReservation.guestId);
-      const room = HOTEL_POREC_ROOMS.find(r => r.id === drinksModalReservation.roomId);
+      // Add order charges to reservation bill
+      const guest = SAMPLE_GUESTS.find(g => g.id === hotelOrdersReservation.guestId);
+      const room = HOTEL_POREC_ROOMS.find(r => r.id === hotelOrdersReservation.roomId);
       
-      // Update the reservation with drinks charges
+      // Convert OrderItems to RoomServiceItems
+      const roomServiceItems = orderItems.map(item => ({
+        id: `rs-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        itemName: item.itemName,
+        category: item.category,
+        quantity: item.quantity,
+        unitPrice: item.price,
+        totalPrice: item.totalPrice,
+        orderedAt: new Date()
+      }));
+      
+      // Update the reservation with room service items
+      const existingRoomServiceItems = hotelOrdersReservation.roomServiceItems || [];
       const updatedReservation = {
-        ...drinksModalReservation,
-        totalAmount: drinksModalReservation.totalAmount + totalAmount,
-        notes: drinksModalReservation.notes + 
-          `\nDrinks ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item => 
+        ...hotelOrdersReservation,
+        totalAmount: hotelOrdersReservation.totalAmount + totalAmount,
+        roomServiceItems: [...existingRoomServiceItems, ...roomServiceItems],
+        notes: hotelOrdersReservation.notes + 
+          `
+Room Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item => 
             `${item.quantity}x ${item.itemName}`
           ).join(', ')} - Total: €${totalAmount.toFixed(2)}`
       };
 
-      await updateReservation(drinksModalReservation.id, updatedReservation);
+      await updateReservation(hotelOrdersReservation.id, updatedReservation);
 
       // Show success notification
       hotelNotification.success(
-        'Drinks Added to Bill',
-        `€${totalAmount.toFixed(2)} in drinks charges added to Room ${room ? formatRoomNumber(room) : drinksModalReservation.roomId} bill`,
+        'Room Service Added to Bill',
+        `€${totalAmount.toFixed(2)} in charges added to Room ${room ? formatRoomNumber(room) : hotelOrdersReservation.roomId} bill`,
         4
       );
 
-      setShowDrinksModal(false);
-      setDrinksModalReservation(null);
+      setShowHotelOrdersModal(false);
+      setHotelOrdersReservation(null);
     } catch (error) {
-      console.error('Failed to add drinks to bill:', error);
+      console.error('Failed to add room service to bill:', error);
       hotelNotification.error(
-        'Failed to Add Drinks',
-        'Unable to add drinks to room bill. Please try again.',
+        'Failed to Add Room Service',
+        'Unable to add room service to room bill. Please try again.',
         5
       );
     }
@@ -2336,6 +2376,7 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
                   onRoomClick={handleRoomClick}
                   onUpdateReservationStatus={updateReservationStatus}
                   onDeleteReservation={deleteReservation}
+                  onShowDrinksModal={handleShowDrinksModal}
                 />
               ))}
             </div>
@@ -2426,14 +2467,14 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
         />
       )}
 
-      {/* Drinks Selection Modal */}
-      {showDrinksModal && drinksModalReservation && (
-        <DrinksSelectionModal
-          reservation={drinksModalReservation}
-          isOpen={showDrinksModal}
+      {/* Hotel Orders Modal - Reuses OrdersPage functionality */}
+      {showHotelOrdersModal && hotelOrdersReservation && (
+        <HotelOrdersModal
+          reservation={hotelOrdersReservation}
+          isOpen={showHotelOrdersModal}
           onClose={() => {
-            setShowDrinksModal(false);
-            setDrinksModalReservation(null);
+            setShowHotelOrdersModal(false);
+            setHotelOrdersReservation(null);
           }}
           onOrderComplete={handleDrinksOrderComplete}
         />
