@@ -1976,38 +1976,28 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
     if (!roomChangeDialog.reservation || !roomChangeDialog.targetRoom || !roomChangeDialog.currentRoom) return;
     
     try {
-      // Use 2026 pricing engine instead of legacy calculator
-      const { HotelPricingEngine } = await import('../../../lib/hotel/pricingEngine');
-      const pricingEngine = HotelPricingEngine.getInstance();
+      const { calculatePricing } = await import('../../../lib/hotel/pricingCalculator');
       
-      const pricingInput = {
-        roomType: roomChangeDialog.targetRoom.type,
-        roomId: roomChangeDialog.targetRoom.id,
-        checkIn: roomChangeDialog.newCheckIn!,
-        checkOut: roomChangeDialog.newCheckOut!,
-        adults: roomChangeDialog.reservation.adults,
-        children: roomChangeDialog.reservation.children,
-        hasPets: roomChangeDialog.reservation.petFee > 0,
-        needsParking: roomChangeDialog.reservation.parkingFee > 0,
-        pricingTierId: '2026-standard',
-        isRoom401: roomChangeDialog.targetRoom.id === '401'
-      };
-      
-      const newPricing = pricingEngine.calculatePricing(pricingInput);
+      const newPricing = calculatePricing(
+        roomChangeDialog.targetRoom.id,
+        roomChangeDialog.newCheckIn!,
+        roomChangeDialog.newCheckOut!,
+        roomChangeDialog.reservation.adults,
+        roomChangeDialog.reservation.children,
+        {
+          hasPets: roomChangeDialog.reservation.petFee > 0,
+          needsParking: roomChangeDialog.reservation.parkingFee > 0,
+          additionalCharges: roomChangeDialog.reservation.additionalCharges
+        }
+      );
 
       const updatedReservationData = {
         roomId: roomChangeDialog.targetRoom.id,
         checkIn: roomChangeDialog.newCheckIn!,
         checkOut: roomChangeDialog.newCheckOut!,
-        numberOfNights: newPricing.nights,
-        subtotal: newPricing.accommodationSubtotal,
-        tourismTax: newPricing.services.tourism.total,
-        vatAmount: newPricing.totalVATAmount,
-        petFee: newPricing.services.pets.total,
-        parkingFee: newPricing.services.parking.total,
-        shortStaySuplement: newPricing.shortStaySupplement,
-        additionalCharges: newPricing.services.towelRental.total,
-        totalAmount: parseFloat(newPricing.grandTotal.toFixed(2))
+        totalAmount: newPricing.total,
+        subtotal: newPricing.subtotal,
+        ...newPricing.fees
       };
 
       await updateReservation(roomChangeDialog.reservationId, updatedReservationData);
@@ -2155,47 +2145,36 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
         return;
       }
 
-      // Calculate new pricing using 2026 engine
-      const { HotelPricingEngine } = await import('../../../lib/hotel/pricingEngine');
-      const pricingEngine = HotelPricingEngine.getInstance();
-      const reservationRoom = HOTEL_POREC_ROOMS.find(r => r.id === reservation.roomId);
-      if (!reservationRoom) throw new Error(`Room ${reservation.roomId} not found`);
-      
-      const pricingInput = {
-        roomType: reservationRoom.type,
-        roomId: reservation.roomId,
-        checkIn: newCheckIn,
-        checkOut: newCheckOut,
-        adults: reservation.adults,
-        children: reservation.children,
-        hasPets: reservation.petFee > 0,
-        needsParking: reservation.parkingFee > 0,
-        pricingTierId: '2026-standard',
-        isRoom401: reservation.roomId === '401'
-      };
-      
-      const newPricing = pricingEngine.calculatePricing(pricingInput);
+      // Calculate new pricing
+      const { calculatePricing } = await import('../../../lib/hotel/pricingCalculator');
+      const newPricing = calculatePricing(
+        reservation.roomId,
+        newCheckIn,
+        newCheckOut,
+        reservation.adults,
+        reservation.children,
+        {
+          hasPets: reservation.petFee > 0,
+          needsParking: reservation.parkingFee > 0,
+          additionalCharges: reservation.additionalCharges
+        }
+      );
 
-      // Update reservation with 2026 pricing structure
+      // Update reservation
       const updatedData = {
         checkIn: newCheckIn,
         checkOut: newCheckOut,
-        numberOfNights: newPricing.nights,
-        subtotal: newPricing.accommodationSubtotal,
-        tourismTax: newPricing.services.tourism.total,
-        vatAmount: newPricing.totalVATAmount,
-        petFee: newPricing.services.pets.total,
-        parkingFee: newPricing.services.parking.total,
-        shortStaySuplement: newPricing.shortStaySupplement,
-        additionalCharges: newPricing.services.towelRental.total,
-        totalAmount: parseFloat(newPricing.grandTotal.toFixed(2))
+        numberOfNights: newPricing.numberOfNights,
+        subtotal: newPricing.subtotal,
+        totalAmount: newPricing.total,
+        ...newPricing.fees
       };
 
       await updateReservation(reservationId, updatedData);
 
       // Show success notification with pricing info
       const oldTotal = reservation.totalAmount;
-      const newTotal = newPricing.grandTotal;
+      const newTotal = newPricing.total;
       const priceDiff = newTotal - oldTotal;
       const priceChange = priceDiff > 0 ? `+€${priceDiff.toFixed(2)}` : `€${priceDiff.toFixed(2)}`;
 
@@ -2217,7 +2196,7 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
 
   const handleCreateBooking = async (bookingData: any) => {
     try {
-      console.log('🎯 Timeline: Received booking creation request');
+      console.log('Creating booking:', bookingData);
       
       let guestId = bookingData.guest.id;
       
@@ -2240,19 +2219,19 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
         status: bookingData.status,
         bookingSource: bookingData.bookingSource,
         specialRequests: bookingData.specialRequests,
-        seasonalPeriod: bookingData.pricing?.seasonalPeriod || 'A',
-        baseRoomRate: bookingData.pricing?.baseRoomRate || 0,
-        numberOfNights: bookingData.pricing?.nights || 1,
-        subtotal: bookingData.pricing?.accommodationSubtotal || 0,
-        childrenDiscounts: bookingData.pricing?.discounts?.totalDiscounts || 0,
-        tourismTax: bookingData.pricing?.services?.tourism?.total || 0,
-        vatAmount: bookingData.pricing?.totalVATAmount || 0,
-        petFee: bookingData.pricing?.services?.pets?.total || 0,
-        parkingFee: bookingData.pricing?.services?.parking?.total || 0,
-        shortStaySuplement: bookingData.pricing?.shortStaySupplement || 0,
-        additionalCharges: bookingData.pricing?.services?.towelRental?.total || 0,
+        seasonalPeriod: bookingData.pricing.seasonalPeriod,
+        baseRoomRate: bookingData.pricing.baseRate,
+        numberOfNights: bookingData.pricing.numberOfNights,
+        subtotal: bookingData.pricing.subtotal,
+        childrenDiscounts: bookingData.pricing.totalDiscounts,
+        tourismTax: bookingData.pricing.fees.tourism,
+        vatAmount: bookingData.pricing.fees.vat,
+        petFee: bookingData.pricing.fees.pets,
+        parkingFee: bookingData.pricing.fees.parking,
+        shortStaySuplement: bookingData.pricing.fees.shortStay,
+        additionalCharges: bookingData.pricing.fees.additional,
         roomServiceItems: [],
-        totalAmount: parseFloat((bookingData.pricing?.grandTotal || 0).toFixed(2)),
+        totalAmount: bookingData.pricing.total,
         notes: ''
       };
       
@@ -2266,7 +2245,7 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
       // Show custom notification
       hotelNotification.success(
         'Booking Created Successfully!',
-        `${bookingData.guest.name} • ${formatRoomNumber(bookingData.room)} • ${bookingData.checkIn.toLocaleDateString()} - ${bookingData.checkOut.toLocaleDateString()} • €${(bookingData.pricing.grandTotal || 0).toFixed(2)}`,
+        `${bookingData.guest.name} • ${formatRoomNumber(bookingData.room)} • ${bookingData.checkIn.toLocaleDateString()} - ${bookingData.checkOut.toLocaleDateString()} • €${bookingData.pricing.total.toFixed(2)}`,
         6
       );
       
