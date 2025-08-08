@@ -12,6 +12,8 @@ import ReportsPage from './ReportsPage';
 import EmailTestPage from './EmailTestPage';
 import RoomServiceOrders from './RoomService/RoomServiceOrders';
 import PrinterTestPage from './PrinterTest/PrinterTestPage';
+import CompanyManagement from '../companies/CompanyManagement';
+import PricingManagement from '../pricing/PricingManagement';
 
 function FrontDeskContent() {
   const { rooms } = useHotel();
@@ -66,6 +68,8 @@ function FrontDeskContent() {
             <Route path="guests" element={<GuestsPage />} />
             <Route path="payments" element={<PaymentsPage />} />
             <Route path="room-service" element={<RoomServiceOrders rooms={rooms} />} />
+            <Route path="companies" element={<CompanyManagement />} />
+            <Route path="pricing" element={<PricingManagement />} />
             <Route path="printer-test" element={<PrinterTestPage />} />
             <Route path="reports" element={<ReportsPage />} />
             <Route path="email-test" element={<EmailTestPage />} />

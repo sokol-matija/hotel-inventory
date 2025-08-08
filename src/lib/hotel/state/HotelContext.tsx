@@ -10,7 +10,9 @@ import {
   RevenueAnalytics,
   InvoiceStatus,
   PaymentMethod,
-  PaymentStatus 
+  PaymentStatus,
+  Company,
+  PricingTier
 } from '../types';
 import { SAMPLE_RESERVATIONS, SAMPLE_GUESTS } from '../sampleData';
 import { HOTEL_POREC_ROOMS, HOTEL_POREC } from '../hotelData';
@@ -23,6 +25,8 @@ interface HotelContextType {
   invoices: Invoice[];
   payments: Payment[];
   fiscalRecords: FiscalRecord[];
+  companies: Company[];
+  pricingTiers: PricingTier[];
   
   // Loading states
   isUpdating: boolean;
@@ -40,6 +44,22 @@ interface HotelContextType {
   updateGuest: (id: string, updates: Partial<Guest>) => Promise<void>;
   findGuestsByName: (query: string) => Guest[];
   getGuestStayHistory: (guestId: string) => Reservation[];
+  
+  // Actions - Companies (Corporate Billing)
+  createCompany: (company: Omit<Company, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  updateCompany: (id: string, updates: Partial<Company>) => Promise<void>;
+  deleteCompany: (id: string) => Promise<void>;
+  findCompaniesByName: (query: string) => Company[];
+  findCompanyByOIB: (oib: string) => Company | undefined;
+  validateOIB: (oib: string) => boolean;
+  
+  // Actions - Pricing Tiers
+  createPricingTier: (pricingTier: Omit<PricingTier, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  updatePricingTier: (id: string, updates: Partial<PricingTier>) => Promise<void>;
+  deletePricingTier: (id: string) => Promise<void>;
+  findPricingTiersByName: (query: string) => PricingTier[];
+  getActivePricingTiers: () => PricingTier[];
+  getDefaultPricingTier: () => PricingTier | undefined;
   
   // Financial actions - Invoices
   generateInvoice: (reservationId: string) => Promise<Invoice>;
@@ -84,6 +104,8 @@ const STORAGE_KEYS = {
   INVOICES: 'hotel_invoices_v1',
   PAYMENTS: 'hotel_payments_v1',
   FISCAL_RECORDS: 'hotel_fiscal_records_v1',
+  COMPANIES: 'hotel_companies_v1',
+  PRICING_TIERS: 'hotel_pricing_tiers_v1',
   LAST_SYNC: 'hotel_last_sync_v1'
 };
 
@@ -94,6 +116,8 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [fiscalRecords, setFiscalRecords] = useState<FiscalRecord[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [pricingTiers, setPricingTiers] = useState<PricingTier[]>([]);
   const [isUpdating, setIsUpdating] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(new Date());
 
@@ -205,6 +229,40 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
         setFiscalRecords([]);
       }
     }
+
+    const storedCompanies = localStorage.getItem(STORAGE_KEYS.COMPANIES);
+    if (storedCompanies) {
+      try {
+        const parsed = JSON.parse(storedCompanies);
+        const companiesWithDates = parsed.map((company: any) => ({
+          ...company,
+          createdAt: new Date(company.createdAt),
+          updatedAt: new Date(company.updatedAt)
+        }));
+        setCompanies(companiesWithDates);
+      } catch (error) {
+        console.error('Failed to parse stored companies:', error);
+        setCompanies([]);
+      }
+    }
+
+    const storedPricingTiers = localStorage.getItem(STORAGE_KEYS.PRICING_TIERS);
+    if (storedPricingTiers) {
+      try {
+        const parsed = JSON.parse(storedPricingTiers);
+        const pricingTiersWithDates = parsed.map((tier: any) => ({
+          ...tier,
+          validFrom: new Date(tier.validFrom),
+          validTo: new Date(tier.validTo),
+          createdAt: new Date(tier.createdAt),
+          updatedAt: new Date(tier.updatedAt)
+        }));
+        setPricingTiers(pricingTiersWithDates);
+      } catch (error) {
+        console.error('Failed to parse stored pricing tiers:', error);
+        setPricingTiers([]);
+      }
+    }
   }, []);
 
   // Save to localStorage whenever data changes
@@ -255,6 +313,26 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
       setLastUpdated(new Date());
     } catch (error) {
       console.error('Failed to save fiscal records to localStorage:', error);
+    }
+  };
+
+  const saveCompaniesToStorage = (updatedCompanies: Company[]) => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.COMPANIES, JSON.stringify(updatedCompanies));
+      localStorage.setItem(STORAGE_KEYS.LAST_SYNC, new Date().toISOString());
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error('Failed to save companies to localStorage:', error);
+    }
+  };
+
+  const savePricingTiersToStorage = (updatedPricingTiers: PricingTier[]) => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.PRICING_TIERS, JSON.stringify(updatedPricingTiers));
+      localStorage.setItem(STORAGE_KEYS.LAST_SYNC, new Date().toISOString());
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error('Failed to save pricing tiers to localStorage:', error);
     }
   };
 
@@ -560,6 +638,247 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
       .sort((a, b) => b.checkIn.getTime() - a.checkIn.getTime());
   };
 
+  // Company management functions
+  const createCompany = async (companyData: Omit<Company, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> => {
+    const newCompany: Company = {
+      ...companyData,
+      id: `company-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    const updatedCompanies = [...companies, newCompany];
+    setCompanies(updatedCompanies);
+    setIsUpdating(true);
+
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Persist to localStorage
+      saveCompaniesToStorage(updatedCompanies);
+      
+      console.log(`Company ${newCompany.name} created successfully`);
+      
+    } catch (error) {
+      console.error('Failed to create company:', error);
+      // Revert changes on error
+      setCompanies(companies);
+      throw error;
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const updateCompany = async (id: string, updates: Partial<Company>): Promise<void> => {
+    const updatedCompanies = companies.map(company => 
+      company.id === id 
+        ? { ...company, ...updates, updatedAt: new Date() }
+        : company
+    );
+    
+    setCompanies(updatedCompanies);
+    setIsUpdating(true);
+
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Persist to localStorage
+      saveCompaniesToStorage(updatedCompanies);
+      
+      console.log(`Company ${id} updated successfully`);
+      
+    } catch (error) {
+      console.error('Failed to update company:', error);
+      // Revert changes on error
+      setCompanies(companies);
+      throw error;
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const deleteCompany = async (id: string): Promise<void> => {
+    const updatedCompanies = companies.filter(company => company.id !== id);
+    
+    setCompanies(updatedCompanies);
+    setIsUpdating(true);
+
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Persist to localStorage
+      saveCompaniesToStorage(updatedCompanies);
+      
+      console.log(`Company ${id} deleted successfully`);
+      
+    } catch (error) {
+      console.error('Failed to delete company:', error);
+      // Revert changes on error
+      setCompanies(companies);
+      throw error;
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  // Find companies by name (search function)
+  const findCompaniesByName = (query: string): Company[] => {
+    if (!query.trim()) return [];
+    
+    const searchTerm = query.toLowerCase().trim();
+    return companies.filter(company =>
+      company.name.toLowerCase().includes(searchTerm) ||
+      company.oib.includes(searchTerm) ||
+      company.contactPerson.toLowerCase().includes(searchTerm) ||
+      company.email.toLowerCase().includes(searchTerm)
+    );
+  };
+
+  // Find company by OIB (Croatian tax number)
+  const findCompanyByOIB = (oib: string): Company | undefined => {
+    return companies.find(company => company.oib === oib);
+  };
+
+  // Croatian OIB validation (11-digit tax number)
+  const validateOIB = (oib: string): boolean => {
+    if (!oib || oib.length !== 11) return false;
+    
+    // Check if all characters are digits
+    if (!/^\d{11}$/.test(oib)) return false;
+    
+    // Croatian OIB validation algorithm
+    let sum = 0;
+    for (let i = 0; i < 10; i++) {
+      sum += parseInt(oib[i]) * (10 - i);
+    }
+    
+    const remainder = sum % 11;
+    const expectedCheckDigit = remainder < 2 ? remainder : 11 - remainder;
+    
+    return parseInt(oib[10]) === expectedCheckDigit;
+  };
+
+  // Pricing Tier management functions
+  const createPricingTier = async (pricingTierData: Omit<PricingTier, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> => {
+    const newPricingTier: PricingTier = {
+      ...pricingTierData,
+      id: `tier-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    const updatedPricingTiers = [...pricingTiers, newPricingTier];
+    setPricingTiers(updatedPricingTiers);
+    setIsUpdating(true);
+
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Persist to localStorage
+      savePricingTiersToStorage(updatedPricingTiers);
+      
+      console.log(`Pricing tier ${newPricingTier.name} created successfully`);
+      
+    } catch (error) {
+      console.error('Failed to create pricing tier:', error);
+      // Revert changes on error
+      setPricingTiers(pricingTiers);
+      throw error;
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const updatePricingTier = async (id: string, updates: Partial<PricingTier>): Promise<void> => {
+    const updatedPricingTiers = pricingTiers.map(tier => 
+      tier.id === id 
+        ? { ...tier, ...updates, updatedAt: new Date() }
+        : tier
+    );
+    
+    setPricingTiers(updatedPricingTiers);
+    setIsUpdating(true);
+
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Persist to localStorage
+      savePricingTiersToStorage(updatedPricingTiers);
+      
+      console.log(`Pricing tier ${id} updated successfully`);
+      
+    } catch (error) {
+      console.error('Failed to update pricing tier:', error);
+      // Revert changes on error
+      setPricingTiers(pricingTiers);
+      throw error;
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const deletePricingTier = async (id: string): Promise<void> => {
+    // Prevent deletion of default tier
+    const tierToDelete = pricingTiers.find(tier => tier.id === id);
+    if (tierToDelete?.isDefault) {
+      throw new Error('Cannot delete the default pricing tier');
+    }
+
+    const updatedPricingTiers = pricingTiers.filter(tier => tier.id !== id);
+    
+    setPricingTiers(updatedPricingTiers);
+    setIsUpdating(true);
+
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Persist to localStorage
+      savePricingTiersToStorage(updatedPricingTiers);
+      
+      console.log(`Pricing tier ${id} deleted successfully`);
+      
+    } catch (error) {
+      console.error('Failed to delete pricing tier:', error);
+      // Revert changes on error
+      setPricingTiers(pricingTiers);
+      throw error;
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  // Find pricing tiers by name (search function)
+  const findPricingTiersByName = (query: string): PricingTier[] => {
+    if (!query.trim()) return [];
+    
+    const searchTerm = query.toLowerCase().trim();
+    return pricingTiers.filter(tier =>
+      tier.name.toLowerCase().includes(searchTerm) ||
+      tier.description.toLowerCase().includes(searchTerm)
+    );
+  };
+
+  // Get active pricing tiers
+  const getActivePricingTiers = (): PricingTier[] => {
+    const now = new Date();
+    return pricingTiers.filter(tier => 
+      tier.isActive && 
+      tier.validFrom <= now && 
+      tier.validTo >= now
+    );
+  };
+
+  // Get default pricing tier
+  const getDefaultPricingTier = (): PricingTier | undefined => {
+    return pricingTiers.find(tier => tier.isDefault);
+  };
+
   // Refresh data from storage
   const refreshData = () => {
     const storedReservations = localStorage.getItem(STORAGE_KEYS.RESERVATIONS);
@@ -847,6 +1166,8 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
     invoices,
     payments,
     fiscalRecords,
+    companies,
+    pricingTiers,
     isUpdating,
     lastUpdated,
     updateReservationStatus,
@@ -858,6 +1179,18 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
     updateGuest,
     findGuestsByName,
     getGuestStayHistory,
+    createCompany,
+    updateCompany,
+    deleteCompany,
+    findCompaniesByName,
+    findCompanyByOIB,
+    validateOIB,
+    createPricingTier,
+    updatePricingTier,
+    deletePricingTier,
+    findPricingTiersByName,
+    getActivePricingTiers,
+    getDefaultPricingTier,
     generateInvoice,
     updateInvoiceStatus,
     getInvoicesByGuest,

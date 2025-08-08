@@ -419,3 +419,78 @@ export interface FinancialHotelContextType extends HotelContextType {
     online: number;
   };
 }
+
+// Corporate Billing System - R1 Bills
+export interface Company {
+  id: string;
+  name: string;
+  oib: string; // Croatian tax number (unique)
+  address: string;
+  city: string;
+  postalCode: string;
+  country: string;
+  contactPerson: string;
+  email: string;
+  phone: string;
+  fax?: string;
+  
+  // Business relationship
+  pricingTierId?: string; // Links to PricingTier
+  roomAllocationGuarantee?: number; // Number of guaranteed rooms
+  
+  // Metadata
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  notes: string;
+}
+
+// Enhanced Reservation with Corporate Billing
+export interface EnhancedReservation extends Omit<Reservation, 'roomServiceItems'> {
+  roomServiceItems: RoomServiceItem[];
+  
+  // Corporate billing fields
+  companyId?: string; // For R1 bills
+  isR1Bill: boolean; // Corporate billing flag
+  
+  // Enhanced metadata
+  lastModified: Date;
+}
+
+// Pricing Tier Management
+export interface PricingTier {
+  id: string;
+  name: string;
+  description: string;
+  
+  // Rate modifiers (percentage adjustments to base rates)
+  seasonalRateModifiers: {
+    A: number; // Winter/Early Spring modifier (+/-%)
+    B: number; // Spring/Late Fall modifier (+/-%)
+    C: number; // Early Summer/Early Fall modifier (+/-%)
+    D: number; // Peak Summer modifier (+/-%)
+  };
+  
+  // Fee adjustments
+  feeModifiers: {
+    tourismTax: number; // Flat rate adjustment
+    pets: number; // Flat rate adjustment
+    parking: number; // Flat rate adjustment
+    shortStay: number; // Percentage modifier
+    additional: number; // Flat rate adjustment
+  };
+  
+  // Applicability
+  roomTypes: RoomType[]; // Which room types this applies to
+  minimumStay?: number; // Minimum nights required
+  maximumStay?: number; // Maximum nights allowed
+  validFrom: Date;
+  validTo: Date;
+  
+  // Metadata
+  isActive: boolean;
+  isDefault: boolean; // One tier must be marked as default
+  createdAt: Date;
+  updatedAt: Date;
+  notes: string;
+}

@@ -3,7 +3,7 @@
 
 import { Guest, GuestChild, Reservation, ReservationStatus } from './types';
 import { addDays, subDays, addWeeks, format } from 'date-fns';
-import { calculatePricing } from './pricingCalculator';
+import { HotelPricingEngine, PricingCalculationInput } from './pricingEngine';
 import { HOTEL_POREC_ROOMS } from './hotelData';
 
 // Generate realistic children data
@@ -16,6 +16,77 @@ function createChild(name: string, ageYears: number): GuestChild {
     dateOfBirth,
     age: ageYears
   };
+}
+
+// Helper to calculate pricing using 2026 engine (replaces old calculatePricing)
+function calculate2026Pricing(
+  roomId: string, 
+  checkIn: Date, 
+  checkOut: Date, 
+  adults: number, 
+  children: GuestChild[], 
+  options: { hasPets?: boolean; needsParking?: boolean } = {}
+) {
+  try {
+    const room = HOTEL_POREC_ROOMS.find(r => r.id === roomId);
+    if (!room) throw new Error(`Room ${roomId} not found`);
+
+    const pricingEngine = HotelPricingEngine.getInstance();
+    const input: PricingCalculationInput = {
+      roomType: room.type,
+      roomId: roomId,
+      checkIn: checkIn,
+      checkOut: checkOut,
+      adults: adults,
+      children: children,
+      hasPets: options.hasPets || false,
+      needsParking: options.needsParking || false,
+      pricingTierId: '2026-standard',
+      isRoom401: roomId === '401'
+    };
+    
+    const result = pricingEngine.calculatePricing(input);
+    
+    // Convert to legacy format for sample data compatibility
+    return {
+      baseRate: result.baseRoomRate,
+      numberOfNights: result.nights,
+      seasonalPeriod: result.seasonalPeriod,
+      subtotal: result.accommodationSubtotal,
+      discounts: {
+        children0to3: result.discounts.children0to3.amount,
+        children3to7: result.discounts.children3to7.amount,
+        children7to14: result.discounts.children7to14.amount
+      },
+      totalDiscounts: result.discounts.totalDiscounts,
+      fees: {
+        tourism: result.services.tourism.total,
+        vat: result.totalVATAmount,
+        pets: result.services.pets.total,
+        parking: result.services.parking.total,
+        shortStay: result.shortStaySupplement,
+        additional: result.services.towelRental.total
+      },
+      totalFees: result.services.tourism.total + result.totalVATAmount + 
+                result.services.pets.total + result.services.parking.total,
+      grandTotal: result.grandTotal
+    };
+  } catch (error) {
+    console.error('2026 Pricing calculation error:', error);
+    // Return fallback pricing
+    const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+    return {
+      baseRate: 70,
+      numberOfNights: nights,
+      seasonalPeriod: 'B' as const,
+      subtotal: 70 * nights * adults,
+      discounts: { children0to3: 0, children3to7: 0, children7to14: 0 },
+      totalDiscounts: 0,
+      fees: { tourism: 6, vat: 20, pets: 0, parking: 0, shortStay: 0, additional: 0 },
+      totalFees: 26,
+      grandTotal: (70 * nights * adults) + 26
+    };
+  }
 }
 
 // Sample guest data with realistic European tourist patterns
@@ -533,10 +604,10 @@ function createReservation(
   
   const normalizedCheckOut = new Date(checkOut);
   normalizedCheckOut.setHours(11, 0, 0, 0); // 11:00 AM check-out
-  // Calculate pricing automatically
+  // Calculate pricing using 2026 engine
   let pricing;
   try {
-    pricing = calculatePricing(roomId, normalizedCheckIn, normalizedCheckOut, adults, children, options);
+    pricing = calculate2026Pricing(roomId, normalizedCheckIn, normalizedCheckOut, adults, children, options);
   } catch (error) {
     // Fallback pricing if calculation fails
     pricing = {
@@ -571,16 +642,16 @@ function createReservation(
     seasonalPeriod: pricing.seasonalPeriod,
     baseRoomRate: pricing.baseRate,
     numberOfNights: pricing.numberOfNights,
-    subtotal: pricing.subtotal,
-    childrenDiscounts: pricing.totalDiscounts,
-    tourismTax: pricing.fees.tourism,
-    vatAmount: pricing.fees.vat,
-    petFee: pricing.fees.pets,
-    parkingFee: pricing.fees.parking,
-    shortStaySuplement: pricing.fees.shortStay,
-    additionalCharges: pricing.fees.additional,
+    subtotal: pricing.subtotal || 0,
+    childrenDiscounts: pricing.totalDiscounts || 0,
+    tourismTax: pricing.fees.tourism || 0,
+    vatAmount: pricing.fees.vat || 0,
+    petFee: pricing.fees.pets || 0,
+    parkingFee: pricing.fees.parking || 0,
+    shortStaySuplement: pricing.fees.shortStay || 0,
+    additionalCharges: pricing.fees.additional || 0,
     roomServiceItems: [],
-    totalAmount: pricing.total,
+    totalAmount: pricing.grandTotal || 0,
     
     // Metadata
     bookingDate: subDays(normalizedCheckIn, Math.floor(Math.random() * 30) + 1), // Booked 1-30 days in advance

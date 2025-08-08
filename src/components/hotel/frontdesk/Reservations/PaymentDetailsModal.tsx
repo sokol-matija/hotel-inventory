@@ -18,8 +18,8 @@ import {
   Calendar,
   CheckCircle
 } from 'lucide-react';
-import { Reservation, Guest, Room, RoomServiceItem } from '../../../../lib/hotel/types';
-import { calculatePricing } from '../../../../lib/hotel/pricingCalculator';
+import { Reservation, Guest, Room } from '../../../../lib/hotel/types';
+// Note: Legacy pricing calculator removed - using stored reservation pricing data
 import { generatePDFInvoice, generateInvoiceNumber } from '../../../../lib/pdfInvoiceGenerator';
 import { useHotel } from '../../../../lib/hotel/state/HotelContext';
 import hotelNotification from '../../../../lib/notifications';
@@ -43,19 +43,30 @@ export default function PaymentDetailsModal({
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState(reservation.status);
 
-  // Recalculate pricing to get detailed breakdown
-  const pricingDetails = calculatePricing(
-    reservation.roomId,
-    reservation.checkIn,
-    reservation.checkOut,
-    reservation.adults,
-    guest.children,
-    {
-      hasPets: guest.hasPets,
-      needsParking: reservation.parkingFee > 0,
-      additionalCharges: reservation.additionalCharges
-    }
-  );
+  // Use stored pricing data instead of recalculating (legacy calculatePricing removed)
+  const pricingDetails = {
+    baseRate: reservation.baseRoomRate || 70,
+    numberOfNights: reservation.numberOfNights,
+    subtotal: reservation.subtotal,
+    discounts: {
+      children0to3: 0,
+      children3to7: 0, 
+      children7to14: 0
+    },
+    totalDiscounts: reservation.childrenDiscounts || 0,
+    fees: {
+      tourism: reservation.tourismTax,
+      vat: reservation.vatAmount,
+      pets: reservation.petFee,
+      parking: reservation.parkingFee,
+      shortStay: reservation.shortStaySuplement || 0,
+      additional: reservation.additionalCharges
+    },
+    totalFees: (reservation.tourismTax || 0) + (reservation.vatAmount || 0) + 
+               (reservation.petFee || 0) + (reservation.parkingFee || 0) + 
+               (reservation.shortStaySuplement || 0) + (reservation.additionalCharges || 0),
+    grandTotal: reservation.totalAmount
+  };
 
   const handlePrintInvoice = () => {
     try {
@@ -168,7 +179,7 @@ export default function PaymentDetailsModal({
                 <div>
                   <div className="text-sm text-gray-500">Dates</div>
                   <div className="font-medium">
-                    {reservation.checkIn.toLocaleDateString()} - {reservation.checkOut.toLocaleDateString()}
+                    {new Date(reservation.checkIn).toLocaleDateString()} - {new Date(reservation.checkOut).toLocaleDateString()}
                   </div>
                 </div>
                 <div>
@@ -306,7 +317,7 @@ export default function PaymentDetailsModal({
                     <div>
                       <div className="font-medium">{item.itemName}</div>
                       <div className="text-sm text-gray-500">
-                        {item.quantity}x €{item.unitPrice.toFixed(2)} • {item.orderedAt.toLocaleDateString()}
+                        {item.quantity}x €{item.unitPrice.toFixed(2)} • {new Date(item.orderedAt).toLocaleDateString()}
                       </div>
                     </div>
                     <div className="font-medium">{formatCurrency(item.totalPrice)}</div>
@@ -345,7 +356,7 @@ export default function PaymentDetailsModal({
                       {paymentStatus === 'checked-out' ? 'Payment Complete' : 'Payment Pending'}
                     </div>
                     <div className="text-sm text-gray-500">
-                      Booking made on {reservation.bookingDate.toLocaleDateString()}
+                      Booking made on {new Date(reservation.bookingDate).toLocaleDateString()}
                     </div>
                   </div>
                 </div>

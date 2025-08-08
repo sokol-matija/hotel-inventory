@@ -11,6 +11,21 @@ A comprehensive hotel inventory management system built with React 19 and Supaba
 
 ## Recent Major Improvements
 
+### 2026 Pricing System & Corporate Billing Preparation (August 2025) - LATEST
+- **Complete 2026 Pricing Structure**: Exact seasonal periods, room rates, and discount rules
+- **Advanced Pricing Engine**: Comprehensive calculation system with Croatian VAT compliance
+- **Corporate Billing Framework**: R1 business billing system design and entity structure  
+- **Enhanced Requirements**: Detailed specification for 11 major feature categories
+- **Agent-Based Development**: 7 specialized agents for systematic feature implementation
+- **Features Ready for Implementation**:
+  - **Corporate R1 Billing**: Company management with Croatian OIB validation
+  - **Multi-Tier Pricing**: 2025/2026 Standard + custom agency rates
+  - **Variable VAT Rates**: 13% accommodation, 25% parking/pets/drinks
+  - **Room 401 Enhanced Rules**: Cleaning gaps, minimum stay, per-apartment pricing
+  - **Register Selection**: 4 fiscal registers for Croatian compliance
+  - **Group Booking System**: Visual grouping with labels and floor preferences
+  - **Tentative Reservations**: Unconfirmed bookings with dotted grey outline
+
 ### NTFY Push Notification System Implementation (August 2025) - NEW
 - **Real-Time Booking Alerts**: Push notifications for Room 401 bookings via ntfy.sh service
 - **Mobile Integration**: Complete mobile app setup with subscription-based notifications
