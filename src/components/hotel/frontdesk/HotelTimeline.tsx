@@ -1476,17 +1476,19 @@ function RoomOverviewFloorSection({
               const isOccupied = !!occupancyData[room.id];
               const reservation = occupancyData[room.id]?.reservation;
               const status = occupancyData[room.id]?.status;
+              
               const statusColors = status ? RESERVATION_STATUS_COLORS[status as ReservationStatus] : null;
               
               // Create lighter background colors for room cards
               const getStatusCardColors = (status: string) => {
                 switch (status) {
-                  case 'confirmed': return 'bg-orange-100 border-orange-500';
-                  case 'checked-in': return 'bg-green-100 border-green-500';
-                  case 'checked-out': return 'bg-gray-100 border-gray-500';
-                  case 'room-closure': return 'bg-red-100 border-red-500';
-                  case 'unallocated': return 'bg-blue-100 border-blue-500';
-                  case 'incomplete-payment': return 'bg-red-50 border-red-500';
+                  case 'confirmed': return 'bg-orange-200 border-orange-600';
+                  case 'checked-in': return 'bg-green-200 border-green-600';
+                  case 'checked-out': return 'bg-gray-200 border-gray-600';
+                  case 'room-closure': return 'bg-red-200 border-red-600';
+                  case 'unallocated': return 'bg-blue-200 border-blue-600';
+                  case 'incomplete-payment': return 'bg-red-200 border-red-600';
+                  case 'available': return 'bg-white border-gray-200';
                   default: return 'bg-white border-gray-200';
                 }
               };

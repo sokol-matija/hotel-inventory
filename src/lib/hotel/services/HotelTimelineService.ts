@@ -39,7 +39,7 @@ export interface DrinkModalState {
 
 export interface OccupancyData {
   [roomId: string]: {
-    status: 'available' | 'occupied' | 'checkout' | 'dirty' | 'maintenance';
+    status: ReservationStatus | 'available';
     guest?: Guest;
     reservation?: Reservation;
     checkInTime?: string;
@@ -225,19 +225,8 @@ export class HotelTimelineService {
       if (checkInDate <= targetDate && checkOutDate > targetDate) {
         const guest = SAMPLE_GUESTS.find(g => g.id === reservation.guestId);
         
-        let status: 'available' | 'occupied' | 'checkout' | 'dirty' | 'maintenance' = 'occupied';
-        
-        // Determine status based on reservation status and dates
-        if (reservation.status === 'room-closure') {
-          status = 'maintenance';
-        } else if (isSameDay(checkOutDate, targetDate)) {
-          status = 'checkout';
-        } else if (reservation.status === 'checked-out') {
-          status = 'dirty';
-        }
-        
         occupancy[reservation.roomId] = {
-          status,
+          status: reservation.status, // Use the actual reservation status for color coding
           guest,
           reservation,
           checkInTime: isSameDay(checkInDate, targetDate) ? '15:00' : undefined,
