@@ -123,7 +123,9 @@ export function useTimelineState(reservations: Reservation[]) {
   ) => {
     setState(prev => ({
       ...prev,
-      [key]: { ...prev[key], ...partialUpdate }
+      [key]: typeof prev[key] === 'object' && prev[key] !== null
+        ? { ...(prev[key] as object), ...partialUpdate }
+        : partialUpdate
     }));
   }, []);
 

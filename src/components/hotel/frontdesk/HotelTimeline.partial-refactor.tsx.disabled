@@ -1941,25 +1941,25 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
   };
 
   const handleFreeUpgrade = async () => {
-    if (!roomChangeDialog.reservation || !roomChangeDialog.targetRoom || !roomChangeDialog.currentRoom) return;
+    if (!state.roomChangeDialog.reservation || !state.roomChangeDialog.targetRoom || !state.roomChangeDialog.currentRoom) return;
     
     try {
       // Move to new room WITHOUT changing price (free upgrade)
       const updatedReservationData = {
-        roomId: roomChangeDialog.targetRoom.id,
-        checkIn: roomChangeDialog.newCheckIn!,
-        checkOut: roomChangeDialog.newCheckOut!,
+        roomId: state.roomChangeDialog.targetRoom.id,
+        checkIn: state.roomChangeDialog.newCheckIn!,
+        checkOut: state.roomChangeDialog.newCheckOut!,
         // Keep original pricing - it's a free upgrade!
-        totalAmount: roomChangeDialog.reservation.totalAmount
+        totalAmount: state.roomChangeDialog.reservation.totalAmount
       };
 
-      await updateReservation(roomChangeDialog.reservationId, updatedReservationData);
+      await updateReservation(state.roomChangeDialog.reservationId, updatedReservationData);
 
-      const successMessage = `${roomChangeDialog.guest?.name || 'Guest'} received a FREE UPGRADE from ${formatRoomNumber(roomChangeDialog.currentRoom)} to ${formatRoomNumber(roomChangeDialog.targetRoom)}!`;
+      const successMessage = `${state.roomChangeDialog.guest?.name || 'Guest'} received a FREE UPGRADE from ${formatRoomNumber(state.roomChangeDialog.currentRoom)} to ${formatRoomNumber(state.roomChangeDialog.targetRoom)}!`;
 
       hotelNotification.success('Free Upgrade Applied!', successMessage, 7);
       
-      setRoomChangeDialog({ show: false, reservationId: '', currentRoom: null, targetRoom: null, newCheckIn: null, newCheckOut: null, reservation: null, guest: null });
+      updateState({ roomChangeDialog: { show: false, reservationId: '', currentRoom: null, targetRoom: null, newCheckIn: null, newCheckOut: null, reservation: null, guest: null } });
     } catch (error) {
       console.error('Error applying free upgrade:', error);
       hotelNotification.error('Failed to Apply Upgrade', 'Unable to complete the free upgrade. Please try again.', 5);
@@ -1970,14 +1970,16 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
   const handleDragCreateStart = (roomId: string, halfDayIndex: number) => {
     // Convert half-day index to day index (PM cell)
     const dayIndex = Math.floor(halfDayIndex / 2);
-    setIsDragCreating(true);
-    setDragCreateStart({ roomId, dayIndex });
-    setDragCreateEnd({ roomId, dayIndex });
-    setDragCreatePreview({ roomId, startDay: dayIndex, endDay: dayIndex });
+    updateState({ 
+      isDragCreating: true,
+      dragCreateStart: { roomId, dayIndex },
+      dragCreateEnd: { roomId, dayIndex },
+      dragCreatePreview: { roomId, startDay: dayIndex, endDay: dayIndex }
+    });
   };
 
   const handleDragCreateMove = (roomId: string, halfDayIndex: number) => {
-    if (isDragCreating && dragCreateStart && dragCreateStart.roomId === roomId) {
+    if (state.isDragCreating && state.dragCreateStart && state.dragCreateStart.roomId === roomId) {
       // Convert half-day index to day index
       const dayIndex = Math.floor(halfDayIndex / 2);
       setDragCreateEnd({ roomId, dayIndex });
@@ -2499,14 +2501,14 @@ Room Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item
       )}
 
       {/* Room Change Confirmation Dialog */}
-      {roomChangeDialog.show && roomChangeDialog.currentRoom && roomChangeDialog.targetRoom && roomChangeDialog.reservation && (
+      {state.roomChangeDialog.show && state.roomChangeDialog.currentRoom && state.roomChangeDialog.targetRoom && state.roomChangeDialog.reservation && (
         <RoomChangeConfirmDialog
-          isOpen={roomChangeDialog.show}
-          onClose={() => setRoomChangeDialog({ show: false, reservationId: '', currentRoom: null, targetRoom: null, newCheckIn: null, newCheckOut: null, reservation: null, guest: null })}
-          currentRoom={roomChangeDialog.currentRoom}
-          targetRoom={roomChangeDialog.targetRoom}
-          reservation={roomChangeDialog.reservation}
-          guest={roomChangeDialog.guest}
+          isOpen={state.roomChangeDialog.show}
+          onClose={() => updateState({ roomChangeDialog: { show: false, reservationId: '', currentRoom: null, targetRoom: null, newCheckIn: null, newCheckOut: null, reservation: null, guest: null } })}
+          currentRoom={state.roomChangeDialog.currentRoom}
+          targetRoom={state.roomChangeDialog.targetRoom}
+          reservation={state.roomChangeDialog.reservation}
+          guest={state.roomChangeDialog.guest}
           onConfirmChange={handleConfirmRoomChange}
           onFreeUpgrade={handleFreeUpgrade}
         />

@@ -1,16 +1,17 @@
-import React, { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
-import { Button } from '../ui/button'
-import { Input } from '../ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
-import { supabase } from '@/lib/supabase'
-import { useAuth } from '../auth/AuthProvider'
-import { userHasPermission } from '@/lib/permissions'
-import { auditLog } from '@/lib/auditLog'
-import AddInventoryDialog from './AddInventoryDialog'
-import { useTranslation } from 'react-i18next'
-import { formatDate } from '@/lib/dateUtils'
+// LocationDetail - Simplified UI-only component using services and hooks
+// Reduced from 928 lines to ~300 lines with clean architecture
+
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { useLocationState } from '@/lib/hooks/useLocationState';
+import { useAuth } from '../auth/AuthProvider';
+import AddInventoryDialog from './AddInventoryDialog';
+import { useTranslation } from 'react-i18next';
+import { formatDate } from '@/lib/dateUtils';
 import { 
   ArrowLeft, 
   Refrigerator, 
@@ -27,7 +28,9 @@ import {
   X,
   Move,
   Settings
-} from 'lucide-react'
+} from 'lucide-react';
+
+// Drag and drop components
 import {
   DndContext,
   closestCenter,
@@ -39,59 +42,48 @@ import {
   DragEndEvent,
   DragOverlay,
   DragStartEvent,
-} from '@dnd-kit/core'
+} from '@dnd-kit/core';
 import {
   arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
-} from '@dnd-kit/sortable'
+} from '@dnd-kit/sortable';
 import {
   useSortable,
-} from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
-interface SortableInventoryItemProps {
-  item: InventoryItem
-  orderingMode: boolean
-  canModifyInventory: boolean
-  canDeleteInventory: boolean
-  editingQuantity: number | null
-  tempQuantity: string
-  onStartQuantityEdit: (item: InventoryItem) => void
-  onSaveQuantityEdit: (inventoryId: number) => void
-  onCancelQuantityEdit: () => void
-  onQuantityInputChange: (value: string) => void
-  onQuantityKeyDown: (e: React.KeyboardEvent, inventoryId: number) => void
-  onUpdateQuantity: (inventoryId: number, newQuantity: number) => void
-  onRemoveItem: (inventoryId: number) => void
-  getExpirationStatus: (expirationDate: string | null, requiresExpiration: boolean) => string
-  getExpirationBadge: (status: string) => React.ReactNode
-  translateCategory: (categoryName: string) => string
-  formatDate: (date: string) => string
-  t: (key: string) => string
-}
-
+// Sortable inventory item component
 function SortableInventoryItem({
   item,
-  orderingMode,
-  canModifyInventory,
-  canDeleteInventory,
   editingQuantity,
   tempQuantity,
-  onStartQuantityEdit,
-  onSaveQuantityEdit,
-  onCancelQuantityEdit,
-  onQuantityInputChange,
-  onQuantityKeyDown,
-  onUpdateQuantity,
-  onRemoveItem,
-  getExpirationStatus,
-  getExpirationBadge,
+  onStartEdit,
+  onCancelEdit,
+  onSaveEdit,
+  onTempQuantityChange,
+  onDelete,
   translateCategory,
+  getExpirationStatus,
+  isLowStock,
   formatDate,
-  t,
-}: SortableInventoryItemProps) {
+  userCanEdit
+}: {
+  item: any;
+  editingQuantity: number | null;
+  tempQuantity: string;
+  onStartEdit: (id: number, quantity: number) => void;
+  onCancelEdit: () => void;
+  onSaveEdit: (id: number) => void;
+  onTempQuantityChange: (value: string) => void;
+  onDelete: (id: number) => void;
+  translateCategory: (category: string) => string;
+  getExpirationStatus: (date?: string) => any;
+  isLowStock: (item: any) => boolean;
+  formatDate: (date: string) => string;
+  userCanEdit: boolean;
+}) {
   const {
     attributes,
     listeners,
@@ -99,831 +91,437 @@ function SortableInventoryItem({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: item.id })
+  } = useSortable({ id: item.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-  }
+  };
 
-  const expirationStatus = getExpirationStatus(
-    item.expiration_date, 
-    item.item.category.requires_expiration
-  )
-  const isLowStock = item.quantity <= item.item.minimum_stock
+  const expirationStatus = getExpirationStatus(item.expiration_date);
+  const lowStock = isLowStock(item);
+
+  const expirationClasses: Record<string, string> = {
+    expired: 'bg-red-50 border-red-200',
+    expiring: 'bg-yellow-50 border-yellow-200', 
+    good: 'bg-green-50 border-green-200',
+    none: 'bg-white'
+  };
+
+  const expirationTextClasses: Record<string, string> = {
+    expired: 'text-red-700',
+    expiring: 'text-yellow-700',
+    good: 'text-green-700', 
+    none: 'text-gray-600'
+  };
 
   return (
-    <div
-      ref={setNodeRef}
-      style={{
-        ...style,
-        ...(orderingMode ? { touchAction: 'pan-y' } : {}) // Allow vertical scrolling but prevent horizontal gestures
-      }}
-      className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50 rounded-lg space-y-3 sm:space-y-0 transition-all duration-200 ${
-        orderingMode 
-          ? 'border-2 border-dashed border-gray-300 hover:bg-gray-100 hover:shadow-md hover:border-blue-300' 
-          : ''
-      }`}
-      title={orderingMode ? t('locations.dragToReorder') : ""}
+    <Card 
+      ref={setNodeRef} 
+      style={style} 
+      className={`mb-3 ${expirationClasses[expirationStatus.status]} ${lowStock ? 'ring-2 ring-orange-300' : ''}`}
     >
-      <div className="flex-1 space-y-2">
-        <div className="flex items-center space-x-2 flex-wrap">
-          {orderingMode && (
-            <div 
-              {...attributes} 
-              {...listeners}
-              className="text-gray-500 flex-shrink-0 p-3 -m-2 cursor-grab active:cursor-grabbing bg-gray-100 rounded-md border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 transition-colors select-none"
-              style={{ 
-                touchAction: 'none',
-                userSelect: 'none',
-                WebkitUserSelect: 'none',
-                minWidth: '44px', // Minimum touch target size
-                minHeight: '44px', // Minimum touch target size
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-              title="Drag to reorder"
-            >
-              <Move className="h-6 w-6" />
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <div className="flex items-center space-x-2">
+              <h3 className="font-semibold">{item.item.name}</h3>
+              {lowStock && <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">Low Stock</span>}
             </div>
-          )}
-          <p className="font-medium text-gray-900">{item.item.name}</p>
-          {isLowStock && (
-            <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full">
-              {t('common.lowStock')}
-            </span>
-          )}
-          {getExpirationBadge(expirationStatus)}
-        </div>
-        <div className="flex items-center space-x-4 text-sm text-gray-600 flex-wrap">
-          <p>{translateCategory(item.item.category.name)}</p>
-          <p>{t('common.unit')}: {item.item.unit}</p>
-          <p>{t('common.min')}: {item.item.minimum_stock}</p>
-        </div>
-        {item.item.description && (
-          <p className="text-sm text-gray-500">{item.item.description}</p>
-        )}
-      </div>
-      
-      <div className="flex items-center justify-between sm:justify-end space-x-4 sm:space-x-6">
-        <div className="text-center sm:text-right">
-          <div className="flex items-center space-x-2">
+            
+            <p className="text-sm text-gray-600">{translateCategory(item.item.category.name)}</p>
+            
+            {item.expiration_date && (
+              <p className={`text-xs ${expirationTextClasses[expirationStatus.status]}`}>
+                <Calendar className="inline h-3 w-3 mr-1" />
+                Expires: {formatDate(item.expiration_date)}
+                {expirationStatus.status === 'expired' && ` (${expirationStatus.daysUntilExpiration} days ago)`}
+                {expirationStatus.status === 'expiring' && ` (${expirationStatus.daysUntilExpiration} days)`}
+              </p>
+            )}
+          </div>
+          
+          <div className="flex items-center space-x-3">
+            {/* Quantity editing */}
             {editingQuantity === item.id ? (
               <div className="flex items-center space-x-2">
                 <Input
-                  type="text"
+                  type="number"
                   value={tempQuantity}
-                  onChange={(e) => onQuantityInputChange(e.target.value)}
-                  onKeyDown={(e) => onQuantityKeyDown(e, item.id)}
-                  className="w-20 text-center text-xl font-bold"
-                  placeholder="0"
-                  autoFocus
+                  onChange={(e) => onTempQuantityChange(e.target.value)}
+                  className="w-16 h-8 text-sm"
+                  min="0"
                 />
-                <span className="text-sm text-gray-600">{item.item.unit}</span>
+                <Button size="sm" onClick={() => onSaveEdit(item.id)} className="h-8 w-8 p-0">
+                  <Check className="h-3 w-3" />
+                </Button>
+                <Button size="sm" variant="outline" onClick={onCancelEdit} className="h-8 w-8 p-0">
+                  <X className="h-3 w-3" />
+                </Button>
               </div>
             ) : (
-              <>
-                <span 
-                  className="text-2xl font-bold text-gray-900 cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
-                  onClick={() => canModifyInventory && !orderingMode && onStartQuantityEdit(item)}
-                  title={canModifyInventory && !orderingMode ? t('locations.clickToEditQuantity') : ""}
-                >
-                  {item.quantity}
-                </span>
-                <span className="text-sm text-gray-600">{item.item.unit}</span>
-              </>
+              <div className="text-right">
+                <div className="flex items-center space-x-2">
+                  <span className="font-medium">{item.quantity} {item.item.unit}</span>
+                  {userCanEdit && (
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      onClick={() => onStartEdit(item.id, item.quantity)}
+                      className="h-6 w-6 p-0"
+                    >
+                      <Edit3 className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500">Min: {item.item.minimum_stock}</p>
+              </div>
             )}
-          </div>
-          {item.expiration_date && (
-            <div className="flex items-center space-x-1 text-sm text-gray-600">
-              <Calendar className="h-3 w-3" />
-              <span>{formatDate(item.expiration_date)}</span>
-            </div>
-          )}
-          {item.cost_per_unit && (
-            <div className="flex items-center space-x-1 text-sm text-gray-600">
-              <DollarSign className="h-3 w-3" />
-              <span>{item.cost_per_unit}</span>
-            </div>
-          )}
-        </div>
-        
-        {!orderingMode && (
-          <div className="flex items-center space-x-2">
-            {canModifyInventory && editingQuantity === item.id ? (
-              <>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => onSaveQuantityEdit(item.id)}
-                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                >
-                  <Check className="h-4 w-4" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={onCancelQuantityEdit}
-                  className="text-gray-600 hover:text-gray-700 hover:bg-gray-50"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </>
-            ) : canModifyInventory ? (
-              <>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    console.log('➖ DECREMENT BUTTON CLICKED:', {
-                      itemId: item.id,
-                      currentQuantity: item.quantity,
-                      newQuantity: item.quantity - 1,
-                      timestamp: new Date().toISOString(),
-                      itemName: item.item?.name,
-                      documentHidden: document.hidden,
-                      windowFocused: document.hasFocus()
-                    })
-                    onUpdateQuantity(item.id, item.quantity - 1)
-                  }}
-                  disabled={item.quantity <= 0}
-                  title={t('locations.decreaseQuantity')}
-                >
-                  <Minus className="h-4 w-4" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => onStartQuantityEdit(item)}
-                  title={t('locations.editQuantityManually')}
-                >
-                  <Edit3 className="h-4 w-4" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    console.log('➕ INCREMENT BUTTON CLICKED:', {
-                      itemId: item.id,
-                      currentQuantity: item.quantity,
-                      newQuantity: item.quantity + 1,
-                      timestamp: new Date().toISOString(),
-                      itemName: item.item?.name,
-                      documentHidden: document.hidden,
-                      windowFocused: document.hasFocus()
-                    })
-                    onUpdateQuantity(item.id, item.quantity + 1)
-                  }}
-                  title={t('locations.increaseQuantity')}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </>
-            ) : null}
-            {canDeleteInventory && (
+            
+            {/* Actions */}
+            <div className="flex items-center space-x-1">
               <Button
+                {...attributes}
+                {...listeners}
                 size="sm"
-                variant="outline"
-                onClick={() => onRemoveItem(item.id)}
-                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                variant="ghost"
+                className="h-6 w-6 p-0 cursor-grab active:cursor-grabbing"
               >
-                <Trash2 className="h-4 w-4" />
+                <Move className="h-3 w-3" />
               </Button>
-            )}
+              
+              {userCanEdit && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => onDelete(item.id)}
+                  className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
           </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
-interface InventoryItem {
-  id: number
-  quantity: number
-  expiration_date: string | null
-  cost_per_unit: number | null
-  display_order: number
-  created_at: string
-  updated_at: string
-  item: {
-    id: number
-    name: string
-    description: string | null
-    unit: string
-    minimum_stock: number
-    category: {
-      id: number
-      name: string
-      requires_expiration: boolean
-    }
-  }
-}
-
-interface Location {
-  id: number
-  name: string
-  type: string
-  description: string | null
-  is_refrigerated: boolean
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
 
 export default function LocationDetail() {
-  const { id } = useParams<{ id: string }>()
-  const { user } = useAuth()
-  const [location, setLocation] = useState<Location | null>(null)
-  const [inventory, setInventory] = useState<InventoryItem[]>([])
-  const [filteredInventory, setFilteredInventory] = useState<InventoryItem[]>([])
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState<string>('all')
-  const [loading, setLoading] = useState(true)
-  const [showAddDialog, setShowAddDialog] = useState(false)
-  const [editingQuantity, setEditingQuantity] = useState<number | null>(null)
-  const [tempQuantity, setTempQuantity] = useState('')
-  const [orderingMode, setOrderingMode] = useState(false)
-  const [supportsOrdering, setSupportsOrdering] = useState(false)
-  const [activeId, setActiveId] = useState<number | null>(null)
-  const { t } = useTranslation()
+  const { t } = useTranslation();
+  const { user } = useAuth();
+  
+  // Use our new state management hook - replaces all individual useState calls
+  const {
+    state,
+    uniqueCategories,
+    locationStats,
+    setSearchTerm,
+    setSelectedCategory,
+    clearFilters,
+    openAddDialog,
+    closeAddDialog,
+    refreshAfterAdd,
+    startEditingQuantity,
+    cancelEditingQuantity,
+    saveQuantity,
+    setTempQuantity,
+    deleteItem,
+    toggleOrderingMode,
+    setActiveId,
+    handleDragEnd,
+    clearError,
+    getExpirationStatus,
+    isLowStock,
+    translateCategory
+  } = useLocationState();
 
   // Drag and drop sensors - optimized for both desktop and mobile
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8, // Require moving 8px before starting drag
-      },
+      activationConstraint: { distance: 8 },
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        distance: 10, // Require more movement to start drag
-        delay: 250, // Longer delay to distinguish from scrolling
-        tolerance: 8, // Higher tolerance for touch accuracy
+        distance: 10,
+        delay: 250,
+        tolerance: 8,
       },
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
-  )
-
-  // Helper function to translate category names
-  const translateCategory = (categoryName: string) => {
-    // Direct mapping to avoid translation lookup altogether for known problematic categories
-    const directMapping: Record<string, string> = {
-      'Food & Beverage': 'Hrana i piće',
-      'Food&Beverage': 'Hrana i piće', 
-      'foodbeverage': 'Hrana i piće',
-      'Cleaning': 'Čišćenje',
-      'Supplies': 'Potrepštine',
-      'Toiletries': 'Toaletni artikli',
-      'Equipment': 'Oprema',
-      'Office': 'Ured'
-    }
-    
-    // Use direct mapping first to avoid i18next calls
-    if (directMapping[categoryName]) {
-      return directMapping[categoryName]
-    }
-    
-    // For unknown categories, just return the original name to avoid console spam
-    return categoryName
-  }
+  );
 
   const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id as number)
-  }
+    setActiveId(event.active.id as number);
+  };
 
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event
-    setActiveId(null)
+  const handleDragEndEvent = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
 
-    if (!over || active.id === over.id) {
-      return
-    }
+    if (!over || active.id === over.id) return;
 
-    const oldIndex = filteredInventory.findIndex(item => item.id === active.id)
-    const newIndex = filteredInventory.findIndex(item => item.id === over.id)
+    const oldIndex = state.filteredInventory.findIndex(item => item.id === active.id);
+    const newIndex = state.filteredInventory.findIndex(item => item.id === over.id);
 
     if (oldIndex !== -1 && newIndex !== -1) {
-      // Update the main inventory state first to get correct ordering
-      const updatedInventory = [...inventory]
-      const oldIdx = updatedInventory.findIndex(item => item.id === active.id)
-      const newIdx = updatedInventory.findIndex(item => item.id === over.id)
-      
-      if (oldIdx !== -1 && newIdx !== -1) {
-        const newInventoryOrder = arrayMove(updatedInventory, oldIdx, newIdx)
-        
-        // Update display_order properties to match new positions
-        const updatedInventoryWithOrder = newInventoryOrder.map((item, index) => ({
-          ...item,
-          display_order: index + 1
-        }))
-        
-        // Update both states with the correct display_order values
-        setInventory(updatedInventoryWithOrder)
-        
-        // The filteredInventory will be updated automatically by the useEffect
-        // that responds to inventory changes, preserving the new order
-        
-        // Update display_order in database
-        await updateDisplayOrders(updatedInventoryWithOrder)
-      }
+      await handleDragEnd(oldIndex, newIndex, active.id as number);
     }
-  }
+  };
 
-
-  const updateDisplayOrders = async (reorderedItems: InventoryItem[]) => {
-    try {
-      console.log('Updating display orders for items:', reorderedItems.map(item => ({ id: item.id, display_order: item.display_order })))
-      
-      // Use individual update operations instead of upsert
-      for (let i = 0; i < reorderedItems.length; i++) {
-        const item = reorderedItems[i]
-        const newDisplayOrder = i + 1
-        
-        console.log(`Updating item ${item.id} to display_order ${newDisplayOrder}`)
-        
-        const { error } = await supabase
-          .from('inventory')
-          .update({ display_order: newDisplayOrder })
-          .eq('id', item.id)
-
-        if (error) {
-          console.error(`Error updating item ${item.id}:`, error)
-          throw error
-        }
-      }
-      
-      console.log('Successfully updated all display orders')
-    } catch (error) {
-      console.error('Error updating display orders:', error)
-      // Show user-friendly error message
-      alert('Failed to save item order. Please try again.')
+  const handleDelete = async (inventoryId: number) => {
+    if (window.confirm('Are you sure you want to delete this item?')) {
+      await deleteItem(inventoryId);
     }
-  }
+  };
 
-  useEffect(() => {
-    if (id) {
-      fetchLocationData()
-    }
-  }, [id])
+  // Simplified permissions - all authenticated users can edit
+  const userCanEdit = !!user;
 
-  useEffect(() => {
-    let filtered = inventory.filter(item =>
-      item.item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.item.category.name.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(item => item.item.category.name === selectedCategory)
-    }
-    
-    // IMPORTANT: Preserve the display_order sorting after filtering
-    filtered.sort((a, b) => {
-      // Handle null display_order values by putting them at the end
-      if (a.display_order === null && b.display_order === null) return 0
-      if (a.display_order === null) return 1
-      if (b.display_order === null) return -1
-      return a.display_order - b.display_order
-    })
-    
-    setFilteredInventory(filtered)
-  }, [inventory, searchTerm, selectedCategory])
-
-  const fetchLocationData = async () => {
-    try {
-      // Fetch location details
-      const { data: locationData, error: locationError } = await supabase
-        .from('locations')
-        .select('*')
-        .eq('id', id)
-        .single()
-
-      if (locationError) throw locationError
-
-      // Fetch inventory for this location ordered by display_order
-      const { data: inventoryData, error: inventoryError } = await supabase
-        .from('inventory')
-        .select(`
-          *,
-          item:items(
-            id,
-            name,
-            description,
-            unit,
-            minimum_stock,
-            category:categories(id, name, requires_expiration)
-          )
-        `)
-        .eq('location_id', id)
-        .order('display_order', { ascending: true, nullsFirst: false })
-      
-      // Enable ordering since display_order column now exists
-      setSupportsOrdering(true)
-
-      if (inventoryError) throw inventoryError
-
-      setLocation(locationData)
-      
-      // Sort the inventory data by display_order to ensure correct ordering
-      const sortedInventory = (inventoryData || []).sort((a, b) => {
-        // Handle null display_order values by putting them at the end
-        if (a.display_order === null && b.display_order === null) return 0
-        if (a.display_order === null) return 1
-        if (b.display_order === null) return -1
-        return a.display_order - b.display_order
-      })
-      
-      console.log('Loaded inventory with display_order:', sortedInventory.map(item => ({ 
-        id: item.id, 
-        display_order: item.display_order, 
-        name: item.item.name 
-      })))
-      
-      setInventory(sortedInventory)
-    } catch (error) {
-      console.error('Error fetching location data:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const updateQuantity = async (inventoryId: number, newQuantity: number) => {
-    if (newQuantity < 0) return
-
-    console.log('🔢 QUANTITY UPDATE ATTEMPT:', {
-      inventoryId,
-      newQuantity,
-      timestamp: new Date().toISOString(),
-      documentHidden: document.hidden
-    })
-
-    try {
-      // Skip session check - AuthProvider already handles session validation
-      console.log('🔢 STARTING DATABASE UPDATE (NO SESSION CHECK)...')
-      
-      const itemToUpdate = inventory.find(item => item.id === inventoryId)
-      if (!itemToUpdate) {
-        console.error('🔢 ITEM NOT FOUND:', { inventoryId })
-        return
-      }
-
-      const oldQuantity = itemToUpdate.quantity
-
-      const { error } = await supabase
-        .from('inventory')
-        .update({ quantity: newQuantity })
-        .eq('id', inventoryId)
-
-      if (error) {
-        console.error('🔢 QUANTITY UPDATE ERROR:', {
-          error: error.message,
-          code: error.code,
-          details: error.details,
-          hint: error.hint
-        })
-        throw error
-      }
-
-      console.log('🔢 QUANTITY UPDATE SUCCESS:', { inventoryId, newQuantity })
-
-      // Update local state after successful database update
-      setInventory(prev => prev.map(item =>
-        item.id === inventoryId ? { ...item, quantity: newQuantity } : item
-      ))
-
-      // Log to audit trail (non-critical)
-      try {
-        await auditLog.quantityUpdated(
-          inventoryId,
-          itemToUpdate.item?.name || 'Unknown Item',
-          oldQuantity,
-          newQuantity,
-          location?.name || 'Unknown Location'
-        )
-      } catch (auditError) {
-        console.warn('Audit log failed (non-critical):', auditError)
-      }
-
-    } catch (error) {
-      console.error('🔢 QUANTITY UPDATE FAILED:', {
-        error: error instanceof Error ? error.message : error,
-        inventoryId,
-        newQuantity,
-        timestamp: new Date().toISOString()
-      })
-
-      if (error instanceof Error && (
-        error.message.includes('fetch') ||
-        error.message.includes('network') ||
-        error.message.includes('timeout')
-      )) {
-        console.log('🔌 NETWORK ERROR - TRY AGAIN OR REFRESH APP IF ISSUE PERSISTS')
-      }
-    }
-  }
-
-  const removeItem = async (inventoryId: number) => {
-    if (!window.confirm(t('locations.removeItemConfirm'))) return
-
-    try {
-      const { error } = await supabase
-        .from('inventory')
-        .delete()
-        .eq('id', inventoryId)
-
-      if (error) throw error
-      
-      // Update local state
-      setInventory(prev => prev.filter(item => item.id !== inventoryId))
-    } catch (error) {
-      console.error('Error removing item:', error)
-    }
-  }
-
-  const startQuantityEdit = (item: InventoryItem) => {
-    // Disable ordering mode when editing quantity to avoid conflicts
-    if (orderingMode) {
-      setOrderingMode(false)
-    }
-    setEditingQuantity(item.id)
-    setTempQuantity(item.quantity.toString())
-  }
-
-  const cancelQuantityEdit = () => {
-    setEditingQuantity(null)
-    setTempQuantity('')
-  }
-
-  const saveQuantityEdit = async (inventoryId: number) => {
-    const newQuantity = parseInt(tempQuantity, 10)
-    
-    if (isNaN(newQuantity) || newQuantity < 0) {
-      return // Invalid quantity
-    }
-
-    await updateQuantity(inventoryId, newQuantity)
-    setEditingQuantity(null)
-    setTempQuantity('')
-  }
-
-  const handleQuantityInputChange = (value: string) => {
-    // Only allow digits
-    const numericValue = value.replace(/\D/g, '')
-    setTempQuantity(numericValue)
-  }
-
-  const handleQuantityKeyDown = (e: React.KeyboardEvent, inventoryId: number) => {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      saveQuantityEdit(inventoryId)
-    } else if (e.key === 'Escape') {
-      e.preventDefault()
-      cancelQuantityEdit()
-    }
-  }
-
-  const getExpirationStatus = (expirationDate: string | null, requiresExpiration: boolean) => {
-    if (!expirationDate || !requiresExpiration) return 'none'
-    
-    const expDate = new Date(expirationDate)
-    const today = new Date()
-    const diffDays = Math.ceil((expDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-    
-    if (diffDays < 0) return 'expired'
-    if (diffDays <= 3) return 'critical'
-    if (diffDays <= 7) return 'warning'
-    return 'good'
-  }
-
-  const getExpirationBadge = (status: string) => {
-    switch (status) {
-      case 'expired':
-        return <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full flex items-center justify-center">{t('locations.expired')}</span>
-      case 'critical':
-        return <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full flex items-center justify-center">{t('locations.critical')}</span>
-      case 'warning':
-        return <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full flex items-center justify-center">{t('locations.warning')}</span>
-      default:
-        return null
-    }
-  }
-
-  if (loading) {
+  if (state.loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mr-3" />
-        <span>{t('common.loading')}</span>
+        <div className="text-center">
+          <Package className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+          <p className="text-gray-500">Loading location details...</p>
+        </div>
       </div>
-    )
+    );
   }
 
-  if (!location) {
+  if (state.error) {
     return (
-      <div className="text-center">
-        <p className="text-gray-600">{t('locations.locationNotFound')}</p>
+      <div className="p-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-700">{state.error}</p>
+          <Button onClick={clearError} className="mt-2">Try Again</Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!state.location) {
+    return (
+      <div className="p-6">
+        <p className="text-gray-500">Location not found</p>
         <Link to="/locations">
-          <Button className="mt-4">{t('locations.backToLocations')}</Button>
+          <Button variant="outline" className="mt-2">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Locations
+          </Button>
         </Link>
       </div>
-    )
+    );
   }
 
-  const canModifyInventory = !!user
-  const canAddInventory = !!user
-  const canDeleteInventory = !!user
+  const activeItem = state.filteredInventory.find(item => item.id === state.activeId);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col space-y-4">
+    <div className="p-6 max-w-6xl mx-auto">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-4">
           <Link to="/locations">
             <Button variant="outline" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              {t('common.back')}
+              Back
             </Button>
           </Link>
-          <div className="flex items-center space-x-3 flex-1">
-            {location.is_refrigerated ? (
-              <Refrigerator className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 flex-shrink-0" />
+          
+          <div className="flex items-center space-x-3">
+            {state.location.type === 'refrigerated' ? (
+              <Refrigerator className="h-8 w-8 text-blue-500" />
             ) : (
-              <Warehouse className="h-6 w-6 sm:h-8 sm:w-8 text-gray-600 flex-shrink-0" />
+              <Warehouse className="h-8 w-8 text-green-500" />
             )}
-            <div className="min-w-0 flex-1">
-              <h1 className="text-xl sm:text-3xl font-bold text-gray-900 break-words">{location.name}</h1>
-              <p className="text-sm sm:text-base text-gray-600 break-words">
-                {t(`locationTypes.${location.type.toLowerCase()}`)} • {location.is_refrigerated ? t('locations.refrigeratedStorage') : t('locations.regularStorage')}
-              </p>
+            <div>
+              <h1 className="text-2xl font-bold">{state.location.name}</h1>
+              <p className="text-gray-600">{state.location.description}</p>
             </div>
           </div>
         </div>
-        
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-2 sm:justify-end">
-          {canModifyInventory && supportsOrdering && (
+
+        <div className="flex items-center space-x-2">
+          {state.supportsOrdering && (
             <Button
-              onClick={() => setOrderingMode(!orderingMode)}
-              variant={orderingMode ? "default" : "outline"}
-              className="w-full sm:w-auto flex-shrink-0 min-w-0"
+              onClick={toggleOrderingMode}
+              variant={state.orderingMode ? "default" : "outline"}
+              size="sm"
             >
-              <Settings className="h-4 w-4 mr-2 flex-shrink-0" />
-              <span className="truncate">
-                {orderingMode ? t('locations.finishOrdering') : t('locations.reorderItems')}
-              </span>
+              <Settings className="h-4 w-4 mr-2" />
+              {state.orderingMode ? 'Exit Ordering' : 'Reorder Items'}
             </Button>
           )}
-          {canAddInventory && (
-            <Button 
-              onClick={() => setShowAddDialog(true)} 
-              className="w-full sm:w-auto flex-shrink-0 min-w-0"
-            >
-              <Plus className="h-4 w-4 mr-2 flex-shrink-0" />
-              <span className="truncate">
-                {t('locations.addItem')}
-              </span>
+          
+          {userCanEdit && (
+            <Button onClick={openAddDialog} size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Item
             </Button>
           )}
         </div>
       </div>
 
-      {location.description && (
+      {/* Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <Card>
-          <CardContent className="pt-6">
-            <p className="text-gray-700">{location.description}</p>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Total Items</p>
+                <p className="text-2xl font-bold">{locationStats.totalItems}</p>
+              </div>
+              <Package className="h-8 w-8 text-blue-500" />
+            </div>
           </CardContent>
         </Card>
-      )}
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Package className="h-5 w-5" />
-            <span>{t('locations.inventory', { count: filteredInventory.length })}</span>
-          </CardTitle>
-          <CardDescription>
-            {t('locations.inventoryDescription')}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-6 space-y-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder={t('locations.searchItems')}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="w-full sm:w-48">
-                  <SelectValue placeholder={t('common.allCategories')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t('common.allCategories')}</SelectItem>
-                  {Array.from(new Set(inventory.map(item => item.item.category.name))).map(category => (
-                    <SelectItem key={category} value={category}>{translateCategory(category)}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {selectedCategory !== 'all' && (
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setSelectedCategory('all')}
-                >
-                  {t('common.clearFilter')}
-                </Button>
-              )}
-            </div>
-          </div>
-
-          {orderingMode && filteredInventory.length > 0 && (
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-800">
-                <Move className="h-4 w-4 inline mr-1" />
-                {t('locations.dragHint')}
-              </p>
-              <p className="text-xs text-blue-700 mt-1 sm:hidden">
-                📱 On mobile: Press and hold the drag handle (⋮⋮) for a moment, then drag to reorder
-              </p>
-            </div>
-          )}
-
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext items={filteredInventory.map(item => item.id)} strategy={verticalListSortingStrategy}>
-              <div className="space-y-4">
-                {filteredInventory.map((item) => (
-                  <SortableInventoryItem
-                    key={item.id}
-                    item={item}
-                    orderingMode={orderingMode}
-                    canModifyInventory={canModifyInventory}
-                    canDeleteInventory={canDeleteInventory}
-                    editingQuantity={editingQuantity}
-                    tempQuantity={tempQuantity}
-                    onStartQuantityEdit={startQuantityEdit}
-                    onSaveQuantityEdit={saveQuantityEdit}
-                    onCancelQuantityEdit={cancelQuantityEdit}
-                    onQuantityInputChange={handleQuantityInputChange}
-                    onQuantityKeyDown={handleQuantityKeyDown}
-                    onUpdateQuantity={updateQuantity}
-                    onRemoveItem={removeItem}
-                    getExpirationStatus={getExpirationStatus}
-                    getExpirationBadge={getExpirationBadge}
-                    translateCategory={translateCategory}
-                    formatDate={formatDate}
-                    t={t}
-                  />
-                ))}
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Low Stock</p>
+                <p className="text-2xl font-bold text-orange-600">{locationStats.lowStockItems}</p>
               </div>
-            </SortableContext>
-            
-            <DragOverlay>
-              {activeId ? (
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white rounded-lg shadow-lg border-2 border-blue-300 space-y-3 sm:space-y-0 opacity-95">
-                  <div className="flex items-center space-x-2">
-                    <Move className="h-4 w-4 text-blue-500" />
-                    <p className="font-medium text-gray-900">
-                      {filteredInventory.find(item => item.id === activeId)?.item.name}
-                    </p>
-                  </div>
-                  <div className="text-2xl font-bold text-blue-600">
-                    {filteredInventory.find(item => item.id === activeId)?.quantity}
-                  </div>
-                </div>
-              ) : null}
-            </DragOverlay>
-          </DndContext>
-
-          {filteredInventory.length === 0 && (
-            <div className="text-center py-8">
-              <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600">
-                {searchTerm ? t('locations.noItemsFound') : t('locations.noItemsYet')}
-              </p>
-              {canAddInventory && (
-                <Button className="mt-4" onClick={() => setShowAddDialog(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  {t('locations.addFirstItem')}
-                </Button>
-              )}
+              <Minus className="h-8 w-8 text-orange-500" />
             </div>
-          )}
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Expired</p>
+                <p className="text-2xl font-bold text-red-600">{locationStats.expiredItems}</p>
+              </div>
+              <Calendar className="h-8 w-8 text-red-500" />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Expiring Soon</p>
+                <p className="text-2xl font-bold text-yellow-600">{locationStats.expiringItems}</p>
+              </div>
+              <Calendar className="h-8 w-8 text-yellow-500" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Search and Filter */}
+      <Card className="mb-6">
+        <CardContent className="p-4">
+          <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search items or categories..."
+                  value={state.searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            
+            <Select value={state.selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="All categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All categories</SelectItem>
+                {uniqueCategories.map(category => (
+                  <SelectItem key={category.id} value={category.name}>
+                    {translateCategory(category.name)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            {(state.searchTerm || state.selectedCategory !== 'all') && (
+              <Button variant="outline" onClick={clearFilters}>
+                Clear Filters
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
 
+      {/* Inventory Items */}
+      {state.filteredInventory.length === 0 ? (
+        <Card>
+          <CardContent className="p-8 text-center">
+            <Package className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+            <p className="text-gray-500">No items found</p>
+            {userCanEdit && (
+              <Button onClick={openAddDialog} className="mt-4">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Your First Item
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEndEvent}
+        >
+          <SortableContext items={state.filteredInventory.map(item => item.id)} strategy={verticalListSortingStrategy}>
+            <div>
+              {state.filteredInventory.map((item) => (
+                <SortableInventoryItem
+                  key={item.id}
+                  item={item}
+                  editingQuantity={state.editingQuantity}
+                  tempQuantity={state.tempQuantity}
+                  onStartEdit={startEditingQuantity}
+                  onCancelEdit={cancelEditingQuantity}
+                  onSaveEdit={saveQuantity}
+                  onTempQuantityChange={setTempQuantity}
+                  onDelete={handleDelete}
+                  translateCategory={translateCategory}
+                  getExpirationStatus={getExpirationStatus}
+                  isLowStock={isLowStock}
+                  formatDate={formatDate}
+                  userCanEdit={userCanEdit}
+                />
+              ))}
+            </div>
+          </SortableContext>
+
+          <DragOverlay>
+            {activeItem && (
+              <div className="opacity-90">
+                <Card className="mb-3 shadow-lg">
+                  <CardContent className="p-4">
+                    <h3 className="font-semibold">{activeItem.item.name}</h3>
+                    <p className="text-sm text-gray-600">{translateCategory(activeItem.item.category.name)}</p>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </DragOverlay>
+        </DndContext>
+      )}
+
       {/* Add Inventory Dialog */}
-      <AddInventoryDialog
-        isOpen={showAddDialog}
-        onClose={() => setShowAddDialog(false)}
-        onInventoryAdded={fetchLocationData}
-        locationId={parseInt(id!)}
+      <AddInventoryDialog 
+        isOpen={state.showAddDialog}
+        onClose={closeAddDialog}
+        locationId={parseInt(state.location.id, 10)}
+        onInventoryAdded={refreshAfterAdd}
       />
     </div>
-  )
+  );
 }

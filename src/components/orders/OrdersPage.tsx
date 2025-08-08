@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -8,342 +8,40 @@ import {
   ShoppingCart, 
   Plus, 
   Minus, 
-  Printer, 
   CreditCard, 
   DollarSign, 
   Search,
-  Package,
-  AlertTriangle,
   Receipt
 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
-import { printWindowsReceipt } from '@/lib/printers/windowsPrinter';
 import { useTranslation } from 'react-i18next';
-
-interface OrderItem {
-  id: string;
-  itemId: number;
-  itemName: string;
-  category: string;
-  price: number;
-  quantity: number;
-  totalPrice: number;
-  unit: string;
-  availableStock: number;
-}
-
-interface InventoryItem {
-  id: number;
-  name: string;
-  description?: string;
-  category: {
-    id: number;
-    name: string;
-    requires_expiration: boolean;
-  };
-  unit: string;
-  price: number;
-  minimum_stock: number;
-  is_active: boolean;
-  totalStock: number;
-  locations: Array<{
-    locationId: number;
-    locationName: string;
-    quantity: number;
-    expiration_date?: string;
-  }>;
-}
+import { useOrdersState } from '@/lib/hooks/useOrdersState';
 
 export default function OrdersPage() {
   const { t } = useTranslation();
   
-  // State
-  const [availableItems, setAvailableItems] = useState<InventoryItem[]>([]);
-  const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card'>('cash');
-  const [orderNotes, setOrderNotes] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [lastOrderNumber, setLastOrderNumber] = useState<string>('');
-
-  // Load items on component mount
-  useEffect(() => {
-    loadAvailableItems();
-  }, []);
-
-  const loadAvailableItems = async () => {
-    try {
-      setIsLoading(true);
-      
-      // Fetch items with inventory - reusing your existing database structure
-      const { data: items, error } = await supabase
-        .from('items')
-        .select(`
-          id,
-          name,
-          description,
-          unit,
-          price,
-          minimum_stock,
-          is_active,
-          category:categories(id, name, requires_expiration),
-          inventory(
-            location_id,
-            quantity,
-            expiration_date,
-            location:locations(id, name)
-          )
-        `)
-        .eq('is_active', true)
-        .eq('categories.name', 'Food & Beverage'); // Focus on food & beverage
-
-      if (error) throw error;
-
-      // Transform data
-      const inventoryItems: InventoryItem[] = items?.map(item => {
-        const totalStock = item.inventory?.reduce((sum, inv) => sum + (inv.quantity || 0), 0) || 0;
-        
-        return {
-          id: item.id,
-          name: item.name,
-          description: item.description,
-          category: {
-            id: (item.category as any).id,
-            name: (item.category as any).name,
-            requires_expiration: (item.category as any).requires_expiration
-          },
-          unit: item.unit,
-          price: item.price || 0, // Default to 0 if no price set
-          minimum_stock: item.minimum_stock,
-          is_active: item.is_active,
-          totalStock,
-          locations: item.inventory?.map(inv => ({
-            locationId: inv.location_id,
-            locationName: (inv.location as any)?.name || 'Unknown',
-            quantity: inv.quantity || 0,
-            expiration_date: inv.expiration_date
-          })) || []
-        };
-      }) || [];
-
-      // Only show items in stock
-      setAvailableItems(inventoryItems.filter(item => item.totalStock > 0));
-    } catch (error) {
-      console.error('Error loading items:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const filteredItems = availableItems.filter(item =>
-    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.category.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const addToOrder = (item: InventoryItem) => {
-    if (item.price === 0) {
-      alert('Please set a price for this item first in the Items section.');
-      return;
-    }
-
-    const existingOrderItem = orderItems.find(oi => oi.itemId === item.id);
+  // Use consolidated state management hook
+  const {
+    // State
+    availableItems,
+    orderItems,
+    searchTerm,
+    paymentMethod,
+    orderNotes,
+    lastOrderNumber,
+    isLoading,
+    filteredItems,
+    orderTotals: totals,
     
-    if (existingOrderItem) {
-      updateOrderItemQuantity(item.id, existingOrderItem.quantity + 1);
-    } else {
-      const newOrderItem: OrderItem = {
-        id: crypto.randomUUID(),
-        itemId: item.id,
-        itemName: item.name,
-        category: item.category.name,
-        price: item.price,
-        quantity: 1,
-        totalPrice: item.price,
-        unit: item.unit,
-        availableStock: item.totalStock
-      };
-      setOrderItems([...orderItems, newOrderItem]);
-    }
-  };
-
-  const updateOrderItemQuantity = (itemId: number, newQuantity: number) => {
-    if (newQuantity <= 0) {
-      setOrderItems(orderItems.filter(item => item.itemId !== itemId));
-      return;
-    }
-
-    setOrderItems(orderItems.map(item => 
-      item.itemId === itemId 
-        ? { ...item, quantity: newQuantity, totalPrice: item.price * newQuantity }
-        : item
-    ));
-  };
-
-  const removeFromOrder = (itemId: number) => {
-    setOrderItems(orderItems.filter(item => item.itemId !== itemId));
-  };
-
-  // Croatian VAT calculation with PNP (matches printed receipt)
-  const calculateCroatianVAT = () => {
-    let drinks25 = 0;
-    let food13 = 0;
-    
-    // Categorize items by Croatian VAT rates (same logic as printer)
-    orderItems.forEach((item) => {
-      if (item.category.toLowerCase().includes('beverage') || 
-          item.category.toLowerCase().includes('drink') ||
-          item.itemName.toLowerCase().includes('pivo') ||
-          item.itemName.toLowerCase().includes('vino') ||
-          item.itemName.toLowerCase().includes('sok') ||
-          item.itemName.toLowerCase().includes('jana')) {
-        drinks25 += item.totalPrice;
-      } else {
-        food13 += item.totalPrice;
-      }
-    });
-    
-    const drinks25Net = drinks25 / 1.28; // Remove 25% VAT + 3% PNP
-    const food13Net = food13 / 1.13; // Remove 13% VAT
-    
-    const vat25 = drinks25Net * 0.25;
-    const vat13 = food13Net * 0.13;
-    const pnp = drinks25Net * 0.03; // 3% PNP tourism tax
-    
-    const net = drinks25Net + food13Net;
-    const totalVat = vat25 + vat13;
-    const total = net + totalVat + pnp;
-    
-    return {
-      drinks25,
-      food13,
-      net,
-      vat25,
-      vat13,
-      pnp,
-      totalVat,
-      total,
-      hasBeverages: drinks25 > 0,
-      hasFood: food13 > 0
-    };
-  };
-
-  const calculateOrderTotal = () => {
-    const croatianVat = calculateCroatianVAT();
-    
-    return {
-      subtotal: croatianVat.net,
-      vat25: croatianVat.vat25,
-      vat13: croatianVat.vat13,
-      pnp: croatianVat.pnp,
-      totalVat: croatianVat.totalVat,
-      total: croatianVat.total,
-      hasBeverages: croatianVat.hasBeverages,
-      hasFood: croatianVat.hasFood
-    };
-  };
-
-  const processOrder = async () => {
-    if (orderItems.length === 0) {
-      alert('Please add items to the order first.');
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      
-      // Generate order number
-      const orderNumber = `ORDER-${Date.now()}`;
-      const totals = calculateOrderTotal();
-
-      // Create order data for printing
-      const orderData = {
-        order: {
-          id: crypto.randomUUID(),
-          orderNumber,
-          roomId: 'INVENTORY', // Required field
-          roomNumber: 'INVENTORY', // Since this is from inventory, not room service
-          guestName: 'Staff Order',
-          orderedAt: new Date(),
-          items: orderItems,
-                  subtotal: totals.subtotal,
-        tax: totals.totalVat + totals.pnp,
-        totalAmount: totals.total,
-          paymentMethod: (paymentMethod === 'cash' ? 'immediate_cash' : 'immediate_card') as 'immediate_cash' | 'immediate_card',
-          paymentStatus: 'paid' as const,
-          orderStatus: 'delivered' as const,
-          notes: orderNotes,
-          orderedBy: 'Inventory Staff',
-          deliveredAt: new Date(),
-          printedReceipt: false
-        },
-        hotelInfo: {
-          name: 'Hotel Poreč',
-          address: 'Rade Končara 1 Poreč',
-          phone: '00385 52 451-811',
-          email: 'hotelporec@pu.t-com.hr',
-          oib: '87246357068',
-          fiscalNumber: `HP-${new Date().getFullYear()}-${Math.floor(Math.random() * 999999).toString().padStart(6, '0')}`
-        },
-        timestamp: new Date()
-      };
-
-      // Deduct inventory (FIFO - oldest expiration first)
-      for (const orderItem of orderItems) {
-        let remainingQuantity = orderItem.quantity;
-        
-        // Get inventory for this item, sorted by expiration date (FIFO)
-        const { data: inventoryRecords } = await supabase
-          .from('inventory')
-          .select('*')
-          .eq('item_id', orderItem.itemId)
-          .gt('quantity', 0)
-          .order('expiration_date', { ascending: true, nullsFirst: false });
-
-        if (inventoryRecords) {
-          for (const record of inventoryRecords) {
-            if (remainingQuantity <= 0) break;
-            
-            const deductQuantity = Math.min(remainingQuantity, record.quantity);
-            const newQuantity = record.quantity - deductQuantity;
-            
-            await supabase
-              .from('inventory')
-              .update({ 
-                quantity: newQuantity,
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', record.id);
-            
-            remainingQuantity -= deductQuantity;
-          }
-        }
-      }
-
-      // Print receipt
-      const printSuccess = await printWindowsReceipt(orderData);
-      
-      if (printSuccess) {
-        setLastOrderNumber(orderNumber);
-        // Reset form
-        setOrderItems([]);
-        setOrderNotes('');
-        // Reload items to update stock quantities
-        await loadAvailableItems();
-        alert(`Order ${orderNumber} processed successfully and sent to printer!`);
-      } else {
-        alert(`Order ${orderNumber} processed but printing failed. Please try printing again.`);
-      }
-      
-    } catch (error) {
-      console.error('Error processing order:', error);
-      alert('Error processing order: ' + error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const formatCurrency = (amount: number) => `€${amount.toFixed(2)}`;
-  const totals = calculateOrderTotal();
+    // Actions
+    setSearchTerm,
+    addToOrder,
+    updateOrderItemQuantity,
+    removeFromOrder,
+    setPaymentMethod,
+    setOrderNotes,
+    processOrder,
+    formatCurrency
+  } = useOrdersState();
 
   return (
     <div className="space-y-6">
