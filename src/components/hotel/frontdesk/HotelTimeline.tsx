@@ -1477,6 +1477,19 @@ function RoomOverviewFloorSection({
               const reservation = occupancyData[room.id]?.reservation;
               const status = occupancyData[room.id]?.status;
               const statusColors = status ? RESERVATION_STATUS_COLORS[status as ReservationStatus] : null;
+              
+              // Create lighter background colors for room cards
+              const getStatusCardColors = (status: string) => {
+                switch (status) {
+                  case 'confirmed': return 'bg-orange-100 border-orange-500';
+                  case 'checked-in': return 'bg-green-100 border-green-500';
+                  case 'checked-out': return 'bg-gray-100 border-gray-500';
+                  case 'room-closure': return 'bg-red-100 border-red-500';
+                  case 'unallocated': return 'bg-blue-100 border-blue-500';
+                  case 'incomplete-payment': return 'bg-red-50 border-red-500';
+                  default: return 'bg-white border-gray-200';
+                }
+              };
               const guest = reservation ? SAMPLE_GUESTS.find(g => g.id === reservation.guestId) : null;
               
               // Calculate days left if occupied
@@ -1486,17 +1499,13 @@ function RoomOverviewFloorSection({
                 <div
                   key={room.id}
                   className={`
-                    relative p-3 rounded-lg border transition-all duration-200 cursor-pointer hover:shadow-md
-                    ${isOccupied 
-                      ? 'border-2' 
-                      : 'border border-gray-200 hover:border-blue-300 hover:bg-blue-50'
+                    relative p-3 rounded-lg transition-all duration-200 cursor-pointer hover:shadow-md
+                    ${isOccupied && status
+                      ? `border-2 ${getStatusCardColors(status)}`
+                      : 'border border-gray-200 hover:border-blue-300 hover:bg-blue-50 bg-white'
                     }
-                    ${room.isPremium ? 'bg-gradient-to-br from-yellow-50 to-amber-50' : 'bg-white'}
+                    ${room.isPremium && !isOccupied ? 'bg-gradient-to-br from-yellow-50 to-amber-50' : ''}
                   `}
-                  style={isOccupied && statusColors ? {
-                    borderColor: statusColors.borderColor,
-                    backgroundColor: `${statusColors.backgroundColor}10`
-                  } : {}}
                   onClick={(e) => {
                     if (!isClosingContextMenu) {
                       onRoomClick(room, reservation);
@@ -1790,7 +1799,7 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isDragCreating) {
-        handleCancelDragCreate();
+        clearDragCreate();
       }
     };
 
@@ -1798,7 +1807,7 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
       document.addEventListener('keydown', handleKeyDown);
       return () => document.removeEventListener('keydown', handleKeyDown);
     }
-  }, [isDragCreating]);
+  }, [isDragCreating, clearDragCreate]);
   
   // Group rooms by floor
   // roomsByFloor and currentOccupancy now provided by useHotelTimelineState hook
@@ -1987,11 +1996,6 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
       // Clear drag create state
       clearDragCreate();
     }
-  };
-
-  // Cancel drag-to-create selection (for right-click or escape)
-  const handleCancelDragCreate = () => {
-    clearDragCreate();
   };
 
   // Handle reservation resize in expansion mode
