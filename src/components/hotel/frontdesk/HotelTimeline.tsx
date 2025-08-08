@@ -39,6 +39,7 @@ import RoomChangeConfirmDialog from './RoomChangeConfirmDialog';
 import HotelOrdersModal from './RoomService/HotelOrdersModal';
 import hotelNotification from '../../../lib/notifications';
 import { OrderItem } from '../../../lib/hotel/orderTypes';
+import { useHotelTimelineState } from '../../../lib/hooks/useHotelTimelineState';
 
 interface HotelTimelineProps {
   isFullscreen?: boolean;
@@ -1722,95 +1723,67 @@ function RoomOverviewFloorSection({
 // Main timeline component
 export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen }: HotelTimelineProps) {
   const { reservations, isUpdating, createReservation, createGuest, updateReservation, updateReservationStatus, deleteReservation } = useHotel();
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [expandedFloors, setExpandedFloors] = useState<Record<number, boolean>>({
-    1: true,
-    2: true, 
-    3: true,
-    4: true
-  });
-  const [expandedOverviewFloors, setExpandedOverviewFloors] = useState<Record<number, boolean>>({
-    1: true,
-    2: true, 
-    3: true,
-    4: true
-  });
-  const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
-  const [showReservationPopup, setShowReservationPopup] = useState(false);
-  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
-  const [showCreateBooking, setShowCreateBooking] = useState(false);
-  const [overviewDate, setOverviewDate] = useState(new Date());
   
-  // Room change confirmation dialog state
-  const [roomChangeDialog, setRoomChangeDialog] = useState<{
-    show: boolean;
-    reservationId: string;
-    currentRoom: Room | null;
-    targetRoom: Room | null;
-    newCheckIn: Date | null;
-    newCheckOut: Date | null;
-    reservation: Reservation | null;
-    guest: any;
-  }>({
-    show: false,
-    reservationId: '',
-    currentRoom: null,
-    targetRoom: null,
-    newCheckIn: null,
-    newCheckOut: null,
-    reservation: null,
-    guest: null
-  });
+  // Use consolidated timeline state management
+  const {
+    // State
+    currentDate,
+    overviewDate,
+    expandedFloors,
+    expandedOverviewFloors,
+    selectedReservation,
+    showReservationPopup,
+    selectedRoom,
+    showCreateBooking,
+    roomChangeDialog,
+    drinkModal,
+    isDragCreateMode,
+    isDragCreating,
+    dragCreateStart,
+    dragCreateEnd,
+    dragCreatePreview,
+    dragCreateDates,
+    isExpansionMode,
+    isMoveMode,
+    roomsByFloor,
+    calendarEvents,
+    currentOccupancy,
+    timelineStats,
+    
+    // Actions
+    handleNavigate,
+    handleOverviewNavigate,
+    toggleFloor,
+    toggleOverviewFloor,
+    handleReservationClick,
+    handleRoomClick,
+    closeReservationPopup,
+    closeCreateBooking,
+    showRoomChangeDialog,
+    closeRoomChangeDialog,
+    handleShowDrinksModal,
+    closeDrinksModal,
+    toggleDragCreateMode,
+    toggleExpansionMode,
+    toggleMoveMode,
+    exitAllModes,
+    handleDragCreateStart,
+    handleDragCreateMove,
+    handleDragCreateEnd,
+    clearDragCreate,
+    positionContextMenu,
+    validateReservationMove
+  } = useHotelTimelineState();
   
-  // Drag-to-create reservation states
-  const [isDragCreateMode, setIsDragCreateMode] = useState(false);
-  const [isDragCreating, setIsDragCreating] = useState(false);
-  const [dragCreateStart, setDragCreateStart] = useState<{roomId: string, dayIndex: number} | null>(null);
-  const [dragCreateEnd, setDragCreateEnd] = useState<{roomId: string, dayIndex: number} | null>(null);
-  const [dragCreatePreview, setDragCreatePreview] = useState<{roomId: string, startDay: number, endDay: number} | null>(null);
-  const [dragCreateDates, setDragCreateDates] = useState<{checkIn: Date, checkOut: Date} | null>(null);
-  
-  // Expansion mode states
-  const [isExpansionMode, setIsExpansionMode] = useState(false);
-  
-  // Move mode states
-  const [isMoveMode, setIsMoveMode] = useState(false);
-  
-  // Hotel orders modal state  
+  // Additional local state not in main hook (hotel orders modal)
   const [showHotelOrdersModal, setShowHotelOrdersModal] = useState(false);
   const [hotelOrdersReservation, setHotelOrdersReservation] = useState<Reservation | null>(null);
   
   // Note: Removed global mouse event listener since we're using two-click system instead of drag
 
-  // Smart context menu positioning
+  // Smart context menu positioning (now using service)
   const calculateContextMenuPosition = (e: React.MouseEvent, menuWidth = 180, menuHeight = 300) => {
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-    
-    let x = e.clientX;
-    let y = e.clientY;
-    
-    // Check if menu would go off-screen horizontally
-    if (x + menuWidth > viewportWidth) {
-      x = e.clientX - menuWidth; // Position to the left of cursor
-    }
-    
-    // Check if menu would go off-screen vertically
-    if (y + menuHeight > viewportHeight) {
-      y = e.clientY - menuHeight; // Position above cursor
-    }
-    
-    // Ensure menu doesn't go above viewport top
-    if (y < 0) {
-      y = 10; // Small margin from top
-    }
-    
-    // Ensure menu doesn't go left of viewport
-    if (x < 0) {
-      x = 10; // Small margin from left
-    }
-    
-    return { x, y };
+    return positionContextMenu(e.clientX, e.clientY);
   };
 
   // Escape key listener to cancel drag-to-create
@@ -1828,85 +1801,20 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
   }, [isDragCreating]);
   
   // Group rooms by floor
-  const roomsByFloor = useMemo(() => {
-    return {
-      1: getRoomsByFloor(1),
-      2: getRoomsByFloor(2),
-      3: getRoomsByFloor(3),
-      4: getRoomsByFloor(4)
-    };
-  }, []);
+  // roomsByFloor and currentOccupancy now provided by useHotelTimelineState hook
   
-  // Get current occupancy data for the overview date
-  const currentOccupancy = useMemo(() => {
-    const targetDate = startOfDay(overviewDate);
-    const occupancy: Record<string, any> = {};
-    
-    reservations.forEach(reservation => {
-      const checkInDate = startOfDay(reservation.checkIn);
-      const checkOutDate = startOfDay(reservation.checkOut);
-      
-      if (targetDate >= checkInDate && targetDate < checkOutDate) {
-        occupancy[reservation.roomId] = {
-          reservation,
-          status: reservation.status
-        };
-      }
-    });
-    
-    return occupancy;
-  }, [reservations, overviewDate]);
+  // toggleFloor, toggleOverviewFloor, handleNavigate, handleOverviewNavigate, 
+  // and handleReservationClick now provided by useHotelTimelineState hook
   
-  const toggleFloor = (floor: number) => {
-    setExpandedFloors(prev => ({
-      ...prev,
-      [floor]: !prev[floor]
-    }));
-  };
-  
-  const toggleOverviewFloor = (floor: number) => {
-    setExpandedOverviewFloors(prev => ({
-      ...prev,
-      [floor]: !prev[floor]
-    }));
-  };
-  
-  const handleNavigate = (action: 'PREV' | 'NEXT' | 'TODAY') => {
-    if (action === 'PREV') {
-      setCurrentDate(prev => addDays(prev, -14));
-    } else if (action === 'NEXT') {
-      setCurrentDate(prev => addDays(prev, 14));
-    } else if (action === 'TODAY') {
-      setCurrentDate(new Date());
-    }
-  };
-
-  const handleOverviewNavigate = (action: 'PREV' | 'NEXT' | 'TODAY') => {
-    if (action === 'PREV') {
-      setOverviewDate(prev => addDays(prev, -1));
-    } else if (action === 'NEXT') {
-      setOverviewDate(prev => addDays(prev, 1));
-    } else if (action === 'TODAY') {
-      setOverviewDate(new Date());
-    }
-  };
-  
-  const handleReservationClick = (reservation: Reservation) => {
-    console.log('Reservation clicked:', reservation);
-    setSelectedReservation(reservation);
-    setShowReservationPopup(true);
-  };
-  
-  const handleRoomClick = (room: Room, reservation?: any) => {
+  // handleRoomClick wrapper to handle room clicks with reservations
+  const handleRoomClickWrapper = (room: Room, reservation?: any) => {
     if (reservation) {
       // Occupied room - show reservation details
-      setSelectedReservation(reservation);
-      setShowReservationPopup(true);
+      handleReservationClick(reservation);
     } else {
       // Empty room - show create booking modal
       console.log('Creating new booking for room:', room.number);
-      setSelectedRoom(room);
-      setShowCreateBooking(true);
+      handleRoomClick(room);
     }
   };
   
@@ -1936,16 +1844,7 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
 
       if (isRoomTypeChange) {
         // Show custom room change dialog instead of proceeding immediately
-        setRoomChangeDialog({
-          show: true,
-          reservationId,
-          currentRoom: oldRoom,
-          targetRoom: newRoom,
-          newCheckIn,
-          newCheckOut,
-          reservation,
-          guest
-        });
+        showRoomChangeDialog(reservationId, reservation.roomId, newRoomId);
         return; // Exit early, dialog handlers will complete the move
       }
 
@@ -1973,28 +1872,35 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
 
   // Room change dialog handlers
   const handleConfirmRoomChange = async () => {
-    if (!roomChangeDialog.reservation || !roomChangeDialog.targetRoom || !roomChangeDialog.currentRoom) return;
+    if (!roomChangeDialog.show || !roomChangeDialog.reservationId) return;
+    
+    // Get reservation and room data from current state
+    const reservation = reservations.find(r => r.id === roomChangeDialog.reservationId);
+    const targetRoom = HOTEL_POREC_ROOMS.find(r => r.id === roomChangeDialog.toRoomId);
+    const currentRoom = HOTEL_POREC_ROOMS.find(r => r.id === roomChangeDialog.fromRoomId);
+    
+    if (!reservation || !targetRoom || !currentRoom) return;
     
     try {
       const { calculatePricing } = await import('../../../lib/hotel/pricingCalculator');
       
       const newPricing = calculatePricing(
-        roomChangeDialog.targetRoom.id,
-        roomChangeDialog.newCheckIn!,
-        roomChangeDialog.newCheckOut!,
-        roomChangeDialog.reservation.adults,
-        roomChangeDialog.reservation.children,
+        targetRoom.id,
+        reservation.checkIn,
+        reservation.checkOut,
+        reservation.adults,
+        reservation.children,
         {
-          hasPets: roomChangeDialog.reservation.petFee > 0,
-          needsParking: roomChangeDialog.reservation.parkingFee > 0,
-          additionalCharges: roomChangeDialog.reservation.additionalCharges
+          hasPets: reservation.petFee > 0,
+          needsParking: reservation.parkingFee > 0,
+          additionalCharges: reservation.additionalCharges
         }
       );
 
       const updatedReservationData = {
-        roomId: roomChangeDialog.targetRoom.id,
-        checkIn: roomChangeDialog.newCheckIn!,
-        checkOut: roomChangeDialog.newCheckOut!,
+        roomId: targetRoom.id,
+        checkIn: reservation.checkIn,
+        checkOut: reservation.checkOut,
         totalAmount: newPricing.total,
         subtotal: newPricing.subtotal,
         ...newPricing.fees
@@ -2002,11 +1908,12 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
 
       await updateReservation(roomChangeDialog.reservationId, updatedReservationData);
 
-      const successMessage = `${roomChangeDialog.guest?.name || 'Guest'} moved from ${formatRoomNumber(roomChangeDialog.currentRoom)} to ${formatRoomNumber(roomChangeDialog.targetRoom)} with updated pricing`;
+      const guest = SAMPLE_GUESTS.find(g => g.id === reservation.guestId);
+      const successMessage = `${guest?.name || 'Guest'} moved from ${formatRoomNumber(currentRoom)} to ${formatRoomNumber(targetRoom)} with updated pricing`;
 
       hotelNotification.success('Room Change Successful!', successMessage, 5);
       
-      setRoomChangeDialog({ show: false, reservationId: '', currentRoom: null, targetRoom: null, newCheckIn: null, newCheckOut: null, reservation: null, guest: null });
+      closeRoomChangeDialog();
     } catch (error) {
       console.error('Error confirming room change:', error);
       hotelNotification.error('Failed to Change Room', 'Unable to complete the room change. Please try again.', 5);
@@ -2014,61 +1921,59 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
   };
 
   const handleFreeUpgrade = async () => {
-    if (!roomChangeDialog.reservation || !roomChangeDialog.targetRoom || !roomChangeDialog.currentRoom) return;
+    if (!roomChangeDialog.show || !roomChangeDialog.reservationId) return;
+    
+    // Get reservation and room data from current state
+    const reservation = reservations.find(r => r.id === roomChangeDialog.reservationId);
+    const targetRoom = HOTEL_POREC_ROOMS.find(r => r.id === roomChangeDialog.toRoomId);
+    const currentRoom = HOTEL_POREC_ROOMS.find(r => r.id === roomChangeDialog.fromRoomId);
+    
+    if (!reservation || !targetRoom || !currentRoom) return;
     
     try {
       // Move to new room WITHOUT changing price (free upgrade)
       const updatedReservationData = {
-        roomId: roomChangeDialog.targetRoom.id,
-        checkIn: roomChangeDialog.newCheckIn!,
-        checkOut: roomChangeDialog.newCheckOut!,
+        roomId: targetRoom.id,
+        checkIn: reservation.checkIn,
+        checkOut: reservation.checkOut,
         // Keep original pricing - it's a free upgrade!
-        totalAmount: roomChangeDialog.reservation.totalAmount
+        totalAmount: reservation.totalAmount
       };
 
       await updateReservation(roomChangeDialog.reservationId, updatedReservationData);
 
-      const successMessage = `${roomChangeDialog.guest?.name || 'Guest'} received a FREE UPGRADE from ${formatRoomNumber(roomChangeDialog.currentRoom)} to ${formatRoomNumber(roomChangeDialog.targetRoom)}!`;
+      const guest = SAMPLE_GUESTS.find(g => g.id === reservation.guestId);
+      const successMessage = `${guest?.name || 'Guest'} received a FREE UPGRADE from ${formatRoomNumber(currentRoom)} to ${formatRoomNumber(targetRoom)}!`;
 
       hotelNotification.success('Free Upgrade Applied!', successMessage, 7);
       
-      setRoomChangeDialog({ show: false, reservationId: '', currentRoom: null, targetRoom: null, newCheckIn: null, newCheckOut: null, reservation: null, guest: null });
+      closeRoomChangeDialog();
     } catch (error) {
       console.error('Error applying free upgrade:', error);
       hotelNotification.error('Failed to Apply Upgrade', 'Unable to complete the free upgrade. Please try again.', 5);
     }
   };
 
-  // Drag-to-create handlers (updated for half-day system)
-  const handleDragCreateStart = (roomId: string, halfDayIndex: number) => {
+  // Drag-to-create handlers (wrappers for half-day system compatibility)
+  const handleDragCreateStartWrapper = (roomId: string, halfDayIndex: number) => {
     // Convert half-day index to day index (PM cell)
     const dayIndex = Math.floor(halfDayIndex / 2);
-    setIsDragCreating(true);
-    setDragCreateStart({ roomId, dayIndex });
-    setDragCreateEnd({ roomId, dayIndex });
-    setDragCreatePreview({ roomId, startDay: dayIndex, endDay: dayIndex });
+    handleDragCreateStart(roomId, dayIndex);
   };
 
-  const handleDragCreateMove = (roomId: string, halfDayIndex: number) => {
-    if (isDragCreating && dragCreateStart && dragCreateStart.roomId === roomId) {
-      // Convert half-day index to day index
-      const dayIndex = Math.floor(halfDayIndex / 2);
-      setDragCreateEnd({ roomId, dayIndex });
-      const startDay = Math.min(dragCreateStart.dayIndex, dayIndex);
-      const endDay = Math.max(dragCreateStart.dayIndex, dayIndex);
-      setDragCreatePreview({ roomId, startDay, endDay });
-    }
+  const handleDragCreateMoveWrapper = (roomId: string, halfDayIndex: number) => {
+    // Convert half-day index to day index
+    const dayIndex = Math.floor(halfDayIndex / 2);
+    handleDragCreateMove(roomId, dayIndex);
   };
 
-  const handleDragCreateEnd = (roomId: string, halfDayIndex: number) => {
-    if (isDragCreating && dragCreateStart && dragCreatePreview) {
-      setIsDragCreating(false);
-      
-      // Calculate the dates
-      const startDay = dragCreatePreview.startDay;
-      const endDay = dragCreatePreview.endDay;
-      const checkInDate = addDays(currentDate, startDay);
-      const checkOutDate = addDays(currentDate, endDay); // No +1 needed - endDay is already the checkout day
+  const handleDragCreateEndWrapper = (roomId: string, halfDayIndex: number) => {
+    handleDragCreateEnd();
+    
+    if (dragCreatePreview && dragCreateDates) {
+      // Use dates from the hook
+      const checkInDate = new Date(dragCreateDates.checkIn);
+      const checkOutDate = new Date(dragCreateDates.checkOut);
       
       checkInDate.setHours(15, 0, 0, 0); // 3 PM check-in
       checkOutDate.setHours(11, 0, 0, 0); // 11 AM check-out
@@ -2076,25 +1981,17 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
       // Find the room and open booking modal
       const room = HOTEL_POREC_ROOMS.find(r => r.id === roomId);
       if (room) {
-        setSelectedRoom(room);
-        // Store the dates to pre-populate the modal
-        setDragCreateDates({ checkIn: checkInDate, checkOut: checkOutDate });
-        setShowCreateBooking(true);
+        handleRoomClick(room);
       }
       
-      // Reset drag states
-      setDragCreateStart(null);
-      setDragCreateEnd(null);
-      setDragCreatePreview(null);
+      // Clear drag create state
+      clearDragCreate();
     }
   };
 
   // Cancel drag-to-create selection (for right-click or escape)
   const handleCancelDragCreate = () => {
-    setIsDragCreating(false);
-    setDragCreateStart(null);
-    setDragCreateEnd(null);
-    setDragCreatePreview(null);
+    clearDragCreate();
   };
 
   // Handle reservation resize in expansion mode
@@ -2238,9 +2135,8 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
       await createReservation(reservationData);
       
       // Close modal and show success
-      setShowCreateBooking(false);
-      setSelectedRoom(null);
-      setDragCreateDates(null); // Clear drag create dates
+      closeCreateBooking();
+      clearDragCreate(); // Clear drag create dates and state
       
       // Show custom notification
       hotelNotification.success(
@@ -2283,10 +2179,12 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
     };
   }, [selectedReservation]);
 
-  // Handle showing hotel orders modal
-  const handleShowDrinksModal = (reservation: Reservation) => {
+  // Handle showing hotel orders modal (wrapper for local state management)
+  const handleShowDrinksModalWrapper = (reservation: Reservation) => {
     setHotelOrdersReservation(reservation);
     setShowHotelOrdersModal(true);
+    // Also update the hook state if needed
+    handleShowDrinksModal(reservation.id);
   };
 
   // Handle hotel orders completion
@@ -2365,18 +2263,7 @@ Room Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item
           <div className="flex items-center space-x-2">
             <Button 
               variant={isDragCreateMode ? "default" : "outline"} 
-              onClick={() => {
-                setIsDragCreateMode(!isDragCreateMode);
-                // Reset any active drag states when toggling
-                setIsDragCreating(false);
-                setDragCreateStart(null);
-                setDragCreateEnd(null);
-                setDragCreatePreview(null);
-                // Also disable expansion mode when entering drag mode
-                if (!isDragCreateMode) {
-                  setIsExpansionMode(false);
-                }
-              }}
+              onClick={toggleDragCreateMode}
               className={isDragCreateMode ? "bg-blue-600 text-white" : ""}
             >
               {isDragCreateMode ? <Square className="h-4 w-4" /> : <MousePointer2 className="h-4 w-4" />}
@@ -2385,19 +2272,7 @@ Room Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item
             
             <Button 
               variant={isExpansionMode ? "default" : "outline"} 
-              onClick={() => {
-                setIsExpansionMode(!isExpansionMode);
-                // Reset expansion mode state when toggling
-                // Also disable other modes when entering expansion mode
-                if (!isExpansionMode) {
-                  setIsDragCreateMode(false);
-                  setIsMoveMode(false);
-                  setIsDragCreating(false);
-                  setDragCreateStart(null);
-                  setDragCreateEnd(null);
-                  setDragCreatePreview(null);
-                }
-              }}
+              onClick={toggleExpansionMode}
               className={isExpansionMode ? "bg-green-600 text-white" : ""}
             >
               {isExpansionMode ? <Square className="h-4 w-4" /> : <ArrowLeftRight className="h-4 w-4" />}
@@ -2406,19 +2281,7 @@ Room Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item
             
             <Button 
               variant={isMoveMode ? "default" : "outline"} 
-              onClick={() => {
-                setIsMoveMode(!isMoveMode);
-                // Reset move mode state when toggling
-                // Also disable other modes when entering move mode
-                if (!isMoveMode) {
-                  setIsDragCreateMode(false);
-                  setIsExpansionMode(false);
-                  setIsDragCreating(false);
-                  setDragCreateStart(null);
-                  setDragCreateEnd(null);
-                  setDragCreatePreview(null);
-                }
-              }}
+              onClick={toggleMoveMode}
               className={isMoveMode ? "bg-purple-600 text-white" : ""}
             >
               {isMoveMode ? <Square className="h-4 w-4" /> : <Move className="h-4 w-4" />}
@@ -2479,10 +2342,10 @@ Room Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item
                   isExpanded={expandedOverviewFloors[parseInt(floor)]}
                   onToggle={() => toggleOverviewFloor(parseInt(floor))}
                   occupancyData={currentOccupancy}
-                  onRoomClick={handleRoomClick}
+                  onRoomClick={handleRoomClickWrapper}
                   onUpdateReservationStatus={updateReservationStatus}
                   onDeleteReservation={deleteReservation}
-                  onShowDrinksModal={handleShowDrinksModal}
+                  onShowDrinksModal={handleShowDrinksModalWrapper}
                 />
               ))}
             </div>
@@ -2518,13 +2381,13 @@ Room Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item
                 dragCreateStart={dragCreateStart}
                 dragCreateEnd={dragCreateEnd}
                 dragCreatePreview={dragCreatePreview}
-                onDragCreateStart={handleDragCreateStart}
-                onDragCreateMove={handleDragCreateMove}
-                onDragCreateEnd={handleDragCreateEnd}
+                onDragCreateStart={handleDragCreateStartWrapper}
+                onDragCreateMove={handleDragCreateMoveWrapper}
+                onDragCreateEnd={handleDragCreateEndWrapper}
                 isExpansionMode={isExpansionMode}
                 isMoveMode={isMoveMode}
                 onResizeReservation={handleResizeReservation}
-                onShowDrinksModal={handleShowDrinksModal}
+                onShowDrinksModal={handleShowDrinksModalWrapper}
                 calculateContextMenuPosition={calculateContextMenuPosition}
               />
             ))}
@@ -2535,12 +2398,12 @@ Room Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item
       {/* Reservation Popup */}
       <ReservationPopup
         isOpen={showReservationPopup}
-        onClose={() => setShowReservationPopup(false)}
+        onClose={closeReservationPopup}
         event={selectedEvent}
         onStatusChange={(reservationId, newStatus) => {
           console.log(`Status change: ${reservationId} -> ${newStatus}`);
           // TODO: Update reservation status in state
-          setShowReservationPopup(false);
+          closeReservationPopup();
         }}
       />
 
@@ -2549,9 +2412,8 @@ Room Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item
         <CreateBookingModal
           isOpen={showCreateBooking}
           onClose={() => {
-            setShowCreateBooking(false);
-            setSelectedRoom(null);
-            setDragCreateDates(null); // Clear drag create dates when closing
+            closeCreateBooking();
+            clearDragCreate(); // Clear drag create dates and state when closing
           }}
           room={selectedRoom}
           onCreateBooking={handleCreateBooking}
@@ -2561,18 +2423,27 @@ Room Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item
       )}
 
       {/* Room Change Confirmation Dialog */}
-      {roomChangeDialog.show && roomChangeDialog.currentRoom && roomChangeDialog.targetRoom && roomChangeDialog.reservation && (
-        <RoomChangeConfirmDialog
-          isOpen={roomChangeDialog.show}
-          onClose={() => setRoomChangeDialog({ show: false, reservationId: '', currentRoom: null, targetRoom: null, newCheckIn: null, newCheckOut: null, reservation: null, guest: null })}
-          currentRoom={roomChangeDialog.currentRoom}
-          targetRoom={roomChangeDialog.targetRoom}
-          reservation={roomChangeDialog.reservation}
-          guest={roomChangeDialog.guest}
-          onConfirmChange={handleConfirmRoomChange}
-          onFreeUpgrade={handleFreeUpgrade}
-        />
-      )}
+      {roomChangeDialog.show && (() => {
+        const reservation = reservations.find(r => r.id === roomChangeDialog.reservationId);
+        const currentRoom = HOTEL_POREC_ROOMS.find(r => r.id === roomChangeDialog.fromRoomId);
+        const targetRoom = HOTEL_POREC_ROOMS.find(r => r.id === roomChangeDialog.toRoomId);
+        const guest = reservation ? SAMPLE_GUESTS.find(g => g.id === reservation.guestId) || null : null;
+        
+        if (!reservation || !currentRoom || !targetRoom) return null;
+        
+        return (
+          <RoomChangeConfirmDialog
+            isOpen={roomChangeDialog.show}
+            onClose={closeRoomChangeDialog}
+            currentRoom={currentRoom}
+            targetRoom={targetRoom}
+            reservation={reservation}
+            guest={guest}
+            onConfirmChange={handleConfirmRoomChange}
+            onFreeUpgrade={handleFreeUpgrade}
+          />
+        );
+      })()}
 
       {/* Hotel Orders Modal - Reuses OrdersPage functionality */}
       {showHotelOrdersModal && hotelOrdersReservation && (
