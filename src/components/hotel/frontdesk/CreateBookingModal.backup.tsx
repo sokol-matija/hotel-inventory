@@ -23,7 +23,7 @@ import { formatRoomNumber, getRoomTypeDisplay, getMaxCheckoutDate } from '../../
 import { HotelPricingEngine, PricingCalculationInput } from '../../../lib/hotel/pricingEngine';
 import { getCountryFlag } from '../../../lib/hotel/countryFlags';
 import { ntfyService, BookingNotificationData } from '../../../lib/ntfyService';
-import { useHotel } from '../../../lib/hotel/state/HotelContext';
+import { useHotel } from '../../../lib/hotel/state/SupabaseHotelContext';
 import CreateCompanyModal from '../companies/CreateCompanyModal';
 
 interface CreateBookingModalProps {

@@ -32,7 +32,7 @@ import { CalendarEvent, Reservation, Guest } from '../../../../lib/hotel/types';
 import { SAMPLE_GUESTS } from '../../../../lib/hotel/sampleData';
 import { HOTEL_POREC_ROOMS } from '../../../../lib/hotel/hotelData';
 import { RESERVATION_STATUS_COLORS } from '../../../../lib/hotel/calendarUtils';
-import { useHotel } from '../../../../lib/hotel/state/HotelContext';
+import { useHotel } from '../../../../lib/hotel/state/SupabaseHotelContext';
 import { HotelEmailService } from '../../../../lib/emailService';
 import hotelNotification from '../../../../lib/notifications';
 import { generatePDFInvoice, generateThermalReceipt, generateInvoiceNumber } from '../../../../lib/pdfInvoiceGenerator';

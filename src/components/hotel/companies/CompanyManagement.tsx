@@ -15,7 +15,7 @@ import {
   User
 } from 'lucide-react';
 import { Company } from '../../../lib/hotel/types';
-import { useHotel } from '../../../lib/hotel/state/HotelContext';
+import { useHotel } from '../../../lib/hotel/state/SupabaseHotelContext';
 import CreateCompanyModal from './CreateCompanyModal';
 import EditCompanyModal from './EditCompanyModal';
 import hotelNotification from '../../../lib/notifications';

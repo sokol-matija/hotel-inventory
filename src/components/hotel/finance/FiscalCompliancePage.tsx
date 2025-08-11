@@ -11,7 +11,7 @@ import {
   Download,
   Settings
 } from 'lucide-react';
-import { useHotel } from '../../../lib/hotel/state/HotelContext';
+import { useHotel } from '../../../lib/hotel/state/SupabaseHotelContext';
 import { format } from 'date-fns';
 
 export default function FiscalCompliancePage() {

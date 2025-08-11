@@ -4,7 +4,7 @@ import { Input } from '../../ui/input';
 import { Label } from '../../ui/label';
 import { Textarea } from '../../ui/textarea';
 import { Switch } from '../../ui/switch';
-import { useHotel } from '../../../lib/hotel/state/HotelContext';
+import { useHotel } from '../../../lib/hotel/state/SupabaseHotelContext';
 import { PricingTier, RoomType } from '../../../lib/hotel/types';
 import { X, Plus, Minus } from 'lucide-react';
 

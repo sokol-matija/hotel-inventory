@@ -4,7 +4,7 @@ import { Badge } from '../../../ui/badge';
 import { Button } from '../../../ui/button';
 import { Card, CardContent } from '../../../ui/card';
 import { Guest } from '../../../../lib/hotel/types';
-import { useHotel } from '../../../../lib/hotel/state/HotelContext';
+import { useHotel } from '../../../../lib/hotel/state/SupabaseHotelContext';
 
 interface GuestAutocompleteProps {
   onGuestSelect: (guest: Guest) => void;

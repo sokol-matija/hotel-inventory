@@ -16,7 +16,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { Room } from '../../../../lib/hotel/types';
-import { useHotel } from '../../../../lib/hotel/state/HotelContext';
+import { useHotel } from '../../../../lib/hotel/state/SupabaseHotelContext';
 import { 
   InventoryItem, 
   OrderItem, 

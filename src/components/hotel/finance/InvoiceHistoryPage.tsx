@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useHotel } from '../../../lib/hotel/state/HotelContext';
+import { useHotel } from '../../../lib/hotel/state/SupabaseHotelContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import { Badge } from '../../ui/badge';
 import { Button } from '../../ui/button';

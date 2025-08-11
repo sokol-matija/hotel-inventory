@@ -18,7 +18,7 @@ import {
   Eye
 } from 'lucide-react';
 import { Guest } from '../../../../lib/hotel/types';
-import { useHotel } from '../../../../lib/hotel/state/HotelContext';
+import { useHotel } from '../../../../lib/hotel/state/SupabaseHotelContext';
 import GuestAutocomplete from './GuestAutocomplete';
 import GuestProfileModal from './GuestProfileModal';
 

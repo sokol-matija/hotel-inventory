@@ -193,6 +193,7 @@ export class BookingService {
       const newGuest = bookingData.guest as NewGuestData;
       if (!newGuest?.name?.trim()) errors.push('Guest name required');
       if (!newGuest?.email?.trim()) errors.push('Guest email required');
+      if (!newGuest?.phone?.trim()) errors.push('Guest phone required');
     } else {
       if (!bookingData.guest) errors.push('Please select a guest');
     }

@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
-import { useHotel } from '../../../lib/hotel/state/HotelContext';
+import { useHotel } from '../../../lib/hotel/state/SupabaseHotelContext';
 import { PricingTier } from '../../../lib/hotel/types';
 import { Search, Plus, Edit, Trash2, Star, Calendar, DollarSign } from 'lucide-react';
 import CreatePricingTierModal from './CreatePricingTierModal';

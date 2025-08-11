@@ -21,7 +21,7 @@ import {
 import { Reservation, Guest, Room } from '../../../../lib/hotel/types';
 // Note: Legacy pricing calculator removed - using stored reservation pricing data
 import { generatePDFInvoice, generateInvoiceNumber } from '../../../../lib/pdfInvoiceGenerator';
-import { useHotel } from '../../../../lib/hotel/state/HotelContext';
+import { useHotel } from '../../../../lib/hotel/state/SupabaseHotelContext';
 import hotelNotification from '../../../../lib/notifications';
 
 interface PaymentDetailsModalProps {

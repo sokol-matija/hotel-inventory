@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import { useAuth } from '../../auth/AuthProvider';
-import { HotelProvider, useHotel } from '../../../lib/hotel/state/HotelContext';
+import { SupabaseHotelProvider, useHotel } from '../../../lib/hotel/state/SupabaseHotelContext';
 import HotelSidebar from '../shared/HotelSidebar';
 import MobileNav from '../../layout/MobileNav';
 import CalendarView from './CalendarView';
@@ -87,8 +87,8 @@ export default function FrontDeskLayout() {
   if (!user) return null;
 
   return (
-    <HotelProvider>
+    <SupabaseHotelProvider>
       <FrontDeskContent />
-    </HotelProvider>
+    </SupabaseHotelProvider>
   );
 }

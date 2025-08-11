@@ -139,7 +139,8 @@ export function useBookingForm(room?: Room, initialData?: Partial<BookingFormSta
     }));
     
     return validationErrors.length === 0;
-  }, [bookingService, bookingData]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bookingService]); // Remove bookingData dependency to prevent infinite re-renders
 
   // Form submission
   const setSubmitting = useCallback((isSubmitting: boolean) => {

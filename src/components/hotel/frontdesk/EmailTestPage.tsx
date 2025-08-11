@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Button } from '../../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import { Badge } from '../../ui/badge';
@@ -8,216 +8,42 @@ import {
   Send, 
   User, 
   Calendar,
-  Phone,
-  Heart,
   CheckCircle,
   XCircle,
   Loader2,
-  Globe
+  Globe,
+  Phone
 } from 'lucide-react';
-import { HotelEmailService, EmailLanguage, EmailType } from '../../../lib/emailService';
-import hotelNotification from '../../../lib/notifications';
-import { Reservation, Guest, Room } from '../../../lib/hotel/types';
-import { ntfyService, BookingNotificationData } from '../../../lib/ntfyService';
+import { useEmailTestState } from '../../../lib/hooks/useEmailTestState';
+import { ntfyService } from '../../../lib/ntfyService';
 
-// Test data for email testing
-const TEST_GUEST: Guest = {
-  id: 'test-guest-001',
-  name: 'Matija Sokol',
-  email: 'sokol.matija@gmail.com',
-  phone: '+385 98 123 456',
-  emergencyContact: '+385 98 987 654',
-  nationality: 'Croatia',
-  preferredLanguage: 'English',
-  hasPets: true,
-  dateOfBirth: new Date('1985-03-15'),
-  children: [
-    {
-      name: 'Ana Sokol',
-      dateOfBirth: new Date('2015-06-20'),
-      age: 8
-    }
-  ],
-  totalStays: 3,
-  isVip: true
-};
-
-const TEST_ROOM: Room = {
-  id: 'room-301',
-  number: '301',
-  floor: 3,
-  type: 'double',
-  nameCroatian: 'Dvokrevetna soba',
-  nameEnglish: 'Double Room',
-  seasonalRates: {
-    A: 47,
-    B: 57,
-    C: 69,
-    D: 90
-  },
-  maxOccupancy: 2,
-  isPremium: false,
-  amenities: ['WiFi', 'Air Conditioning', 'Private Bathroom']
-};
-
-const TEST_RESERVATION: Reservation = {
-  id: 'test-reservation-001',
-  roomId: 'room-301',
-  guestId: 'test-guest-001',
-  checkIn: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-  checkOut: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000), // 10 days from now
-  numberOfGuests: 2,
-  adults: 1,
-  children: [
-    {
-      name: 'Ana Sokol',
-      dateOfBirth: new Date('2015-06-20'),
-      age: 8
-    }
-  ],
-  status: 'confirmed',
-  bookingSource: 'direct',
-  specialRequests: 'Sea view room if available, late check-in around 9 PM',
-  seasonalPeriod: 'C',
-  baseRoomRate: 69,
-  numberOfNights: 3,
-  subtotal: 207,
-  childrenDiscounts: 20.70, // 20% discount for child 7-14
-  tourismTax: 9.00, // €1.50 x 2 guests x 3 nights
-  vatAmount: 46.58, // 25% VAT
-  petFee: 20,
-  parkingFee: 21, // €7 x 3 nights
-  shortStaySuplement: 0,
-  additionalCharges: 0,
-  roomServiceItems: [],
-  totalAmount: 282.88,
-  bookingDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
-  lastModified: new Date(),
-  notes: 'VIP guest, previous stays were excellent'
-};
 
 export default function EmailTestPage() {
-  const [isSending, setIsSending] = useState(false);
-  const [lastEmailResult, setLastEmailResult] = useState<{ success: boolean; message: string } | null>(null);
-  const [testEmail, setTestEmail] = useState('sokol.matija@gmail.com');
-  const [selectedLanguage, setSelectedLanguage] = useState<EmailLanguage>('en');
-  const [selectedEmailType, setSelectedEmailType] = useState<EmailType>('welcome');
-  
-  // Ntfy notification state
-  const [isSendingNotification, setIsSendingNotification] = useState(false);
-  const [lastNotificationResult, setLastNotificationResult] = useState<{ success: boolean; message: string } | null>(null);
+  const {
+    // State
+    emailAddress,
+    selectedLanguage,
+    selectedEmailType,
+    isSendingEmail,
+    isSendingNotification,
+    lastEmailResult,
+    lastNotificationResult,
+    testData,
+    isValidEmail,
+    emailValidationError,
+    
+    // Actions
+    setEmailAddress,
+    setSelectedLanguage,
+    setSelectedEmailType,
+    sendTestEmail,
+    sendTestNotification,
+    getEmailTypes,
+    getEmailLanguages,
+    formatDisplayDate,
+    getGuestBadges
+  } = useEmailTestState();
 
-  const handleSendTestEmail = async () => {
-    setIsSending(true);
-    setLastEmailResult(null);
-
-    try {
-      // Generate the email template based on selected type and language
-      const emailData = selectedEmailType === 'reminder' 
-        ? { guest: { ...TEST_GUEST, email: testEmail } }
-        : { 
-            guest: { ...TEST_GUEST, email: testEmail }, 
-            reservation: TEST_RESERVATION, 
-            room: TEST_ROOM 
-          };
-      
-      const template = HotelEmailService.generateEmail(
-        selectedEmailType,
-        emailData,
-        selectedLanguage
-      );
-      
-      // Send the email with the generated template
-      const result = await HotelEmailService.sendEmail(
-        testEmail,
-        template,
-        TEST_GUEST.name
-      );
-      
-      setLastEmailResult(result);
-
-      if (result.success) {
-        hotelNotification.success(
-          'Test Email Sent Successfully!', 
-          `${selectedEmailType} email sent to ${testEmail}`
-        );
-      } else {
-        hotelNotification.error(
-          'Email Send Failed', 
-          result.message
-        );
-      }
-    } catch (error) {
-      console.error('Error sending test email:', error);
-      const errorResult = {
-        success: false,
-        message: 'Failed to send test email. Please check the console for details.'
-      };
-      setLastEmailResult(errorResult);
-      hotelNotification.error('Email Send Error', errorResult.message);
-    } finally {
-      setIsSending(false);
-    }
-  };
-
-  const handleSendTestNotification = async () => {
-    setIsSendingNotification(true);
-    setLastNotificationResult(null);
-
-    try {
-      // Create test booking data for Room 401
-      const testBookingData: BookingNotificationData = {
-        roomNumber: '401',
-        guestName: TEST_GUEST.name,
-        checkIn: formatDate(TEST_RESERVATION.checkIn).split(', ')[1], // Extract date part
-        checkOut: formatDate(TEST_RESERVATION.checkOut).split(', ')[1],
-        nights: TEST_RESERVATION.numberOfNights,
-        adults: TEST_RESERVATION.adults,
-        children: TEST_RESERVATION.children.length,
-        bookingSource: TEST_RESERVATION.bookingSource,
-        totalAmount: TEST_RESERVATION.totalAmount
-      };
-
-      const success = await ntfyService.sendRoom401BookingNotification(testBookingData);
-      
-      const result = {
-        success,
-        message: success 
-          ? 'Test notification sent successfully to Room 401 topic!' 
-          : 'Failed to send notification. Please check console for details.'
-      };
-      
-      setLastNotificationResult(result);
-
-      if (success) {
-        hotelNotification.success(
-          'Test Notification Sent!', 
-          'Check your mobile device for the Room 401 booking notification'
-        );
-      } else {
-        hotelNotification.error('Notification Failed', result.message);
-      }
-    } catch (error) {
-      console.error('Error sending test notification:', error);
-      const errorResult = {
-        success: false,
-        message: 'Failed to send test notification. Please check the console for details.'
-      };
-      setLastNotificationResult(errorResult);
-      hotelNotification.error('Notification Error', errorResult.message);
-    } finally {
-      setIsSendingNotification(false);
-    }
-  };
-
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
 
   return (
     <div className="p-6">
@@ -241,37 +67,29 @@ export default function EmailTestPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <div className="text-sm text-gray-500">Name</div>
-                  <div className="font-medium">{TEST_GUEST.name}</div>
+                  <div className="font-medium">{testData.guest.name}</div>
                 </div>
                 <div>
                   <div className="text-sm text-gray-500">Email</div>
-                  <div className="font-medium text-blue-600">{TEST_GUEST.email}</div>
+                  <div className="font-medium text-blue-600">{testData.guest.email}</div>
                 </div>
                 <div>
                   <div className="text-sm text-gray-500">Phone</div>
-                  <div className="font-medium">{TEST_GUEST.phone}</div>
+                  <div className="font-medium">{testData.guest.phone}</div>
                 </div>
                 <div>
                   <div className="text-sm text-gray-500">Nationality</div>
-                  <div className="font-medium">{TEST_GUEST.nationality}</div>
+                  <div className="font-medium">{testData.guest.nationality}</div>
                 </div>
               </div>
               
               <div className="flex items-center space-x-4 pt-2">
-                {TEST_GUEST.hasPets && (
-                  <Badge variant="outline" className="text-xs">
-                    <Heart className="h-3 w-3 mr-1" />
-                    Has Pet
+                {getGuestBadges(testData.guest).map((badge, index) => (
+                  <Badge key={index} variant={badge.type === 'vip' ? 'default' : 'outline'} className="text-xs">
+                    <span className="mr-1">{badge.icon}</span>
+                    {badge.label}
                   </Badge>
-                )}
-                {TEST_GUEST.isVip && (
-                  <Badge variant="default" className="text-xs">⭐ VIP Guest</Badge>
-                )}
-                {TEST_GUEST.children.length > 0 && (
-                  <Badge variant="outline" className="text-xs">
-                    👶 {TEST_GUEST.children.length} Child
-                  </Badge>
-                )}
+                ))}
               </div>
             </CardContent>
           </Card>
@@ -289,34 +107,34 @@ export default function EmailTestPage() {
                 <div>
                   <div className="text-sm text-gray-500">Room</div>
                   <div className="font-medium">
-                    {TEST_ROOM.number} - {TEST_ROOM.nameEnglish}
+                    {testData.room.number} - {testData.room.nameEnglish}
                   </div>
                 </div>
                 <div>
                   <div className="text-sm text-gray-500">Check-in</div>
-                  <div className="font-medium">{formatDate(TEST_RESERVATION.checkIn)}</div>
+                  <div className="font-medium">{formatDisplayDate(testData.reservation.checkIn)}</div>
                 </div>
                 <div>
                   <div className="text-sm text-gray-500">Check-out</div>
-                  <div className="font-medium">{formatDate(TEST_RESERVATION.checkOut)}</div>
+                  <div className="font-medium">{formatDisplayDate(testData.reservation.checkOut)}</div>
                 </div>
                 <div>
                   <div className="text-sm text-gray-500">Duration</div>
-                  <div className="font-medium">{TEST_RESERVATION.numberOfNights} nights</div>
+                  <div className="font-medium">{testData.reservation.numberOfNights} nights</div>
                 </div>
                 <div>
                   <div className="text-sm text-gray-500">Total Amount</div>
                   <div className="font-medium text-lg text-green-600">
-                    €{TEST_RESERVATION.totalAmount.toFixed(2)}
+                    €{testData.reservation.totalAmount.toFixed(2)}
                   </div>
                 </div>
               </div>
 
-              {TEST_RESERVATION.specialRequests && (
+              {testData.reservation.specialRequests && (
                 <div className="pt-2 border-t">
                   <div className="text-sm text-gray-500">Special Requests</div>
                   <div className="text-sm mt-1 p-2 bg-yellow-50 rounded">
-                    {TEST_RESERVATION.specialRequests}
+                    {testData.reservation.specialRequests}
                   </div>
                 </div>
               )}
@@ -342,11 +160,14 @@ export default function EmailTestPage() {
                 </label>
                 <Input
                   type="email"
-                  value={testEmail}
-                  onChange={(e) => setTestEmail(e.target.value)}
+                  value={emailAddress}
+                  onChange={(e) => setEmailAddress(e.target.value)}
                   placeholder="Enter email address"
-                  className="w-full"
+                  className={`w-full ${!isValidEmail && emailAddress ? 'border-red-500' : ''}`}
                 />
+                {emailValidationError && (
+                  <p className="text-sm text-red-600 mt-1">{emailValidationError}</p>
+                )}
               </div>
 
               {/* Email Type Selection */}
@@ -355,14 +176,10 @@ export default function EmailTestPage() {
                   📝 Email Type:
                 </label>
                 <div className="grid grid-cols-1 gap-2">
-                  {[
-                    { value: 'welcome', label: '🏨 Welcome Email', desc: 'Check-in information & hotel details' },
-                    { value: 'thankyou', label: '🙏 Thank You Email', desc: 'Post-stay gratitude & return offers' },
-                    { value: 'reminder', label: '🌞 Summer Reminder', desc: 'Seasonal booking invitation' }
-                  ].map((type) => (
+                  {getEmailTypes().map((type) => (
                     <button
                       key={type.value}
-                      onClick={() => setSelectedEmailType(type.value as EmailType)}
+                      onClick={() => setSelectedEmailType(type.value)}
                       className={`p-3 text-left border rounded-lg transition-colors ${
                         selectedEmailType === type.value
                           ? 'border-blue-500 bg-blue-50 text-blue-900'
@@ -370,7 +187,7 @@ export default function EmailTestPage() {
                       }`}
                     >
                       <div className="font-medium">{type.label}</div>
-                      <div className="text-sm text-gray-600">{type.desc}</div>
+                      <div className="text-sm text-gray-600">{type.description}</div>
                     </button>
                   ))}
                 </div>
@@ -384,14 +201,10 @@ export default function EmailTestPage() {
                     Language:
                   </label>
                   <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { value: 'en', label: '🇬🇧 English', flag: '🇬🇧' },
-                      { value: 'de', label: '🇩🇪 Deutsch', flag: '🇩🇪' },
-                      { value: 'it', label: '🇮🇹 Italiano', flag: '🇮🇹' }
-                    ].map((lang) => (
+                    {getEmailLanguages().map((lang) => (
                       <button
                         key={lang.value}
-                        onClick={() => setSelectedLanguage(lang.value as EmailLanguage)}
+                        onClick={() => setSelectedLanguage(lang.value)}
                         className={`p-2 text-center border rounded-lg transition-colors ${
                           selectedLanguage === lang.value
                             ? 'border-blue-500 bg-blue-50 text-blue-900'
@@ -407,12 +220,12 @@ export default function EmailTestPage() {
               )}
 
               <Button
-                onClick={handleSendTestEmail}
-                disabled={isSending || !testEmail}
+                onClick={sendTestEmail}
+                disabled={isSendingEmail || !isValidEmail}
                 className="w-full"
                 size="lg"
               >
-                {isSending ? (
+                {isSendingEmail ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     Sending Test Email...
@@ -456,7 +269,7 @@ export default function EmailTestPage() {
                 {lastEmailResult.success && (
                   <div className="mt-4 p-3 bg-blue-50 rounded-lg">
                     <p className="text-sm text-blue-800">
-                      📧 Check your email inbox at <strong>{TEST_GUEST.email}</strong> for the welcome email!
+                      📧 Check your email inbox at <strong>{emailAddress}</strong> for the {selectedEmailType} email!
                     </p>
                   </div>
                 )}
@@ -596,7 +409,7 @@ export default function EmailTestPage() {
             </div>
 
             <Button 
-              onClick={handleSendTestNotification}
+              onClick={sendTestNotification}
               disabled={isSendingNotification}
               className="w-full bg-purple-600 hover:bg-purple-700"
             >

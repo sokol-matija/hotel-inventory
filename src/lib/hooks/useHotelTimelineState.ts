@@ -4,7 +4,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { HotelTimelineService, TimelineContextMenu, DragCreateState, DragCreatePreview, RoomChangeDialog, DrinkModalState, OccupancyData } from '../hotel/services/HotelTimelineService';
 import { CalendarEvent, Reservation, Room } from '../hotel/types';
-import { useHotel } from '../hotel/state/HotelContext';
+import { useHotel } from '../hotel/state/SupabaseHotelContext';
 
 export interface HotelTimelineState {
   // Date management

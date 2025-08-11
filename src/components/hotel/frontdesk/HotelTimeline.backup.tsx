@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 import { HOTEL_POREC_ROOMS, getRoomsByFloor } from '../../../lib/hotel/hotelData';
 import { SAMPLE_GUESTS } from '../../../lib/hotel/sampleData';
-import { useHotel } from '../../../lib/hotel/state/HotelContext';
+import { useHotel } from '../../../lib/hotel/state/SupabaseHotelContext';
 import { RESERVATION_STATUS_COLORS, formatRoomNumber, getRoomTypeDisplay } from '../../../lib/hotel/calendarUtils';
 import { getCountryFlag } from '../../../lib/hotel/countryFlags';
 import { CalendarEvent, ReservationStatus, Reservation, Room, RoomServiceItem } from '../../../lib/hotel/types';

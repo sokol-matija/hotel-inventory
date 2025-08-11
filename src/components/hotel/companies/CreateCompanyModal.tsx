@@ -6,7 +6,7 @@ import { Label } from '../../ui/label';
 import { Textarea } from '../../ui/textarea';
 import { X, Building2, Check, AlertCircle } from 'lucide-react';
 import { Company } from '../../../lib/hotel/types';
-import { useHotel } from '../../../lib/hotel/state/HotelContext';
+import { useHotel } from '../../../lib/hotel/state/SupabaseHotelContext';
 import hotelNotification from '../../../lib/notifications';
 
 interface CreateCompanyModalProps {

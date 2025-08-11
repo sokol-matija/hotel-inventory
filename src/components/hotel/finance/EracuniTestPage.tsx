@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import { Button } from '../../ui/button';
 import { Badge } from '../../ui/badge';
-import { useHotel } from '../../../lib/hotel/state/HotelContext';
+import { useHotel } from '../../../lib/hotel/state/SupabaseHotelContext';
 import { FiscalizationService } from '../../../lib/fiscalization/FiscalizationService';
 import { FiscalInvoiceData, FiscalResponse } from '../../../lib/fiscalization/types';
 import StornoTestSection from './StornoTestSection';

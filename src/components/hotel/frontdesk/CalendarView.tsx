@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import { Badge } from '../../ui/badge';
 import { Users, Home, TrendingUp, DollarSign } from 'lucide-react';
 import { RESERVATION_STATUS_COLORS } from '../../../lib/hotel/calendarUtils';
-import { useHotel } from '../../../lib/hotel/state/HotelContext';
+import { useHotel } from '../../../lib/hotel/state/SupabaseHotelContext';
 import { HOTEL_POREC_ROOMS } from '../../../lib/hotel/hotelData';
 import HotelTimeline from './HotelTimeline';
 

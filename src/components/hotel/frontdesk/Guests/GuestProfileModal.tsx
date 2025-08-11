@@ -22,7 +22,7 @@ import {
   Baby
 } from 'lucide-react';
 import { Guest, GuestChild } from '../../../../lib/hotel/types';
-import { useHotel } from '../../../../lib/hotel/state/HotelContext';
+import { useHotel } from '../../../../lib/hotel/state/SupabaseHotelContext';
 
 interface GuestProfileModalProps {
   isOpen: boolean;

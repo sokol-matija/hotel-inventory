@@ -9,7 +9,7 @@ import {
   PieChart,
   Download
 } from 'lucide-react';
-import { useHotel } from '../../../lib/hotel/state/HotelContext';
+import { useHotel } from '../../../lib/hotel/state/SupabaseHotelContext';
 import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
 
 export default function RevenueAnalyticsPage() {

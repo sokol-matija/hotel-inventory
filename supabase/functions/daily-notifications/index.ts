@@ -1,4 +1,10 @@
-// Daily Notifications Edge Function
+// DEPRECATED - Daily Notifications Edge Function
+// ⚠️  This function is DEPRECATED as of August 2025
+// ✅ REPLACED BY: ntfy.sh push notification system for real-time mobile alerts
+// 🔧 See: src/lib/ntfyService.ts for current notification implementation
+// 📱 Mobile Integration: Complete ntfy app setup with Room 401 booking alerts
+//
+// Legacy functionality (no longer used):
 // Runs at 7:00 AM daily to send push notifications for expiring items
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"

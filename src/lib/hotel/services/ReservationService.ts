@@ -2,13 +2,12 @@
 // Handles email operations, fiscal invoice generation, and reservation state management
 
 import { CalendarEvent, Reservation, Guest, Room } from '../types';
-import { SAMPLE_GUESTS } from '../sampleData';
-import { HOTEL_POREC_ROOMS } from '../hotelData';
 import { RESERVATION_STATUS_COLORS } from '../calendarUtils';
 import { HotelEmailService } from '../../emailService';
 import hotelNotification from '../../notifications';
 import { generatePDFInvoice, generateThermalReceipt, generateInvoiceNumber } from '../../pdfInvoiceGenerator';
 import { FiscalizationService } from '../../fiscalization/FiscalizationService';
+import { hotelDataService } from './HotelDataService';
 
 export interface ReservationData {
   reservation: Reservation;
@@ -51,17 +50,24 @@ export class ReservationService {
   /**
    * Get reservation data from event and reservations list
    */
-  getReservationData(
+  async getReservationData(
     event: CalendarEvent | null,
     reservations: Reservation[]
-  ): ReservationData | null {
+  ): Promise<ReservationData | null> {
     if (!event) return null;
 
     const reservation = reservations.find(r => r.id === event.reservationId);
-    const guest = SAMPLE_GUESTS.find(g => g.id === reservation?.guestId);
-    const room = HOTEL_POREC_ROOMS.find(r => r.id === event.roomId);
+    if (!reservation) return null;
+
+    // Fetch guest and room data from database
+    const [guests, room] = await Promise.all([
+      hotelDataService.getGuests(),
+      hotelDataService.getRoomById(event.roomId)
+    ]);
+
+    const guest = guests.find(g => g.id === reservation.guestId);
     
-    if (!reservation || !guest || !room) {
+    if (!guest || !room) {
       return null;
     }
 

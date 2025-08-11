@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import { useAuth } from '../../auth/AuthProvider';
-import { HotelProvider } from '../../../lib/hotel/state/HotelContext';
+import { SupabaseHotelProvider } from '../../../lib/hotel/state/SupabaseHotelContext';
 import HotelSidebar from '../shared/HotelSidebar';
 import MobileNav from '../../layout/MobileNav';
 import InvoicePaymentPage from './InvoicePaymentPage';
@@ -17,7 +17,7 @@ export default function FinanceLayout() {
   if (!user) return null;
 
   return (
-    <HotelProvider>
+    <SupabaseHotelProvider>
       <div className="flex h-screen bg-gray-50 relative">
         {/* Background decorative image */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -73,6 +73,6 @@ export default function FinanceLayout() {
           </div>
         </main>
       </div>
-    </HotelProvider>
+    </SupabaseHotelProvider>
   );
 }

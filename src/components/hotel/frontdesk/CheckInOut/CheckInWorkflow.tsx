@@ -26,7 +26,7 @@ import {
   CheckCheck
 } from 'lucide-react';
 import { Reservation, Guest, Room } from '../../../../lib/hotel/types';
-import { useHotel } from '../../../../lib/hotel/state/HotelContext';
+import { useHotel } from '../../../../lib/hotel/state/SupabaseHotelContext';
 import { SAMPLE_GUESTS } from '../../../../lib/hotel/sampleData';
 import { HOTEL_POREC_ROOMS } from '../../../../lib/hotel/hotelData';
 

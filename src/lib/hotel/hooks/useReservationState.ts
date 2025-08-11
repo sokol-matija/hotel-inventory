@@ -3,7 +3,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { CalendarEvent, Reservation } from '../types';
-import { useHotel } from '../state/HotelContext';
+import { useHotel } from '../state/SupabaseHotelContext';
 import { ReservationService, ReservationData, FiscalData } from '../services/ReservationService';
 
 export interface ReservationState {
@@ -46,14 +46,27 @@ export function useReservationState(
   const reservationService = ReservationService.getInstance();
   
   const [state, setState] = useState<ReservationState>(initialState);
+  const [reservationData, setReservationData] = useState<ReservationData | null>(null);
 
   // Reset state when event changes
   useEffect(() => {
     setState(initialState);
+    setReservationData(null);
   }, [event?.reservationId]);
 
-  // Get reservation data
-  const reservationData = reservationService.getReservationData(event, reservations);
+  // Get reservation data asynchronously
+  useEffect(() => {
+    if (event && reservations.length > 0) {
+      reservationService.getReservationData(event, reservations)
+        .then(data => setReservationData(data))
+        .catch(error => {
+          console.error('Failed to get reservation data:', error);
+          setReservationData(null);
+        });
+    } else {
+      setReservationData(null);
+    }
+  }, [event, reservations, reservationService]);
 
   // State updaters
   const updateState = useCallback(<K extends keyof ReservationState>(

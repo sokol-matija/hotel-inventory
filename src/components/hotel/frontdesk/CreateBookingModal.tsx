@@ -13,7 +13,7 @@ import { SAMPLE_GUESTS } from '../../../lib/hotel/sampleData';
 import { useBookingForm } from '../../../lib/hotel/hooks/useBookingForm';
 import { BookingService, BookingData } from '../../../lib/hotel/services/BookingService';
 import { formatRoomNumber } from '../../../lib/hotel/calendarUtils';
-import { useHotel } from '../../../lib/hotel/state/HotelContext';
+import { useHotel } from '../../../lib/hotel/state/SupabaseHotelContext';
 import hotelNotification from '../../../lib/notifications';
 
 interface CreateBookingModalProps {
@@ -60,7 +60,7 @@ export default function CreateBookingModal({
     if (formState.selectedRoom && formState.checkIn && formState.checkOut) {
       validate(existingReservations);
     }
-  }, [formState.checkIn, formState.checkOut, formState.selectedRoom, existingReservations, validate]);
+  }, [formState.checkIn, formState.checkOut, formState.selectedRoom, existingReservations]); // Remove validate and bookingData from dependencies
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
