@@ -85,6 +85,15 @@ export default function ModuleSelector() {
       onClick: () => navigate('/hotel/front-desk')
     },
     {
+      key: 'frontDeskV2',
+      title: 'Front Desk v2',
+      description: 'Clean, modern front desk with improved workflow',
+      icon: <Hotel className="h-6 w-6" />,
+      available: true,
+      priority: 'New',
+      onClick: () => navigate('/hotel/front-desk-v2')
+    },
+    {
       key: 'finance',
       title: 'Finance',
       description: 'Croatian fiscal e-računi and financial management',

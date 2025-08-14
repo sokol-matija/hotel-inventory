@@ -20,8 +20,7 @@ export default function PricingManagement() {
     const searchLower = searchTerm.toLowerCase().trim();
     return pricingTiers.filter(tier =>
       tier.name.toLowerCase().includes(searchLower) ||
-      tier.description.toLowerCase().includes(searchLower) ||
-      tier.roomTypes.some(roomType => roomType.toLowerCase().includes(searchLower))
+      tier.description.toLowerCase().includes(searchLower)
     );
   }, [pricingTiers, searchTerm]);
 
@@ -102,7 +101,11 @@ export default function PricingManagement() {
             <div>
               <p className="text-sm text-gray-600">Active Tiers</p>
               <p className="text-xl font-semibold text-gray-900">
-                {pricingTiers.filter(tier => tier.isActive && new Date() >= tier.validFrom && new Date() <= tier.validTo).length}
+                {pricingTiers.filter(tier => 
+                  tier.isActive && 
+                  (!tier.validFrom || new Date() >= tier.validFrom) && 
+                  (!tier.validTo || new Date() <= tier.validTo)
+                ).length}
               </p>
             </div>
           </div>
@@ -154,7 +157,9 @@ export default function PricingManagement() {
               ) : (
                 filteredPricingTiers.map((tier) => {
                   const now = new Date();
-                  const isActive = tier.isActive && now >= tier.validFrom && now <= tier.validTo;
+                  const isActive = tier.isActive && 
+                    (!tier.validFrom || now >= tier.validFrom) && 
+                    (!tier.validTo || now <= tier.validTo);
                   
                   return (
                     <tr key={tier.id} className="hover:bg-gray-50">
@@ -176,7 +181,7 @@ export default function PricingManagement() {
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex flex-wrap gap-1">
-                          {tier.roomTypes.map((roomType) => (
+                          {Object.keys(tier.roomTypeMultipliers).map((roomType) => (
                             <span
                               key={roomType}
                               className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800"
@@ -188,8 +193,8 @@ export default function PricingManagement() {
                       </td>
                       <td className="py-3 px-4 text-sm text-gray-900">
                         <div>
-                          <p>{formatDate(tier.validFrom)}</p>
-                          <p className="text-gray-500">to {formatDate(tier.validTo)}</p>
+                          <p>{tier.validFrom ? formatDate(tier.validFrom) : 'No start date'}</p>
+                          <p className="text-gray-500">to {tier.validTo ? formatDate(tier.validTo) : 'No end date'}</p>
                         </div>
                       </td>
                       <td className="py-3 px-4">
@@ -207,10 +212,10 @@ export default function PricingManagement() {
                       </td>
                       <td className="py-3 px-4 text-sm">
                         <div className="space-y-1">
-                          <p><span className="text-gray-600">A:</span> {formatModifier(tier.seasonalRateModifiers.A)}</p>
-                          <p><span className="text-gray-600">B:</span> {formatModifier(tier.seasonalRateModifiers.B)}</p>
-                          <p><span className="text-gray-600">C:</span> {formatModifier(tier.seasonalRateModifiers.C)}</p>
-                          <p><span className="text-gray-600">D:</span> {formatModifier(tier.seasonalRateModifiers.D)}</p>
+                          <p><span className="text-gray-600">A:</span> €{tier.seasonalRates.A}</p>
+                          <p><span className="text-gray-600">B:</span> €{tier.seasonalRates.B}</p>
+                          <p><span className="text-gray-600">C:</span> €{tier.seasonalRates.C}</p>
+                          <p><span className="text-gray-600">D:</span> €{tier.seasonalRates.D}</p>
                         </div>
                       </td>
                       <td className="py-3 px-4">

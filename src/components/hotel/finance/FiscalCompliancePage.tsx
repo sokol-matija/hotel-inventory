@@ -18,9 +18,9 @@ export default function FiscalCompliancePage() {
   const { invoices, fiscalRecords } = useHotel();
 
   const totalInvoices = invoices.length;
-  const fiscalCompliantInvoices = invoices.filter(inv => inv.fiscalData.jir && inv.fiscalData.zki).length;
-  const pendingFiscalSubmissions = invoices.filter(inv => !inv.fiscalData.jir).length;
-  const validFiscalRecords = fiscalRecords.filter(record => record.isValid).length;
+  const fiscalCompliantInvoices = invoices.filter(inv => inv.fiscalData?.jir && inv.fiscalData?.zki).length;
+  const pendingFiscalSubmissions = invoices.filter(inv => !inv.fiscalData?.jir).length;
+  const validFiscalRecords = fiscalRecords.filter(record => record.jir && !record.errorMessage).length;
 
   const complianceRate = totalInvoices > 0 ? (fiscalCompliantInvoices / totalInvoices) * 100 : 0;
 
@@ -167,11 +167,11 @@ export default function FiscalCompliancePage() {
                     <div>
                       <p className="text-sm font-medium">JIR: {record.jir}</p>
                       <p className="text-xs text-gray-500">
-                        {format(record.submittedAt, 'MMM dd, yyyy HH:mm')}
+                        {format(record.dateTimeSubmitted, 'MMM dd, yyyy HH:mm')}
                       </p>
                     </div>
-                    <Badge className={record.isValid ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
-                      {record.isValid ? 'Valid' : 'Invalid'}
+                    <Badge className={record.jir && !record.errorMessage ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+                      {record.jir && !record.errorMessage ? 'Valid' : 'Invalid'}
                     </Badge>
                   </div>
                 ))}

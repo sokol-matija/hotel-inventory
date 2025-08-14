@@ -29,7 +29,9 @@ export interface BookingFormState {
   
   // New guest data
   newGuestData: {
-    name: string;
+    firstName: string;
+    lastName: string;
+    fullName: string;
     email: string;
     phone: string;
     nationality: string;
@@ -59,7 +61,9 @@ const initialState: BookingFormState = {
   selectedCompany: null,
   pricingTierId: '2026-standard',
   newGuestData: {
-    name: '',
+    firstName: '',
+    lastName: '',
+    fullName: '',
     email: '',
     phone: '',
     nationality: '',

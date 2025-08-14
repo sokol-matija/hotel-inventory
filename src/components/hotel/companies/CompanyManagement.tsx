@@ -40,7 +40,7 @@ export default function CompanyManagement() {
         return (
           company.name.toLowerCase().includes(searchLower) ||
           company.oib.includes(searchTerm) ||
-          company.city.toLowerCase().includes(searchLower) ||
+          company.address.city.toLowerCase().includes(searchLower) ||
           company.email.toLowerCase().includes(searchLower)
         );
       }
@@ -190,7 +190,7 @@ export default function CompanyManagement() {
                       
                       <div className="flex items-center space-x-2">
                         <MapPin className="h-4 w-4 text-gray-400" />
-                        <span>{company.city}, {company.country}</span>
+                        <span>{company.address.city}, {company.address.country}</span>
                       </div>
                       
                       {company.email && (

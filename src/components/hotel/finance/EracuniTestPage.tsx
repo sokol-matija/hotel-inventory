@@ -73,7 +73,7 @@ const FiscalizationTestPage: React.FC = () => {
         totalAmount: invoice.totalAmount,
         vatAmount: invoice.vatAmount,
         items: [{
-          name: `Hotel accommodation (Room ${invoice.roomId || 'N/A'})`,
+          name: `Hotel accommodation (Room N/A)`,
           quantity: 1,
           unitPrice: invoice.subtotal,
           totalAmount: invoice.subtotal,
@@ -115,7 +115,7 @@ const FiscalizationTestPage: React.FC = () => {
         totalAmount: invoice.totalAmount,
         vatAmount: invoice.vatAmount,
         items: [{
-          name: `Hotel accommodation (Room ${invoice.roomId || 'N/A'})`,
+          name: `Hotel accommodation (Room N/A)`,
           quantity: 1,
           unitPrice: invoice.subtotal,
           totalAmount: invoice.subtotal,

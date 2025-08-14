@@ -115,7 +115,7 @@ function StatusLegend() {
   );
 }
 
-// Main calendar view component
+// Main calendar view component - updated
 export default function CalendarView() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const { reservations } = useHotel();

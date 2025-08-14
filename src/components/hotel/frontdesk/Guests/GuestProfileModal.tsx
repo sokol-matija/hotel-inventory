@@ -29,7 +29,9 @@ interface GuestProfileModalProps {
   onClose: () => void;
   guest?: Guest | null;
   initialData?: {
-    name?: string;
+    firstName?: string;
+    lastName?: string;
+    fullName?: string;
     email?: string;
     phone?: string;
   };
@@ -73,7 +75,9 @@ export default function GuestProfileModal({
       setChildren(guest.children || []);
     } else if (initialData) {
       setFormData({
-        name: initialData.name || '',
+        firstName: initialData.firstName || '',
+        lastName: initialData.lastName || '',
+        fullName: initialData.fullName || '',
         email: initialData.email || '',
         phone: initialData.phone || '',
         nationality: 'German',
@@ -82,7 +86,7 @@ export default function GuestProfileModal({
         children: [],
         totalStays: 0,
         isVip: false,
-        emergencyContact: ''
+        emergencyContactName: ''
       });
       setChildren([]);
     }
@@ -123,7 +127,7 @@ export default function GuestProfileModal({
       setIsSaving(true);
 
       // Validate required fields
-      if (!formData.name || !formData.email || !formData.phone) {
+      if (!formData.fullName || !formData.email || !formData.phone) {
         alert('Please fill in all required fields');
         return;
       }
@@ -139,18 +143,23 @@ export default function GuestProfileModal({
 
       const guestData: Guest = {
         id: guest?.id || `guest-${Date.now()}`,
-        name: formData.name!,
+        firstName: formData.firstName || '',
+        lastName: formData.lastName || '',
+        fullName: formData.fullName!,
         email: formData.email!,
         phone: formData.phone!,
-        emergencyContact: formData.emergencyContact || '',
+        emergencyContactName: formData.emergencyContactName || '',
         nationality: formData.nationality || 'German',
         preferredLanguage: formData.preferredLanguage || 'en',
-        passportDocument: formData.passportDocument,
+        dietaryRestrictions: [],
         hasPets: formData.hasPets || false,
         dateOfBirth: formData.dateOfBirth,
         children: processedChildren,
         totalStays: formData.totalStays || 0,
-        isVip: formData.isVip || false
+        isVip: formData.isVip || false,
+        vipLevel: 0,
+        createdAt: new Date(),
+        updatedAt: new Date()
       };
 
       if (mode === 'create') {
@@ -242,12 +251,12 @@ export default function GuestProfileModal({
                     <input
                       type="text"
                       className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                      value={formData.name || ''}
-                      onChange={(e) => handleInputChange('name', e.target.value)}
+                      value={formData.fullName || ''}
+                      onChange={(e) => handleInputChange('fullName', e.target.value)}
                       placeholder="Enter full name"
                     />
                   ) : (
-                    <p className="p-2 text-gray-900">{formData.name}</p>
+                    <p className="p-2 text-gray-900">{formData.fullName}</p>
                   )}
                 </div>
 
@@ -299,12 +308,12 @@ export default function GuestProfileModal({
                     <input
                       type="text"
                       className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                      value={formData.emergencyContact || ''}
-                      onChange={(e) => handleInputChange('emergencyContact', e.target.value)}
+                      value={formData.emergencyContactName || ''}
+                      onChange={(e) => handleInputChange('emergencyContactName', e.target.value)}
                       placeholder="Contact person and phone"
                     />
                   ) : (
-                    <p className="p-2 text-gray-700">{formData.emergencyContact || 'Not provided'}</p>
+                    <p className="p-2 text-gray-700">{formData.emergencyContactName || 'Not provided'}</p>
                   )}
                 </div>
 

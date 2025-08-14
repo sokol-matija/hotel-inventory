@@ -44,10 +44,10 @@ export default function GuestManagementPage({ onGuestSelect }: GuestManagementPa
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(guest =>
-        guest.name.toLowerCase().includes(query) ||
-        guest.email.toLowerCase().includes(query) ||
-        guest.phone.toLowerCase().includes(query) ||
-        guest.nationality.toLowerCase().includes(query)
+        guest.fullName.toLowerCase().includes(query) ||
+        guest.email?.toLowerCase().includes(query) ||
+        guest.phone?.toLowerCase().includes(query) ||
+        guest.nationality?.toLowerCase().includes(query)
       );
     }
 
@@ -71,7 +71,7 @@ export default function GuestManagementPage({ onGuestSelect }: GuestManagementPa
           return b.totalStays - a.totalStays;
         case 'name':
         default:
-          return a.name.localeCompare(b.name);
+          return a.fullName.localeCompare(b.fullName);
       }
     });
   }, [guests, searchQuery, filterNationality, filterVipOnly, sortBy]);
@@ -290,7 +290,7 @@ export default function GuestManagementPage({ onGuestSelect }: GuestManagementPa
                         
                         <div className="flex-1">
                           <div className="flex items-center space-x-2 mb-1">
-                            <h4 className="font-semibold text-lg">{guest.name}</h4>
+                            <h4 className="font-semibold text-lg">{guest.fullName}</h4>
                             {guest.isVip && (
                               <Badge variant="secondary">
                                 <Star className="h-3 w-3 mr-1" />
@@ -307,7 +307,7 @@ export default function GuestManagementPage({ onGuestSelect }: GuestManagementPa
                             </div>
                             <div className="flex items-center space-x-1">
                               <Phone className="h-3 w-3" />
-                              <span>{formatPhoneNumber(guest.phone)}</span>
+                              <span>{guest.phone ? formatPhoneNumber(guest.phone) : 'No phone'}</span>
                             </div>
                             <div className="flex items-center space-x-1">
                               <Globe className="h-3 w-3" />

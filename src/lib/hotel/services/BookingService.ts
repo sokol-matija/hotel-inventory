@@ -27,7 +27,9 @@ export interface BookingData {
 }
 
 export interface NewGuestData {
-  name: string;
+  firstName: string;
+  lastName: string;
+  fullName: string;
   email: string;
   phone: string;
   nationality: string;
@@ -97,7 +99,7 @@ export class BookingService {
     const dateConflict = this.checkDateConflict(bookingData, existingReservations);
     if (dateConflict) {
       const guest = SAMPLE_GUESTS.find(g => g.id === dateConflict.guestId);
-      const conflictingGuestName = guest?.name || dateConflict.guestId || 'Unknown Guest';
+      const conflictingGuestName = guest?.fullName || dateConflict.guestId || 'Unknown Guest';
       
       errors.push({
         type: 'date_conflict',
@@ -191,7 +193,7 @@ export class BookingService {
     
     if (bookingData.isNewGuest) {
       const newGuest = bookingData.guest as NewGuestData;
-      if (!newGuest?.name?.trim()) errors.push('Guest name required');
+      if (!newGuest?.firstName?.trim() || !newGuest?.lastName?.trim()) errors.push('Guest name required');
       if (!newGuest?.email?.trim()) errors.push('Guest email required');
       if (!newGuest?.phone?.trim()) errors.push('Guest phone required');
     } else {
@@ -209,8 +211,8 @@ export class BookingService {
 
     try {
       const guestName = bookingData.isNewGuest 
-        ? (bookingData.guest as NewGuestData).name
-        : (bookingData.guest as Guest).name;
+        ? (bookingData.guest as NewGuestData).fullName
+        : (bookingData.guest as Guest).fullName;
 
       const notificationData: BookingNotificationData = {
         roomNumber: bookingData.room.number,

@@ -241,7 +241,7 @@ const Component = () => {
     <div>
       <h1>{t('hotel.frontdesk.title')}</h1>
       <p>{t('hotel.reservation.description', { 
-        guestName: guest.name,
+        guestName: guest.firstName,
         roomNumber: room.number 
       })}</p>
     </div>

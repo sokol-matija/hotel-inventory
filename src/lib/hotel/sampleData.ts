@@ -94,163 +94,263 @@ export const SAMPLE_GUESTS: Guest[] = [
   // German tourists (major market for Croatian coast)
   {
     id: 'guest-1',
-    name: 'Hans Mueller',
+    firstName: 'Hans',
+    lastName: 'Mueller',
+    fullName: 'Hans Mueller',
     email: 'hans.mueller@email.de',
     phone: '+49-30-12345678',
-    emergencyContact: 'Ingrid Mueller +49-30-87654321',
+    dateOfBirth: new Date('1970-05-15'),
+    emergencyContactName: 'Ingrid Mueller',
+    emergencyContactPhone: '+49-30-87654321',
     nationality: 'German',
+    passportNumber: 'C01234567',
     preferredLanguage: 'de',
+    dietaryRestrictions: [],
+    specialNeeds: '',
     hasPets: false,
+    isVip: true,
+    vipLevel: 2,
     children: [],
     totalStays: 3,
-    isVip: true
+    createdAt: new Date('2023-01-15'),
+    updatedAt: new Date('2025-01-10')
   },
   {
     id: 'guest-2',  
-    name: 'Familie Schmidt',
+    firstName: 'Max',
+    lastName: 'Schmidt',
+    fullName: 'Familie Schmidt',
     email: 'schmidt.familie@gmail.com',
     phone: '+49-89-98765432',
-    emergencyContact: 'Oma Schmidt +49-89-11111111',
+    dateOfBirth: new Date('1985-03-10'),
+    emergencyContactName: 'Oma Schmidt',
+    emergencyContactPhone: '+49-89-11111111',
     nationality: 'German',
+    passportNumber: 'C02345678',
     preferredLanguage: 'de',
+    dietaryRestrictions: [],
+    specialNeeds: '',
     hasPets: true,
+    isVip: false,
+    vipLevel: 1,
     children: [
       createChild('Max Schmidt', 8),
       createChild('Emma Schmidt', 5)
     ],
     totalStays: 1,
-    isVip: false
+    createdAt: new Date('2023-03-15'),
+    updatedAt: new Date('2025-01-10')
   },
   
   // Italian tourists
   {
     id: 'guest-3',
-    name: 'Marco Rossi',
+    firstName: 'Marco',
+    lastName: 'Rossi',
+    fullName: 'Marco Rossi',
     email: 'marco.rossi@libero.it',
     phone: '+39-06-12345678',
-    emergencyContact: 'Maria Rossi +39-06-87654321',
+    dateOfBirth: new Date('1978-09-20'),
+    emergencyContactName: 'Maria Rossi',
+    emergencyContactPhone: '+39-06-87654321',
     nationality: 'Italian',
+    passportNumber: 'YA1234567',
     preferredLanguage: 'en',
+    dietaryRestrictions: [],
+    specialNeeds: '',
     hasPets: false,
+    isVip: false,
+    vipLevel: 1,
     children: [
       createChild('Sofia Rossi', 12)
     ],
     totalStays: 2,
-    isVip: false
+    createdAt: new Date('2023-05-20'),
+    updatedAt: new Date('2025-01-08')
   },
   {
     id: 'guest-4',
-    name: 'Emma Johnson',
+    firstName: 'Emma',
+    lastName: 'Johnson',
+    fullName: 'Emma Johnson',
     email: 'emma.johnson@gmail.com',
     phone: '+44-161-2345678',
-    emergencyContact: 'Michael Johnson +44-161-8765432',
+    dateOfBirth: new Date('1985-12-15'),
+    emergencyContactName: 'Michael Johnson',
+    emergencyContactPhone: '+44-161-8765432',
     nationality: 'British',
+    passportNumber: '987654321',
     preferredLanguage: 'en',
+    dietaryRestrictions: [],
+    specialNeeds: '',
     hasPets: false,
+    isVip: false,
+    vipLevel: 1,
     children: [],
     totalStays: 2,
-    isVip: false
+    createdAt: new Date('2023-07-10'),
+    updatedAt: new Date('2024-12-20')
   },
   
   // Austrian tourists
   {
     id: 'guest-5',
-    name: 'Franz Huber',
+    firstName: 'Franz',
+    lastName: 'Huber',
+    fullName: 'Franz Huber',
     email: 'franz.huber@aon.at',
     phone: '+43-1-12345678',
-    emergencyContact: 'Elisabeth Huber +43-1-87654321',
+    dateOfBirth: new Date('1975-04-25'),
+    emergencyContactName: 'Elisabeth Huber',
+    emergencyContactPhone: '+43-1-87654321',
     nationality: 'Austrian',
+    passportNumber: 'P1234567',
     preferredLanguage: 'de',
+    dietaryRestrictions: [],
+    specialNeeds: '',
     hasPets: false,
+    isVip: true,
+    vipLevel: 3,
     children: [
       createChild('Lukas Huber', 15),
       createChild('Anna Huber', 3)
     ],
     totalStays: 4,
-    isVip: true
+    createdAt: new Date('2022-08-10'),
+    updatedAt: new Date('2025-01-05')
   },
   
   // British tourists
   {
     id: 'guest-6',
-    name: 'James Thompson',
+    firstName: 'James',
+    lastName: 'Thompson',
+    fullName: 'James Thompson',
     email: 'j.thompson@outlook.com',
     phone: '+44-20-12345678',
-    emergencyContact: 'Sarah Thompson +44-20-87654321',
+    dateOfBirth: new Date('1982-11-30'),
+    emergencyContactName: 'Sarah Thompson',
+    emergencyContactPhone: '+44-20-87654321',
     nationality: 'British',
+    passportNumber: '123456789',
     preferredLanguage: 'en',
+    dietaryRestrictions: [],
+    specialNeeds: '',
     hasPets: false,
+    isVip: false,
+    vipLevel: 1,
     children: [],
     totalStays: 1,
-    isVip: false
+    createdAt: new Date('2024-10-15'),
+    updatedAt: new Date('2024-10-15')
   },
   
   // Croatian domestic tourists
   {
     id: 'guest-7',
-    name: 'Marko Horvat',
+    firstName: 'Marko',
+    lastName: 'Horvat',
+    fullName: 'Marko Horvat',
     email: 'marko.horvat@t-com.hr',
     phone: '+385-1-12345678',
-    emergencyContact: 'Ana Horvat +385-1-87654321',
+    dateOfBirth: new Date('1980-06-12'),
+    emergencyContactName: 'Ana Horvat',
+    emergencyContactPhone: '+385-1-87654321',
     nationality: 'Croatian',
+    passportNumber: '123456789',
     preferredLanguage: 'hr',
+    dietaryRestrictions: [],
+    specialNeeds: '',
     hasPets: true,
+    isVip: false,
+    vipLevel: 1,
     children: [
       createChild('Petra Horvat', 10)
     ],
     totalStays: 2,
-    isVip: false
+    createdAt: new Date('2023-09-20'),
+    updatedAt: new Date('2024-11-15')
   },
   
   // Slovenian tourists (neighboring country)
   {
     id: 'guest-8',
-    name: 'Matej Novak',
+    firstName: 'Matej',
+    lastName: 'Novak',
+    fullName: 'Matej Novak',
     email: 'matej.novak@siol.net',
     phone: '+386-1-12345678',
-    emergencyContact: 'Maja Novak +386-1-87654321',
+    dateOfBirth: new Date('1983-02-18'),
+    emergencyContactName: 'Maja Novak',
+    emergencyContactPhone: '+386-1-87654321',
     nationality: 'Slovenian',
+    passportNumber: 'P0987654',
     preferredLanguage: 'en',
+    dietaryRestrictions: [],
+    specialNeeds: '',
     hasPets: false,
+    isVip: true,
+    vipLevel: 2,
     children: [
       createChild('Nik Novak', 7),
       createChild('Lara Novak', 4)
     ],
     totalStays: 3,
-    isVip: true
+    createdAt: new Date('2022-12-10'),
+    updatedAt: new Date('2024-12-25')
   },
   
   // French tourists
   {
     id: 'guest-9',
-    name: 'Pierre Dubois',
+    firstName: 'Pierre',
+    lastName: 'Dubois',
+    fullName: 'Pierre Dubois',
     email: 'pierre.dubois@orange.fr',
     phone: '+33-1-12345678',
-    emergencyContact: 'Marie Dubois +33-1-87654321',
+    dateOfBirth: new Date('1979-08-05'),
+    emergencyContactName: 'Marie Dubois',
+    emergencyContactPhone: '+33-1-87654321',
     nationality: 'French',
+    passportNumber: '12AB34567',
     preferredLanguage: 'en',
+    dietaryRestrictions: [],
+    specialNeeds: '',
     hasPets: false,
+    isVip: false,
+    vipLevel: 1,
     children: [],
     totalStays: 1,
-    isVip: false
+    createdAt: new Date('2024-11-20'),
+    updatedAt: new Date('2024-11-20')
   },
   
   // Dutch tourists
   {
     id: 'guest-10',
-    name: 'Jan van der Berg',
+    firstName: 'Jan',
+    lastName: 'van der Berg',
+    fullName: 'Jan van der Berg',
     email: 'jan.vandenberg@ziggo.nl',
     phone: '+31-20-12345678',
-    emergencyContact: 'Inge van der Berg +31-20-87654321',
+    dateOfBirth: new Date('1976-01-22'),
+    emergencyContactName: 'Inge van der Berg',
+    emergencyContactPhone: '+31-20-87654321',
     nationality: 'Dutch',
+    passportNumber: 'BX1234567',
     preferredLanguage: 'en',
+    dietaryRestrictions: [],
+    specialNeeds: '',
     hasPets: false,
+    isVip: false,
+    vipLevel: 1,
     children: [
       createChild('Emma van der Berg', 13),
       createChild('Tim van der Berg', 9)
     ],
     totalStays: 2,
-    isVip: false
+    createdAt: new Date('2023-06-15'),
+    updatedAt: new Date('2024-08-20')
   }
 ];
 
@@ -693,7 +793,8 @@ export const SAMPLE_DATA_STATS = {
   vipGuests: SAMPLE_GUESTS.filter(g => g.isVip).length,
   guestsWithChildren: SAMPLE_GUESTS.filter(g => g.children.length > 0).length,
   nationalityBreakdown: SAMPLE_GUESTS.reduce((acc, guest) => {
-    acc[guest.nationality] = (acc[guest.nationality] || 0) + 1;
+    const nationality = guest.nationality || 'Unknown';
+    acc[nationality] = (acc[nationality] || 0) + 1;
     return acc;
   }, {} as Record<string, number>),
   statusBreakdown: SAMPLE_RESERVATIONS.reduce((acc, reservation) => {

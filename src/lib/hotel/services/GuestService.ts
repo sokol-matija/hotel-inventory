@@ -7,8 +7,9 @@ import { supabase, Database } from '../../supabase';
 type GuestRow = Database['public']['Tables']['guests']['Row'];
 type GuestInsert = Database['public']['Tables']['guests']['Insert'];
 type GuestUpdate = Database['public']['Tables']['guests']['Update'];
-type GuestChildRow = Database['public']['Tables']['guest_children']['Row'];
-type GuestChildInsert = Database['public']['Tables']['guest_children']['Insert'];
+// Note: guest_children table not yet implemented
+// type GuestChildRow = Database['public']['Tables']['guest_children']['Row'];
+// type GuestChildInsert = Database['public']['Tables']['guest_children']['Insert'];
 
 // Application types
 export interface Guest {
@@ -99,10 +100,7 @@ export class GuestService {
     try {
       let query = supabase
         .from('guests')
-        .select(`
-          *,
-          guest_children (*)
-        `)
+        .select('*')
         .order('last_name', { ascending: true });
 
       // Apply filters
@@ -144,10 +142,7 @@ export class GuestService {
     try {
       const { data, error } = await supabase
         .from('guests')
-        .select(`
-          *,
-          guest_children (*)
-        `)
+        .select('*')
         .eq('id', id)
         .single();
 
@@ -195,33 +190,30 @@ export class GuestService {
       const { data, error } = await supabase
         .from('guests')
         .insert(insertData)
-        .select(`
-          *,
-          guest_children (*)
-        `)
+        .select('*')
         .single();
 
       if (error) throw error;
 
-      // Add children if provided
-      if (guestData.children && guestData.children.length > 0) {
-        const childrenInserts: GuestChildInsert[] = guestData.children.map(child => ({
-          guest_id: data.id,
-          first_name: child.firstName,
-          date_of_birth: child.dateOfBirth.toISOString().split('T')[0],
-          current_age: this.calculateAge(child.dateOfBirth),
-          discount_category: child.discountCategory || null,
-        }));
-
-        const { error: childrenError } = await supabase
-          .from('guest_children')
-          .insert(childrenInserts);
-
-        if (childrenError) {
-          console.error('Error adding children:', childrenError);
-          // Don't fail the guest creation, but log the error
-        }
-      }
+      // TODO: Add children support when guest_children table is implemented
+      // if (guestData.children && guestData.children.length > 0) {
+      //   const childrenInserts = guestData.children.map(child => ({
+      //     guest_id: data.id,
+      //     first_name: child.firstName,
+      //     date_of_birth: child.dateOfBirth.toISOString().split('T')[0],
+      //     current_age: this.calculateAge(child.dateOfBirth),
+      //     discount_category: child.discountCategory || null,
+      //   }));
+      // 
+      //   const { error: childrenError } = await supabase
+      //     .from('guest_children')
+      //     .insert(childrenInserts);
+      // 
+      //   if (childrenError) {
+      //     console.error('Error adding children:', childrenError);
+      //     // Don't fail the guest creation, but log the error
+      //   }
+      // }
 
       // Fetch the complete guest with children
       const guestResult = await this.getGuestById(data.id);
@@ -321,55 +313,17 @@ export class GuestService {
   /**
    * Add child to guest
    */
-  async addChildToGuest(guestId: string, childData: Omit<GuestChild, 'id' | 'guestId' | 'currentAge'>): Promise<GuestResult<GuestChild>> {
-    try {
-      const insertData: GuestChildInsert = {
-        guest_id: guestId,
-        first_name: childData.firstName,
-        date_of_birth: childData.dateOfBirth.toISOString().split('T')[0],
-        current_age: this.calculateAge(childData.dateOfBirth),
-        discount_category: childData.discountCategory || null,
-      };
-
-      const { data, error } = await supabase
-        .from('guest_children')
-        .insert(insertData)
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      const child = this.mapGuestChildFromDB(data);
-      return { success: true, data: child };
-    } catch (error) {
-      console.error('Error adding child:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Failed to add child' 
-      };
-    }
+  async addChildToGuest(guestId: string, childData: any): Promise<GuestResult<any>> {
+    console.warn('Child management not yet implemented - guest_children table needed');
+    return { success: false, error: 'Child management not yet implemented' };
   }
 
   /**
    * Remove child from guest
    */
   async removeChildFromGuest(childId: string): Promise<GuestResult<void>> {
-    try {
-      const { error } = await supabase
-        .from('guest_children')
-        .delete()
-        .eq('id', childId);
-
-      if (error) throw error;
-
-      return { success: true, data: undefined };
-    } catch (error) {
-      console.error('Error removing child:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Failed to remove child' 
-      };
-    }
+    console.warn('Child management not yet implemented - guest_children table needed');
+    return { success: false, error: 'Child management not yet implemented' };
   }
 
   /**
@@ -402,7 +356,7 @@ export class GuestService {
       hasPets: row.has_pets || false,
       isVip: row.is_vip || false,
       vipLevel: row.vip_level || 0,
-      children: (row.guest_children || []).map(this.mapGuestChildFromDB),
+      children: [], // TODO: Load children when guest_children table is implemented
       totalStays: row.total_stays || 0,
       emergencyContactName: row.emergency_contact_name,
       emergencyContactPhone: row.emergency_contact_phone,
@@ -411,16 +365,17 @@ export class GuestService {
     };
   }
 
-  private mapGuestChildFromDB(row: GuestChildRow): GuestChild {
-    return {
-      id: row.id,
-      guestId: row.guest_id,
-      firstName: row.first_name,
-      dateOfBirth: new Date(row.date_of_birth),
-      currentAge: row.current_age || this.calculateAge(new Date(row.date_of_birth)),
-      discountCategory: row.discount_category || undefined,
-    };
-  }
+  // TODO: Implement when guest_children table is added
+  // private mapGuestChildFromDB(row: any): any {
+  //   return {
+  //     id: row.id,
+  //     guestId: row.guest_id,
+  //     firstName: row.first_name,
+  //     dateOfBirth: new Date(row.date_of_birth),
+  //     currentAge: row.current_age || this.calculateAge(new Date(row.date_of_birth)),
+  //     discountCategory: row.discount_category || undefined,
+  //   };
+  // }
 
   private calculateAge(dateOfBirth: Date): number {
     const today = new Date();

@@ -18,56 +18,39 @@ import {
   Eye,
   Filter
 } from 'lucide-react';
-import { useGuests } from '../../../lib/hotel/contexts/GuestContext';
-import { Guest } from '../../../lib/hotel/services/GuestService';
-import CreateGuestModal from './modals/CreateGuestModal';
-import GuestDetailsModal from './modals/GuestDetailsModal';
+import { useHotel } from '../../../lib/hotel/state/SupabaseHotelContext';
+import { Guest } from '../../../lib/hotel/types';
 
 export default function GuestsPage() {
-  const {
-    state,
-    searchGuests,
-    selectGuest,
-    deleteGuest,
-    clearError,
-    filteredGuests,
-    totalGuests,
-    vipGuests,
-    guestsWithPets,
-  } = useGuests();
+  const { 
+    guests, 
+    isLoading, 
+    findGuestsByName,
+    createGuest 
+  } = useHotel();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [filteredGuests, setFilteredGuests] = useState<Guest[]>([]);
   const [showFilters, setShowFilters] = useState(false);
+
+  // Update filtered guests when search query or guests change
+  React.useEffect(() => {
+    if (searchQuery.trim()) {
+      setFilteredGuests(findGuestsByName(searchQuery));
+    } else {
+      setFilteredGuests(guests);
+    }
+  }, [searchQuery, guests, findGuestsByName]);
 
   // Handle search
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-    searchGuests(query);
   };
 
-  // Handle view guest details
-  const handleViewGuest = (guest: Guest) => {
-    selectGuest(guest);
-    setShowDetailsModal(true);
-  };
-
-  // Handle delete guest
-  const handleDeleteGuest = async (guest: Guest) => {
-    if (window.confirm(`Are you sure you want to delete ${guest.fullName}?`)) {
-      const success = await deleteGuest(guest.id);
-      if (success) {
-        // Success feedback handled by context
-      }
-    }
-  };
-
-  // Handle guest created
-  const handleGuestCreated = () => {
-    setShowCreateModal(false);
-    // Guest list will update automatically via context
-  };
+  // Calculate stats
+  const totalGuests = guests.length;
+  const vipGuests = guests.filter(guest => guest.isVip);
+  const guestsWithPets = guests.filter(guest => guest.hasPets);
 
   const formatDate = (date: Date | undefined) => {
     if (!date) return 'N/A';
@@ -89,7 +72,7 @@ export default function GuestsPage() {
             <h1 className="text-2xl font-bold text-gray-900">Guest Management</h1>
             <p className="text-gray-600">Manage guest profiles and information</p>
           </div>
-          <Button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2">
+          <Button onClick={() => alert('Guest creation modal coming soon')} className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
             Add Guest
           </Button>
@@ -169,17 +152,7 @@ export default function GuestsPage() {
           </Button>
         </div>
 
-        {/* Error Display */}
-        {state.error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-4">
-            <div className="flex items-center justify-between">
-              <span>{state.error}</span>
-              <Button variant="ghost" size="sm" onClick={clearError}>
-                ×
-              </Button>
-            </div>
-          </div>
-        )}
+        {/* Error Display - TODO: Add error handling */}
       </div>
 
       {/* Guest List */}
@@ -188,7 +161,7 @@ export default function GuestsPage() {
           <CardTitle>Guests ({filteredGuests.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          {state.isLoading ? (
+          {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
@@ -202,7 +175,7 @@ export default function GuestsPage() {
               <p className="text-gray-400 mb-4">
                 {searchQuery ? 'Try adjusting your search terms' : 'Start by creating your first guest'}
               </p>
-              <Button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2">
+              <Button onClick={() => alert('Guest creation modal coming soon')} className="flex items-center gap-2">
                 <Plus className="h-4 w-4" />
                 Add First Guest
               </Button>
@@ -264,7 +237,7 @@ export default function GuestsPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleViewGuest(guest)}
+                        onClick={() => alert('Guest details modal coming soon')}
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
@@ -272,7 +245,7 @@ export default function GuestsPage() {
                         variant="ghost"
                         size="sm"
                         className="text-red-600 hover:text-red-800"
-                        onClick={() => handleDeleteGuest(guest)}
+                        onClick={() => alert('Guest deletion coming soon')}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -285,22 +258,7 @@ export default function GuestsPage() {
         </CardContent>
       </Card>
 
-      {/* Modals */}
-      {showCreateModal && (
-        <CreateGuestModal
-          isOpen={showCreateModal}
-          onClose={() => setShowCreateModal(false)}
-          onGuestCreated={handleGuestCreated}
-        />
-      )}
-
-      {showDetailsModal && state.selectedGuest && (
-        <GuestDetailsModal
-          isOpen={showDetailsModal}
-          onClose={() => setShowDetailsModal(false)}
-          guest={state.selectedGuest}
-        />
-      )}
+      {/* TODO: Add guest creation and details modals */}
     </div>
   );
 }

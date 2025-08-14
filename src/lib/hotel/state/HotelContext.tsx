@@ -14,8 +14,10 @@ import {
   Company,
   PricingTier
 } from '../types';
-import { SAMPLE_RESERVATIONS, SAMPLE_GUESTS } from '../sampleData';
 import { HOTEL_POREC_ROOMS, HOTEL_POREC } from '../hotelData';
+import { hotelSupabaseService } from '../../services/HotelSupabaseService';
+import { dataMigrationService } from '../../services/DataMigrationService';
+import { supabase } from '../../supabase';
 
 interface HotelContextType {
   // Data state
@@ -29,8 +31,10 @@ interface HotelContextType {
   pricingTiers: PricingTier[];
   
   // Loading states
+  isLoading: boolean;
   isUpdating: boolean;
   lastUpdated: Date;
+  migrationStatus: 'pending' | 'completed' | 'error';
   
   // Actions - Reservations
   updateReservationStatus: (id: string, newStatus: ReservationStatus) => Promise<void>;
@@ -92,24 +96,17 @@ interface HotelContextType {
     online: number;
   };
   
+  // Migration utilities
+  triggerDataMigration: () => Promise<void>;
+  
   // Sync utilities
-  refreshData: () => void;
+  refreshData: () => Promise<void>;
 }
 
 const HotelContext = createContext<HotelContextType | undefined>(undefined);
 
-const STORAGE_KEYS = {
-  RESERVATIONS: 'hotel_reservations_v1',
-  GUESTS: 'hotel_guests_v1',
-  INVOICES: 'hotel_invoices_v1',
-  PAYMENTS: 'hotel_payments_v1',
-  FISCAL_RECORDS: 'hotel_fiscal_records_v1',
-  COMPANIES: 'hotel_companies_v1',
-  PRICING_TIERS: 'hotel_pricing_tiers_v1',
-  LAST_SYNC: 'hotel_last_sync_v1'
-};
-
 export function HotelProvider({ children }: { children: React.ReactNode }) {
+  // Data states
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [guests, setGuests] = useState<Guest[]>([]);
   const [rooms] = useState<Room[]>(HOTEL_POREC_ROOMS);
@@ -118,500 +115,294 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
   const [fiscalRecords, setFiscalRecords] = useState<FiscalRecord[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [pricingTiers, setPricingTiers] = useState<PricingTier[]>([]);
+  
+  // Loading states
+  const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(new Date());
+  const [migrationStatus, setMigrationStatus] = useState<'pending' | 'completed' | 'error'>('pending');
 
-  // Initialize data from localStorage or use sample data
+  // Initialize data from Supabase and handle migration
   useEffect(() => {
-    // Initialize reservations
-    const storedReservations = localStorage.getItem(STORAGE_KEYS.RESERVATIONS);
-    if (storedReservations) {
-      try {
-        const parsed = JSON.parse(storedReservations);
-        // Convert date strings back to Date objects
-        const reservationsWithDates = parsed.map((res: any) => ({
-          ...res,
-          checkIn: new Date(res.checkIn),
-          checkOut: new Date(res.checkOut),
-          bookingDate: new Date(res.bookingDate),
-          lastModified: new Date(res.lastModified)
-        }));
-        setReservations(reservationsWithDates);
-      } catch (error) {
-        console.error('Failed to parse stored reservations:', error);
-        setReservations(SAMPLE_RESERVATIONS);
-      }
-    } else {
-      setReservations(SAMPLE_RESERVATIONS);
-    }
-
-    // Initialize guests
-    const storedGuests = localStorage.getItem(STORAGE_KEYS.GUESTS);
-    if (storedGuests) {
-      try {
-        const parsed = JSON.parse(storedGuests);
-        // Convert date strings back to Date objects for children
-        const guestsWithDates = parsed.map((guest: any) => ({
-          ...guest,
-          dateOfBirth: guest.dateOfBirth ? new Date(guest.dateOfBirth) : undefined,
-          children: guest.children?.map((child: any) => ({
-            ...child,
-            dateOfBirth: new Date(child.dateOfBirth)
-          })) || []
-        }));
-        setGuests(guestsWithDates);
-      } catch (error) {
-        console.error('Failed to parse stored guests:', error);
-        setGuests(SAMPLE_GUESTS);
-      }
-    } else {
-      setGuests(SAMPLE_GUESTS);
-    }
-
-    // Initialize financial data (invoices, payments, fiscal records)
-    const storedInvoices = localStorage.getItem(STORAGE_KEYS.INVOICES);
-    if (storedInvoices) {
-      try {
-        const parsed = JSON.parse(storedInvoices);
-        const invoicesWithDates = parsed.map((invoice: any) => ({
-          ...invoice,
-          issueDate: new Date(invoice.issueDate),
-          dueDate: new Date(invoice.dueDate),
-          paidDate: invoice.paidDate ? new Date(invoice.paidDate) : undefined,
-          createdAt: new Date(invoice.createdAt),
-          updatedAt: new Date(invoice.updatedAt),
-          payments: invoice.payments?.map((payment: any) => ({
-            ...payment,
-            receivedDate: new Date(payment.receivedDate),
-            processedDate: payment.processedDate ? new Date(payment.processedDate) : undefined,
-            createdAt: new Date(payment.createdAt)
-          })) || []
-        }));
-        setInvoices(invoicesWithDates);
-      } catch (error) {
-        console.error('Failed to parse stored invoices:', error);
-        setInvoices([]);
-      }
-    } else {
-      // Generate sample invoices from checked-out reservations if none exist
-      generateSampleFinancialData();
-    }
-
-    const storedPayments = localStorage.getItem(STORAGE_KEYS.PAYMENTS);
-    if (storedPayments) {
-      try {
-        const parsed = JSON.parse(storedPayments);
-        const paymentsWithDates = parsed.map((payment: any) => ({
-          ...payment,
-          receivedDate: new Date(payment.receivedDate),
-          processedDate: payment.processedDate ? new Date(payment.processedDate) : undefined,
-          createdAt: new Date(payment.createdAt)
-        }));
-        setPayments(paymentsWithDates);
-      } catch (error) {
-        console.error('Failed to parse stored payments:', error);
-        setPayments([]);
-      }
-    }
-
-    const storedFiscalRecords = localStorage.getItem(STORAGE_KEYS.FISCAL_RECORDS);
-    if (storedFiscalRecords) {
-      try {
-        const parsed = JSON.parse(storedFiscalRecords);
-        const fiscalRecordsWithDates = parsed.map((record: any) => ({
-          ...record,
-          submittedAt: new Date(record.submittedAt),
-          createdAt: new Date(record.createdAt)
-        }));
-        setFiscalRecords(fiscalRecordsWithDates);
-      } catch (error) {
-        console.error('Failed to parse stored fiscal records:', error);
-        setFiscalRecords([]);
-      }
-    }
-
-    const storedCompanies = localStorage.getItem(STORAGE_KEYS.COMPANIES);
-    if (storedCompanies) {
-      try {
-        const parsed = JSON.parse(storedCompanies);
-        const companiesWithDates = parsed.map((company: any) => ({
-          ...company,
-          createdAt: new Date(company.createdAt),
-          updatedAt: new Date(company.updatedAt)
-        }));
-        setCompanies(companiesWithDates);
-      } catch (error) {
-        console.error('Failed to parse stored companies:', error);
-        setCompanies([]);
-      }
-    }
-
-    const storedPricingTiers = localStorage.getItem(STORAGE_KEYS.PRICING_TIERS);
-    if (storedPricingTiers) {
-      try {
-        const parsed = JSON.parse(storedPricingTiers);
-        const pricingTiersWithDates = parsed.map((tier: any) => ({
-          ...tier,
-          validFrom: new Date(tier.validFrom),
-          validTo: new Date(tier.validTo),
-          createdAt: new Date(tier.createdAt),
-          updatedAt: new Date(tier.updatedAt)
-        }));
-        setPricingTiers(pricingTiersWithDates);
-      } catch (error) {
-        console.error('Failed to parse stored pricing tiers:', error);
-        setPricingTiers([]);
-      }
-    }
+    initializeData();
+    setupRealtimeSubscriptions();
+    
+    return () => {
+      // Cleanup subscriptions
+      supabase.removeAllChannels();
+    };
   }, []);
 
-  // Save to localStorage whenever data changes
-  const saveReservationsToStorage = (updatedReservations: Reservation[]) => {
+  const initializeData = async () => {
     try {
-      localStorage.setItem(STORAGE_KEYS.RESERVATIONS, JSON.stringify(updatedReservations));
-      localStorage.setItem(STORAGE_KEYS.LAST_SYNC, new Date().toISOString());
-      setLastUpdated(new Date());
-    } catch (error) {
-      console.error('Failed to save reservations to localStorage:', error);
-    }
-  };
-
-  const saveGuestsToStorage = (updatedGuests: Guest[]) => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.GUESTS, JSON.stringify(updatedGuests));
-      localStorage.setItem(STORAGE_KEYS.LAST_SYNC, new Date().toISOString());
-      setLastUpdated(new Date());
-    } catch (error) {
-      console.error('Failed to save guests to localStorage:', error);
-    }
-  };
-
-  const saveInvoicesToStorage = (updatedInvoices: Invoice[]) => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.INVOICES, JSON.stringify(updatedInvoices));
-      localStorage.setItem(STORAGE_KEYS.LAST_SYNC, new Date().toISOString());
-      setLastUpdated(new Date());
-    } catch (error) {
-      console.error('Failed to save invoices to localStorage:', error);
-    }
-  };
-
-  const savePaymentsToStorage = (updatedPayments: Payment[]) => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.PAYMENTS, JSON.stringify(updatedPayments));
-      localStorage.setItem(STORAGE_KEYS.LAST_SYNC, new Date().toISOString());
-      setLastUpdated(new Date());
-    } catch (error) {
-      console.error('Failed to save payments to localStorage:', error);
-    }
-  };
-
-  const saveFiscalRecordsToStorage = (updatedRecords: FiscalRecord[]) => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.FISCAL_RECORDS, JSON.stringify(updatedRecords));
-      localStorage.setItem(STORAGE_KEYS.LAST_SYNC, new Date().toISOString());
-      setLastUpdated(new Date());
-    } catch (error) {
-      console.error('Failed to save fiscal records to localStorage:', error);
-    }
-  };
-
-  const saveCompaniesToStorage = (updatedCompanies: Company[]) => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.COMPANIES, JSON.stringify(updatedCompanies));
-      localStorage.setItem(STORAGE_KEYS.LAST_SYNC, new Date().toISOString());
-      setLastUpdated(new Date());
-    } catch (error) {
-      console.error('Failed to save companies to localStorage:', error);
-    }
-  };
-
-  const savePricingTiersToStorage = (updatedPricingTiers: PricingTier[]) => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.PRICING_TIERS, JSON.stringify(updatedPricingTiers));
-      localStorage.setItem(STORAGE_KEYS.LAST_SYNC, new Date().toISOString());
-      setLastUpdated(new Date());
-    } catch (error) {
-      console.error('Failed to save pricing tiers to localStorage:', error);
-    }
-  };
-
-  // Generate sample financial data from checked-out reservations
-  const generateSampleFinancialData = () => {
-    const checkedOutReservations = SAMPLE_RESERVATIONS.filter(res => res.status === 'checked-out');
-    
-    const sampleInvoices: Invoice[] = checkedOutReservations.map((reservation, index) => {
-      const invoiceDate = new Date(reservation.checkOut);
-      invoiceDate.setHours(12, 0, 0, 0); // Set to noon for consistency
+      setIsLoading(true);
+      console.log('🏨 Initializing hotel data from Supabase...');
       
-      const invoice: Invoice = {
-        id: `inv-${Date.now()}-${index}`,
-        invoiceNumber: `2025-001-${String(index + 1).padStart(4, '0')}`,
-        reservationId: reservation.id,
-        guestId: reservation.guestId,
-        roomId: reservation.roomId,
-        issueDate: invoiceDate,
-        dueDate: new Date(invoiceDate.getTime() + (30 * 24 * 60 * 60 * 1000)), // 30 days
-        paidDate: Math.random() > 0.3 ? invoiceDate : undefined, // 70% paid immediately
-        status: Math.random() > 0.3 ? 'paid' : 'sent' as InvoiceStatus,
-        subtotal: reservation.subtotal,
-        vatAmount: reservation.vatAmount,
-        tourismTax: reservation.tourismTax,
-        petFee: reservation.petFee,
-        parkingFee: reservation.parkingFee,
-        additionalCharges: reservation.additionalCharges,
-        totalAmount: reservation.totalAmount,
-        fiscalData: {
-          oib: HOTEL_POREC.taxId,
-          jir: `jir-${Math.random().toString(36).substr(2, 16)}`,
-          zki: `zki-${Math.random().toString(36).substr(2, 16)}`,
-          fiscalReceiptUrl: `https://porezna-uprava.gov.hr/racun/${Math.random().toString(36).substr(2, 10)}`,
-          operatorOib: '12345678901'
-        },
-        payments: [],
-        remainingAmount: Math.random() > 0.3 ? 0 : reservation.totalAmount,
-        notes: `Invoice generated for stay from ${reservation.checkIn.toLocaleDateString()} to ${reservation.checkOut.toLocaleDateString()}`,
-        createdAt: invoiceDate,
-        updatedAt: invoiceDate
-      };
-
-      // Generate payment if invoice is paid
-      if (invoice.status === 'paid' && invoice.paidDate) {
-        const payment: Payment = {
-          id: `pay-${Date.now()}-${index}`,
-          invoiceId: invoice.id,
-          amount: invoice.totalAmount,
-          method: ['cash', 'card', 'bank-transfer'][Math.floor(Math.random() * 3)] as PaymentMethod,
-          status: 'paid',
-          receivedDate: invoice.paidDate,
-          processedDate: invoice.paidDate,
-          processedBy: 'Front Desk Staff',
-          notes: 'Payment received at checkout',
-          createdAt: invoice.paidDate
-        };
-        invoice.payments = [payment];
+      // Check if migration is needed
+      const migrationCompleted = await dataMigrationService.isMigrationCompleted();
+      if (!migrationCompleted && dataMigrationService.hasLocalStorageData()) {
+        console.log('🔄 Migration needed - triggering automatic migration...');
+        await triggerDataMigration();
+      } else {
+        setMigrationStatus('completed');
       }
-
-      return invoice;
-    });
-
-    // Only add sample invoices if none exist yet
-    if (invoices.length === 0) {
-      setInvoices(sampleInvoices);
-      saveInvoicesToStorage(sampleInvoices);
+      
+      // Load all data from Supabase
+      await refreshData();
+      
+    } catch (error) {
+      console.error('❌ Failed to initialize hotel data:', error);
+      setMigrationStatus('error');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Update reservation status with optimistic updates
-  const updateReservationStatus = async (reservationId: string, newStatus: ReservationStatus): Promise<void> => {
-    const originalReservations = [...reservations];
+  const setupRealtimeSubscriptions = () => {
+    console.log('🔄 Setting up real-time subscriptions...');
     
-    // 1. Optimistic update (immediate UI change)
-    const updatedReservations = reservations.map(reservation =>
-      reservation.id === reservationId
-        ? { ...reservation, status: newStatus, lastModified: new Date() }
-        : reservation
-    );
-    
-    setReservations(updatedReservations);
-    setIsUpdating(true);
+    // Subscribe to reservations changes
+    const reservationsChannel = supabase
+      .channel('reservations-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'reservations'
+        },
+        () => {
+          console.log('🔄 Reservations changed, refreshing data...');
+          refreshData();
+        }
+      )
+      .subscribe();
 
+    // Subscribe to guests changes
+    const guestsChannel = supabase
+      .channel('guests-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'guests'
+        },
+        () => {
+          console.log('🔄 Guests changed, refreshing data...');
+          refreshData();
+        }
+      )
+      .subscribe();
+
+    // Subscribe to companies changes
+    const companiesChannel = supabase
+      .channel('companies-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'companies'
+        },
+        () => {
+          console.log('🔄 Companies changed, refreshing data...');
+          refreshData();
+        }
+      )
+      .subscribe();
+  };
+
+  const refreshData = async () => {
     try {
-      // 2. Simulate API call delay (replace with real API later)
-      await new Promise(resolve => setTimeout(resolve, 500));
+      setIsUpdating(true);
+      console.log('🔄 Loading hotel data from Supabase...');
       
-      // 3. Persist to localStorage
-      saveReservationsToStorage(updatedReservations);
+      // Load all data in parallel
+      const [
+        guestsData,
+        reservationsData,
+        companiesData,
+        pricingTiersData,
+        invoicesData,
+        paymentsData,
+        fiscalRecordsData
+      ] = await Promise.all([
+        hotelSupabaseService.getGuests(),
+        hotelSupabaseService.getReservations(),
+        hotelSupabaseService.getCompanies(),
+        hotelSupabaseService.getPricingTiers(),
+        hotelSupabaseService.getInvoices(),
+        hotelSupabaseService.getPayments(),
+        hotelSupabaseService.getFiscalRecords()
+      ]);
       
-      // 4. Success feedback (handled by calling component)
-      console.log(`Reservation ${reservationId} status updated to ${newStatus}`);
+      setGuests(guestsData);
+      setReservations(reservationsData);
+      setCompanies(companiesData);
+      setPricingTiers(pricingTiersData);
+      setInvoices(invoicesData);
+      setPayments(paymentsData);
+      setFiscalRecords(fiscalRecordsData);
+      setLastUpdated(new Date());
+      
+      console.log('✅ Hotel data loaded successfully');
+      console.log(`📊 Loaded: ${guestsData.length} guests, ${reservationsData.length} reservations, ${companiesData.length} companies`);
       
     } catch (error) {
-      // 5. Rollback on failure
-      console.error('Failed to update reservation status:', error);
-      setReservations(originalReservations);
-      throw error; // Re-throw for component error handling
+      console.error('❌ Failed to refresh data:', error);
     } finally {
       setIsUpdating(false);
     }
   };
 
-  // Update reservation notes
-  const updateReservationNotes = async (reservationId: string, notes: string): Promise<void> => {
-    const originalReservations = [...reservations];
-    
-    // Optimistic update
-    const updatedReservations = reservations.map(reservation =>
-      reservation.id === reservationId
-        ? { ...reservation, specialRequests: notes, lastModified: new Date() }
-        : reservation
-    );
-    
-    setReservations(updatedReservations);
-    setIsUpdating(true);
-
+  const triggerDataMigration = async () => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 300));
+      setMigrationStatus('pending');
+      console.log('🚀 Starting data migration from localStorage to Supabase...');
       
-      // Persist to localStorage
-      saveReservationsToStorage(updatedReservations);
+      // Create backup first
+      const backup = dataMigrationService.createLocalStorageBackup();
+      console.log('📦 Created backup of localStorage data');
       
+      // Perform migration
+      const result = await dataMigrationService.migrateLocalStorageToSupabase();
+      
+      if (result.success) {
+        console.log('✅ Migration completed successfully:', result.migratedCounts);
+        setMigrationStatus('completed');
+        
+        // Clear localStorage after successful migration
+        dataMigrationService.clearLocalStorageAfterMigration();
+        
+        // Refresh data from Supabase
+        await refreshData();
+      } else {
+        console.error('❌ Migration failed:', result.errors);
+        setMigrationStatus('error');
+      }
+      
+    } catch (error) {
+      console.error('💥 Migration process failed:', error);
+      setMigrationStatus('error');
+    }
+  };
+
+  // =====================================
+  // RESERVATION ACTIONS (Supabase-based)
+  // =====================================
+
+  const updateReservationStatus = async (reservationId: string, newStatus: ReservationStatus): Promise<void> => {
+    try {
+      setIsUpdating(true);
+      await hotelSupabaseService.updateReservationStatus(reservationId, newStatus);
+      
+      // Update local state optimistically (real-time subscription will also update)
+      setReservations(prev => prev.map(r => 
+        r.id === reservationId ? { ...r, status: newStatus } : r
+      ));
+    } catch (error) {
+      console.error('Failed to update reservation status:', error);
+      throw error;
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const updateReservationNotes = async (reservationId: string, notes: string): Promise<void> => {
+    try {
+      setIsUpdating(true);
+      await hotelSupabaseService.updateReservation(reservationId, { notes });
+      
+      // Update local state optimistically
+      setReservations(prev => prev.map(r => 
+        r.id === reservationId ? { ...r, notes } : r
+      ));
     } catch (error) {
       console.error('Failed to update reservation notes:', error);
-      setReservations(originalReservations);
       throw error;
     } finally {
       setIsUpdating(false);
     }
   };
 
-  // Update reservation (for moving rooms, changing dates, etc.)
   const updateReservation = async (reservationId: string, updates: Partial<Reservation>): Promise<void> => {
-    const originalReservations = [...reservations];
-    
-    // Optimistic update
-    const updatedReservations = reservations.map(reservation =>
-      reservation.id === reservationId
-        ? { ...reservation, ...updates, lastModified: new Date() }
-        : reservation
-    );
-    
-    setReservations(updatedReservations);
-    setIsUpdating(true);
-
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 300));
+      setIsUpdating(true);
+      await hotelSupabaseService.updateReservation(reservationId, updates);
       
-      // Persist to localStorage
-      saveReservationsToStorage(updatedReservations);
-      
-      console.log(`Reservation ${reservationId} updated successfully`);
-      
+      // Update local state optimistically
+      setReservations(prev => prev.map(r => 
+        r.id === reservationId ? { ...r, ...updates } : r
+      ));
     } catch (error) {
       console.error('Failed to update reservation:', error);
-      setReservations(originalReservations);
       throw error;
     } finally {
       setIsUpdating(false);
     }
   };
 
-  // Create new reservation
   const createReservation = async (reservationData: Omit<Reservation, 'id' | 'bookingDate' | 'lastModified'>): Promise<void> => {
-    const newReservation: Reservation = {
-      ...reservationData,
-      id: `res-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      bookingDate: new Date(),
-      lastModified: new Date()
-    };
-
-    const updatedReservations = [...reservations, newReservation];
-    setReservations(updatedReservations);
-    setIsUpdating(true);
-
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
+      setIsUpdating(true);
+      const newReservation = await hotelSupabaseService.createReservation(reservationData);
       
-      // Persist to localStorage
-      saveReservationsToStorage(updatedReservations);
-      
-      console.log(`Reservation ${newReservation.id} created successfully`);
-      
+      // Update local state optimistically
+      setReservations(prev => [...prev, newReservation]);
     } catch (error) {
       console.error('Failed to create reservation:', error);
-      setReservations(reservations); // Rollback
       throw error;
     } finally {
       setIsUpdating(false);
     }
   };
 
-  // Delete reservation
   const deleteReservation = async (reservationId: string): Promise<void> => {
-    const originalReservations = [...reservations];
-    
-    // Optimistic update - remove the reservation immediately
-    const updatedReservations = reservations.filter(reservation => reservation.id !== reservationId);
-    setReservations(updatedReservations);
-    setIsUpdating(true);
-
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 300));
+      setIsUpdating(true);
+      await hotelSupabaseService.deleteReservation(reservationId);
       
-      // Persist to localStorage
-      saveReservationsToStorage(updatedReservations);
-      
-      console.log(`Reservation ${reservationId} deleted successfully`);
-      
+      // Update local state optimistically
+      setReservations(prev => prev.filter(r => r.id !== reservationId));
     } catch (error) {
       console.error('Failed to delete reservation:', error);
-      setReservations(originalReservations); // Rollback
       throw error;
     } finally {
       setIsUpdating(false);
     }
   };
 
-  // Create new guest
+  // =====================================
+  // GUEST ACTIONS (Supabase-based)
+  // =====================================
+  
   const createGuest = async (guestData: Omit<Guest, 'id' | 'totalStays'>): Promise<void> => {
-    const newGuest: Guest = {
-      ...guestData,
-      id: `guest-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      totalStays: 0
-    };
-
-    const updatedGuests = [...guests, newGuest];
-    setGuests(updatedGuests);
-    setIsUpdating(true);
-
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 300));
+      setIsUpdating(true);
+      const newGuest = await hotelSupabaseService.createGuest(guestData);
       
-      // Persist to localStorage
-      saveGuestsToStorage(updatedGuests);
-      
-      console.log(`Guest ${newGuest.name} created successfully`);
-      
+      // Update local state optimistically
+      setGuests(prev => [...prev, newGuest]);
     } catch (error) {
       console.error('Failed to create guest:', error);
-      setGuests(guests); // Rollback
       throw error;
     } finally {
       setIsUpdating(false);
     }
   };
 
-  // Update guest information
   const updateGuest = async (guestId: string, updates: Partial<Guest>): Promise<void> => {
-    const originalGuests = [...guests];
-    
-    // Optimistic update
-    const updatedGuests = guests.map(guest =>
-      guest.id === guestId
-        ? { ...guest, ...updates }
-        : guest
-    );
-    
-    setGuests(updatedGuests);
-    setIsUpdating(true);
-
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 300));
+      setIsUpdating(true);
+      await hotelSupabaseService.updateGuest(guestId, updates);
       
-      // Persist to localStorage
-      saveGuestsToStorage(updatedGuests);
-      
-      console.log(`Guest ${guestId} updated successfully`);
-      
+      // Update local state optimistically
+      setGuests(prev => prev.map(g => 
+        g.id === guestId ? { ...g, ...updates } : g
+      ));
     } catch (error) {
       console.error('Failed to update guest:', error);
-      setGuests(originalGuests); // Rollback
       throw error;
     } finally {
       setIsUpdating(false);
@@ -624,10 +415,10 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
     
     const searchTerm = query.toLowerCase().trim();
     return guests.filter(guest =>
-      guest.name.toLowerCase().includes(searchTerm) ||
-      guest.email.toLowerCase().includes(searchTerm) ||
-      guest.phone.toLowerCase().includes(searchTerm) ||
-      guest.nationality.toLowerCase().includes(searchTerm)
+      guest.fullName.toLowerCase().includes(searchTerm) ||
+      (guest.email && guest.email.toLowerCase().includes(searchTerm)) ||
+      (guest.phone && guest.phone.toLowerCase().includes(searchTerm)) ||
+      (guest.nationality && guest.nationality.toLowerCase().includes(searchTerm))
     );
   };
 
@@ -655,8 +446,7 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 300));
       
-      // Persist to localStorage
-      saveCompaniesToStorage(updatedCompanies);
+      // Data automatically synced via Supabase
       
       console.log(`Company ${newCompany.name} created successfully`);
       
@@ -684,8 +474,7 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 300));
       
-      // Persist to localStorage
-      saveCompaniesToStorage(updatedCompanies);
+      // Data automatically synced via Supabase
       
       console.log(`Company ${id} updated successfully`);
       
@@ -709,8 +498,7 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 300));
       
-      // Persist to localStorage
-      saveCompaniesToStorage(updatedCompanies);
+      // Data automatically synced via Supabase
       
       console.log(`Company ${id} deleted successfully`);
       
@@ -778,8 +566,7 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 300));
       
-      // Persist to localStorage
-      savePricingTiersToStorage(updatedPricingTiers);
+      // Data automatically synced via Supabase
       
       console.log(`Pricing tier ${newPricingTier.name} created successfully`);
       
@@ -807,8 +594,7 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 300));
       
-      // Persist to localStorage
-      savePricingTiersToStorage(updatedPricingTiers);
+      // Data automatically synced via Supabase
       
       console.log(`Pricing tier ${id} updated successfully`);
       
@@ -838,8 +624,7 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 300));
       
-      // Persist to localStorage
-      savePricingTiersToStorage(updatedPricingTiers);
+      // Data automatically synced via Supabase
       
       console.log(`Pricing tier ${id} deleted successfully`);
       
@@ -869,8 +654,8 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
     const now = new Date();
     return pricingTiers.filter(tier => 
       tier.isActive && 
-      tier.validFrom <= now && 
-      tier.validTo >= now
+      (tier.validFrom ? tier.validFrom <= now : true) && 
+      (tier.validTo ? tier.validTo >= now : true)
     );
   };
 
@@ -879,26 +664,7 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
     return pricingTiers.find(tier => tier.isDefault);
   };
 
-  // Refresh data from storage
-  const refreshData = () => {
-    const storedReservations = localStorage.getItem(STORAGE_KEYS.RESERVATIONS);
-    if (storedReservations) {
-      try {
-        const parsed = JSON.parse(storedReservations);
-        const reservationsWithDates = parsed.map((res: any) => ({
-          ...res,
-          checkIn: new Date(res.checkIn),
-          checkOut: new Date(res.checkOut),
-          bookingDate: new Date(res.bookingDate),
-          lastModified: new Date(res.lastModified)
-        }));
-        setReservations(reservationsWithDates);
-        setLastUpdated(new Date());
-      } catch (error) {
-        console.error('Failed to refresh reservations:', error);
-      }
-    }
-  };
+  // Note: refreshData function is defined above in the Supabase section
 
   // FINANCIAL METHODS
 
@@ -915,17 +681,18 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
       invoiceNumber: `2025-001-${String(invoices.length + 1).padStart(4, '0')}`,
       reservationId: reservation.id,
       guestId: reservation.guestId,
-      roomId: reservation.roomId,
       issueDate: invoiceDate,
       dueDate: new Date(invoiceDate.getTime() + (30 * 24 * 60 * 60 * 1000)), // 30 days
       status: 'sent',
+      currency: 'EUR',
+      items: [],
       subtotal: reservation.subtotal,
+      vatRate: 0.25, // 25% VAT
       vatAmount: reservation.vatAmount,
       tourismTax: reservation.tourismTax,
-      petFee: reservation.petFee,
-      parkingFee: reservation.parkingFee,
-      additionalCharges: reservation.additionalCharges,
       totalAmount: reservation.totalAmount,
+      paidAmount: 0,
+      remainingAmount: reservation.totalAmount,
       fiscalData: {
         oib: HOTEL_POREC.taxId,
         jir: `jir-${Math.random().toString(36).substr(2, 16)}`,
@@ -933,7 +700,6 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
         operatorOib: '12345678901'
       },
       payments: [],
-      remainingAmount: reservation.totalAmount,
       notes: `Invoice generated for stay from ${reservation.checkIn.toLocaleDateString()} to ${reservation.checkOut.toLocaleDateString()}`,
       createdAt: invoiceDate,
       updatedAt: invoiceDate
@@ -945,7 +711,7 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
 
     try {
       await new Promise(resolve => setTimeout(resolve, 300));
-      saveInvoicesToStorage(updatedInvoices);
+      // Data automatically synced via Supabase
       console.log(`Invoice ${invoice.invoiceNumber} generated successfully`);
       return invoice;
     } catch (error) {
@@ -978,7 +744,7 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
 
     try {
       await new Promise(resolve => setTimeout(resolve, 300));
-      saveInvoicesToStorage(updatedInvoices);
+      // Data automatically synced via Supabase
     } catch (error) {
       console.error('Failed to update invoice status:', error);
       setInvoices(originalInvoices);
@@ -1020,7 +786,7 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
     const originalInvoices = [...invoices];
     const updatedInvoices = invoices.map(invoice => {
       if (invoice.id === payment.invoiceId) {
-        const updatedPayments = [...invoice.payments, payment];
+        const updatedPayments = [...(invoice.payments || []), payment];
         const totalPaid = updatedPayments.reduce((sum, p) => sum + p.amount, 0);
         const remainingAmount = Math.max(0, invoice.totalAmount - totalPaid);
         
@@ -1043,8 +809,8 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
 
     try {
       await new Promise(resolve => setTimeout(resolve, 300));
-      saveInvoicesToStorage(updatedInvoices);
-      savePaymentsToStorage(updatedPayments);
+      // Data automatically synced via Supabase
+      // Data automatically synced via Supabase
       console.log(`Payment ${payment.id} added successfully`);
     } catch (error) {
       console.error('Failed to add payment:', error);
@@ -1071,7 +837,7 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
 
     try {
       await new Promise(resolve => setTimeout(resolve, 300));
-      savePaymentsToStorage(updatedPayments);
+      // Data automatically synced via Supabase
     } catch (error) {
       console.error('Failed to update payment status:', error);
       setPayments(originalPayments);
@@ -1103,13 +869,14 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
     const totalRevenue = paidInvoices.reduce((sum, inv) => sum + inv.totalAmount, 0);
     const roomRevenue = paidInvoices.reduce((sum, inv) => sum + inv.subtotal, 0);
     const taxRevenue = paidInvoices.reduce((sum, inv) => sum + inv.vatAmount + inv.tourismTax, 0);
-    const additionalRevenue = paidInvoices.reduce((sum, inv) => sum + inv.additionalCharges + inv.petFee + inv.parkingFee, 0);
+    const additionalRevenue = paidInvoices.reduce((sum, inv) => sum + (inv.totalAmount - inv.subtotal - inv.vatAmount - inv.tourismTax), 0);
 
     return {
       period,
       startDate,
       endDate,
       totalRevenue,
+      totalBookings: paidInvoices.length,
       roomRevenue,
       taxRevenue,
       additionalRevenue,
@@ -1120,13 +887,14 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
       otherSourcesRevenue: 0,
       cashPayments: payments.filter(p => p.method === 'cash').reduce((sum, p) => sum + p.amount, 0),
       cardPayments: payments.filter(p => p.method === 'card').reduce((sum, p) => sum + p.amount, 0),
-      bankTransfers: payments.filter(p => p.method === 'bank-transfer').reduce((sum, p) => sum + p.amount, 0),
-      onlinePayments: payments.filter(p => p.method === 'booking-com').reduce((sum, p) => sum + p.amount, 0),
+      bankTransfers: payments.filter(p => p.method === 'bank_transfer').reduce((sum, p) => sum + p.amount, 0),
+      onlinePayments: payments.filter(p => p.method === 'online').reduce((sum, p) => sum + p.amount, 0),
       totalInvoices: periodInvoices.length,
       averageBookingValue: totalRevenue / (paidInvoices.length || 1),
       occupancyRate: 0, // TODO: Calculate from reservations
       fiscalReportsGenerated: fiscalRecords.length,
-      fiscalSubmissions: fiscalRecords.filter(r => r.isValid).length
+      fiscalSubmissions: fiscalRecords.filter(r => r.jir && r.zki).length,
+      periods: [] // Time series data - empty for now
     };
   };
 
@@ -1154,8 +922,8 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
       total: periodPayments.reduce((sum, p) => sum + p.amount, 0),
       cash: periodPayments.filter(p => p.method === 'cash').reduce((sum, p) => sum + p.amount, 0),
       card: periodPayments.filter(p => p.method === 'card').reduce((sum, p) => sum + p.amount, 0),
-      bank: periodPayments.filter(p => p.method === 'bank-transfer').reduce((sum, p) => sum + p.amount, 0),
-      online: periodPayments.filter(p => p.method === 'booking-com').reduce((sum, p) => sum + p.amount, 0)
+      bank: periodPayments.filter(p => p.method === 'bank_transfer').reduce((sum, p) => sum + p.amount, 0),
+      online: periodPayments.filter(p => p.method === 'online').reduce((sum, p) => sum + p.amount, 0)
     };
   };
 
@@ -1168,8 +936,10 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
     fiscalRecords,
     companies,
     pricingTiers,
+    isLoading,
     isUpdating,
     lastUpdated,
+    migrationStatus,
     updateReservationStatus,
     updateReservationNotes,
     updateReservation,
@@ -1204,6 +974,7 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
     getTotalRevenue,
     getUnpaidInvoices,
     getPaymentSummary,
+    triggerDataMigration,
     refreshData
   };
 

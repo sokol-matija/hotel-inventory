@@ -76,7 +76,7 @@ function GuestSelector({
   const [searchTerm, setSearchTerm] = useState('');
   
   const filteredGuests = guests.filter(guest =>
-    guest.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    guest.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     guest.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -123,7 +123,7 @@ function GuestSelector({
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="flex items-center space-x-2">
-                      <span className="font-medium">{guest.name}</span>
+                      <span className="font-medium">{guest.firstName}</span>
                       <span className="text-sm">{getCountryFlag(guest.nationality)}</span>
                       {guest.isVip && <Badge variant="secondary" className="text-xs">VIP</Badge>}
                     </div>

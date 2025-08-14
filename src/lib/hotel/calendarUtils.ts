@@ -56,7 +56,7 @@ export function reservationToCalendarEvent(reservation: Reservation): CalendarEv
   const guest = SAMPLE_GUESTS.find(g => g.id === reservation.guestId);
   
   const roomNumber = room?.number || 'Unknown';
-  const guestName = guest?.name || reservation.guestId || 'Unknown Guest';
+  const guestName = guest?.fullName || reservation.guestId || 'Unknown Guest';
   
   // Create title based on status
   let title = '';

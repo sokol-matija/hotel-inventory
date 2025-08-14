@@ -192,11 +192,12 @@ export class HotelDataService {
       const { data, error } = await supabase
         .from('guests')
         .insert({
-          first_name: guestData.name.split(' ')[0],
-          last_name: guestData.name.split(' ').slice(1).join(' ') || guestData.name,
+          first_name: guestData.firstName,
+          last_name: guestData.lastName,
           email: guestData.email || null,
           phone: guestData.phone || null,
-          emergency_contact_name: guestData.emergencyContact || null,
+          emergency_contact_name: guestData.emergencyContactName || null,
+          emergency_contact_phone: guestData.emergencyContactPhone || null,
           nationality: guestData.nationality || null,
           preferred_language: guestData.preferredLanguage || 'en',
           has_pets: guestData.hasPets || false,
@@ -226,7 +227,8 @@ export class HotelDataService {
         .update({
           email: updates.email,
           phone: updates.phone,
-          emergency_contact_name: updates.emergencyContact,
+          emergency_contact_name: updates.emergencyContactName,
+          emergency_contact_phone: updates.emergencyContactPhone,
           nationality: updates.nationality,
           preferred_language: updates.preferredLanguage,
           has_pets: updates.hasPets,
@@ -590,17 +592,24 @@ export class HotelDataService {
   private mapGuestFromDB(guestRow: GuestRow): Guest {
     return {
       id: guestRow.id,
-      name: `${guestRow.first_name} ${guestRow.last_name}`.trim(),
+      firstName: guestRow.first_name || '',
+      lastName: guestRow.last_name || '',
+      fullName: `${guestRow.first_name || ''} ${guestRow.last_name || ''}`.trim(),
       email: guestRow.email || '',
       phone: guestRow.phone || '',
-      emergencyContact: guestRow.emergency_contact_name || '',
+      dateOfBirth: guestRow.date_of_birth ? new Date(guestRow.date_of_birth) : undefined,
       nationality: guestRow.nationality || '',
       preferredLanguage: guestRow.preferred_language || 'en',
+      dietaryRestrictions: [],
       hasPets: guestRow.has_pets || false,
-      dateOfBirth: guestRow.date_of_birth ? new Date(guestRow.date_of_birth) : undefined,
+      isVip: guestRow.is_vip || false,
+      vipLevel: 0,
       children: [], // TODO: Load from guest_children table
       totalStays: guestRow.total_stays || 0,
-      isVip: guestRow.is_vip || false
+      emergencyContactName: guestRow.emergency_contact_name || '',
+      emergencyContactPhone: guestRow.emergency_contact_phone || '',
+      createdAt: guestRow.created_at ? new Date(guestRow.created_at) : new Date(),
+      updatedAt: guestRow.updated_at ? new Date(guestRow.updated_at) : new Date()
     };
   }
 

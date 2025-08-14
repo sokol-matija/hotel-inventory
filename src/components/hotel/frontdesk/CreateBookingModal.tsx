@@ -9,7 +9,7 @@ import { Label } from '../../ui/label';
 import { Textarea } from '../../ui/textarea';
 import { X, Calendar as CalendarIcon, CreditCard } from 'lucide-react';
 import { Room, Guest, Reservation } from '../../../lib/hotel/types';
-import { SAMPLE_GUESTS } from '../../../lib/hotel/sampleData';
+// Removed sample data import - now using real Supabase guests
 import { useBookingForm } from '../../../lib/hotel/hooks/useBookingForm';
 import { BookingService, BookingData } from '../../../lib/hotel/services/BookingService';
 import { formatRoomNumber } from '../../../lib/hotel/calendarUtils';
@@ -33,7 +33,7 @@ export default function CreateBookingModal({
   preSelectedDates,
   existingReservations = []
 }: CreateBookingModalProps) {
-  const { createReservation } = useHotel();
+  const { createReservation, guests } = useHotel();
   const bookingService = BookingService.getInstance();
   
   // Initialize form with room and dates
@@ -92,8 +92,8 @@ export default function CreateBookingModal({
 
       // Success notification
       const guestName = formState.isNewGuest 
-        ? formState.newGuestData.name 
-        : formState.selectedGuest?.name || 'Guest';
+        ? formState.newGuestData.fullName 
+        : formState.selectedGuest?.fullName || 'Guest';
       
       hotelNotification.success(
         'Booking Created',
@@ -185,14 +185,14 @@ export default function CreateBookingModal({
                   className="w-full p-2 border rounded-md"
                   value={formState.selectedGuest?.id || ''}
                   onChange={(e) => {
-                    const guest = SAMPLE_GUESTS.find(g => g.id === e.target.value);
+                    const guest = guests.find(g => g.id === e.target.value);
                     updateField('selectedGuest', guest || null);
                   }}
                 >
                   <option value="">Select a guest...</option>
-                  {SAMPLE_GUESTS.map(guest => (
+                  {guests.map(guest => (
                     <option key={guest.id} value={guest.id}>
-                      {guest.name} - {guest.email}
+                      {guest.fullName} - {guest.email}
                     </option>
                   ))}
                 </select>
@@ -202,13 +202,31 @@ export default function CreateBookingModal({
             {/* New Guest Form */}
             {formState.isNewGuest && (
               <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <Label>Full Name</Label>
+                    <Label>First Name</Label>
                     <Input
-                      value={formState.newGuestData.name}
-                      onChange={(e) => updateNewGuestField('name', e.target.value)}
-                      placeholder="Guest full name"
+                      value={formState.newGuestData.firstName}
+                      onChange={(e) => {
+                        updateNewGuestField('firstName', e.target.value);
+                        // Auto-update fullName
+                        const fullName = `${e.target.value} ${formState.newGuestData.lastName}`.trim();
+                        updateNewGuestField('fullName', fullName);
+                      }}
+                      placeholder="First name"
+                    />
+                  </div>
+                  <div>
+                    <Label>Last Name</Label>
+                    <Input
+                      value={formState.newGuestData.lastName}
+                      onChange={(e) => {
+                        updateNewGuestField('lastName', e.target.value);
+                        // Auto-update fullName
+                        const fullName = `${formState.newGuestData.firstName} ${e.target.value}`.trim();
+                        updateNewGuestField('fullName', fullName);
+                      }}
+                      placeholder="Last name"
                     />
                   </div>
                   <div>

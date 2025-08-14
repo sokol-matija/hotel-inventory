@@ -318,7 +318,7 @@ export default function DrinksSelectionModal({
               🍹 Add Drinks to Room Bill
             </h2>
             <p className="text-green-100 text-sm">
-              Room {room ? formatRoomNumber(room) : reservation.roomId} • {guest?.name || 'Unknown Guest'}
+              Room {room ? formatRoomNumber(room) : reservation.roomId} • {guest?.fullName || 'Unknown Guest'}
             </p>
           </div>
           <Button

@@ -97,10 +97,22 @@ export default function CreateCompanyModal({ isOpen, onClose }: CreateCompanyMod
     
     try {
       const companyData: Omit<Company, 'id' | 'createdAt' | 'updatedAt'> = {
-        ...formData,
-        roomAllocationGuarantee: formData.roomAllocationGuarantee || undefined,
+        name: formData.name,
+        oib: formData.oib,
+        address: {
+          street: formData.address,
+          city: formData.city,
+          postalCode: formData.postalCode,
+          country: formData.country
+        },
+        contactPerson: formData.contactPerson,
+        email: formData.email,
+        phone: formData.phone,
+        fax: formData.fax || undefined,
         pricingTierId: formData.pricingTierId || undefined,
-        fax: formData.fax || undefined
+        roomAllocationGuarantee: formData.roomAllocationGuarantee || undefined,
+        isActive: formData.isActive,
+        notes: formData.notes
       };
       
       await createCompany(companyData);

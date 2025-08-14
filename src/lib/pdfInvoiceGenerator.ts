@@ -81,7 +81,7 @@ export async function generatePDFInvoice(data: InvoiceData): Promise<void> {
   
   doc.setFontSize(10);  
   doc.setTextColor(0, 0, 0);
-  doc.text(guest.name, 20, 105);
+  doc.text(guest.fullName, 20, 105);
   doc.text(`Email: ${guest.email}`, 20, 111);
   doc.text(`Phone: ${guest.phone}`, 20, 117);
   doc.text(`Nationality: ${guest.nationality}`, 20, 123);
@@ -333,7 +333,7 @@ export async function generatePDFInvoice(data: InvoiceData): Promise<void> {
   
   // Generate filename and save
   const fiscalSuffix = jir ? `_FISCAL_${jir.substring(0, 8)}` : '_PROFORMA';
-  const filename = `Hotel_Porec_Invoice_${invoiceNumber}${fiscalSuffix}_${guest.name.replace(/\s+/g, '_')}.pdf`;
+  const filename = `Hotel_Porec_Invoice_${invoiceNumber}${fiscalSuffix}_${guest.fullName.replace(/\s+/g, '_')}.pdf`;
   doc.save(filename);
 }
 
@@ -371,7 +371,7 @@ export async function generateThermalReceipt(data: InvoiceData, fiscalData?: Cro
   receipt += `Invoice: ${invoiceNumber}\n`;
   receipt += `Date: ${format(invoiceDate, 'dd.MM.yyyy HH:mm:ss')}\n`;
   receipt += `Booking: ${reservation.id.substring(0, 8).toUpperCase()}\n`;
-  receipt += `Guest: ${guest.name}\n`;
+  receipt += `Guest: ${guest.fullName}\n`;
   receipt += `Room: ${room.number} - ${room.nameEnglish}\n`;
   receipt += `Check-in: ${format(reservation.checkIn, 'dd.MM.yyyy')}\n`;
   receipt += `Check-out: ${format(reservation.checkOut, 'dd.MM.yyyy')}\n`;

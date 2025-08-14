@@ -1549,7 +1549,7 @@ function RoomOverviewFloorSection({
                     {isOccupied && reservation && guest ? (
                       <div className="text-xs mt-2 space-y-1">
                         <div className="font-medium">
-                          {guest.name}
+                          {guest.firstName}
                         </div>
                         
                         {/* Guest composition with icons */}
@@ -2266,7 +2266,7 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
       // Show custom notification
       hotelNotification.success(
         'Booking Created Successfully!',
-        `${bookingData.guest.name} • ${formatRoomNumber(bookingData.room)} • ${bookingData.checkIn.toLocaleDateString()} - ${bookingData.checkOut.toLocaleDateString()} • €${(bookingData.pricing.grandTotal || 0).toFixed(2)}`,
+        `${bookingData.guest.firstName} • ${formatRoomNumber(bookingData.room)} • ${bookingData.checkIn.toLocaleDateString()} - ${bookingData.checkOut.toLocaleDateString()} • €${(bookingData.pricing.grandTotal || 0).toFixed(2)}`,
         6
       );
       

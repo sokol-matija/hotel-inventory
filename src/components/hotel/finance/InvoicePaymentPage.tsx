@@ -39,19 +39,21 @@ export default function InvoicePaymentPage() {
   const paymentMethods = {
     'cash': { icon: Banknote, label: 'Cash', color: 'text-green-600' },
     'card': { icon: CreditCard, label: 'Card', color: 'text-blue-600' },
-    'bank-transfer': { icon: Building2, label: 'Bank Transfer', color: 'text-purple-600' },
-    'booking-com': { icon: Globe, label: 'Booking.com', color: 'text-orange-600' },
+    'bank_transfer': { icon: Building2, label: 'Bank Transfer', color: 'text-purple-600' },
+    'online': { icon: Globe, label: 'Online', color: 'text-orange-600' },
     'other': { icon: Clock, label: 'Other', color: 'text-gray-600' }
   };
 
   // Filter invoices based on search and status
   const filteredInvoices = invoices.filter(invoice => {
     const guest = guests.find(g => g.id === invoice.guestId);
-    const room = rooms.find(r => r.id === invoice.roomId);
+    // Get room through reservation since invoice no longer has direct roomId
+    const reservation = SAMPLE_RESERVATIONS.find(r => r.id === invoice.reservationId);
+    const room = reservation ? rooms.find(r => r.id === reservation.roomId) : undefined;
     
     const matchesSearch = !searchTerm || 
       invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      guest?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      guest?.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       room?.number.includes(searchTerm);
     
     const matchesStatus = statusFilter === 'all' || invoice.status === statusFilter;
@@ -76,11 +78,15 @@ export default function InvoicePaymentPage() {
   };
 
   const getGuestName = (guestId: string) => {
-    return guests.find(g => g.id === guestId)?.name || 'Unknown Guest';
+    return guests.find(g => g.id === guestId)?.fullName || 'Unknown Guest';
   };
 
-  const getRoomNumber = (roomId: string) => {
-    return rooms.find(r => r.id === roomId)?.number || 'Unknown Room';
+  const getRoomNumber = (invoiceId: string) => {
+    const invoice = invoices.find(inv => inv.id === invoiceId);
+    if (!invoice) return 'Unknown Room';
+    const reservation = SAMPLE_RESERVATIONS.find(r => r.id === invoice.reservationId);
+    if (!reservation) return 'Unknown Room';
+    return rooms.find(r => r.id === reservation.roomId)?.number || 'Unknown Room';
   };
 
   const getInvoiceNumber = (invoiceId: string) => {
@@ -97,7 +103,7 @@ export default function InvoicePaymentPage() {
       // Find related reservation
       const reservation = SAMPLE_RESERVATIONS.find(r => r.id === invoice.reservationId);
       const guest = guests.find(g => g.id === invoice.guestId);
-      const room = rooms.find(r => r.id === invoice.roomId);
+      const room = reservation ? rooms.find(r => r.id === reservation.roomId) : undefined;
 
       if (!reservation || !guest || !room) {
         hotelNotification.error(
@@ -294,7 +300,7 @@ export default function InvoicePaymentPage() {
                     <tr key={invoice.id} className="border-b border-gray-100 hover:bg-gray-50">
                       <td className="py-3 px-4 font-mono text-sm">{invoice.invoiceNumber}</td>
                       <td className="py-3 px-4">{getGuestName(invoice.guestId)}</td>
-                      <td className="py-3 px-4">{getRoomNumber(invoice.roomId)}</td>
+                      <td className="py-3 px-4">{getRoomNumber(invoice.id)}</td>
                       <td className="py-3 px-4 font-medium">€{invoice.totalAmount.toFixed(2)}</td>
                       <td className="py-3 px-4">
                         <Badge className={`text-xs ${statusColors[invoice.status as keyof typeof statusColors]}`}>
@@ -376,7 +382,7 @@ export default function InvoicePaymentPage() {
                           {format(payment.receivedDate, 'MMM dd, yyyy')}
                         </td>
                         <td className="py-3 px-4 text-sm text-gray-600">
-                          {payment.reference || '-'}
+                          {payment.referenceNumber || '-'}
                         </td>
                       </tr>
                     );
@@ -428,7 +434,7 @@ export default function InvoicePaymentPage() {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-600">Room</label>
-                  <p>{getRoomNumber(selectedInvoice.roomId)}</p>
+                  <p>{getRoomNumber(selectedInvoice.id)}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-600">Issue Date</label>

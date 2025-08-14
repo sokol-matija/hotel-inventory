@@ -39,7 +39,7 @@ const ReservationCard = ({ children, reservation }) => (
 )
 
 ReservationCard.Header = ({ guest }) => (
-  <CardHeader>{guest.name}</CardHeader>
+  <CardHeader>{guest.firstName}</CardHeader>
 )
 
 ReservationCard.Content = ({ dates }) => (
@@ -438,7 +438,7 @@ const ReservationStatus = ({ status, guest }: Props) => {
   
   // Interpolation with formatting
   const guestText = t('frontdesk.timeline.reservation.guest', {
-    name: guest.name,
+    name: guest.firstName,
     formatParams: {
       name: { uppercase: true }
     }
@@ -578,7 +578,7 @@ export const DraggableReservation = ({ reservation, date }: Props) => {
         isDragging && "opacity-50"
       )}
     >
-      {reservation.guest.name}
+      {reservation.guest.firstName}
     </div>
   )
 }
@@ -735,3 +735,4 @@ This comprehensive guide ensures consistent, high-quality implementation across 
 
 **Last Updated:** August 2025  
 **Version:** 1.0
+- i have a hot reload server running dont try to run it only to see if there are any build errors

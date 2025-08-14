@@ -254,7 +254,7 @@ ${this.getEmailStyles()}
         </div>
         
         <div class="content">
-            <p style="font-size: 18px; margin-bottom: 25px;">${t.greeting} ${guest.name},</p>
+            <p style="font-size: 18px; margin-bottom: 25px;">${t.greeting} ${guest.fullName},</p>
             
             <p>${t.welcomeText}</p>
             
@@ -421,7 +421,7 @@ ${this.getEmailStyles()}
         </div>
         
         <div class="content">
-            <p style="font-size: 18px; margin-bottom: 25px;">Dear ${guest.name},</p>
+            <p style="font-size: 18px; margin-bottom: 25px;">Dear ${guest.fullName},</p>
             
             <p>Thank you for choosing Hotel Porec for your recent stay! We hope you had a wonderful time exploring beautiful Poreč and enjoying our hospitality.</p>
             
@@ -513,7 +513,7 @@ ${this.getEmailStyles()}
         </div>
         
         <div class="content">
-            <p style="font-size: 18px; margin-bottom: 25px;">Dear ${guest.name},</p>
+            <p style="font-size: 18px; margin-bottom: 25px;">Dear ${guest.fullName},</p>
             
             <p>We loved having you as our guest last year, and summer is just around the corner! Poreč is getting ready for another beautiful season, and we'd love to welcome you back to Hotel Porec.</p>
             
@@ -619,7 +619,7 @@ ${this.getEmailStyles()}
         </div>
         
         <div class="content">
-            <p>Dear ${guest.name},</p>
+            <p>Dear ${guest.fullName},</p>
             
             <p>Just a friendly reminder that your stay at Hotel Porec is coming up in <strong>${daysUntilCheckIn} day${daysUntilCheckIn > 1 ? 's' : ''}</strong>!</p>
             
@@ -758,7 +758,7 @@ ${this.getEmailStyles()}
       }
 
       const template = this.generateWelcomeEmail({ guest, reservation, room });
-      return await this.sendEmail(guest.email, template, guest.name);
+      return await this.sendEmail(guest.email || '', template, guest.fullName);
       
     } catch (error) {
       console.error('Error sending welcome email:', error);
@@ -782,7 +782,7 @@ ${this.getEmailStyles()}
       }
 
       const template = this.generateReminderEmail({ guest, reservation, room });
-      return await this.sendEmail(guest.email, template, guest.name);
+      return await this.sendEmail(guest.email || '', template, guest.fullName);
       
     } catch (error) {
       console.error('Error sending reminder email:', error);

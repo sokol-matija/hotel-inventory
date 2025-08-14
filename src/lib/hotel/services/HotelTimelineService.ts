@@ -143,7 +143,7 @@ export class HotelTimelineService {
           title: this.getReservationTitle(reservation),
           resource: {
             status: reservation.status,
-            guestName: guest ? guest.name : 'Unknown Guest',
+            guestName: guest ? guest.fullName : 'Unknown Guest',
             roomNumber: room ? room.number : 'Unknown Room',
             numberOfGuests: reservation.adults + reservation.children.length,
             hasPets: reservation.petFee > 0
@@ -157,7 +157,7 @@ export class HotelTimelineService {
    */
   private getReservationTitle(reservation: Reservation): string {
     const guest = SAMPLE_GUESTS.find(g => g.id === reservation.guestId);
-    return guest ? guest.name : 'Unknown Guest';
+    return guest ? guest.fullName : 'Unknown Guest';
   }
 
   /**

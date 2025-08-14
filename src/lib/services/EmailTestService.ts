@@ -41,13 +41,19 @@ export class EmailTestService {
   getTestData(): EmailTestData {
     const testGuest: Guest = {
       id: 'test-guest-001',
-      name: 'Matija Sokol',
+      firstName: 'Matija',
+      lastName: 'Sokol',
+      fullName: 'Matija Sokol',
       email: 'sokol.matija@gmail.com',
       phone: '+385 98 123 456',
-      emergencyContact: '+385 98 987 654',
+      emergencyContactName: 'Emergency Contact',
+      emergencyContactPhone: '+385 98 987 654',
       nationality: 'Croatia',
       preferredLanguage: 'English',
+      dietaryRestrictions: [],
       hasPets: true,
+      isVip: true,
+      vipLevel: 1,
       dateOfBirth: new Date('1985-03-15'),
       children: [
         {
@@ -57,7 +63,8 @@ export class EmailTestService {
         }
       ],
       totalStays: 3,
-      isVip: true
+      createdAt: new Date(),
+      updatedAt: new Date()
     };
 
     const testRoom: Room = {
@@ -150,7 +157,7 @@ export class EmailTestService {
       const result = await HotelEmailService.sendEmail(
         config.emailAddress,
         template,
-        testData.guest.name
+        testData.guest.fullName
       );
       
       if (result.success) {
@@ -182,7 +189,7 @@ export class EmailTestService {
       // Create notification data for Room 401
       const notificationData: BookingNotificationData = {
         roomNumber: '401',
-        guestName: testData.guest.name,
+        guestName: testData.guest.fullName,
         checkIn: this.formatDateForNotification(testData.reservation.checkIn),
         checkOut: this.formatDateForNotification(testData.reservation.checkOut),
         nights: testData.reservation.numberOfNights,

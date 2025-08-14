@@ -33,11 +33,13 @@ export default function InvoiceHistoryPage() {
   // Filter invoices based on search and status
   const filteredInvoices = invoices.filter(invoice => {
     const guest = guests.find(g => g.id === invoice.guestId);
-    const room = rooms.find(r => r.id === invoice.roomId);
+    // Get room through reservation since invoice no longer has direct roomId
+    const reservation = SAMPLE_RESERVATIONS.find(r => r.id === invoice.reservationId);
+    const room = reservation ? rooms.find(r => r.id === reservation.roomId) : undefined;
     
     const matchesSearch = !searchTerm || 
       invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      guest?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      guest?.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       room?.number.includes(searchTerm);
     
     const matchesStatus = statusFilter === 'all' || invoice.status === statusFilter;
@@ -59,11 +61,13 @@ export default function InvoiceHistoryPage() {
   };
 
   const getGuestName = (guestId: string) => {
-    return guests.find(g => g.id === guestId)?.name || 'Unknown Guest';
+    return guests.find(g => g.id === guestId)?.fullName || 'Unknown Guest';
   };
 
-  const getRoomNumber = (roomId: string) => {
-    return rooms.find(r => r.id === roomId)?.number || 'Unknown Room';
+  const getRoomNumber = (invoice: Invoice) => {
+    const reservation = SAMPLE_RESERVATIONS.find(r => r.id === invoice.reservationId);
+    if (!reservation) return 'Unknown Room';
+    return rooms.find(r => r.id === reservation.roomId)?.number || 'Unknown Room';
   };
 
   const handleViewInvoice = (invoice: Invoice) => {
@@ -76,7 +80,7 @@ export default function InvoiceHistoryPage() {
       // Find related reservation
       const reservation = SAMPLE_RESERVATIONS.find(r => r.id === invoice.reservationId);
       const guest = guests.find(g => g.id === invoice.guestId);
-      const room = rooms.find(r => r.id === invoice.roomId);
+      const room = reservation ? rooms.find(r => r.id === reservation.roomId) : undefined;
 
       if (!reservation || !guest || !room) {
         hotelNotification.error(
@@ -252,7 +256,7 @@ export default function InvoiceHistoryPage() {
                   <tr key={invoice.id} className="border-b hover:bg-gray-50">
                     <td className="py-3 px-4 font-medium">{invoice.invoiceNumber}</td>
                     <td className="py-3 px-4">{getGuestName(invoice.guestId)}</td>
-                    <td className="py-3 px-4">{getRoomNumber(invoice.roomId)}</td>
+                    <td className="py-3 px-4">{getRoomNumber(invoice)}</td>
                     <td className="py-3 px-4">{format(invoice.issueDate, 'MMM dd, yyyy')}</td>
                     <td className="py-3 px-4 font-medium">€{invoice.totalAmount.toFixed(2)}</td>
                     <td className="py-3 px-4">
@@ -352,7 +356,7 @@ export default function InvoiceHistoryPage() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Room Number:</span>
-                      <span className="font-medium">{getRoomNumber(selectedInvoice.roomId)}</span>
+                      <span className="font-medium">{getRoomNumber(selectedInvoice)}</span>
                     </div>
                     {(() => {
                       const reservation = getReservationDetails(selectedInvoice);
@@ -398,24 +402,31 @@ export default function InvoiceHistoryPage() {
                       <span>Tourism Tax:</span>
                       <span>€{selectedInvoice.tourismTax.toFixed(2)}</span>
                     </div>
-                    {selectedInvoice.petFee > 0 && (
-                      <div className="flex justify-between">
-                        <span>Pet Fee:</span>
-                        <span>€{selectedInvoice.petFee.toFixed(2)}</span>
-                      </div>
-                    )}
-                    {selectedInvoice.parkingFee > 0 && (
-                      <div className="flex justify-between">
-                        <span>Parking Fee:</span>
-                        <span>€{selectedInvoice.parkingFee.toFixed(2)}</span>
-                      </div>
-                    )}
-                    {selectedInvoice.additionalCharges > 0 && (
-                      <div className="flex justify-between">
-                        <span>Additional Charges:</span>
-                        <span>€{selectedInvoice.additionalCharges.toFixed(2)}</span>
-                      </div>
-                    )}
+                    {(() => {
+                      const reservation = getReservationDetails(selectedInvoice);
+                      return reservation ? (
+                        <>
+                          {reservation.petFee > 0 && (
+                            <div className="flex justify-between">
+                              <span>Pet Fee:</span>
+                              <span>€{reservation.petFee.toFixed(2)}</span>
+                            </div>
+                          )}
+                          {reservation.parkingFee > 0 && (
+                            <div className="flex justify-between">
+                              <span>Parking Fee:</span>
+                              <span>€{reservation.parkingFee.toFixed(2)}</span>
+                            </div>
+                          )}
+                          {reservation.additionalCharges > 0 && (
+                            <div className="flex justify-between">
+                              <span>Additional Charges:</span>
+                              <span>€{reservation.additionalCharges.toFixed(2)}</span>
+                            </div>
+                          )}
+                        </>
+                      ) : null;
+                    })()}
                     <hr className="my-3" />
                     <div className="flex justify-between text-lg font-bold">
                       <span>Total Amount:</span>
@@ -474,29 +485,37 @@ export default function InvoiceHistoryPage() {
                   <CardTitle className="text-lg">Croatian Fiscal Compliance</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Hotel OIB:</span>
-                    <span className="font-medium">{selectedInvoice.fiscalData.oib}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">JIR (Unique Receipt ID):</span>
-                    <span className="font-mono text-sm">{selectedInvoice.fiscalData.jir}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">ZKI (Security Code):</span>
-                    <span className="font-mono text-sm">{selectedInvoice.fiscalData.zki}</span>
-                  </div>
-                  {selectedInvoice.fiscalData.fiscalReceiptUrl && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Fiscal Receipt:</span>
-                      <a 
-                        href={selectedInvoice.fiscalData.fiscalReceiptUrl} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline text-sm"
-                      >
-                        View Receipt
-                      </a>
+                  {selectedInvoice.fiscalData ? (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Hotel OIB:</span>
+                        <span className="font-medium">{selectedInvoice.fiscalData.oib}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">JIR (Unique Receipt ID):</span>
+                        <span className="font-mono text-sm">{selectedInvoice.fiscalData.jir}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">ZKI (Security Code):</span>
+                        <span className="font-mono text-sm">{selectedInvoice.fiscalData.zki}</span>
+                      </div>
+                        {selectedInvoice.fiscalData.fiscalReceiptUrl && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Fiscal Receipt:</span>
+                            <a 
+                              href={selectedInvoice.fiscalData.fiscalReceiptUrl} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:underline text-sm"
+                            >
+                              View Receipt
+                            </a>
+                          </div>
+                        )}
+                    </>
+                  ) : (
+                    <div className="text-center py-4 text-gray-500">
+                      No fiscal data available for this invoice
                     </div>
                   )}
                 </CardContent>

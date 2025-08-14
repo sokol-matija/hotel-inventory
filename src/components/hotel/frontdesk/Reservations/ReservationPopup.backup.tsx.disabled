@@ -289,7 +289,7 @@ export default function ReservationPopup({
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `Hotel_Porec_Thermal_Receipt_${invoiceNumber}_${guest.name.replace(/\s+/g, '_')}.txt`;
+      link.download = `Hotel_Porec_Thermal_Receipt_${invoiceNumber}_${guest.firstName.replace(/\s+/g, '_')}_${guest.lastName.replace(/\s+/g, '_')}.txt`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -325,7 +325,7 @@ export default function ReservationPopup({
       if (fiscalData) {
         hotelNotification.success(
           'Fiscal Receipt Emailed!',
-          `Professional fiscal invoice sent to ${guest.name} with Croatian Tax Authority compliance.`,
+          `Professional fiscal invoice sent to ${guest.firstName} ${guest.lastName} with Croatian Tax Authority compliance.`,
           6
         );
       }
@@ -498,7 +498,7 @@ export default function ReservationPopup({
                   <div className="space-y-3">
                     <div className="flex items-center space-x-2">
                       <User className="h-4 w-4 text-gray-500" />
-                      <span className="font-medium">{guest.name}</span>
+                      <span className="font-medium">{guest.firstName} {guest.lastName}</span>
                       {guest.isVip && (
                         <Badge variant="secondary" className="text-xs">VIP</Badge>
                       )}

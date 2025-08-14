@@ -18,7 +18,7 @@ interface EditPricingTierModalProps {
 interface FormData {
   name: string;
   description: string;
-  seasonalRateModifiers: {
+  seasonalRates: {
     A: number;
     B: number;
     C: number;
@@ -53,7 +53,7 @@ export default function EditPricingTierModal({ isOpen, tier, onClose, onSuccess 
   const [formData, setFormData] = useState<FormData>({
     name: '',
     description: '',
-    seasonalRateModifiers: {
+    seasonalRates: {
       A: 0,
       B: 0,
       C: 0,
@@ -82,16 +82,16 @@ export default function EditPricingTierModal({ isOpen, tier, onClose, onSuccess 
       setFormData({
         name: tier.name,
         description: tier.description,
-        seasonalRateModifiers: { ...tier.seasonalRateModifiers },
-        feeModifiers: { ...tier.feeModifiers },
-        roomTypes: [...tier.roomTypes],
-        minimumStay: tier.minimumStay || 1,
-        maximumStay: tier.maximumStay || 30,
-        validFrom: tier.validFrom.toISOString().split('T')[0],
-        validTo: tier.validTo.toISOString().split('T')[0],
+        seasonalRates: { ...tier.seasonalRates },
+        feeModifiers: { tourismTax: 0, pets: 0, parking: 0, shortStay: 0, additional: 0 },
+        roomTypes: [],
+        minimumStay: tier.minimumStayRequirement || 1,
+        maximumStay: 30,
+        validFrom: tier.validFrom ? tier.validFrom.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        validTo: tier.validTo ? tier.validTo.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
         isActive: tier.isActive,
         isDefault: tier.isDefault,
-        notes: tier.notes
+        notes: tier.notes || ''
       });
     }
   }, [tier]);
@@ -103,11 +103,11 @@ export default function EditPricingTierModal({ isOpen, tier, onClose, onSuccess 
     }));
   };
 
-  const handleRateModifierChange = (period: keyof FormData['seasonalRateModifiers'], value: number) => {
+  const handleRateModifierChange = (period: keyof FormData['seasonalRates'], value: number) => {
     setFormData(prev => ({
       ...prev,
-      seasonalRateModifiers: {
-        ...prev.seasonalRateModifiers,
+      seasonalRates: {
+        ...prev.seasonalRates,
         [period]: value
       }
     }));
@@ -163,11 +163,8 @@ export default function EditPricingTierModal({ isOpen, tier, onClose, onSuccess 
       const updates: Partial<PricingTier> = {
         name: formData.name.trim(),
         description: formData.description.trim(),
-        seasonalRateModifiers: formData.seasonalRateModifiers,
-        feeModifiers: formData.feeModifiers,
-        roomTypes: formData.roomTypes,
-        minimumStay: formData.minimumStay,
-        maximumStay: formData.maximumStay,
+        seasonalRates: formData.seasonalRates,
+        minimumStayRequirement: formData.minimumStay,
         validFrom: new Date(formData.validFrom),
         validTo: new Date(formData.validTo),
         isActive: formData.isActive,
@@ -236,13 +233,13 @@ export default function EditPricingTierModal({ isOpen, tier, onClose, onSuccess 
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => handleRateModifierChange('A', formData.seasonalRateModifiers.A - 5)}
+                    onClick={() => handleRateModifierChange('A', formData.seasonalRates.A - 5)}
                   >
                     <Minus className="w-4 h-4" />
                   </Button>
                   <Input
                     type="number"
-                    value={formData.seasonalRateModifiers.A}
+                    value={formData.seasonalRates.A}
                     onChange={(e) => handleRateModifierChange('A', parseFloat(e.target.value) || 0)}
                     className="text-center"
                     step="0.1"
@@ -251,7 +248,7 @@ export default function EditPricingTierModal({ isOpen, tier, onClose, onSuccess 
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => handleRateModifierChange('A', formData.seasonalRateModifiers.A + 5)}
+                    onClick={() => handleRateModifierChange('A', formData.seasonalRates.A + 5)}
                   >
                     <Plus className="w-4 h-4" />
                   </Button>
@@ -264,13 +261,13 @@ export default function EditPricingTierModal({ isOpen, tier, onClose, onSuccess 
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => handleRateModifierChange('B', formData.seasonalRateModifiers.B - 5)}
+                    onClick={() => handleRateModifierChange('B', formData.seasonalRates.B - 5)}
                   >
                     <Minus className="w-4 h-4" />
                   </Button>
                   <Input
                     type="number"
-                    value={formData.seasonalRateModifiers.B}
+                    value={formData.seasonalRates.B}
                     onChange={(e) => handleRateModifierChange('B', parseFloat(e.target.value) || 0)}
                     className="text-center"
                     step="0.1"
@@ -279,7 +276,7 @@ export default function EditPricingTierModal({ isOpen, tier, onClose, onSuccess 
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => handleRateModifierChange('B', formData.seasonalRateModifiers.B + 5)}
+                    onClick={() => handleRateModifierChange('B', formData.seasonalRates.B + 5)}
                   >
                     <Plus className="w-4 h-4" />
                   </Button>
@@ -292,13 +289,13 @@ export default function EditPricingTierModal({ isOpen, tier, onClose, onSuccess 
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => handleRateModifierChange('C', formData.seasonalRateModifiers.C - 5)}
+                    onClick={() => handleRateModifierChange('C', formData.seasonalRates.C - 5)}
                   >
                     <Minus className="w-4 h-4" />
                   </Button>
                   <Input
                     type="number"
-                    value={formData.seasonalRateModifiers.C}
+                    value={formData.seasonalRates.C}
                     onChange={(e) => handleRateModifierChange('C', parseFloat(e.target.value) || 0)}
                     className="text-center"
                     step="0.1"
@@ -307,7 +304,7 @@ export default function EditPricingTierModal({ isOpen, tier, onClose, onSuccess 
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => handleRateModifierChange('C', formData.seasonalRateModifiers.C + 5)}
+                    onClick={() => handleRateModifierChange('C', formData.seasonalRates.C + 5)}
                   >
                     <Plus className="w-4 h-4" />
                   </Button>
@@ -320,13 +317,13 @@ export default function EditPricingTierModal({ isOpen, tier, onClose, onSuccess 
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => handleRateModifierChange('D', formData.seasonalRateModifiers.D - 5)}
+                    onClick={() => handleRateModifierChange('D', formData.seasonalRates.D - 5)}
                   >
                     <Minus className="w-4 h-4" />
                   </Button>
                   <Input
                     type="number"
-                    value={formData.seasonalRateModifiers.D}
+                    value={formData.seasonalRates.D}
                     onChange={(e) => handleRateModifierChange('D', parseFloat(e.target.value) || 0)}
                     className="text-center"
                     step="0.1"
@@ -335,7 +332,7 @@ export default function EditPricingTierModal({ isOpen, tier, onClose, onSuccess 
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => handleRateModifierChange('D', formData.seasonalRateModifiers.D + 5)}
+                    onClick={() => handleRateModifierChange('D', formData.seasonalRates.D + 5)}
                   >
                     <Plus className="w-4 h-4" />
                   </Button>

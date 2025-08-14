@@ -39,10 +39,10 @@ export default function GuestAutocomplete({
 
     const query = searchQuery.toLowerCase().trim();
     const filtered = guests.filter(guest => 
-      guest.name.toLowerCase().includes(query) ||
-      guest.email.toLowerCase().includes(query) ||
-      guest.phone.toLowerCase().includes(query) ||
-      guest.nationality.toLowerCase().includes(query)
+      guest.fullName.toLowerCase().includes(query) ||
+      (guest.email && guest.email.toLowerCase().includes(query)) ||
+      (guest.phone && guest.phone.toLowerCase().includes(query)) ||
+      (guest.nationality && guest.nationality.toLowerCase().includes(query))
     ).slice(0, 8); // Limit to 8 results
 
     setFilteredGuests(filtered);
@@ -82,7 +82,7 @@ export default function GuestAutocomplete({
 
   const handleGuestSelect = (guest: Guest) => {
     onGuestSelect(guest);
-    setSearchQuery(guest.name);
+    setSearchQuery(guest.fullName);
     setIsOpen(false);
     setHighlightedIndex(-1);
   };
@@ -123,7 +123,7 @@ export default function GuestAutocomplete({
                 </div>
                 <div>
                   <div className="flex items-center space-x-2">
-                    <h4 className="font-semibold">{selectedGuest.name}</h4>
+                    <h4 className="font-semibold">{selectedGuest.fullName}</h4>
                     {selectedGuest.isVip && (
                       <Badge variant="secondary" className="text-xs">VIP</Badge>
                     )}
@@ -135,7 +135,7 @@ export default function GuestAutocomplete({
                     </div>
                     <div className="flex items-center space-x-1">
                       <Phone className="h-3 w-3" />
-                      <span>{formatPhoneNumber(selectedGuest.phone)}</span>
+                      <span>{selectedGuest.phone ? formatPhoneNumber(selectedGuest.phone) : 'No phone'}</span>
                     </div>
                     <div className="flex items-center space-x-1">
                       <Globe className="h-3 w-3" />
@@ -197,7 +197,7 @@ export default function GuestAutocomplete({
                       </div>
                       <div>
                         <div className="flex items-center space-x-2">
-                          <span className="font-medium">{guest.name}</span>
+                          <span className="font-medium">{guest.fullName}</span>
                           {guest.isVip && (
                             <Badge variant="secondary" className="text-xs">VIP</Badge>
                           )}
@@ -207,7 +207,7 @@ export default function GuestAutocomplete({
                         </div>
                         <div className="flex items-center space-x-3 text-xs text-gray-600 mt-1">
                           <span>{guest.email}</span>
-                          <span>{formatPhoneNumber(guest.phone)}</span>
+                          <span>{guest.phone ? formatPhoneNumber(guest.phone) : 'No phone'}</span>
                           <span>🌍 {guest.nationality}</span>
                         </div>
                         <div className="flex items-center space-x-3 text-xs text-gray-500 mt-1">

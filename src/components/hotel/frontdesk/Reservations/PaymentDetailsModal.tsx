@@ -84,7 +84,7 @@ export default function PaymentDetailsModal({
       });
       
       // Show success notification
-      hotelNotification.success('Invoice Generated', `PDF invoice saved as Hotel_Porec_Invoice_${invoiceNumber}_${guest.name.replace(/\s+/g, '_')}.pdf`);
+      hotelNotification.success('Invoice Generated', `PDF invoice saved as Hotel_Porec_Invoice_${invoiceNumber}_${guest.fullName.replace(/\s+/g, '_')}.pdf`);
     } catch (error) {
       console.error('Error generating PDF invoice:', error);
       hotelNotification.error('PDF Generation Failed', 'There was an error generating the PDF invoice. Please try again.');
@@ -108,25 +108,26 @@ export default function PaymentDetailsModal({
         await addPayment({
           invoiceId: invoice.id,
           amount: invoice.totalAmount + (reservation.additionalCharges || 0),
+          currency: 'EUR',
           method: 'card',
           status: 'paid',
           receivedDate: new Date(),
           processedDate: new Date(),
           processedBy: 'Front Desk Staff',
-          notes: `Payment processed via payment breakdown - ${guest.name}`,
-          reference: `PAYMENT-${Date.now()}`
+          notes: `Payment processed via payment breakdown - ${guest.fullName}`,
+          referenceNumber: `PAYMENT-${Date.now()}`
         });
         
         hotelNotification.success(
           'Payment Processed & Invoice Created',
-          `Payment marked as paid for ${guest.name}. Invoice ${invoice.invoiceNumber} created and available in Finance module.`,
+          `Payment marked as paid for ${guest.fullName}. Invoice ${invoice.invoiceNumber} created and available in Finance module.`,
           5000
         );
       } catch (invoiceError) {
         console.error('Failed to generate invoice:', invoiceError);
         hotelNotification.warning(
           'Payment Marked but Invoice Failed',
-          `Payment marked as paid for ${guest.name}, but invoice generation failed. Please create manually from Finance module.`,
+          `Payment marked as paid for ${guest.fullName}, but invoice generation failed. Please create manually from Finance module.`,
           4000
         );
       }
@@ -170,7 +171,7 @@ export default function PaymentDetailsModal({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <div className="text-sm text-gray-500">Guest</div>
-                  <div className="font-medium">{guest.name}</div>
+                  <div className="font-medium">{guest.fullName}</div>
                 </div>
                 <div>
                   <div className="text-sm text-gray-500">Room</div>

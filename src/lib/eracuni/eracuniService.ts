@@ -86,11 +86,13 @@ export class HotelEracuniService {
       currency: 'EUR',
       status: 'draft',
       
-      fiscal_data: {
+      fiscal_data: hotelInvoice.fiscalData ? {
         oib: hotelInvoice.fiscalData.oib,
         jir: hotelInvoice.fiscalData.jir,
         zki: hotelInvoice.fiscalData.zki,
         fiscal_receipt_url: hotelInvoice.fiscalData.fiscalReceiptUrl
+      } : {
+        oib: ''
       },
       
       hotel_data: {
@@ -199,8 +201,8 @@ export class HotelEracuniService {
   }
 
   private extractRoomNumber(invoice: Invoice): string {
-    // Extract room number from invoice notes or use roomId
-    return invoice.notes?.match(/Room (\d+)/)?.[1] || invoice.roomId || 'N/A';
+    // Extract room number from invoice notes
+    return invoice.notes?.match(/Room (\d+)/)?.[1] || 'N/A';
   }
 
   private extractRoomType(invoice: Invoice): string {

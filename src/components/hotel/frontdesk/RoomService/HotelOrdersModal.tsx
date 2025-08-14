@@ -278,7 +278,7 @@ export default function HotelOrdersModal({
               🛎️ Room Service Order
             </h2>
             <p className="text-blue-100 text-sm">
-              Room {room ? formatRoomNumber(room) : reservation.roomId} • {guest?.name || 'Unknown Guest'}
+              Room {room ? formatRoomNumber(room) : reservation.roomId} • {guest?.fullName || 'Unknown Guest'}
             </p>
           </div>
           <Button

@@ -276,15 +276,22 @@ export function SupabaseHotelProvider({ children }: { children: React.ReactNode 
       if (reservationData.isNewGuest && reservationData.guest) {
         console.log('Creating new guest:', reservationData.guest);
         const newGuest = await hotelDataService.createGuest({
-          name: reservationData.guest.name,
+          firstName: reservationData.guest.firstName,
+          lastName: reservationData.guest.lastName || '',
+          fullName: `${reservationData.guest.firstName} ${reservationData.guest.lastName || ''}`.trim(),
           email: reservationData.guest.email,
           phone: reservationData.guest.phone,
           nationality: reservationData.guest.nationality,
           preferredLanguage: reservationData.guest.preferredLanguage || 'en',
+          dietaryRestrictions: [],
           hasPets: reservationData.guest.hasPets || false,
+          vipLevel: 0,
           dateOfBirth: undefined,
           children: [],
-          emergencyContact: ''
+          emergencyContactName: undefined,
+          emergencyContactPhone: undefined,
+          createdAt: new Date(),
+          updatedAt: new Date()
         });
         guestId = newGuest.id;
         console.log('New guest created with ID:', guestId);
@@ -349,7 +356,7 @@ export function SupabaseHotelProvider({ children }: { children: React.ReactNode 
   // Search and utility functions
   const findGuestsByName = useCallback((query: string): Guest[] => {
     return guests.filter(guest => 
-      guest.name.toLowerCase().includes(query.toLowerCase())
+      guest.fullName.toLowerCase().includes(query.toLowerCase())
     );
   }, [guests]);
 
@@ -483,6 +490,7 @@ export function SupabaseHotelProvider({ children }: { children: React.ReactNode 
       startDate,
       endDate,
       totalRevenue: 0,
+      totalBookings: 0,
       roomRevenue: 0,
       taxRevenue: 0,
       additionalRevenue: 0,
@@ -499,7 +507,8 @@ export function SupabaseHotelProvider({ children }: { children: React.ReactNode 
       averageBookingValue: 0,
       occupancyRate: 0,
       fiscalReportsGenerated: 0,
-      fiscalSubmissions: 0
+      fiscalSubmissions: 0,
+      periods: []
     };
   }, []);
 
@@ -522,8 +531,8 @@ export function SupabaseHotelProvider({ children }: { children: React.ReactNode 
       total: relevantPayments.reduce((sum, payment) => sum + payment.amount, 0),
       cash: relevantPayments.filter(p => p.method === 'cash').reduce((sum, p) => sum + p.amount, 0),
       card: relevantPayments.filter(p => p.method === 'card').reduce((sum, p) => sum + p.amount, 0),
-      bank: relevantPayments.filter(p => p.method === 'bank-transfer').reduce((sum, p) => sum + p.amount, 0),
-      online: relevantPayments.filter(p => p.method === 'booking-com').reduce((sum, p) => sum + p.amount, 0)
+      bank: relevantPayments.filter(p => p.method === 'bank_transfer').reduce((sum, p) => sum + p.amount, 0),
+      online: relevantPayments.filter(p => p.method === 'online').reduce((sum, p) => sum + p.amount, 0)
     };
   }, [payments]);
 

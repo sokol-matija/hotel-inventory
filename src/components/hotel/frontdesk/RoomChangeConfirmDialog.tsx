@@ -54,7 +54,7 @@ export default function RoomChangeConfirmDialog({
             Confirm Room Change
           </CardTitle>
           <p className="text-sm text-gray-600">
-            {guest?.name || 'Guest'} • Reservation #{reservation.id.slice(-8)}
+            {guest?.fullName || 'Guest'} • Reservation #{reservation.id.slice(-8)}
           </p>
         </CardHeader>
 

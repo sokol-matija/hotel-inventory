@@ -161,7 +161,7 @@ export default function CheckInWorkflow({
       await updateReservationStatus(reservation.id, 'checked-in');
       
       // Log check-in completion
-      console.log(`Check-in completed for ${guest?.name} in Room ${room?.number}`);
+      console.log(`Check-in completed for ${guest?.fullName} in Room ${room?.number}`);
       
       // Close workflow
       setTimeout(() => {
@@ -226,7 +226,7 @@ export default function CheckInWorkflow({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <div className="flex items-center space-x-2">
-                    <span className="font-medium">{guest.name}</span>
+                    <span className="font-medium">{guest.fullName}</span>
                     {guest.isVip && (
                       <Badge variant="secondary">VIP</Badge>
                     )}

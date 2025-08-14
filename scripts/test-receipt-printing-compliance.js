@@ -124,7 +124,7 @@ console.log('   ✅ Professional Croatian/English Bilingual Design');
 
 console.log('\n📄 Generated Filename Format:');
 const fiscalSuffix = mockInvoiceData.jir ? `_FISCAL_${mockInvoiceData.jir.substring(0, 8)}` : '_PROFORMA';
-const filename = `Hotel_Porec_Invoice_${mockInvoiceData.invoiceNumber}${fiscalSuffix}_${mockInvoiceData.guest.name.replace(/\s+/g, '_')}.pdf`;
+const filename = `Hotel_Porec_Invoice_${mockInvoiceData.invoiceNumber}${fiscalSuffix}_${mockInvoiceData.guest.firstName.replace(/\s+/g, '_')}.pdf`;
 console.log(`   📁 ${filename}`);
 
 console.log('\nTEST 4: Thermal Receipt Generation');
@@ -164,7 +164,7 @@ console.log('│' + centerText('FISCAL RECEIPT', width) + '│');
 console.log('│' + centerText('(Croatian Tax Authority)', width) + '│');
 console.log('│' + `Invoice: ${mockInvoiceData.invoiceNumber}`.padEnd(width) + '│');
 console.log('│' + `Date: 15.08.2025 14:30:15`.padEnd(width) + '│');
-console.log('│' + `Guest: ${mockInvoiceData.guest.name}`.padEnd(width) + '│');
+console.log('│' + `Guest: ${mockInvoiceData.guest.firstName}`.padEnd(width) + '│');
 console.log('│' + `Room: ${mockInvoiceData.room.number} - Superior Double`.padEnd(width) + '│');
 console.log('│' + `TOTAL:           €${mockInvoiceData.reservation.totalAmount.toFixed(2)}`.padEnd(width) + '│');
 console.log('│' + `JIR: ${mockInvoiceData.jir}`.padEnd(width) + '│');

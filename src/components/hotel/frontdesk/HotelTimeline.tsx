@@ -34,7 +34,7 @@ import { RESERVATION_STATUS_COLORS, formatRoomNumber, getRoomTypeDisplay } from 
 import { getCountryFlag } from '../../../lib/hotel/countryFlags';
 import { CalendarEvent, ReservationStatus, Reservation, Room, RoomServiceItem } from '../../../lib/hotel/types';
 import ReservationPopup from './Reservations/ReservationPopup';
-import CreateBookingModal from './CreateBookingModal';
+import NewCreateBookingModal from './NewCreateBookingModal';
 import RoomChangeConfirmDialog from './RoomChangeConfirmDialog';
 import HotelOrdersModal from './RoomService/HotelOrdersModal';
 import hotelNotification from '../../../lib/notifications';
@@ -212,7 +212,7 @@ function ReservationBlock({
       currentRoomId: room.id,
       checkIn: reservation.checkIn,
       checkOut: reservation.checkOut,
-      guestName: guest?.name || 'Guest',
+      guestName: guest?.fullName || 'Guest',
       reservation
     },
     collect: (monitor) => ({
@@ -339,7 +339,7 @@ function ReservationBlock({
       onContextMenu={(e) => {
         console.log('[CONTEXT MENU] Right-click detected!', {
           reservationId: reservation.id,
-          guestName: guest?.name,
+          guestName: guest?.fullName,
           clientX: e.clientX,
           clientY: e.clientY,
           target: e.target
@@ -364,7 +364,7 @@ function ReservationBlock({
         
         console.log('[CONTEXT MENU] State set complete');
       }}
-      title={`${guest?.name || 'Guest'} - ${reservation.numberOfGuests} guests ${isDragging ? '(Dragging...)' : '(Click for details)'}`}
+      title={`${guest?.fullName || 'Guest'} - ${reservation.numberOfGuests} guests ${isDragging ? '(Dragging...)' : '(Click for details)'}`}
     >
       {/* Main content with proper spacing for drag handle */}
       <div className={`flex items-center space-x-2 min-w-0 flex-1 ${
@@ -376,7 +376,7 @@ function ReservationBlock({
         {/* Guest info - name with guest count */}
         <div className="flex items-center space-x-1 flex-1 min-w-0">
           <span className="truncate font-medium text-xs">
-            {guest?.name || 'Guest'}
+            {guest?.fullName || 'Guest'}
           </span>
           
           {/* Guest count icons next to name */}
@@ -475,7 +475,7 @@ function ReservationBlock({
 
       {/* Hover tooltip */}
       <div className="absolute top-full left-0 mt-1 bg-gray-900 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 pointer-events-none z-20 whitespace-nowrap">
-        {guest?.name} • {reservation.numberOfGuests} guests • {format(reservation.checkIn, 'MMM dd')} - {format(reservation.checkOut, 'MMM dd')}
+        {guest?.fullName} • {reservation.numberOfGuests} guests • {format(reservation.checkIn, 'MMM dd')} - {format(reservation.checkOut, 'MMM dd')}
       </div>
 
       {/* Simple Context Menu */}
@@ -1528,7 +1528,7 @@ function RoomOverviewFloorSection({
                     }
                   }}
                   title={isOccupied 
-                    ? `View reservation details for ${guest?.name || 'Guest'} (Right-click for options)`
+                    ? `View reservation details for ${guest?.fullName || 'Guest'} (Right-click for options)`
                     : `Create new booking for ${formatRoomNumber(room)}`
                   }
                 >
@@ -1561,7 +1561,7 @@ function RoomOverviewFloorSection({
                     {isOccupied && reservation && guest ? (
                       <div className="text-xs mt-2 space-y-1">
                         <div className="font-medium">
-                          {guest.name}
+                          {guest.fullName}
                         </div>
                         
                         {/* Guest composition with icons */}
@@ -1862,7 +1862,7 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
       // If no room type change, proceed normally
       await updateReservation(reservationId, updatedReservationData);
 
-      const successMessage = `${guest?.name || 'Guest'} moved from ${formatRoomNumber(oldRoom)} to ${formatRoomNumber(newRoom)} • ${newCheckIn.toLocaleDateString()} - ${newCheckOut.toLocaleDateString()}`;
+      const successMessage = `${guest?.fullName || 'Guest'} moved from ${formatRoomNumber(oldRoom)} to ${formatRoomNumber(newRoom)} • ${newCheckIn.toLocaleDateString()} - ${newCheckOut.toLocaleDateString()}`;
 
       // Show success notification
       hotelNotification.success(
@@ -1920,7 +1920,7 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
       await updateReservation(roomChangeDialog.reservationId, updatedReservationData);
 
       const guest = SAMPLE_GUESTS.find(g => g.id === reservation.guestId);
-      const successMessage = `${guest?.name || 'Guest'} moved from ${formatRoomNumber(currentRoom)} to ${formatRoomNumber(targetRoom)} with updated pricing`;
+      const successMessage = `${guest?.fullName || 'Guest'} moved from ${formatRoomNumber(currentRoom)} to ${formatRoomNumber(targetRoom)} with updated pricing`;
 
       hotelNotification.success('Room Change Successful!', successMessage, 5);
       
@@ -1954,7 +1954,7 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
       await updateReservation(roomChangeDialog.reservationId, updatedReservationData);
 
       const guest = SAMPLE_GUESTS.find(g => g.id === reservation.guestId);
-      const successMessage = `${guest?.name || 'Guest'} received a FREE UPGRADE from ${formatRoomNumber(currentRoom)} to ${formatRoomNumber(targetRoom)}!`;
+      const successMessage = `${guest?.fullName || 'Guest'} received a FREE UPGRADE from ${formatRoomNumber(currentRoom)} to ${formatRoomNumber(targetRoom)}!`;
 
       hotelNotification.success('Free Upgrade Applied!', successMessage, 7);
       
@@ -2083,7 +2083,7 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
 
       hotelNotification.success(
         'Reservation Updated!',
-        `${guest?.name || 'Guest'} • ${room ? formatRoomNumber(room) : 'Room'} • ${newCheckIn.toLocaleDateString()} - ${newCheckOut.toLocaleDateString()} • ${priceChange} (€${newTotal.toFixed(2)} total)`,
+        `${guest?.fullName || 'Guest'} • ${room ? formatRoomNumber(room) : 'Room'} • ${newCheckIn.toLocaleDateString()} - ${newCheckOut.toLocaleDateString()} • ${priceChange} (€${newTotal.toFixed(2)} total)`,
         6
       );
 
@@ -2147,7 +2147,7 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
       // Show custom notification
       hotelNotification.success(
         'Booking Created Successfully!',
-        `${bookingData.guest.name} • ${formatRoomNumber(bookingData.room)} • ${bookingData.checkIn.toLocaleDateString()} - ${bookingData.checkOut.toLocaleDateString()} • €${bookingData.pricing.total.toFixed(2)}`,
+        `${bookingData.guest.fullName} • ${formatRoomNumber(bookingData.room)} • ${bookingData.checkIn.toLocaleDateString()} - ${bookingData.checkOut.toLocaleDateString()} • €${bookingData.pricing.total.toFixed(2)}`,
         6
       );
       
@@ -2172,12 +2172,12 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
       id: `event-${selectedReservation.id}`,
       reservationId: selectedReservation.id,
       roomId: selectedReservation.roomId,
-      title: guest?.name || 'Guest',
+      title: guest?.fullName || 'Guest',
       start: selectedReservation.checkIn,
       end: selectedReservation.checkOut,
       resource: {
         status: selectedReservation.status,
-        guestName: guest?.name || 'Guest',
+        guestName: guest?.fullName || 'Guest',
         roomNumber: room?.number || 'Unknown',
         numberOfGuests: selectedReservation.numberOfGuests,
         hasPets: guest?.hasPets || false
@@ -2415,16 +2415,14 @@ Room Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item
 
       {/* Create Booking Modal */}
       {selectedRoom && (
-        <CreateBookingModal
+        <NewCreateBookingModal
           isOpen={showCreateBooking}
           onClose={() => {
             closeCreateBooking();
             clearDragCreate(); // Clear drag create dates and state when closing
           }}
           room={selectedRoom}
-          onCreateBooking={handleCreateBooking}
           preSelectedDates={dragCreateDates} // Pass pre-selected dates from drag
-          existingReservations={reservations} // Pass existing reservations for conflict checking
         />
       )}
 

@@ -59,10 +59,10 @@ export default function EditCompanyModal({ isOpen, onClose, company }: EditCompa
       setFormData({
         name: company.name,
         oib: company.oib,
-        address: company.address,
-        city: company.city,
-        postalCode: company.postalCode,
-        country: company.country,
+        address: company.address.street,
+        city: company.address.city,
+        postalCode: company.address.postalCode,
+        country: company.address.country,
         contactPerson: company.contactPerson,
         email: company.email,
         phone: company.phone,
@@ -127,10 +127,22 @@ export default function EditCompanyModal({ isOpen, onClose, company }: EditCompa
     
     try {
       const updates: Partial<Company> = {
-        ...formData,
-        roomAllocationGuarantee: formData.roomAllocationGuarantee || undefined,
-        pricingTierId: formData.pricingTierId || undefined,
+        name: formData.name,
+        oib: formData.oib,
+        address: {
+          street: formData.address,
+          city: formData.city,
+          postalCode: formData.postalCode,
+          country: formData.country
+        },
+        contactPerson: formData.contactPerson,
+        email: formData.email,
+        phone: formData.phone,
         fax: formData.fax || undefined,
+        pricingTierId: formData.pricingTierId || undefined,
+        roomAllocationGuarantee: formData.roomAllocationGuarantee || undefined,
+        isActive: formData.isActive,
+        notes: formData.notes,
         updatedAt: new Date()
       };
       

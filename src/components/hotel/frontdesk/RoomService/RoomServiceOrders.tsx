@@ -131,7 +131,7 @@ export default function RoomServiceOrders({ rooms }: RoomServiceOrdersProps) {
     try {
       setIsLoading(true);
       
-      const guestName = guests.find(g => g.id === selectedRoom.id)?.name || 'Unknown Guest';
+      const guestName = guests.find(g => g.id === selectedRoom.id)?.fullName || 'Unknown Guest';
       const totals = calculateOrderTotal(orderItems);
 
       const orderData: Omit<RoomServiceOrder, 'id' | 'orderNumber' | 'orderedAt'> = {

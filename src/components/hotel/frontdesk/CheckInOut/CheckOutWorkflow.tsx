@@ -164,27 +164,28 @@ export default function CheckOutWorkflow({
         await addPayment({
           invoiceId: invoice.id,
           amount: invoice.totalAmount + additionalCharges,
+          currency: 'EUR',
           method: 'card', // Default to card payment - could be made configurable
           status: 'paid',
           receivedDate: new Date(),
           processedDate: new Date(),
           processedBy: 'Front Desk Staff',
-          notes: `Payment processed during stay - ${guest?.name}`,
-          reference: `PAYMENT-${Date.now()}`
+          notes: `Payment processed during stay - ${guest?.fullName}`,
+          referenceNumber: `PAYMENT-${Date.now()}`
         });
         
         console.log('Payment processed and invoice created:', invoice.invoiceNumber);
         
         hotelNotification.success(
           'Payment Processed & Invoice Created',
-          `Payment marked as paid for ${guest?.name}. Invoice ${invoice.invoiceNumber} created and available in Finance module.`,
+          `Payment marked as paid for ${guest?.fullName}. Invoice ${invoice.invoiceNumber} created and available in Finance module.`,
           5000
         );
       } catch (invoiceError) {
         console.error('Failed to generate invoice:', invoiceError);
         hotelNotification.warning(
           'Payment Marked but Invoice Failed',
-          `Payment marked as paid for ${guest?.name}, but invoice generation failed. Please create manually from Finance module.`,
+          `Payment marked as paid for ${guest?.fullName}, but invoice generation failed. Please create manually from Finance module.`,
           4000
         );
       }
@@ -223,7 +224,7 @@ export default function CheckOutWorkflow({
       await updateReservationStatus(reservation.id, 'checked-out');
       
       // Log check-out completion
-      console.log(`Check-out completed for ${guest?.name} from Room ${room?.number}`);
+      console.log(`Check-out completed for ${guest?.fullName} from Room ${room?.number}`);
       
       // Generate invoice if requested
       if (generateInvoice) {
@@ -235,7 +236,7 @@ export default function CheckOutWorkflow({
           // Show success notification - invoice created but payment still pending
           hotelNotification.success(
             'Invoice Generated',
-            `Invoice ${invoice.invoiceNumber} created for ${guest?.name}. Payment can be processed using "Mark as Paid" button after POS transaction.`,
+            `Invoice ${invoice.invoiceNumber} created for ${guest?.fullName}. Payment can be processed using "Mark as Paid" button after POS transaction.`,
             6000
           );
         } catch (error) {
@@ -316,7 +317,7 @@ export default function CheckOutWorkflow({
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex items-center space-x-2">
-                    <span className="font-medium">{guest.name}</span>
+                    <span className="font-medium">{guest.fullName}</span>
                     {guest.isVip && <Badge variant="secondary">VIP</Badge>}
                   </div>
                   <div className="text-sm text-gray-600 space-y-1">

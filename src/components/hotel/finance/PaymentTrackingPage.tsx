@@ -19,8 +19,9 @@ export default function PaymentTrackingPage() {
   const paymentMethods = {
     'cash': { icon: Banknote, label: 'Cash', color: 'text-green-600' },
     'card': { icon: CreditCard, label: 'Card', color: 'text-blue-600' },
-    'bank-transfer': { icon: Building2, label: 'Bank Transfer', color: 'text-purple-600' },
-    'booking-com': { icon: Globe, label: 'Booking.com', color: 'text-orange-600' },
+    'bank_transfer': { icon: Building2, label: 'Bank Transfer', color: 'text-purple-600' },
+    'online': { icon: Globe, label: 'Online', color: 'text-orange-600' },
+    'booking-com': { icon: Globe, label: 'Booking.com', color: 'text-blue-500' },
     'other': { icon: Clock, label: 'Other', color: 'text-gray-600' }
   };
 

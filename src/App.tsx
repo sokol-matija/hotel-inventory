@@ -57,7 +57,7 @@ function AppRoutes() {
           <FrontDeskLayout />
         </ProtectedRoute>
       } />
-      <Route path="/hotel/front-desk-v2" element={
+      <Route path="/hotel/front-desk-v2/*" element={
         <ProtectedRoute>
           <FrontDeskV2Layout />
         </ProtectedRoute>

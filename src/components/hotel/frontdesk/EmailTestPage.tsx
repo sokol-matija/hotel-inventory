@@ -67,7 +67,7 @@ export default function EmailTestPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <div className="text-sm text-gray-500">Name</div>
-                  <div className="font-medium">{testData.guest.name}</div>
+                  <div className="font-medium">{testData.guest.fullName}</div>
                 </div>
                 <div>
                   <div className="text-sm text-gray-500">Email</div>
