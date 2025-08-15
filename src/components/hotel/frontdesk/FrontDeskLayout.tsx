@@ -14,6 +14,8 @@ import RoomServiceOrders from './RoomService/RoomServiceOrders';
 import PrinterTestPage from './PrinterTest/PrinterTestPage';
 import CompanyManagement from '../companies/CompanyManagement';
 import PricingManagement from '../pricing/PricingManagement';
+import ChannelManagerDashboard from './ChannelManager/ChannelManagerDashboard';
+import ChannelManagerSettings from './ChannelManager/ChannelManagerSettings';
 
 function FrontDeskContent() {
   const { rooms } = useHotel();
@@ -73,6 +75,8 @@ function FrontDeskContent() {
             <Route path="printer-test" element={<PrinterTestPage />} />
             <Route path="reports" element={<ReportsPage />} />
             <Route path="email-test" element={<EmailTestPage />} />
+            <Route path="channel-manager" element={<ChannelManagerDashboard />} />
+            <Route path="channel-manager/settings" element={<ChannelManagerSettings />} />
             <Route path="*" element={<Navigate to="/hotel/front-desk" replace />} />
           </Routes>
         </div>

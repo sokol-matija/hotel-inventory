@@ -23,21 +23,21 @@ const GS = '\x1D';
 const ESC_POS_COMMANDS = {
   // Text formatting
   RESET: ESC + '@',
-  BOLD_ON: ESC + 'E' + '\x01',
-  BOLD_OFF: ESC + 'E' + '\x00',
-  UNDERLINE_ON: ESC + '-' + '\x01',
-  UNDERLINE_OFF: ESC + '-' + '\x00',
-  CENTER: ESC + 'a' + '\x01',
-  LEFT: ESC + 'a' + '\x00',
+  BOLD_ON: ESC + 'E\x01',
+  BOLD_OFF: ESC + 'E\x00',
+  UNDERLINE_ON: ESC + '-\x01',
+  UNDERLINE_OFF: ESC + '-\x00',
+  CENTER: ESC + 'a\x01',
+  LEFT: ESC + 'a\x00',
   
   // Font sizes
-  NORMAL_TEXT: GS + '!' + '\x00',
-  DOUBLE_HEIGHT: GS + '!' + '\x10',
-  DOUBLE_WIDTH: GS + '!' + '\x20',
-  DOUBLE_SIZE: GS + '!' + '\x30',
+  NORMAL_TEXT: GS + '!\x00',
+  DOUBLE_HEIGHT: GS + '!\x10',
+  DOUBLE_WIDTH: GS + '!\x20',
+  DOUBLE_SIZE: GS + '!\x30',
   
   // Paper control
-  CUT_PAPER: GS + 'V' + '\x42' + '\x00',
+  CUT_PAPER: GS + 'V\x42\x00',
   FEED_LINES: (lines: number) => ESC + 'd' + String.fromCharCode(lines),
   
   // Line separators

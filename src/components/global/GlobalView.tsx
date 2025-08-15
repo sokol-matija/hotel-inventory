@@ -4,16 +4,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { Input } from '../ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { supabase } from '@/lib/supabase'
-import { useAuth } from '../auth/AuthProvider'
 import { useTranslation } from 'react-i18next'
 import { 
   Search,
   Package,
   MapPin,
   Refrigerator,
-  Warehouse,
-  Grid3x3,
-  List
+  Warehouse
 } from 'lucide-react'
 
 interface GlobalInventoryItem {
@@ -44,7 +41,6 @@ interface GlobalInventoryItem {
 }
 
 export default function GlobalView() {
-  const { user } = useAuth()
   const location = useLocation()
   const { t } = useTranslation()
   const [inventory, setInventory] = useState<GlobalInventoryItem[]>([])
