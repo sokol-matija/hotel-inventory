@@ -1,6 +1,5 @@
 // Hotel Calendar Utilities - Convert hotel data to calendar events
-import { CalendarEvent, Reservation, ReservationStatus } from './types';
-import { HOTEL_POREC_ROOMS } from './hotelData';
+import { CalendarEvent, Reservation, ReservationStatus, Room } from './types';
 import { SAMPLE_GUESTS } from './sampleData';
 import { addDays, isSameDay, isWithinInterval, startOfDay } from 'date-fns';
 
@@ -45,14 +44,14 @@ export const RESERVATION_STATUS_COLORS = {
 } as const;
 
 // Convert reservation to calendar event
-export function reservationToCalendarEvent(reservation: Reservation): CalendarEvent | null {
+export function reservationToCalendarEvent(reservation: Reservation, rooms: Room[] = []): CalendarEvent | null {
   // Safety checks for required data
   if (!reservation || !reservation.id || !reservation.checkIn || !reservation.checkOut) {
     console.warn('Invalid reservation data:', reservation);
     return null;
   }
 
-  const room = HOTEL_POREC_ROOMS.find(r => r.id === reservation.roomId);
+  const room = rooms.find(r => r.id === reservation.roomId);
   const guest = SAMPLE_GUESTS.find(g => g.id === reservation.guestId);
   
   const roomNumber = room?.number || 'Unknown';
@@ -92,14 +91,14 @@ export function reservationToCalendarEvent(reservation: Reservation): CalendarEv
 }
 
 // Convert multiple reservations to calendar events
-export function reservationsToCalendarEvents(reservations: Reservation[]): CalendarEvent[] {
+export function reservationsToCalendarEvents(reservations: Reservation[], rooms: Room[] = []): CalendarEvent[] {
   if (!Array.isArray(reservations)) {
     console.warn('Invalid reservations array:', reservations);
     return [];
   }
   
   return reservations
-    .map(reservationToCalendarEvent)
+    .map(reservation => reservationToCalendarEvent(reservation, rooms))
     .filter((event): event is CalendarEvent => event !== null);
 }
 
@@ -284,6 +283,7 @@ export function getRoomOccupancyForDate(
 // Get calendar statistics for dashboard
 export function getCalendarStatistics(
   reservations: Reservation[],
+  rooms: Room[],
   startDate: Date,
   endDate: Date
 ): {
@@ -299,7 +299,7 @@ export function getCalendarStatistics(
     return acc;
   }, {} as Record<ReservationStatus, number>);
   
-  const totalRoomNights = HOTEL_POREC_ROOMS.length * 
+  const totalRoomNights = rooms.length * 
     Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
   
   const occupiedRoomNights = reservationsInRange.reduce((acc, reservation) => {

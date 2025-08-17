@@ -3,7 +3,6 @@
 
 import { format, addDays, startOfDay, isSameDay } from 'date-fns';
 import { CalendarEvent, Reservation, Room, Guest, ReservationStatus } from '../types';
-import { HOTEL_POREC_ROOMS, getRoomsByFloor } from '../hotelData';
 import { SAMPLE_GUESTS } from '../sampleData';
 import { RESERVATION_STATUS_COLORS } from '../calendarUtils';
 
@@ -117,7 +116,8 @@ export class HotelTimelineService {
    */
   generateCalendarEvents(
     reservations: Reservation[], 
-    startDate: Date
+    startDate: Date,
+    rooms: Room[]
   ): CalendarEvent[] {
     const timelineStart = startOfDay(startDate);
     const timelineEnd = addDays(timelineStart, 14);
@@ -132,7 +132,7 @@ export class HotelTimelineService {
       })
       .map(reservation => {
         const guest = SAMPLE_GUESTS.find(g => g.id === reservation.guestId);
-        const room = HOTEL_POREC_ROOMS.find(r => r.id === reservation.roomId);
+        const room = rooms.find(r => r.id === reservation.roomId);
         
         return {
           id: `${reservation.id}-${reservation.roomId}`,
@@ -206,13 +206,14 @@ export class HotelTimelineService {
    */
   calculateOccupancyData(
     reservations: Reservation[],
-    date: Date
+    date: Date,
+    rooms: Room[]
   ): OccupancyData {
     const targetDate = startOfDay(date);
     const occupancy: OccupancyData = {};
     
     // Initialize all rooms as available
-    HOTEL_POREC_ROOMS.forEach(room => {
+    rooms.forEach(room => {
       occupancy[room.id] = { status: 'available' };
     });
     
@@ -241,10 +242,10 @@ export class HotelTimelineService {
   /**
    * Get rooms grouped by floor
    */
-  getRoomsByFloor(): Record<number, Room[]> {
+  getRoomsByFloor(rooms: Room[]): Record<number, Room[]> {
     const roomsByFloor: Record<number, Room[]> = {};
     
-    HOTEL_POREC_ROOMS.forEach(room => {
+    rooms.forEach(room => {
       if (!roomsByFloor[room.floor]) {
         roomsByFloor[room.floor] = [];
       }
@@ -321,10 +322,11 @@ export class HotelTimelineService {
   validateReservationMove(
     reservation: Reservation,
     targetRoomId: string,
-    existingReservations: Reservation[]
+    existingReservations: Reservation[],
+    rooms: Room[]
   ): { valid: boolean; error?: string } {
     // Check if target room exists
-    const targetRoom = HOTEL_POREC_ROOMS.find(r => r.id === targetRoomId);
+    const targetRoom = rooms.find(r => r.id === targetRoomId);
     if (!targetRoom) {
       return { valid: false, error: 'Target room not found' };
     }
@@ -379,7 +381,7 @@ export class HotelTimelineService {
   /**
    * Get timeline statistics
    */
-  getTimelineStats(reservations: Reservation[], startDate: Date): {
+  getTimelineStats(reservations: Reservation[], startDate: Date, rooms: Room[]): {
     totalReservations: number;
     occupiedRooms: number;
     availableRooms: number;
@@ -411,7 +413,7 @@ export class HotelTimelineService {
     return {
       totalReservations: timelineReservations.length,
       occupiedRooms,
-      availableRooms: HOTEL_POREC_ROOMS.length - occupiedRooms,
+      availableRooms: rooms.length - occupiedRooms,
       checkInsToday,
       checkOutsToday
     };

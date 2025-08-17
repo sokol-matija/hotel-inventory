@@ -17,7 +17,7 @@ import {
 import { supabase } from '../../../../lib/supabase';
 import { Reservation } from '../../../../lib/hotel/types';
 import { formatRoomNumber } from '../../../../lib/hotel/calendarUtils';
-import { HOTEL_POREC_ROOMS } from '../../../../lib/hotel/hotelData';
+import { useHotel } from '../../../../lib/hotel/state/SupabaseHotelContext';
 import { SAMPLE_GUESTS } from '../../../../lib/hotel/sampleData';
 
 interface DrinksSelectionModalProps {
@@ -62,6 +62,7 @@ export default function DrinksSelectionModal({
   onClose,
   onOrderComplete
 }: DrinksSelectionModalProps) {
+  const { rooms } = useHotel();
   const [availableItems, setAvailableItems] = useState<FridgeInventoryItem[]>([]);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -305,7 +306,7 @@ export default function DrinksSelectionModal({
 
   if (!isOpen) return null;
 
-  const room = HOTEL_POREC_ROOMS.find(r => r.id === reservation.roomId);
+  const room = rooms.find(r => r.id === reservation.roomId);
   const guest = SAMPLE_GUESTS.find(g => g.id === reservation.guestId);
 
   return (

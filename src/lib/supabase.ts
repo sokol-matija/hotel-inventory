@@ -425,6 +425,269 @@ export type Database = {
           vat_accommodation?: number
         }
       }
+      // Financial Management Tables
+      companies: {
+        Row: {
+          id: number
+          name: string
+          oib: string
+          address: string
+          city: string
+          postal_code: string
+          country: string | null
+          contact_person: string
+          email: string
+          phone: string | null
+          fax: string | null
+          pricing_tier_id: number | null
+          room_allocation_guarantee: number | null
+          is_active: boolean | null
+          notes: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: number
+          name: string
+          oib: string
+          address: string
+          city: string
+          postal_code: string
+          country?: string | null
+          contact_person: string
+          email: string
+          phone?: string | null
+          fax?: string | null
+          pricing_tier_id?: number | null
+          room_allocation_guarantee?: number | null
+          is_active?: boolean | null
+          notes?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: number
+          name?: string
+          oib?: string
+          address?: string
+          city?: string
+          postal_code?: string
+          country?: string | null
+          contact_person?: string
+          email?: string
+          phone?: string | null
+          fax?: string | null
+          pricing_tier_id?: number | null
+          room_allocation_guarantee?: number | null
+          is_active?: boolean | null
+          notes?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+      }
+      pricing_tiers: {
+        Row: {
+          id: number
+          name: string
+          description: string | null
+          seasonal_rate_a: number | null
+          seasonal_rate_b: number | null
+          seasonal_rate_c: number | null
+          seasonal_rate_d: number | null
+          is_percentage_discount: boolean | null
+          minimum_stay: number | null
+          valid_from: string
+          valid_to: string | null
+          is_active: boolean | null
+          is_default: boolean | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: number
+          name: string
+          description?: string | null
+          seasonal_rate_a?: number | null
+          seasonal_rate_b?: number | null
+          seasonal_rate_c?: number | null
+          seasonal_rate_d?: number | null
+          is_percentage_discount?: boolean | null
+          minimum_stay?: number | null
+          valid_from: string
+          valid_to?: string | null
+          is_active?: boolean | null
+          is_default?: boolean | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: number
+          name?: string
+          description?: string | null
+          seasonal_rate_a?: number | null
+          seasonal_rate_b?: number | null
+          seasonal_rate_c?: number | null
+          seasonal_rate_d?: number | null
+          is_percentage_discount?: boolean | null
+          minimum_stay?: number | null
+          valid_from?: string
+          valid_to?: string | null
+          is_active?: boolean | null
+          is_default?: boolean | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+      }
+      invoices: {
+        Row: {
+          id: number
+          reservation_id: number | null
+          guest_id: number | null
+          company_id: number | null
+          invoice_number: string
+          issue_date: string
+          due_date: string
+          subtotal: number
+          vat_amount: number
+          total_amount: number
+          balance_due: number
+          payment_status: string | null
+          notes: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: number
+          reservation_id?: number | null
+          guest_id?: number | null
+          company_id?: number | null
+          invoice_number: string
+          issue_date: string
+          due_date: string
+          subtotal: number
+          vat_amount: number
+          total_amount: number
+          balance_due?: number
+          payment_status?: string | null
+          notes?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: number
+          reservation_id?: number | null
+          guest_id?: number | null
+          company_id?: number | null
+          invoice_number?: string
+          issue_date?: string
+          due_date?: string
+          subtotal?: number
+          vat_amount?: number
+          total_amount?: number
+          balance_due?: number
+          payment_status?: string | null
+          notes?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+      }
+      payments: {
+        Row: {
+          id: number
+          invoice_id: number | null
+          reservation_id: number | null
+          amount: number
+          currency: string | null
+          payment_method: string | null
+          payment_reference: string | null
+          card_last_four: string | null
+          card_type: string | null
+          authorization_code: string | null
+          status: string | null
+          received_date: string | null
+          processed_date: string | null
+          notes: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: number
+          invoice_id?: number | null
+          reservation_id?: number | null
+          amount: number
+          currency?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          card_last_four?: string | null
+          card_type?: string | null
+          authorization_code?: string | null
+          status?: string | null
+          received_date?: string | null
+          processed_date?: string | null
+          notes?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: number
+          invoice_id?: number | null
+          reservation_id?: number | null
+          amount?: number
+          currency?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          card_last_four?: string | null
+          card_type?: string | null
+          authorization_code?: string | null
+          status?: string | null
+          received_date?: string | null
+          processed_date?: string | null
+          notes?: string | null
+          created_at?: string | null
+        }
+      }
+      fiscal_records: {
+        Row: {
+          id: number
+          hotel_id: string | null
+          invoice_id: number | null
+          fiscal_number: string
+          zki: string
+          jir: string | null
+          fiscal_verification_url: string | null
+          submitted_at: string | null
+          status: string | null
+          error_message: string | null
+          raw_response: Json | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: number
+          hotel_id?: string | null
+          invoice_id?: number | null
+          fiscal_number: string
+          zki: string
+          jir?: string | null
+          fiscal_verification_url?: string | null
+          submitted_at?: string | null
+          status?: string | null
+          error_message?: string | null
+          raw_response?: Json | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: number
+          hotel_id?: string | null
+          invoice_id?: number | null
+          fiscal_number?: string
+          zki?: string
+          jir?: string | null
+          fiscal_verification_url?: string | null
+          submitted_at?: string | null
+          status?: string | null
+          error_message?: string | null
+          raw_response?: Json | null
+          created_at?: string | null
+        }
+      }
       // Inventory Management Tables (existing)
       user_roles: {
         Row: {

@@ -1,0 +1,479 @@
+// Fixed HotelDataService - Simplified Supabase integration without complex joins
+// Handles rooms, guests, and reservations with separate queries
+
+import { supabase, Database } from '../../supabase';
+import { Room, Guest, Reservation, Hotel, RoomType as AppRoomType } from '../types';
+import { HOTEL_POREC } from '../hotelData';
+
+// Database row types from Supabase
+type HotelRow = Database['public']['Tables']['hotels']['Row'];
+type RoomTypeRow = Database['public']['Tables']['room_types']['Row'];
+type RoomRow = Database['public']['Tables']['rooms']['Row'];
+type GuestRow = Database['public']['Tables']['guests']['Row'];
+type ReservationRow = Database['public']['Tables']['reservations']['Row'];
+
+// Hotel Porec ID in database
+const HOTEL_POREC_ID = '550e8400-e29b-41d4-a716-446655440000';
+
+export class HotelDataServiceFixed {
+  private static instance: HotelDataServiceFixed;
+  
+  private constructor() {}
+  
+  public static getInstance(): HotelDataServiceFixed {
+    if (!HotelDataServiceFixed.instance) {
+      HotelDataServiceFixed.instance = new HotelDataServiceFixed();
+    }
+    return HotelDataServiceFixed.instance;
+  }
+
+  /**
+   * Get hotel information
+   */
+  async getHotel(): Promise<Hotel> {
+    try {
+      const { data, error } = await supabase
+        .from('hotels')
+        .select('*')
+        .eq('id', HOTEL_POREC_ID)
+        .single();
+
+      if (error) throw error;
+      
+      if (data) {
+        return this.mapHotelFromDB(data);
+      }
+      
+      return HOTEL_POREC;
+    } catch (error) {
+      console.error('Error fetching hotel:', error);
+      return HOTEL_POREC;
+    }
+  }
+
+  /**
+   * Get all rooms - SIMPLIFIED without joins
+   */
+  async getRooms(): Promise<Room[]> {
+    try {
+      // First get rooms without joins
+      const { data: roomsData, error: roomsError } = await supabase
+        .from('rooms')
+        .select('*')
+        .eq('is_active', true)
+        .order('number');
+
+      if (roomsError) throw roomsError;
+      
+      if (!roomsData || roomsData.length === 0) {
+        console.log('No rooms found in database');
+        return [];
+      }
+
+      // Get room types separately
+      const roomTypeIds = [...new Set(roomsData.map(room => room.room_type_id))];
+      const { data: roomTypesData, error: roomTypesError } = await supabase
+        .from('room_types')
+        .select('*')
+        .in('id', roomTypeIds);
+
+      if (roomTypesError) {
+        console.warn('Error fetching room types:', roomTypesError);
+      }
+
+      // Map rooms with room types
+      return roomsData.map(room => this.mapRoomFromDB(room, roomTypesData));
+    } catch (error) {
+      console.error('Error fetching rooms:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get room by ID - SIMPLIFIED
+   */
+  async getRoomById(id: string): Promise<Room> {
+    try {
+      const { data: roomData, error: roomError } = await supabase
+        .from('rooms')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (roomError) throw roomError;
+
+      // Get room type separately
+      const { data: roomTypeData } = await supabase
+        .from('room_types')
+        .select('*')
+        .eq('id', roomData.room_type_id)
+        .single();
+
+      return this.mapRoomFromDB(roomData, roomTypeData ? [roomTypeData] : []);
+    } catch (error) {
+      console.error('Error fetching room by ID:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all guests - SIMPLIFIED
+   */
+  async getGuests(): Promise<Guest[]> {
+    try {
+      const { data, error } = await supabase
+        .from('guests')
+        .select('*')
+        .order('last_name');
+
+      if (error) throw error;
+      
+      return data?.map(guest => this.mapGuestFromDB(guest)) || [];
+    } catch (error) {
+      console.error('Error fetching guests:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get guest by ID - SIMPLIFIED
+   */
+  async getGuestById(id: string): Promise<Guest> {
+    try {
+      const { data, error } = await supabase
+        .from('guests')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) throw error;
+      
+      return this.mapGuestFromDB(data);
+    } catch (error) {
+      console.error('Error fetching guest by ID:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all reservations - SIMPLIFIED without joins
+   */
+  async getReservations(): Promise<Reservation[]> {
+    try {
+      // Get reservations first
+      const { data: reservationsData, error: reservationsError } = await supabase
+        .from('reservations')
+        .select('*')
+        .order('check_in', { ascending: true });
+
+      if (reservationsError) throw reservationsError;
+      
+      if (!reservationsData || reservationsData.length === 0) {
+        return [];
+      }
+
+      // Get related data separately
+      const guestIds = [...new Set(reservationsData.map(r => r.primary_guest_id))];
+      const roomIds = [...new Set(reservationsData.map(r => r.room_id))];
+
+      const [
+        { data: guestsData },
+        { data: roomsData }
+      ] = await Promise.all([
+        supabase.from('guests').select('*').in('id', guestIds),
+        supabase.from('rooms').select('*').in('id', roomIds)
+      ]);
+
+      // Map reservations with related data
+      return reservationsData.map(reservation => 
+        this.mapReservationFromDB(reservation, guestsData || [], roomsData || [])
+      );
+    } catch (error) {
+      console.error('Error fetching reservations:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Create reservation - SIMPLIFIED
+   */
+  async createReservation(reservationData: any): Promise<Reservation> {
+    try {
+      // Generate confirmation number
+      const confirmationNumber = this.generateConfirmationNumber();
+      
+      const dbReservation = {
+        primary_guest_id: reservationData.guestId,
+        room_id: reservationData.roomId,
+        check_in: reservationData.checkIn.toISOString().split('T')[0],
+        check_out: reservationData.checkOut.toISOString().split('T')[0],
+        adults: reservationData.adults,
+        children: reservationData.children?.length || 0,
+        status: reservationData.status || 'confirmed',
+        booking_source: reservationData.bookingSource || 'direct',
+        special_requests: reservationData.specialRequests,
+        seasonal_period: reservationData.seasonalPeriod,
+        base_room_rate: reservationData.baseRoomRate,
+        number_of_nights: reservationData.numberOfNights,
+        subtotal_accommodation: reservationData.subtotal,
+        children_discount: reservationData.childrenDiscounts,
+        tourism_tax: reservationData.tourismTax,
+        vat_accommodation: reservationData.vatAmount,
+        pet_fee_subtotal: reservationData.petFee,
+        parking_fee_subtotal: reservationData.parkingFee,
+        short_stay_supplement: reservationData.shortStaySuplement,
+        total_amount: reservationData.totalAmount,
+        total_vat_amount: reservationData.vatAmount,
+        notes: reservationData.notes,
+        confirmation_number: confirmationNumber,
+        payment_status: 'pending'
+      };
+
+      const { data, error } = await supabase
+        .from('reservations')
+        .insert([dbReservation])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Get related data for mapping
+      const [guestData, roomData] = await Promise.all([
+        this.getGuestById(reservationData.guestId),
+        this.getRoomById(reservationData.roomId)
+      ]);
+
+      return this.mapReservationFromDB(data, [guestData], [roomData]);
+    } catch (error) {
+      console.error('Error creating reservation:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update reservation - SIMPLIFIED
+   */
+  async updateReservation(id: string, updates: Partial<any>): Promise<Reservation> {
+    try {
+      const dbUpdates: any = {};
+      
+      if (updates.status) dbUpdates.status = updates.status;
+      if (updates.checkIn) dbUpdates.check_in = updates.checkIn.toISOString().split('T')[0];
+      if (updates.checkOut) dbUpdates.check_out = updates.checkOut.toISOString().split('T')[0];
+      if (updates.roomId) dbUpdates.room_id = updates.roomId;
+      if (updates.specialRequests !== undefined) dbUpdates.special_requests = updates.specialRequests;
+      if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
+
+      const { data, error } = await supabase
+        .from('reservations')
+        .update(dbUpdates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Get related data for mapping
+      const [guestData, roomData] = await Promise.all([
+        this.getGuestById(data.primary_guest_id),
+        this.getRoomById(data.room_id)
+      ]);
+
+      return this.mapReservationFromDB(data, [guestData], [roomData]);
+    } catch (error) {
+      console.error('Error updating reservation:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete reservation
+   */
+  async deleteReservation(id: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('reservations')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error deleting reservation:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check room availability
+   */
+  async checkRoomAvailability(roomId: string, checkIn: Date, checkOut: Date): Promise<boolean> {
+    try {
+      const { data, error } = await supabase
+        .from('reservations')
+        .select('id')
+        .eq('room_id', roomId)
+        .or(`check_in.lte.${checkOut.toISOString().split('T')[0]},check_out.gte.${checkIn.toISOString().split('T')[0]}`)
+        .neq('status', 'cancelled');
+
+      if (error) throw error;
+      
+      return data.length === 0;
+    } catch (error) {
+      console.error('Error checking room availability:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get available rooms for date range
+   */
+  async getAvailableRooms(checkIn: Date, checkOut: Date): Promise<Room[]> {
+    try {
+      // Get all rooms
+      const allRooms = await this.getRooms();
+      
+      // Check availability for each room
+      const availabilityPromises = allRooms.map(async (room) => {
+        const isAvailable = await this.checkRoomAvailability(room.id, checkIn, checkOut);
+        return isAvailable ? room : null;
+      });
+
+      const results = await Promise.all(availabilityPromises);
+      return results.filter(room => room !== null) as Room[];
+    } catch (error) {
+      console.error('Error getting available rooms:', error);
+      return [];
+    }
+  }
+
+  // Mapping functions
+  private mapHotelFromDB(data: HotelRow): Hotel {
+    return {
+      id: data.id,
+      name: data.name,
+      businessName: data.business_name,
+      address: data.address as any,
+      contactInfo: data.contact_info as any,
+      oib: data.oib,
+      currency: data.default_currency || 'EUR',
+      timezone: data.timezone || 'Europe/Zagreb'
+    };
+  }
+
+  private mapRoomFromDB(roomData: RoomRow, roomTypesData: RoomTypeRow[] = []): Room {
+    const roomType = roomTypesData.find(rt => rt.id === roomData.room_type_id);
+    
+    return {
+      id: roomData.id,
+      number: roomData.number,
+      floor: roomData.floor,
+      type: roomType ? {
+        code: roomType.code,
+        nameCroatian: roomType.name_croatian,
+        nameEnglish: roomType.name_english,
+        nameGerman: roomType.name_german || undefined,
+        nameItalian: roomType.name_italian || undefined,
+        maxOccupancy: roomType.max_occupancy,
+        amenities: roomType.amenities || []
+      } : {
+        code: 'STANDARD',
+        nameCroatian: 'Standardna soba',
+        nameEnglish: 'Standard room',
+        maxOccupancy: 2,
+        amenities: []
+      },
+      isActive: roomData.is_active ?? true,
+      isOutOfOrder: roomData.is_out_of_order ?? false,
+      maxOccupancyOverride: roomData.max_occupancy_override || undefined,
+      cleaningBufferDays: roomData.cleaning_buffer_days || 0,
+      amenitiesAdditional: roomData.amenities_additional || []
+    };
+  }
+
+  private mapGuestFromDB(data: GuestRow): Guest {
+    return {
+      id: data.id,
+      firstName: data.first_name,
+      lastName: data.last_name,
+      email: data.email || '',
+      phone: data.phone || '',
+      nationality: data.nationality || '',
+      preferredLanguage: data.preferred_language || 'en',
+      hasPets: data.has_pets || false,
+      isVip: data.is_vip || false,
+      vipLevel: data.vip_level || 0,
+      totalStays: data.total_stays || 0,
+      totalSpent: data.total_spent || 0,
+      averageRating: data.average_rating || 0,
+      lastStayDate: data.last_stay_date ? new Date(data.last_stay_date) : undefined,
+      dateOfBirth: data.date_of_birth ? new Date(data.date_of_birth) : undefined,
+      idCardNumber: data.id_card_number || undefined,
+      passportNumber: data.passport_number || undefined,
+      emergencyContactName: data.emergency_contact_name || undefined,
+      emergencyContactPhone: data.emergency_contact_phone || undefined,
+      emergencyContactRelationship: data.emergency_contact_relationship || undefined,
+      specialNeeds: data.special_needs || undefined,
+      dietaryRestrictions: data.dietary_restrictions || [],
+      marketingConsent: data.marketing_consent || false,
+      communicationPreferences: data.communication_preferences as any || {}
+    };
+  }
+
+  private mapReservationFromDB(
+    data: ReservationRow, 
+    guestsData: GuestRow[] | Guest[] = [], 
+    roomsData: RoomRow[] | Room[] = []
+  ): Reservation {
+    // Find guest and room data
+    const guest = guestsData.find((g: any) => g.id === data.primary_guest_id);
+    const room = roomsData.find((r: any) => r.id === data.room_id);
+
+    return {
+      id: data.id,
+      roomId: data.room_id,
+      guestId: data.primary_guest_id,
+      checkIn: new Date(data.check_in),
+      checkOut: new Date(data.check_out),
+      numberOfGuests: data.total_guests || data.adults,
+      adults: data.adults,
+      children: Array(data.children || 0).fill({}),
+      status: data.status as any,
+      bookingSource: data.booking_source as any,
+      specialRequests: data.special_requests || '',
+      seasonalPeriod: data.seasonal_period as any,
+      baseRoomRate: data.base_room_rate,
+      numberOfNights: data.number_of_nights || 1,
+      subtotal: data.subtotal_accommodation,
+      childrenDiscounts: data.children_discount || 0,
+      tourismTax: data.tourism_tax || 0,
+      vatAmount: data.vat_accommodation,
+      petFee: data.pet_fee_subtotal || 0,
+      parkingFee: data.parking_fee_subtotal || 0,
+      shortStaySuplement: data.short_stay_supplement || 0,
+      additionalCharges: data.additional_services_subtotal || 0,
+      roomServiceItems: [],
+      totalAmount: data.total_amount,
+      notes: data.notes || '',
+      confirmationNumber: data.confirmation_number,
+      
+      // Guest information
+      guest: guest ? (guest as Guest).firstName ? guest as Guest : this.mapGuestFromDB(guest as GuestRow) : undefined,
+      
+      // Room information  
+      room: room ? (room as Room).number ? room as Room : this.mapRoomFromDB(room as RoomRow) : undefined,
+      
+      paymentStatus: data.payment_status as any,
+      createdAt: data.created_at ? new Date(data.created_at) : new Date(),
+      updatedAt: data.updated_at ? new Date(data.updated_at) : new Date()
+    };
+  }
+
+  private generateConfirmationNumber(): string {
+    const timestamp = Date.now().toString(36);
+    const random = Math.random().toString(36).substr(2, 5);
+    return `HP-${timestamp}-${random}`.toUpperCase();
+  }
+}
+
+// Export singleton instance
+export const hotelDataServiceFixed = HotelDataServiceFixed.getInstance();

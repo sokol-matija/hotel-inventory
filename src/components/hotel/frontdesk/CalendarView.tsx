@@ -4,11 +4,11 @@ import { Badge } from '../../ui/badge';
 import { Users, Home, TrendingUp, DollarSign } from 'lucide-react';
 import { RESERVATION_STATUS_COLORS } from '../../../lib/hotel/calendarUtils';
 import { useHotel } from '../../../lib/hotel/state/SupabaseHotelContext';
-import { HOTEL_POREC_ROOMS } from '../../../lib/hotel/hotelData';
 import HotelTimeline from './HotelTimeline';
 
 // Hotel overview stats component
 function HotelOverviewStats({ reservations }: { reservations: any[] }) {
+  const { rooms } = useHotel(); // Get dynamic rooms from Supabase
   const today = new Date();
   
   // Calculate current occupancy for today
@@ -17,7 +17,7 @@ function HotelOverviewStats({ reservations }: { reservations: any[] }) {
   );
   
   const occupiedRooms = todayOccupancy.length;
-  const totalRooms = HOTEL_POREC_ROOMS.length;
+  const totalRooms = rooms.length; // Use dynamic room count instead of static HOTEL_POREC_ROOMS.length
   const occupancyRate = (occupiedRooms / totalRooms) * 100;
   
   // Calculate total guests in hotel today

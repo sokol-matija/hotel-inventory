@@ -29,7 +29,7 @@ import { Reservation, Guest, Room } from '../../../../lib/hotel/types';
 import { useHotel } from '../../../../lib/hotel/state/SupabaseHotelContext';
 import hotelNotification from '../../../../lib/notifications';
 import { SAMPLE_GUESTS } from '../../../../lib/hotel/sampleData';
-import { HOTEL_POREC_ROOMS } from '../../../../lib/hotel/hotelData';
+// Removed static HOTEL_POREC_ROOMS import - now using dynamic rooms from context
 
 interface CheckOutWorkflowProps {
   isOpen: boolean;
@@ -51,7 +51,7 @@ export default function CheckOutWorkflow({
   onClose,
   reservation
 }: CheckOutWorkflowProps) {
-  const { updateReservationStatus, updateReservation, isUpdating, generateInvoice: createInvoice, addPayment } = useHotel();
+  const { rooms, updateReservationStatus, updateReservation, isUpdating, generateInvoice: createInvoice, addPayment } = useHotel();
   const [checkOutSteps, setCheckOutSteps] = useState<CheckOutStep[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [checkOutNotes, setCheckOutNotes] = useState('');
@@ -63,7 +63,7 @@ export default function CheckOutWorkflow({
 
   // Find associated guest and room data
   const guest = reservation ? SAMPLE_GUESTS.find(g => g.id === reservation.guestId) : null;
-  const room = reservation ? HOTEL_POREC_ROOMS.find(r => r.id === reservation.roomId) : null;
+  const room = reservation ? rooms.find(r => r.id === reservation.roomId) : null;
 
   // Update payment status when reservation changes
   useEffect(() => {

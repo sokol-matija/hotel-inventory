@@ -28,7 +28,7 @@ import {
 import { Reservation, Guest, Room } from '../../../../lib/hotel/types';
 import { useHotel } from '../../../../lib/hotel/state/SupabaseHotelContext';
 import { SAMPLE_GUESTS } from '../../../../lib/hotel/sampleData';
-import { HOTEL_POREC_ROOMS } from '../../../../lib/hotel/hotelData';
+// Removed static HOTEL_POREC_ROOMS import - now using dynamic rooms from context
 
 interface CheckInWorkflowProps {
   isOpen: boolean;
@@ -50,7 +50,7 @@ export default function CheckInWorkflow({
   onClose,
   reservation
 }: CheckInWorkflowProps) {
-  const { updateReservationStatus, isUpdating } = useHotel();
+  const { rooms, updateReservationStatus, isUpdating } = useHotel();
   const [currentStep, setCurrentStep] = useState(0);
   const [checkInSteps, setCheckInSteps] = useState<CheckInStep[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -61,7 +61,7 @@ export default function CheckInWorkflow({
 
   // Find associated guest and room data
   const guest = reservation ? SAMPLE_GUESTS.find(g => g.id === reservation.guestId) : null;
-  const room = reservation ? HOTEL_POREC_ROOMS.find(r => r.id === reservation.roomId) : null;
+  const room = reservation ? rooms.find(r => r.id === reservation.roomId) : null;
 
   // Initialize check-in steps
   useEffect(() => {

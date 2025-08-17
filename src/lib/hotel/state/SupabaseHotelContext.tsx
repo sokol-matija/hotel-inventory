@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   Reservation, 
   ReservationStatus, 
@@ -17,6 +17,10 @@ import {
 import { hotelDataService } from '../services/HotelDataService';
 import { realtimeService } from '../services/RealtimeService';
 import { databasePricingService } from '../services/DatabasePricingService';
+import { supabase, Database } from '../../supabase';
+import { logger, logUserActivity, logBusinessOperation, trackError } from '../../logging/LoggingService';
+import { performanceMonitor } from '../../monitoring/PerformanceMonitoringService';
+import { auditTrail } from '../../audit/AuditTrailService';
 
 interface HotelContextType {
   // Data state
@@ -28,6 +32,10 @@ interface HotelContextType {
   fiscalRecords: FiscalRecord[];
   companies: Company[];
   pricingTiers: PricingTier[];
+  
+  // Performance optimizations
+  roomsByFloor: Record<number, Room[]>;
+  roomLookup: Record<string, Room>;
   
   // Loading states
   isLoading: boolean;
@@ -116,47 +124,227 @@ export function SupabaseHotelProvider({ children }: { children: React.ReactNode 
   const [isUpdating, setIsUpdating] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [error, setError] = useState<string | null>(null);
+  
+  // Performance optimization: Memoized room data grouping
+  const roomsByFloor = useMemo(() => {
+    const grouped: Record<number, Room[]> = {};
+    rooms.forEach(room => {
+      if (!grouped[room.floor]) grouped[room.floor] = [];
+      grouped[room.floor].push(room);
+    });
+    return grouped;
+  }, [rooms]);
+  
+  // Performance optimization: Memoized room lookup
+  const roomLookup = useMemo(() => {
+    const lookup: Record<string, Room> = {};
+    rooms.forEach(room => {
+      lookup[room.id] = room;
+    });
+    return lookup;
+  }, [rooms]);
 
-  // Load all data from database
+  // Database mapping functions for financial entities
+  const mapCompanyFromDB = useCallback((companyRow: Database['public']['Tables']['companies']['Row']): Company => {
+    return {
+      id: companyRow.id.toString(),
+      name: companyRow.name,
+      oib: companyRow.oib,
+      address: {
+        street: companyRow.address,
+        city: companyRow.city,
+        postalCode: companyRow.postal_code,
+        country: companyRow.country || 'Croatia'
+      },
+      contactPerson: companyRow.contact_person,
+      email: companyRow.email,
+      phone: companyRow.phone || '',
+      fax: companyRow.fax || undefined,
+      vatNumber: undefined, // Not in current schema
+      businessRegistrationNumber: undefined, // Not in current schema
+      discountPercentage: undefined, // Not in current schema
+      paymentTerms: undefined, // Not in current schema
+      isActive: companyRow.is_active || true,
+      notes: companyRow.notes || '',
+      createdAt: new Date(companyRow.created_at || ''),
+      updatedAt: new Date(companyRow.updated_at || '')
+    };
+  }, []);
+
+  const mapPricingTierFromDB = useCallback((tierRow: Database['public']['Tables']['pricing_tiers']['Row']): PricingTier => {
+    return {
+      id: tierRow.id.toString(),
+      name: tierRow.name,
+      description: tierRow.description || '',
+      discountPercentage: (tierRow.seasonal_rate_a || 0) * 100, // Convert from decimal to percentage
+      isDefault: tierRow.is_default || false,
+      isActive: tierRow.is_active || true,
+      seasonalRates: {
+        A: tierRow.seasonal_rate_a || 0,
+        B: tierRow.seasonal_rate_b || 0,
+        C: tierRow.seasonal_rate_c || 0,
+        D: tierRow.seasonal_rate_d || 0
+      },
+      roomTypeMultipliers: {}, // Not in current schema, default to empty
+      minimumStayRequirement: tierRow.minimum_stay || undefined,
+      advanceBookingDiscount: undefined, // Not in current schema
+      lastMinuteDiscount: undefined, // Not in current schema
+      validFrom: tierRow.valid_from ? new Date(tierRow.valid_from) : undefined,
+      validTo: tierRow.valid_to ? new Date(tierRow.valid_to) : undefined,
+      applicableServices: [], // Not in current schema, default to empty array
+      createdAt: new Date(tierRow.created_at || ''),
+      updatedAt: new Date(tierRow.updated_at || '')
+    };
+  }, []);
+
+  // Load companies from database
+  const loadCompanies = useCallback(async (): Promise<Company[]> => {
+    const { data, error } = await supabase
+      .from('companies')
+      .select('*')
+      .eq('is_active', true)
+      .order('name');
+
+    if (error) throw error;
+    return data?.map(mapCompanyFromDB) || [];
+  }, [mapCompanyFromDB]);
+
+  // Load pricing tiers from database
+  const loadPricingTiers = useCallback(async (): Promise<PricingTier[]> => {
+    const { data, error } = await supabase
+      .from('pricing_tiers')
+      .select('*')
+      .eq('is_active', true)
+      .order('is_default', { ascending: false }); // Show default first
+
+    if (error) throw error;
+    return data?.map(mapPricingTierFromDB) || [];
+  }, [mapPricingTierFromDB]);
+
+  // Load all data from database with comprehensive error handling
   const loadAllData = useCallback(async () => {
+    const operationStart = performance.now();
     setIsLoading(true);
     setError(null);
     
     try {
-      console.log('🏨 Loading hotel data from Supabase...');
+      logger.info('HotelContext', 'Starting hotel data load from Supabase');
+      logUserActivity('data_load_started');
       
-      // Load all data in parallel
-      const [
-        roomsData,
-        guestsData,
-        reservationsData
-      ] = await Promise.all([
-        hotelDataService.getRooms(),
-        hotelDataService.getGuests(),
-        hotelDataService.getReservations()
-      ]);
-
-      setRooms(roomsData);
-      setGuests(guestsData);
-      setReservations(reservationsData);
+      // Load all data in parallel with individual error handling
+      const results = await performanceMonitor.measureAsync(
+        'load_all_hotel_data',
+        async () => {
+          return Promise.allSettled([
+            performanceMonitor.measureAsync('load_rooms', () => hotelDataService.getRooms()),
+            performanceMonitor.measureAsync('load_guests', () => hotelDataService.getGuests()),
+            performanceMonitor.measureAsync('load_reservations', () => hotelDataService.getReservations()),
+            performanceMonitor.measureAsync('load_companies', () => loadCompanies()),
+            performanceMonitor.measureAsync('load_pricing_tiers', () => loadPricingTiers())
+          ]);
+        },
+        'database_operation'
+      );
       
-      // TODO: Load financial data (invoices, payments, etc.)
-      // For now, initialize empty arrays
+      // Process rooms data
+      if (results[0].status === 'fulfilled') {
+        setRooms(results[0].value);
+        logger.info('HotelContext', `Loaded ${results[0].value.length} rooms`);
+        performanceMonitor.recordDatabaseOperation('load_rooms', 'rooms', performance.now() - operationStart, results[0].value.length, 'SELECT');
+      } else {
+        const error = results[0].reason;
+        logger.error('HotelContext', 'Failed to load rooms', error);
+        trackError(error instanceof Error ? error : new Error('Failed to load rooms'), { operation: 'load_rooms' });
+        setError('Failed to load room data');
+      }
+      
+      // Process guests data
+      if (results[1].status === 'fulfilled') {
+        setGuests(results[1].value);
+        logger.info('HotelContext', `Loaded ${results[1].value.length} guests`);
+        performanceMonitor.recordDatabaseOperation('load_guests', 'guests', performance.now() - operationStart, results[1].value.length, 'SELECT');
+      } else {
+        const error = results[1].reason;
+        logger.warn('HotelContext', 'Failed to load guests - continuing with empty array', error);
+        trackError(error instanceof Error ? error : new Error('Failed to load guests'), { operation: 'load_guests', critical: false });
+      }
+      
+      // Process reservations data
+      if (results[2].status === 'fulfilled') {
+        setReservations(results[2].value);
+        logger.info('HotelContext', `Loaded ${results[2].value.length} reservations`);
+        performanceMonitor.recordDatabaseOperation('load_reservations', 'reservations', performance.now() - operationStart, results[2].value.length, 'SELECT');
+      } else {
+        const error = results[2].reason;
+        logger.warn('HotelContext', 'Failed to load reservations - continuing with empty array', error);
+        trackError(error instanceof Error ? error : new Error('Failed to load reservations'), { operation: 'load_reservations', critical: false });
+      }
+      
+      // Process companies data
+      if (results[3].status === 'fulfilled') {
+        setCompanies(results[3].value);
+        logger.info('HotelContext', `Loaded ${results[3].value.length} companies`);
+        performanceMonitor.recordDatabaseOperation('load_companies', 'companies', performance.now() - operationStart, results[3].value.length, 'SELECT');
+      } else {
+        const error = results[3].reason;
+        logger.warn('HotelContext', 'Failed to load companies - continuing with empty array', error);
+        trackError(error instanceof Error ? error : new Error('Failed to load companies'), { operation: 'load_companies', critical: false });
+        setCompanies([]);
+      }
+      
+      // Process pricing tiers data
+      if (results[4].status === 'fulfilled') {
+        setPricingTiers(results[4].value);
+        logger.info('HotelContext', `Loaded ${results[4].value.length} pricing tiers`);
+        performanceMonitor.recordDatabaseOperation('load_pricing_tiers', 'pricing_tiers', performance.now() - operationStart, results[4].value.length, 'SELECT');
+      } else {
+        const error = results[4].reason;
+        logger.warn('HotelContext', 'Failed to load pricing tiers - continuing with empty array', error);
+        trackError(error instanceof Error ? error : new Error('Failed to load pricing tiers'), { operation: 'load_pricing_tiers', critical: false });
+        setPricingTiers([]);
+      }
+      
+      // TODO: Load remaining financial data (invoices, payments, fiscal records)
       setInvoices([]);
       setPayments([]);
       setFiscalRecords([]);
-      setCompanies([]);
-      setPricingTiers([]);
       
       setLastUpdated(new Date());
-      console.log('✅ Hotel data loaded successfully');
-      console.log(`📊 Loaded: ${roomsData.length} rooms, ${guestsData.length} guests, ${reservationsData.length} reservations`);
+      
+      // Log summary of successfully loaded data
+      const roomCount = results[0].status === 'fulfilled' ? results[0].value.length : 0;
+      const guestCount = results[1].status === 'fulfilled' ? results[1].value.length : 0;
+      const reservationCount = results[2].status === 'fulfilled' ? results[2].value.length : 0;
+      const companyCount = results[3].status === 'fulfilled' ? results[3].value.length : 0;
+      const pricingTierCount = results[4].status === 'fulfilled' ? results[4].value.length : 0;
+      const totalDuration = performance.now() - operationStart;
+      
+      logger.info('HotelContext', 'Hotel data loading completed', {
+        roomCount,
+        guestCount,
+        reservationCount,
+        companyCount,
+        pricingTierCount,
+        totalDuration: Math.round(totalDuration)
+      });
+      
+      logUserActivity('data_load_completed', {
+        roomCount,
+        guestCount,
+        reservationCount,
+        companyCount,
+        pricingTierCount,
+        duration: Math.round(totalDuration)
+      });
       
     } catch (err) {
-      console.error('❌ Failed to load hotel data:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load data');
+      const error = err instanceof Error ? err : new Error('Failed to load data');
+      logger.error('HotelContext', 'Failed to load hotel data', error);
+      trackError(error, { operation: 'loadAllData', critical: true });
+      setError(error.message);
     } finally {
       setIsLoading(false);
+      performanceMonitor.recordSystemMetrics();
     }
   }, []);
 
@@ -167,30 +355,40 @@ export function SupabaseHotelProvider({ children }: { children: React.ReactNode 
 
   // Setup real-time subscriptions
   useEffect(() => {
-    console.log('🔄 Setting up real-time subscriptions...');
+    logger.info('HotelContext', 'Setting up real-time subscriptions');
     
     const unsubscribe = realtimeService.subscribeToHotelTimeline(
       // Reservation changes
       (payload) => {
-        console.log('🔄 Reservation change:', payload.eventType);
+        logger.debug('RealtimeService', `Reservation ${payload.eventType}`, {
+          reservationId: payload.new?.id || payload.old?.id,
+          eventType: payload.eventType
+        });
         
         if (payload.eventType === 'INSERT' && payload.new) {
           setReservations(prev => [...prev, payload.new as Reservation]);
+          auditTrail.logReservationCreate(payload.new.id, payload.new);
         } else if (payload.eventType === 'UPDATE' && payload.new) {
           setReservations(prev => 
             prev.map(r => r.id === payload.new!.id ? payload.new as Reservation : r)
           );
+          auditTrail.logReservationUpdate(payload.new.id, payload.old, payload.new);
         } else if (payload.eventType === 'DELETE' && payload.old) {
           setReservations(prev => 
             prev.filter(r => r.id !== payload.old!.id)
           );
+          auditTrail.logReservationDelete(payload.old.id, payload.old);
         }
         
         setLastUpdated(new Date());
+        performanceMonitor.recordUserInteraction('realtime_reservation_update', 'HotelContext', 0, true);
       },
       // Room changes
       (payload) => {
-        console.log('🔄 Room change:', payload.eventType);
+        logger.debug('RealtimeService', `Room ${payload.eventType}`, {
+          roomId: payload.new?.id || payload.old?.id,
+          eventType: payload.eventType
+        });
         
         if (payload.eventType === 'UPDATE' && payload.new) {
           setRooms(prev => 
@@ -199,10 +397,14 @@ export function SupabaseHotelProvider({ children }: { children: React.ReactNode 
         }
         
         setLastUpdated(new Date());
+        performanceMonitor.recordUserInteraction('realtime_room_update', 'HotelContext', 0, true);
       },
       // Guest changes
       (payload) => {
-        console.log('🔄 Guest change:', payload.eventType);
+        logger.debug('RealtimeService', `Guest ${payload.eventType}`, {
+          guestId: payload.new?.id || payload.old?.id,
+          eventType: payload.eventType
+        });
         
         if (payload.eventType === 'INSERT' && payload.new) {
           setGuests(prev => [...prev, payload.new as Guest]);
@@ -217,29 +419,53 @@ export function SupabaseHotelProvider({ children }: { children: React.ReactNode 
         }
         
         setLastUpdated(new Date());
+        performanceMonitor.recordUserInteraction('realtime_guest_update', 'HotelContext', 0, true);
       }
     );
 
     // Cleanup subscriptions on unmount
     return () => {
-      console.log('🔄 Cleaning up real-time subscriptions...');
+      logger.info('HotelContext', 'Cleaning up real-time subscriptions');
       unsubscribe();
     };
   }, []);
 
   // Reservation actions
   const updateReservationStatus = useCallback(async (id: string, newStatus: ReservationStatus) => {
+    const operationStart = performance.now();
     setIsUpdating(true);
+    
     try {
-      await hotelDataService.updateReservation(id, { status: newStatus });
-      // Real-time subscription will handle the UI update
+      logger.info('HotelContext', 'Updating reservation status', { reservationId: id, newStatus });
+      
+      const oldReservation = reservations.find(r => r.id === id);
+      await performanceMonitor.measureAsync(
+        'update_reservation_status',
+        () => hotelDataService.updateReservation(id, { status: newStatus }),
+        'database_operation'
+      );
+      
+      logBusinessOperation('update', 'reservation', id, { oldStatus: oldReservation?.status, newStatus });
+      auditTrail.logAuditEvent('update', 'reservation', id, 
+        { status: oldReservation?.status }, 
+        { status: newStatus }, 
+        'success'
+      );
+      
+      const duration = performance.now() - operationStart;
+      performanceMonitor.recordDatabaseOperation('update_reservation_status', 'reservations', duration, 1, 'UPDATE');
+      
     } catch (err) {
-      console.error('Failed to update reservation status:', err);
-      throw err;
+      const error = err instanceof Error ? err : new Error('Failed to update reservation status');
+      logger.error('HotelContext', 'Failed to update reservation status', { reservationId: id, newStatus, error: error.message });
+      trackError(error, { operation: 'updateReservationStatus', reservationId: id, newStatus });
+      
+      auditTrail.logAuditEvent('update', 'reservation', id, undefined, { status: newStatus }, 'failure', error.message);
+      throw error;
     } finally {
       setIsUpdating(false);
     }
-  }, []);
+  }, [reservations]);
 
   const updateReservationNotes = useCallback(async (id: string, notes: string) => {
     setIsUpdating(true);
@@ -268,33 +494,52 @@ export function SupabaseHotelProvider({ children }: { children: React.ReactNode 
   }, []);
 
   const createReservation = useCallback(async (reservationData: any) => {
+    const operationStart = performance.now();
     setIsUpdating(true);
+    
     try {
+      logger.info('HotelContext', 'Creating new reservation', { 
+        roomId: reservationData.roomId,
+        isNewGuest: reservationData.isNewGuest,
+        checkIn: reservationData.checkIn,
+        checkOut: reservationData.checkOut
+      });
+      
       let guestId = reservationData.guestId;
       
       // If new guest, create guest first
       if (reservationData.isNewGuest && reservationData.guest) {
-        console.log('Creating new guest:', reservationData.guest);
-        const newGuest = await hotelDataService.createGuest({
+        logger.info('HotelContext', 'Creating new guest for reservation', {
           firstName: reservationData.guest.firstName,
-          lastName: reservationData.guest.lastName || '',
-          fullName: `${reservationData.guest.firstName} ${reservationData.guest.lastName || ''}`.trim(),
-          email: reservationData.guest.email,
-          phone: reservationData.guest.phone,
-          nationality: reservationData.guest.nationality,
-          preferredLanguage: reservationData.guest.preferredLanguage || 'en',
-          dietaryRestrictions: [],
-          hasPets: reservationData.guest.hasPets || false,
-          vipLevel: 0,
-          dateOfBirth: undefined,
-          children: [],
-          emergencyContactName: undefined,
-          emergencyContactPhone: undefined,
-          createdAt: new Date(),
-          updatedAt: new Date()
+          lastName: reservationData.guest.lastName
         });
+        
+        const newGuest = await performanceMonitor.measureAsync(
+          'create_guest_for_reservation',
+          () => hotelDataService.createGuest({
+            firstName: reservationData.guest.firstName,
+            lastName: reservationData.guest.lastName || '',
+            fullName: `${reservationData.guest.firstName} ${reservationData.guest.lastName || ''}`.trim(),
+            email: reservationData.guest.email,
+            phone: reservationData.guest.phone,
+            nationality: reservationData.guest.nationality,
+            preferredLanguage: reservationData.guest.preferredLanguage || 'en',
+            dietaryRestrictions: [],
+            hasPets: reservationData.guest.hasPets || false,
+            vipLevel: 0,
+            dateOfBirth: undefined,
+            children: [],
+            emergencyContactName: undefined,
+            emergencyContactPhone: undefined,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }),
+          'database_operation'
+        );
+        
         guestId = newGuest.id;
-        console.log('New guest created with ID:', guestId);
+        logger.info('HotelContext', 'New guest created', { guestId });
+        logBusinessOperation('create', 'guest', guestId, reservationData.guest);
       }
       
       // Create reservation with proper guest ID
@@ -303,11 +548,32 @@ export function SupabaseHotelProvider({ children }: { children: React.ReactNode 
         guestId: guestId
       };
       
-      await hotelDataService.createReservation(finalReservationData);
-      // Real-time subscription will handle the UI update
+      const newReservation = await performanceMonitor.measureAsync(
+        'create_reservation',
+        () => hotelDataService.createReservation(finalReservationData),
+        'database_operation'
+      );
+      
+      logBusinessOperation('create', 'reservation', newReservation?.id || 'unknown', finalReservationData);
+      auditTrail.logReservationCreate(newReservation?.id || 'unknown', finalReservationData);
+      
+      const duration = performance.now() - operationStart;
+      performanceMonitor.recordDatabaseOperation('create_reservation', 'reservations', duration, 1, 'INSERT');
+      performanceMonitor.recordUserInteraction('create_reservation', 'HotelContext', duration, true);
+      
     } catch (err) {
-      console.error('Failed to create reservation:', err);
-      throw err;
+      const error = err instanceof Error ? err : new Error('Failed to create reservation');
+      logger.error('HotelContext', 'Failed to create reservation', { 
+        error: error.message,
+        reservationData: {
+          roomId: reservationData.roomId,
+          isNewGuest: reservationData.isNewGuest
+        }
+      });
+      trackError(error, { operation: 'createReservation', reservationData });
+      
+      auditTrail.logAuditEvent('create', 'reservation', 'unknown', undefined, reservationData, 'failure', error.message);
+      throw error;
     } finally {
       setIsUpdating(false);
     }
@@ -371,21 +637,129 @@ export function SupabaseHotelProvider({ children }: { children: React.ReactNode 
     await loadAllData();
   }, [loadAllData]);
 
-  // Placeholder implementations for financial features
-  // TODO: Implement these with proper database backing
+  // Financial implementations - Company management
   const createCompany = useCallback(async (company: Omit<Company, 'id' | 'createdAt' | 'updatedAt'>) => {
-    console.warn('createCompany not implemented yet');
-    throw new Error('Company management not implemented');
-  }, []);
+    const operationStart = performance.now();
+    setIsUpdating(true);
+    
+    try {
+      logger.info('HotelContext', 'Creating new company', { 
+        name: company.name, 
+        oib: company.oib 
+      });
+      
+      const result = await performanceMonitor.measureAsync(
+        'create_company',
+        async () => {
+          const { data, error } = await supabase
+            .from('companies')
+            .insert({
+              name: company.name,
+              oib: company.oib,
+              address: company.address.street,
+              city: company.address.city,
+              postal_code: company.address.postalCode,
+              country: company.address.country || 'Croatia',
+              contact_person: company.contactPerson,
+              email: company.email,
+              phone: company.phone,
+              fax: company.fax,
+              is_active: true
+            })
+            .select()
+            .single();
+
+          if (error) throw error;
+          return data;
+        },
+        'database_operation'
+      );
+      
+      // Update local state
+      const newCompany = mapCompanyFromDB(result);
+      setCompanies(prev => [...prev, newCompany]);
+      
+      const duration = performance.now() - operationStart;
+      performanceMonitor.recordDatabaseOperation('create_company', 'companies', duration, 1, 'INSERT');
+      
+      logBusinessOperation('create', 'company', newCompany.id, company);
+      auditTrail.logAuditEvent('create', 'company', newCompany.id, undefined, company, 'success');
+      
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error('Failed to create company');
+      logger.error('HotelContext', 'Failed to create company', { 
+        error: error.message,
+        companyName: company.name,
+        oib: company.oib
+      });
+      trackError(error, { operation: 'createCompany', company });
+      
+      auditTrail.logAuditEvent('create', 'company', 'unknown', undefined, company, 'failure', error.message);
+      throw error;
+    } finally {
+      setIsUpdating(false);
+    }
+  }, [mapCompanyFromDB]);
 
   const updateCompany = useCallback(async (id: string, updates: Partial<Company>) => {
-    console.warn('updateCompany not implemented yet');
-    throw new Error('Company management not implemented');
-  }, []);
+    setIsUpdating(true);
+    try {
+      const updateData: any = {};
+      
+      if (updates.name) updateData.name = updates.name;
+      if (updates.oib) updateData.oib = updates.oib;
+      if (updates.address) {
+        updateData.address = updates.address.street;
+        updateData.city = updates.address.city;
+        updateData.postal_code = updates.address.postalCode;
+        updateData.country = updates.address.country;
+      }
+      if (updates.contactPerson) updateData.contact_person = updates.contactPerson;
+      if (updates.email) updateData.email = updates.email;
+      if (updates.phone) updateData.phone = updates.phone;
+      if (updates.fax !== undefined) updateData.fax = updates.fax;
+      updateData.updated_at = new Date().toISOString();
+
+      const { data, error } = await supabase
+        .from('companies')
+        .update(updateData)
+        .eq('id', parseInt(id))
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      // Update local state
+      const updatedCompany = mapCompanyFromDB(data);
+      setCompanies(prev => prev.map(c => c.id === id ? updatedCompany : c));
+      
+    } catch (err) {
+      console.error('Failed to update company:', err);
+      throw err;
+    } finally {
+      setIsUpdating(false);
+    }
+  }, [mapCompanyFromDB]);
 
   const deleteCompany = useCallback(async (id: string) => {
-    console.warn('deleteCompany not implemented yet');
-    throw new Error('Company management not implemented');
+    setIsUpdating(true);
+    try {
+      const { error } = await supabase
+        .from('companies')
+        .update({ is_active: false })
+        .eq('id', parseInt(id));
+
+      if (error) throw error;
+      
+      // Update local state (soft delete - mark as inactive)
+      setCompanies(prev => prev.map(c => c.id === id ? { ...c, isActive: false } : c));
+      
+    } catch (err) {
+      console.error('Failed to delete company:', err);
+      throw err;
+    } finally {
+      setIsUpdating(false);
+    }
   }, []);
 
   const findCompaniesByName = useCallback((query: string): Company[] => {
@@ -403,20 +777,99 @@ export function SupabaseHotelProvider({ children }: { children: React.ReactNode 
     return /^\d{11}$/.test(oib);
   }, []);
 
-  // Pricing tier placeholders
+  // Pricing tier management
   const createPricingTier = useCallback(async (pricingTier: Omit<PricingTier, 'id' | 'createdAt' | 'updatedAt'>) => {
-    console.warn('createPricingTier not implemented yet');
-    throw new Error('Pricing tier management not implemented');
-  }, []);
+    setIsUpdating(true);
+    try {
+      const { data, error } = await supabase
+        .from('pricing_tiers')
+        .insert({
+          name: pricingTier.name,
+          description: pricingTier.description || null,
+          seasonal_rate_a: pricingTier.seasonalRates?.A || 0,
+          seasonal_rate_b: pricingTier.seasonalRates?.B || 0,
+          seasonal_rate_c: pricingTier.seasonalRates?.C || 0,
+          seasonal_rate_d: pricingTier.seasonalRates?.D || 0,
+          is_percentage_discount: true,
+          minimum_stay: pricingTier.minimumStayRequirement || null,
+          valid_from: pricingTier.validFrom?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
+          valid_to: pricingTier.validTo?.toISOString().split('T')[0] || null,
+          is_active: pricingTier.isActive !== false,
+          is_default: pricingTier.isDefault || false
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      // Update local state
+      const newPricingTier = mapPricingTierFromDB(data);
+      setPricingTiers(prev => [...prev, newPricingTier]);
+      
+    } catch (err) {
+      console.error('Failed to create pricing tier:', err);
+      throw err;
+    } finally {
+      setIsUpdating(false);
+    }
+  }, [mapPricingTierFromDB]);
 
   const updatePricingTier = useCallback(async (id: string, updates: Partial<PricingTier>) => {
-    console.warn('updatePricingTier not implemented yet');
-    throw new Error('Pricing tier management not implemented');
-  }, []);
+    setIsUpdating(true);
+    try {
+      const { data, error } = await supabase
+        .from('pricing_tiers')
+        .update({
+          name: updates.name,
+          description: updates.description,
+          seasonal_rate_a: updates.seasonalRates?.A,
+          seasonal_rate_b: updates.seasonalRates?.B,
+          seasonal_rate_c: updates.seasonalRates?.C,
+          seasonal_rate_d: updates.seasonalRates?.D,
+          minimum_stay: updates.minimumStayRequirement,
+          valid_from: updates.validFrom?.toISOString().split('T')[0],
+          valid_to: updates.validTo?.toISOString().split('T')[0],
+          is_active: updates.isActive,
+          is_default: updates.isDefault,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', parseInt(id))
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      // Update local state
+      const updatedPricingTier = mapPricingTierFromDB(data);
+      setPricingTiers(prev => prev.map(pt => pt.id === id ? updatedPricingTier : pt));
+      
+    } catch (err) {
+      console.error('Failed to update pricing tier:', err);
+      throw err;
+    } finally {
+      setIsUpdating(false);
+    }
+  }, [mapPricingTierFromDB]);
 
   const deletePricingTier = useCallback(async (id: string) => {
-    console.warn('deletePricingTier not implemented yet');
-    throw new Error('Pricing tier management not implemented');
+    setIsUpdating(true);
+    try {
+      const { error } = await supabase
+        .from('pricing_tiers')
+        .update({ is_active: false })
+        .eq('id', parseInt(id));
+
+      if (error) throw error;
+      
+      // Update local state (soft delete - mark as inactive)
+      setPricingTiers(prev => prev.map(pt => pt.id === id ? { ...pt, isActive: false } : pt));
+      
+    } catch (err) {
+      console.error('Failed to delete pricing tier:', err);
+      throw err;
+    } finally {
+      setIsUpdating(false);
+    }
   }, []);
 
   const findPricingTiersByName = useCallback((query: string): PricingTier[] => {
@@ -546,6 +999,10 @@ export function SupabaseHotelProvider({ children }: { children: React.ReactNode 
     fiscalRecords,
     companies,
     pricingTiers,
+    
+    // Performance optimizations
+    roomsByFloor,
+    roomLookup,
     
     // Loading states
     isLoading,

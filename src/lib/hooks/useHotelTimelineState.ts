@@ -86,7 +86,7 @@ export interface HotelTimelineActions {
 
 export function useHotelTimelineState(): HotelTimelineState & HotelTimelineActions {
   const timelineService = HotelTimelineService.getInstance();
-  const { reservations, updateReservation, updateReservationStatus, deleteReservation } = useHotel();
+  const { reservations, rooms, updateReservation, updateReservationStatus, deleteReservation } = useHotel();
   
   // Date states
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -138,21 +138,21 @@ export function useHotelTimelineState(): HotelTimelineState & HotelTimelineActio
   const [isMoveMode, setIsMoveMode] = useState(false);
   
   // Computed states
-  const roomsByFloor = useMemo(() => timelineService.getRoomsByFloor(), []);
+  const roomsByFloor = useMemo(() => timelineService.getRoomsByFloor(rooms), [rooms]);
   
   const calendarEvents = useMemo(() => 
-    timelineService.generateCalendarEvents(reservations, currentDate),
-    [reservations, currentDate]
+    timelineService.generateCalendarEvents(reservations, currentDate, rooms),
+    [reservations, currentDate, rooms]
   );
   
   const currentOccupancy = useMemo(() =>
-    timelineService.calculateOccupancyData(reservations, overviewDate),
-    [reservations, overviewDate]
+    timelineService.calculateOccupancyData(reservations, overviewDate, rooms),
+    [reservations, overviewDate, rooms]
   );
   
   const timelineStats = useMemo(() =>
-    timelineService.getTimelineStats(reservations, currentDate),
-    [reservations, currentDate]
+    timelineService.getTimelineStats(reservations, currentDate, rooms),
+    [reservations, currentDate, rooms]
   );
   
   // Date navigation actions
@@ -344,8 +344,8 @@ export function useHotelTimelineState(): HotelTimelineState & HotelTimelineActio
   }, []);
   
   const validateReservationMove = useCallback((reservation: Reservation, targetRoomId: string) => {
-    return timelineService.validateReservationMove(reservation, targetRoomId, reservations);
-  }, [reservations]);
+    return timelineService.validateReservationMove(reservation, targetRoomId, reservations, rooms);
+  }, [reservations, rooms]);
   
   // Return combined state and actions
   return {

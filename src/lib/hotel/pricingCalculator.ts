@@ -6,7 +6,7 @@ import {
   Room,
   HOTEL_CONSTANTS 
 } from './types';
-import { HOTEL_POREC_ROOMS, SEASONAL_PERIODS } from './hotelData';
+import { SEASONAL_PERIODS } from './hotelData';
 import { format, isWithinInterval, parseISO } from 'date-fns';
 
 // Determine seasonal period for a given date
@@ -104,10 +104,11 @@ export function calculatePricing(
     hasPets?: boolean;
     needsParking?: boolean;
     additionalCharges?: number;
-  } = {}
+  } = {},
+  rooms: Room[] = []
 ): PricingCalculation {
   // Find the room
-  const room = HOTEL_POREC_ROOMS.find(r => r.id === roomId);
+  const room = rooms.find(r => r.id === roomId);
   if (!room) {
     throw new Error(`Room ${roomId} not found`);
   }
@@ -227,8 +228,8 @@ export function formatPricingBreakdown(pricing: PricingCalculation): {
 }
 
 // Quick pricing lookup for room types
-export function getQuickPricing(roomType: string, period: SeasonalPeriod): number {
-  const room = HOTEL_POREC_ROOMS.find(r => r.type === roomType);
+export function getQuickPricing(roomType: string, period: SeasonalPeriod, rooms: Room[] = []): number {
+  const room = rooms.find(r => r.type === roomType);
   return room ? room.seasonalRates[period] : 0;
 }
 

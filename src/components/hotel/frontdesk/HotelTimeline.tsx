@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { format, addDays, startOfDay, isSameDay } from 'date-fns';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
@@ -27,7 +27,6 @@ import {
   ArrowLeftRight,
 
 } from 'lucide-react';
-import { HOTEL_POREC_ROOMS, getRoomsByFloor } from '../../../lib/hotel/hotelData';
 import { SAMPLE_GUESTS } from '../../../lib/hotel/sampleData';
 import { useHotel } from '../../../lib/hotel/state/SupabaseHotelContext';
 import { RESERVATION_STATUS_COLORS, formatRoomNumber, getRoomTypeDisplay } from '../../../lib/hotel/calendarUtils';
@@ -1733,7 +1732,7 @@ function RoomOverviewFloorSection({
 
 // Main timeline component
 export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen }: HotelTimelineProps) {
-  const { reservations, isUpdating, createReservation, createGuest, updateReservation, updateReservationStatus, deleteReservation } = useHotel();
+  const { reservations, rooms, isUpdating, createReservation, createGuest, updateReservation, updateReservationStatus, deleteReservation } = useHotel();
   
   // Use consolidated timeline state management
   const {
@@ -1837,8 +1836,8 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
       }
 
       const guest = SAMPLE_GUESTS.find(g => g.id === reservation.guestId);
-      const newRoom = HOTEL_POREC_ROOMS.find(r => r.id === newRoomId);
-      const oldRoom = HOTEL_POREC_ROOMS.find(r => r.id === reservation.roomId);
+      const newRoom = rooms.find(r => r.id === newRoomId);
+      const oldRoom = rooms.find(r => r.id === reservation.roomId);
 
       if (!newRoom || !oldRoom) {
         throw new Error('Room not found');
@@ -1887,8 +1886,8 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
     
     // Get reservation and room data from current state
     const reservation = reservations.find(r => r.id === roomChangeDialog.reservationId);
-    const targetRoom = HOTEL_POREC_ROOMS.find(r => r.id === roomChangeDialog.toRoomId);
-    const currentRoom = HOTEL_POREC_ROOMS.find(r => r.id === roomChangeDialog.fromRoomId);
+    const targetRoom = rooms.find(r => r.id === roomChangeDialog.toRoomId);
+    const currentRoom = rooms.find(r => r.id === roomChangeDialog.fromRoomId);
     
     if (!reservation || !targetRoom || !currentRoom) return;
     
@@ -1936,8 +1935,8 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
     
     // Get reservation and room data from current state
     const reservation = reservations.find(r => r.id === roomChangeDialog.reservationId);
-    const targetRoom = HOTEL_POREC_ROOMS.find(r => r.id === roomChangeDialog.toRoomId);
-    const currentRoom = HOTEL_POREC_ROOMS.find(r => r.id === roomChangeDialog.fromRoomId);
+    const targetRoom = rooms.find(r => r.id === roomChangeDialog.toRoomId);
+    const currentRoom = rooms.find(r => r.id === roomChangeDialog.fromRoomId);
     
     if (!reservation || !targetRoom || !currentRoom) return;
     
@@ -1990,7 +1989,7 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
       checkOutDate.setHours(11, 0, 0, 0); // 11 AM check-out
       
       // Find the room and open booking modal
-      const room = HOTEL_POREC_ROOMS.find(r => r.id === roomId);
+      const room = rooms.find(r => r.id === roomId);
       if (room) {
         handleRoomClick(room);
       }
@@ -2010,7 +2009,7 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
         throw new Error('Reservation not found');
       }
 
-      const room = HOTEL_POREC_ROOMS.find(r => r.id === reservation.roomId);
+      const room = rooms.find(r => r.id === reservation.roomId);
       const guest = SAMPLE_GUESTS.find(g => g.id === reservation.guestId);
       
       // Calculate new dates
@@ -2165,7 +2164,7 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
   const selectedEvent: CalendarEvent | null = useMemo(() => {
     if (!selectedReservation) return null;
     
-    const room = HOTEL_POREC_ROOMS.find(r => r.id === selectedReservation.roomId);
+    const room = rooms.find(r => r.id === selectedReservation.roomId);
     const guest = SAMPLE_GUESTS.find(g => g.id === selectedReservation.guestId);
     
     return {
@@ -2200,7 +2199,7 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
     try {
       // Add order charges to reservation bill
       const guest = SAMPLE_GUESTS.find(g => g.id === hotelOrdersReservation.guestId);
-      const room = HOTEL_POREC_ROOMS.find(r => r.id === hotelOrdersReservation.roomId);
+      const room = rooms.find(r => r.id === hotelOrdersReservation.roomId);
       
       // Convert OrderItems to RoomServiceItems
       const roomServiceItems = orderItems.map(item => ({
@@ -2429,8 +2428,8 @@ Room Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item
       {/* Room Change Confirmation Dialog */}
       {roomChangeDialog.show && (() => {
         const reservation = reservations.find(r => r.id === roomChangeDialog.reservationId);
-        const currentRoom = HOTEL_POREC_ROOMS.find(r => r.id === roomChangeDialog.fromRoomId);
-        const targetRoom = HOTEL_POREC_ROOMS.find(r => r.id === roomChangeDialog.toRoomId);
+        const currentRoom = rooms.find(r => r.id === roomChangeDialog.fromRoomId);
+        const targetRoom = rooms.find(r => r.id === roomChangeDialog.toRoomId);
         const guest = reservation ? SAMPLE_GUESTS.find(g => g.id === reservation.guestId) || null : null;
         
         if (!reservation || !currentRoom || !targetRoom) return null;

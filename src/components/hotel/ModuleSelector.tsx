@@ -70,8 +70,8 @@ export default function ModuleSelector() {
       title: 'Channel Manager',
       description: 'Manage bookings from multiple platforms in one place',
       icon: <BarChart3 className="h-6 w-6" />,
-      available: false,
-      onClick: () => navigate('/hotel/channel-manager')
+      available: true,
+      onClick: () => navigate('/hotel/front-desk/channel-manager')
     },
     {
       key: 'frontDesk',
