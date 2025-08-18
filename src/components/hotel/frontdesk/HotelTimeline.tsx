@@ -1345,19 +1345,39 @@ function DroppableDateCell({
 
   // Handle two-click drag-to-create system
   const handleClick = (e: React.MouseEvent) => {
-    if (!isDragCreateMode || !isAvailableForDragCreate) return;
+    console.log('🖱️ CELL CLICK:', { 
+      isDragCreateMode, 
+      isAvailableForDragCreate, 
+      isSecondHalf, 
+      isDragCreating,
+      roomId: room.id,
+      halfDayIndex,
+      hasExistingReservation 
+    });
+    
+    if (!isDragCreateMode || !isAvailableForDragCreate) {
+      console.log('❌ CLICK BLOCKED:', { isDragCreateMode, isAvailableForDragCreate });
+      return;
+    }
     
     e.preventDefault();
+    console.log('✅ CLICK ACCEPTED');
     
     if (!isDragCreating) {
       // FIRST CLICK: Start selection (only on PM cells)
       if (isSecondHalf && onDragCreateStart) {
+        console.log('🟢 CALLING onDragCreateStart');
         onDragCreateStart(room.id, halfDayIndex);
+      } else {
+        console.log('❌ START BLOCKED:', { isSecondHalf, hasHandler: !!onDragCreateStart });
       }
     } else {
       // SECOND CLICK: End selection (only on AM cells)
       if (!isSecondHalf && onDragCreateEnd) {
+        console.log('🔴 CALLING onDragCreateEnd');
         onDragCreateEnd(room.id, halfDayIndex);
+      } else {
+        console.log('❌ END BLOCKED:', { isSecondHalf, hasHandler: !!onDragCreateEnd });
       }
     }
   };
@@ -2912,9 +2932,25 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
 
   // Modern drag-create cell click handler
   const handleDragCreateCellClick = useCallback(async (roomId: string, date: Date, isAM: boolean) => {
+    console.log('🎯 NEW SYSTEM: handleDragCreateCellClick called', { 
+      roomId, 
+      date: date.toLocaleDateString(), 
+      isAM, 
+      currentMode: dragCreate.state.mode,
+      isEnabled: dragCreate.isEnabled 
+    });
+    
     try {
+      console.log('🔍 NEW SYSTEM CONDITIONS:', {
+        mode: dragCreate.state.mode,
+        isAM,
+        firstCondition: dragCreate.state.mode === 'selecting_checkin' && !isAM,
+        secondCondition: dragCreate.state.mode === 'selecting_checkout' && isAM
+      });
+      
       if (dragCreate.state.mode === 'selecting_checkin' && !isAM) {
         // First click - select check-in (PM cells only)
+        console.log('🔵 SELECTING CHECK-IN');
         await dragCreate.actions.selectCheckIn(roomId, date);
       } else if (dragCreate.state.mode === 'selecting_checkout' && isAM) {
         // Second click - select and confirm check-out (AM cells only)
@@ -3165,19 +3201,23 @@ Room Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item
                 dragCreateEnd={null}   // Legacy - not used with new system  
                 dragCreatePreview={dragCreate.preview}
                 onDragCreateStart={(roomId: string, halfDayIndex: number) => {
+                  console.log('🚀 OLD SYSTEM: onDragCreateStart called', { roomId, halfDayIndex });
                   // Bridge old system to new: convert half-day index to date and isAM
                   const dayIndex = Math.floor(halfDayIndex / 2);
                   const date = addDays(currentDate, dayIndex);
-                  const isAM = (halfDayIndex % 2) === 0;
-                  handleDragCreateCellClick(roomId, date, !isAM); // !isAM because start is PM
+                  const isAM = (halfDayIndex % 2) === 0; // Even = AM, Odd = PM
+                  console.log('🔄 BRIDGE: Converting to new system', { dayIndex, date, isAM, originalHalfDayIndex: halfDayIndex });
+                  handleDragCreateCellClick(roomId, date, isAM); // Pass isAM directly
                 }}
                 onDragCreateMove={() => {}}  // Legacy - not used in new system
                 onDragCreateEnd={(roomId: string, halfDayIndex: number) => {
+                  console.log('🚀 OLD SYSTEM: onDragCreateEnd called', { roomId, halfDayIndex });
                   // Bridge old system to new: convert half-day index to date and isAM
                   const dayIndex = Math.floor(halfDayIndex / 2);
                   const date = addDays(currentDate, dayIndex);
-                  const isAM = (halfDayIndex % 2) === 0;
-                  handleDragCreateCellClick(roomId, date, isAM); // AM because end is AM
+                  const isAM = (halfDayIndex % 2) === 0; // Even = AM, Odd = PM
+                  console.log('🔄 BRIDGE END: Converting to new system', { dayIndex, date, isAM, originalHalfDayIndex: halfDayIndex });
+                  handleDragCreateCellClick(roomId, date, isAM); // Pass isAM directly
                 }}
                 isExpansionMode={isExpansionMode}
                 isMoveMode={isMoveMode}
