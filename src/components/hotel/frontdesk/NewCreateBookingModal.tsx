@@ -42,6 +42,7 @@ interface NewCreateBookingModalProps {
   isOpen: boolean;
   onClose: () => void;
   room: Room;
+  currentDate?: Date;
   preSelectedDates?: {checkIn: Date, checkOut: Date} | null;
 }
 
@@ -49,16 +50,17 @@ export default function NewCreateBookingModal({
   isOpen,
   onClose,
   room,
+  currentDate,
   preSelectedDates
 }: NewCreateBookingModalProps) {
   const { guests, createReservation, createGuest } = useHotel();
   
   // Form state
   const [checkInDate, setCheckInDate] = useState(
-    preSelectedDates?.checkIn || new Date()
+    preSelectedDates?.checkIn || currentDate || new Date()
   );
   const [checkOutDate, setCheckOutDate] = useState(
-    preSelectedDates?.checkOut || new Date(Date.now() + 24 * 60 * 60 * 1000)
+    preSelectedDates?.checkOut || new Date((currentDate || new Date()).getTime() + 2 * 24 * 60 * 60 * 1000)
   );
   
   // Guests management
@@ -239,7 +241,7 @@ export default function NewCreateBookingModal({
       
       if (primaryBookingGuest.type === 'new' && primaryBookingGuest.newGuestData) {
         // Create new guest and use their data for reservation
-        await createGuest({
+        const createdGuest = await createGuest({
           firstName: primaryBookingGuest.newGuestData.firstName,
           lastName: primaryBookingGuest.newGuestData.lastName,
           fullName: `${primaryBookingGuest.newGuestData.firstName} ${primaryBookingGuest.newGuestData.lastName}`,
@@ -260,16 +262,6 @@ export default function NewCreateBookingModal({
           updatedAt: new Date()
         });
         
-        // Find the newly created guest by searching for the exact match
-        const createdGuest = guests.find(g => 
-          g.firstName === primaryBookingGuest.newGuestData!.firstName && 
-          g.lastName === primaryBookingGuest.newGuestData!.lastName &&
-          g.email === primaryBookingGuest.newGuestData!.email
-        );
-        
-        if (!createdGuest) {
-          throw new Error('Failed to create guest');
-        }
         primaryGuestId = createdGuest.id;
         
       } else if (primaryBookingGuest.existingGuest) {

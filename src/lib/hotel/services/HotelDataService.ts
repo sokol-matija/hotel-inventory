@@ -4,6 +4,7 @@
 import { supabase, Database } from '../../supabase';
 import { Room, Guest, Reservation, Hotel, RoomType as AppRoomType } from '../types';
 import { HOTEL_POREC } from '../hotelData';
+import { databaseAdapter } from './DatabaseAdapter';
 
 // Database row types from Supabase
 type HotelRow = Database['public']['Tables']['hotels']['Row'];
@@ -33,25 +34,7 @@ export class HotelDataService {
    * Get hotel information
    */
   async getHotel(): Promise<Hotel> {
-    try {
-      const { data, error } = await supabase
-        .from('hotels')
-        .select('*')
-        .eq('id', HOTEL_POREC_ID)
-        .single();
-
-      if (error) throw error;
-      
-      if (data) {
-        return this.mapHotelFromDB(data);
-      }
-      
-      // Return default hotel data if not found in DB
-      return HOTEL_POREC;
-    } catch (error) {
-      console.error('Error fetching hotel:', error);
-      return HOTEL_POREC;
-    }
+    return await databaseAdapter.getHotel();
   }
 
   /**
@@ -79,30 +62,7 @@ export class HotelDataService {
    * Get all rooms with room type information
    */
   async getRooms(): Promise<Room[]> {
-    try {
-      const { data, error } = await supabase
-        .from('rooms')
-        .select(`
-          *,
-          room_type:room_types (
-            code,
-            name_croatian,
-            name_english,
-            max_occupancy,
-            amenities
-          )
-        `)
-        .eq('hotel_id', HOTEL_POREC_ID)
-        .eq('is_active', true)
-        .order('number');
-
-      if (error) throw error;
-      
-      return data?.map(room => this.mapRoomFromDB(room)) || [];
-    } catch (error) {
-      console.error('Error fetching rooms:', error);
-      return [];
-    }
+    return await databaseAdapter.getRooms();
   }
 
   /**
@@ -140,81 +100,21 @@ export class HotelDataService {
    * Get room by ID
    */
   async getRoomById(roomId: string): Promise<Room | null> {
-    try {
-      const { data, error } = await supabase
-        .from('rooms')
-        .select(`
-          *,
-          room_type:room_types (
-            code,
-            name_croatian,
-            name_english,
-            max_occupancy,
-            amenities
-          )
-        `)
-        .eq('id', roomId)
-        .single();
-
-      if (error) throw error;
-      
-      return data ? this.mapRoomFromDB(data) : null;
-    } catch (error) {
-      console.error('Error fetching room by ID:', error);
-      return null;
-    }
+    return await databaseAdapter.getRoomById(roomId);
   }
 
   /**
    * Get all guests
    */
   async getGuests(): Promise<Guest[]> {
-    try {
-      const { data, error } = await supabase
-        .from('guests')
-        .select('*')
-        .order('last_name', { ascending: true });
-
-      if (error) throw error;
-      
-      return data?.map(guest => this.mapGuestFromDB(guest)) || [];
-    } catch (error) {
-      console.error('Error fetching guests:', error);
-      return [];
-    }
+    return await databaseAdapter.getGuests();
   }
 
   /**
    * Create new guest
    */
   async createGuest(guestData: Omit<Guest, 'id' | 'totalStays' | 'isVip'>): Promise<Guest> {
-    try {
-      const { data, error } = await supabase
-        .from('guests')
-        .insert({
-          first_name: guestData.firstName,
-          last_name: guestData.lastName,
-          email: guestData.email || null,
-          phone: guestData.phone || null,
-          emergency_contact_name: guestData.emergencyContactName || null,
-          emergency_contact_phone: guestData.emergencyContactPhone || null,
-          nationality: guestData.nationality || null,
-          preferred_language: guestData.preferredLanguage || 'en',
-          has_pets: guestData.hasPets || false,
-          date_of_birth: guestData.dateOfBirth?.toISOString() || null,
-          is_vip: false,
-          total_stays: 0
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      
-      return this.mapGuestFromDB(data);
-    } catch (error) {
-      console.error('Error creating guest:', error);
-      throw error;
-    }
+    return await databaseAdapter.createGuest(guestData);
   }
 
   /**
@@ -271,42 +171,7 @@ export class HotelDataService {
    * Get all reservations
    */
   async getReservations(): Promise<Reservation[]> {
-    try {
-      const { data, error } = await supabase
-        .from('reservations')
-        .select(`
-          *,
-          guest:guests!primary_guest_id (
-            id,
-            first_name,
-            last_name,
-            email,
-            phone,
-            nationality,
-            preferred_language,
-            has_pets
-          ),
-          room:rooms (
-            id,
-            number,
-            floor,
-            room_type:room_types (
-              code,
-              name_croatian,
-              name_english
-            )
-          )
-        `)
-        .eq('hotel_id', HOTEL_POREC_ID)
-        .order('check_in', { ascending: true });
-
-      if (error) throw error;
-      
-      return data?.map(reservation => this.mapReservationFromDB(reservation)) || [];
-    } catch (error) {
-      console.error('Error fetching reservations:', error);
-      return [];
-    }
+    return await databaseAdapter.getReservations();
   }
 
   /**
@@ -340,9 +205,9 @@ export class HotelDataService {
           )
         `)
         .eq('hotel_id', HOTEL_POREC_ID)
-        .gte('check_out', startDate.toISOString().split('T')[0])
-        .lte('check_in', endDate.toISOString().split('T')[0])
-        .order('check_in', { ascending: true });
+        .gte('check_out_date', startDate.toISOString().split('T')[0])
+        .lte('check_in_date', endDate.toISOString().split('T')[0])
+        .order('check_in_date', { ascending: true });
 
       if (error) throw error;
       
@@ -357,91 +222,14 @@ export class HotelDataService {
    * Create new reservation
    */
   async createReservation(reservationData: Omit<Reservation, 'id' | 'bookingDate' | 'lastModified'>): Promise<Reservation> {
-    try {
-      const { data, error } = await supabase
-        .from('reservations')
-        .insert({
-          hotel_id: HOTEL_POREC_ID,
-          room_id: reservationData.roomId,
-          primary_guest_id: reservationData.guestId,
-          confirmation_number: this.generateConfirmationNumber(),
-          check_in: reservationData.checkIn.toISOString().split('T')[0],
-          check_out: reservationData.checkOut.toISOString().split('T')[0],
-          adults: reservationData.adults,
-          children: reservationData.children?.length || 0,
-          total_guests: reservationData.numberOfGuests,
-          booking_source: reservationData.bookingSource || 'direct',
-          special_requests: reservationData.specialRequests || null,
-          status: reservationData.status || 'confirmed',
-          seasonal_period: reservationData.seasonalPeriod,
-          base_room_rate: reservationData.baseRoomRate,
-          number_of_nights: reservationData.numberOfNights,
-          subtotal_accommodation: reservationData.subtotal,
-          children_discount: reservationData.childrenDiscounts || 0,
-          tourism_tax: reservationData.tourismTax || 0,
-          vat_accommodation: reservationData.vatAmount,
-          pet_fee_subtotal: reservationData.petFee || 0,
-          parking_fee_subtotal: reservationData.parkingFee || 0,
-          short_stay_supplement: reservationData.shortStaySuplement || 0,
-          additional_services_subtotal: reservationData.additionalCharges || 0,
-          total_amount: reservationData.totalAmount,
-          total_vat_amount: reservationData.vatAmount,
-          payment_status: 'pending',
-          has_pets: (reservationData.petFee || 0) > 0, // Based on whether pet fee was charged
-          booking_date: new Date().toISOString()
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      
-      // Fetch the complete reservation with relations
-      const newReservation = await this.getReservationById(data.id);
-      if (!newReservation) {
-        throw new Error('Failed to fetch created reservation');
-      }
-      
-      return newReservation;
-    } catch (error) {
-      console.error('Error creating reservation:', error);
-      throw error;
-    }
+    return await databaseAdapter.createReservation(reservationData);
   }
 
   /**
    * Update reservation
    */
   async updateReservation(id: string, updates: Partial<Reservation>): Promise<Reservation> {
-    try {
-      const updateData: any = {};
-      
-      if (updates.checkIn) updateData.check_in = updates.checkIn.toISOString().split('T')[0];
-      if (updates.checkOut) updateData.check_out = updates.checkOut.toISOString().split('T')[0];
-      if (updates.adults !== undefined) updateData.adults = updates.adults;
-      if (updates.status) updateData.status = updates.status;
-      if (updates.specialRequests !== undefined) updateData.special_requests = updates.specialRequests;
-      if (updates.totalAmount !== undefined) updateData.total_amount = updates.totalAmount;
-      
-      updateData.updated_at = new Date().toISOString();
-
-      const { error } = await supabase
-        .from('reservations')
-        .update(updateData)
-        .eq('id', id);
-
-      if (error) throw error;
-      
-      // Fetch the updated reservation
-      const updatedReservation = await this.getReservationById(id);
-      if (!updatedReservation) {
-        throw new Error('Failed to fetch updated reservation');
-      }
-      
-      return updatedReservation;
-    } catch (error) {
-      console.error('Error updating reservation:', error);
-      throw error;
-    }
+    return await databaseAdapter.updateReservation(id, updates);
   }
 
   /**
@@ -513,7 +301,7 @@ export class HotelDataService {
         .select('id')
         .eq('room_id', roomId)
         .not('status', 'eq', 'cancelled')
-        .or(`check_out.lte.${checkIn.toISOString().split('T')[0]},check_in.gte.${checkOut.toISOString().split('T')[0]}`);
+        .or(`check_out_date.lte.${checkIn.toISOString().split('T')[0]},check_in_date.gte.${checkOut.toISOString().split('T')[0]}`);
 
       if (error) throw error;
       
@@ -621,8 +409,8 @@ export class HotelDataService {
       id: reservationRow.id,
       roomId: reservationRow.room_id,
       guestId: reservationRow.primary_guest_id,
-      checkIn: new Date(reservationRow.check_in),
-      checkOut: new Date(reservationRow.check_out),
+      checkIn: new Date(reservationRow.check_in_date),
+      checkOut: new Date(reservationRow.check_out_date),
       numberOfGuests: reservationRow.total_guests || (reservationRow.adults + (reservationRow.children || 0)),
       adults: reservationRow.adults,
       children: [], // TODO: Load from reservation_guests table

@@ -347,7 +347,8 @@ class AuditTrailService {
       const logsToSync = [...this.localAuditBuffer];
       this.localAuditBuffer = [];
 
-      const dbLogs = logsToSync.map(event => ({
+      // First try with the full schema including changed_fields
+      const dbLogsWithChangedFields = logsToSync.map(event => ({
         id: event.id,
         timestamp: event.timestamp.toISOString(),
         user_id: event.userId,
@@ -365,11 +366,43 @@ class AuditTrailService {
         metadata: event.metadata ? JSON.stringify(event.metadata) : null
       }));
 
-      const { error } = await supabase
+      let { error } = await supabase
         .from('audit_logs')
-        .insert(dbLogs);
+        .insert(dbLogsWithChangedFields);
 
-      if (error) {
+      // If that fails due to schema mismatch, try without changed_fields
+      if (error && error.message.includes('changed_fields')) {
+        logger.debug('AuditTrail', 'Retrying audit log sync without changed_fields column');
+        
+        const dbLogsWithoutChangedFields = logsToSync.map(event => ({
+          id: event.id,
+          timestamp: event.timestamp.toISOString(),
+          user_id: event.userId,
+          session_id: event.sessionId,
+          action: event.action,
+          entity_type: event.entityType,
+          entity_id: event.entityId,
+          old_values: event.oldValues ? JSON.stringify(event.oldValues) : null,
+          new_values: event.newValues ? JSON.stringify(event.newValues) : null,
+          ip_address: event.ipAddress,
+          user_agent: event.userAgent,
+          result: event.result,
+          error_message: event.errorMessage,
+          metadata: event.metadata ? JSON.stringify(event.metadata) : null
+        }));
+
+        const { error: retryError } = await supabase
+          .from('audit_logs')
+          .insert(dbLogsWithoutChangedFields);
+
+        if (retryError) {
+          // Restore logs to buffer if sync failed
+          this.localAuditBuffer.unshift(...logsToSync);
+          logger.error('AuditTrail', 'Failed to sync audit logs to database (retry)', retryError);
+        } else {
+          logger.debug('AuditTrail', `Synced ${logsToSync.length} audit logs to database (without changed_fields)`);
+        }
+      } else if (error) {
         // Restore logs to buffer if sync failed
         this.localAuditBuffer.unshift(...logsToSync);
         logger.error('AuditTrail', 'Failed to sync audit logs to database', error);

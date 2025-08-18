@@ -51,7 +51,7 @@ interface HotelContextType {
   deleteReservation: (id: string) => Promise<void>;
   
   // Actions - Guests
-  createGuest: (guest: Omit<Guest, 'id' | 'totalStays'>) => Promise<void>;
+  createGuest: (guest: Omit<Guest, 'id' | 'totalStays'>) => Promise<Guest>;
   updateGuest: (id: string, updates: Partial<Guest>) => Promise<void>;
   findGuestsByName: (query: string) => Guest[];
   getGuestStayHistory: (guestId: string) => Reservation[];
@@ -554,6 +554,11 @@ export function SupabaseHotelProvider({ children }: { children: React.ReactNode 
         'database_operation'
       );
       
+      // Immediately update the context with the new reservation
+      if (newReservation) {
+        setReservations(prevReservations => [...prevReservations, newReservation]);
+      }
+      
       logBusinessOperation('create', 'reservation', newReservation?.id || 'unknown', finalReservationData);
       auditTrail.logReservationCreate(newReservation?.id || 'unknown', finalReservationData);
       
@@ -596,8 +601,10 @@ export function SupabaseHotelProvider({ children }: { children: React.ReactNode 
   const createGuest = useCallback(async (guest: Omit<Guest, 'id' | 'totalStays'>) => {
     setIsUpdating(true);
     try {
-      await hotelDataService.createGuest(guest);
-      // Real-time subscription will handle the UI update
+      const newGuest = await hotelDataService.createGuest(guest);
+      // Immediately update the context with the new guest
+      setGuests(prevGuests => [...prevGuests, newGuest]);
+      return newGuest;
     } catch (err) {
       console.error('Failed to create guest:', err);
       throw err;

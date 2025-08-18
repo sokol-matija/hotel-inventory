@@ -27,11 +27,10 @@ import {
   ArrowLeftRight,
 
 } from 'lucide-react';
-import { SAMPLE_GUESTS } from '../../../lib/hotel/sampleData';
 import { useHotel } from '../../../lib/hotel/state/SupabaseHotelContext';
 import { RESERVATION_STATUS_COLORS, formatRoomNumber, getRoomTypeDisplay } from '../../../lib/hotel/calendarUtils';
 import { getCountryFlag } from '../../../lib/hotel/countryFlags';
-import { CalendarEvent, ReservationStatus, Reservation, Room, RoomServiceItem } from '../../../lib/hotel/types';
+import { CalendarEvent, ReservationStatus, Reservation, Room, Guest, RoomServiceItem } from '../../../lib/hotel/types';
 import ReservationPopup from './Reservations/ReservationPopup';
 import NewCreateBookingModal from './NewCreateBookingModal';
 import RoomChangeConfirmDialog from './RoomChangeConfirmDialog';
@@ -214,10 +213,25 @@ function ReservationBlock({
       guestName: guest?.fullName || 'Guest',
       reservation
     },
+    canDrag: () => {
+      console.log('🔍 DRAG-DROP: Checking if can drag reservation:', {
+        reservationId: reservation.id,
+        isMoveMode,
+        roomId: room.id
+      });
+      return isMoveMode; // Only allow dragging in move mode
+    },
+    end: (item: any, monitor: any) => {
+      console.log('🏁 DRAG-DROP: Drag ended:', {
+        reservationId: reservation.id,
+        didDrop: monitor.didDrop(),
+        dropResult: monitor.getDropResult()
+      });
+    },
     collect: (monitor) => ({
       isDragging: !!monitor.isDragging(),
     }),
-  }), [reservation, room, guest]);
+  }), [reservation, room, guest, isMoveMode]);
 
   // Refs for drag handle and card
   const dragHandleRef = useRef<HTMLDivElement>(null);
@@ -231,6 +245,18 @@ function ReservationBlock({
   // Calculate day indices from timeline start (0-13)
   const startDayIndex = Math.floor((checkInDate.getTime() - timelineStart.getTime()) / (24 * 60 * 60 * 1000));
   const endDayIndex = Math.floor((checkOutDate.getTime() - timelineStart.getTime()) / (24 * 60 * 60 * 1000));
+  
+  // Debug logging for reservation positioning
+  if (reservation.id === '8' || reservation.id === '9') {
+    console.log(`Reservation ${reservation.id} positioning:`, {
+      checkIn: checkInDate.toISOString().split('T')[0],
+      checkOut: checkOutDate.toISOString().split('T')[0],
+      timelineStart: timelineStart.toISOString().split('T')[0],
+      startDayIndex,
+      endDayIndex,
+      visible: startDayIndex >= 0 && startDayIndex < 14
+    });
+  }
   
   // HALF-DAY POSITIONING:
   // Check-in always starts in second half of day (PM)
@@ -374,9 +400,21 @@ function ReservationBlock({
         
         {/* Guest info - name with guest count */}
         <div className="flex items-center space-x-1 flex-1 min-w-0">
-          <span className="truncate font-medium text-xs">
-            {guest?.fullName || 'Guest'}
-          </span>
+          <div className="flex flex-col min-w-0 flex-1">
+            <span className="truncate font-medium text-xs">
+              {guest?.fullName || 'Guest'}
+            </span>
+            
+            {/* Days left display */}
+            {(() => {
+              const daysLeft = Math.ceil((reservation.checkOut.getTime() - new Date().getTime()) / (24 * 60 * 60 * 1000));
+              return (
+                <span className="text-xs text-blue-600 font-medium">
+                  {daysLeft > 0 ? `${daysLeft} days left` : daysLeft === 0 ? 'Checking out today' : 'Checked out'}
+                </span>
+              );
+            })()}
+          </div>
           
           {/* Guest count icons next to name */}
           <div className="flex items-center space-x-0.5 flex-shrink-0">
@@ -927,6 +965,16 @@ function DroppableDateCell({
   const [{ isOver, canDrop }, drop] = useDrop(() => ({
     accept: ItemTypes.RESERVATION,
     drop: (item: any) => {
+      console.log('🚀 DROP TRIGGERED:', {
+        reservationId: item.reservationId,
+        fromRoom: item.currentRoomId,
+        toRoom: room.id,
+        date: date.toLocaleDateString(),
+        isSecondHalf,
+        originalCheckIn: item.checkIn,
+        originalCheckOut: item.checkOut
+      });
+      
       const originalDuration = Math.ceil((item.checkOut.getTime() - item.checkIn.getTime()) / (24 * 60 * 60 * 1000));
       
       if (isSecondHalf) {
@@ -937,6 +985,14 @@ function DroppableDateCell({
         const newCheckOut = addDays(newCheckIn, originalDuration);
         newCheckOut.setHours(11, 0, 0, 0); // 11:00 AM check-out
         
+        console.log('📞 CALLING onMoveReservation (PM):', {
+          reservationId: item.reservationId,
+          roomId: room.id,
+          newCheckIn,
+          newCheckOut,
+          functionName: onMoveReservation.name || 'anonymous'
+        });
+        
         onMoveReservation(item.reservationId, room.id, newCheckIn, newCheckOut);
       } else {
         // CONSTRAINT: AM cells only accept check-out (right edge of reservation)
@@ -945,6 +1001,14 @@ function DroppableDateCell({
         
         const newCheckIn = addDays(newCheckOut, -originalDuration);
         newCheckIn.setHours(15, 0, 0, 0); // 3:00 PM check-in (duration days before)
+        
+        console.log('📞 CALLING onMoveReservation (AM):', {
+          reservationId: item.reservationId,
+          roomId: room.id,
+          newCheckIn,
+          newCheckOut,
+          functionName: onMoveReservation.name || 'anonymous'
+        });
         
         onMoveReservation(item.reservationId, room.id, newCheckIn, newCheckOut);
       }
@@ -965,7 +1029,21 @@ function DroppableDateCell({
       // - AM cells: for moving check-out time (right edge)
       const isValidDropZone = true; // For now, allow both - we'll handle logic in drop
       
-      return !hasExistingReservation && !isSamePosition && isValidDropZone;
+      const canDropHere = !hasExistingReservation && !isSamePosition && isValidDropZone;
+      
+      console.log('🎯 CAN DROP CHECK:', {
+        reservationId: item.reservationId,
+        room: room.number,
+        date: date.toLocaleDateString(),
+        isSecondHalf,
+        hasExistingReservation,
+        isSamePosition,
+        isValidDropZone,
+        canDropHere,
+        existingReservationsCount: existingReservations.length
+      });
+      
+      return canDropHere;
     },
     collect: (monitor) => ({
       isOver: !!monitor.isOver(),
@@ -1069,7 +1147,7 @@ function DroppableDateCell({
       {isDragCreateMode && isAvailableForDragCreate && !isDragCreating && (
         <div className={`absolute inset-0 ${
           isSecondHalf 
-            ? 'bg-green-100 border-2 border-green-300 border-dashed' 
+            ? 'bg-green-100 border-2 border-green-300 border-dashed animate-pulse' 
             : 'bg-gray-100 opacity-50'
         } flex items-center justify-center`}>
           {isSecondHalf && (
@@ -1110,6 +1188,7 @@ function DroppableDateCell({
 function RoomRow({ 
   room, 
   reservations, 
+  guests,
   startDate,
   onReservationClick,
   onMoveReservation,
@@ -1135,6 +1214,7 @@ function RoomRow({
 }: {
   room: Room;
   reservations: Reservation[];
+  guests: Guest[];
   startDate: Date;
   onReservationClick: (reservation: Reservation) => void;
   onMoveReservation: (reservationId: string, newRoomId: string, newCheckIn: Date, newCheckOut: Date) => void;
@@ -1215,7 +1295,7 @@ function RoomRow({
         isExpansionMode ? 'overflow-visible' : 'overflow-hidden'
       }`}>
         {roomReservations.map(reservation => {
-          const guest = SAMPLE_GUESTS.find(g => g.id === reservation.guestId);
+          const guest = guests.find(g => g.id === reservation.guestId);
           return (
             <ReservationBlock
               key={reservation.id}
@@ -1246,6 +1326,7 @@ function FloorSection({
   floor, 
   rooms, 
   reservations,
+  guests,
   startDate,
   isExpanded, 
   onToggle,
@@ -1274,6 +1355,7 @@ function FloorSection({
   floor: number;
   rooms: Room[];
   reservations: Reservation[];
+  guests: Guest[];
   startDate: Date;
   isExpanded: boolean;
   onToggle: () => void;
@@ -1343,6 +1425,7 @@ function FloorSection({
               key={room.id}
               room={room}
               reservations={reservations}
+              guests={guests}
               startDate={startDate}
               onReservationClick={onReservationClick}
               onMoveReservation={onMoveReservation}
@@ -1374,6 +1457,7 @@ function FloorSection({
 function RoomOverviewFloorSection({ 
   floor, 
   rooms, 
+  guests,
   isExpanded, 
   onToggle,
   occupancyData,
@@ -1384,6 +1468,7 @@ function RoomOverviewFloorSection({
 }: {
   floor: number;
   rooms: Room[];
+  guests: Guest[];
   isExpanded: boolean;
   onToggle: () => void;
   occupancyData: Record<string, any>;
@@ -1409,8 +1494,8 @@ function RoomOverviewFloorSection({
     reservation: null
   });
   
-  // Flag to prevent click through when closing context menu
-  const [isClosingContextMenu, setIsClosingContextMenu] = useState(false);
+  // Flag to prevent click through when closing context menu (room overview section)
+  const [isClosingContextMenuRoomOverview, setIsClosingContextMenuRoomOverview] = useState(false);
   
   // Context menu positioning function (same as in main timeline)
   const calculateContextMenuPosition = (e: React.MouseEvent, menuWidth = 180, menuHeight = 300) => {
@@ -1491,7 +1576,7 @@ function RoomOverviewFloorSection({
                   default: return 'bg-white border-gray-200';
                 }
               };
-              const guest = reservation ? SAMPLE_GUESTS.find(g => g.id === reservation.guestId) : null;
+              const guest = reservation ? guests.find(g => g.id === reservation.guestId) : null;
               
               // Calculate days left if occupied
               const daysLeft = reservation ? Math.ceil((reservation.checkOut.getTime() - new Date().getTime()) / (24 * 60 * 60 * 1000)) : 0;
@@ -1508,7 +1593,7 @@ function RoomOverviewFloorSection({
                     ${room.isPremium && !isOccupied ? 'bg-gradient-to-br from-yellow-50 to-amber-50' : ''}
                   `}
                   onClick={(e) => {
-                    if (!isClosingContextMenu) {
+                    if (!isClosingContextMenuRoomOverview) {
                       onRoomClick(room, reservation);
                     }
                   }}
@@ -1617,10 +1702,10 @@ function RoomOverviewFloorSection({
           <div 
             className="fixed inset-0 z-40" 
             onClick={() => {
-              setIsClosingContextMenu(true);
+              setIsClosingContextMenuRoomOverview(true);
               setContextMenu({ show: false, x: 0, y: 0, reservation: null });
               // Reset flag after a short delay
-              setTimeout(() => setIsClosingContextMenu(false), 100);
+              setTimeout(() => setIsClosingContextMenuRoomOverview(false), 100);
             }}
           />
           
@@ -1732,9 +1817,24 @@ function RoomOverviewFloorSection({
 
 // Main timeline component
 export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen }: HotelTimelineProps) {
-  const { reservations, rooms, isUpdating, createReservation, createGuest, updateReservation, updateReservationStatus, deleteReservation } = useHotel();
+  const { reservations, rooms, guests, isUpdating, createReservation, createGuest, updateReservation, updateReservationStatus, deleteReservation } = useHotel();
   
-  // Use consolidated timeline state management
+  // Create local state for immediate optimistic updates
+  const [localReservations, setLocalReservations] = useState<Reservation[]>([]);
+  
+  // Sync local state with context state
+  useEffect(() => {
+    setLocalReservations(reservations);
+  }, [reservations]);
+  
+  // Function to immediately update local state for optimistic updates
+  const updateReservationInState = useCallback((id: string, updates: Partial<Reservation>) => {
+    setLocalReservations(prev => 
+      prev.map(r => r.id === id ? { ...r, ...updates } : r)
+    );
+  }, []);
+  
+  // Use consolidated timeline state management - importing all for stability
   const {
     // State
     currentDate,
@@ -1809,6 +1909,68 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
       return () => document.removeEventListener('keydown', handleKeyDown);
     }
   }, [isDragCreating, clearDragCreate]);
+
+  // Keyboard shortcuts integration
+  useEffect(() => {
+    const initKeyboardShortcuts = async () => {
+      const { KeyboardShortcutService } = await import('../../../lib/hotel/services/KeyboardShortcutService');
+      const shortcutService = KeyboardShortcutService.getInstance();
+      
+      // Update context with current state
+      shortcutService.updateContext({
+        isModalOpen: showReservationPopup || showCreateBooking || roomChangeDialog.show,
+        selectedReservations: selectedReservation ? [selectedReservation.id] : [],
+        activeMode: isDragCreateMode ? 'drag_create' : isExpansionMode ? 'expand' : isMoveMode ? 'move' : 'normal',
+        currentDate: currentDate
+      });
+
+      // Listen for shortcut actions
+      const handleShortcut = (event: CustomEvent) => {
+        const { action } = event.detail;
+        
+        switch (action) {
+          case 'navigate_prev_day':
+            handleNavigate('PREV');
+            break;
+          case 'navigate_next_day':
+            handleNavigate('NEXT');
+            break;
+          case 'navigate_today':
+            handleNavigate('TODAY');
+            break;
+          case 'toggle_drag_create':
+            toggleDragCreateMode();
+            break;
+          case 'toggle_expansion':
+            toggleExpansionMode();
+            break;
+          case 'toggle_move':
+            toggleMoveMode();
+            break;
+          case 'escape':
+            exitAllModes();
+            if (showReservationPopup) closeReservationPopup();
+            if (showCreateBooking) closeCreateBooking();
+            if (roomChangeDialog.show) closeRoomChangeDialog();
+            break;
+          case 'move_reservation_left':
+            handleMoveReservationArrow('left');
+            break;
+          case 'move_reservation_right':
+            handleMoveReservationArrow('right');
+            break;
+        }
+      };
+
+      document.addEventListener('hotel-timeline-shortcut', handleShortcut as EventListener);
+      
+      return () => {
+        document.removeEventListener('hotel-timeline-shortcut', handleShortcut as EventListener);
+      };
+    };
+
+    initKeyboardShortcuts();
+  }, [isDragCreateMode, isExpansionMode, isMoveMode, showReservationPopup, showCreateBooking, roomChangeDialog.show, currentDate]);
   
   // Group rooms by floor
   // roomsByFloor and currentOccupancy now provided by useHotelTimelineState hook
@@ -1827,15 +1989,91 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
       handleRoomClick(room);
     }
   };
+
+  // OPTIMIZED: Lightning-fast local conflict detection
+  const basicRoomAvailabilityCheck = (excludeReservationId: string, roomId: string, checkIn: Date, checkOut: Date) => {
+    // Use synchronous operations for instant feedback
+    const roomReservations = localReservations.filter(r => 
+      r.roomId === roomId && r.id !== excludeReservationId
+    );
+    
+    const conflicts: any[] = [];
+    const checkInTime = checkIn.getTime();
+    const checkOutTime = checkOut.getTime();
+    
+    // Optimized overlap detection using timestamps
+    for (const reservation of roomReservations) {
+      const existingCheckIn = new Date(reservation.checkIn).getTime();
+      const existingCheckOut = new Date(reservation.checkOut).getTime();
+      
+      // Check for date overlap using faster timestamp comparison
+      if (!(checkOutTime <= existingCheckIn || checkInTime >= existingCheckOut)) {
+        const guest = guests.find(g => g.id === reservation.guestId);
+        conflicts.push({
+          type: 'overlapping_reservation',
+          severity: 'error',
+          message: `Room ${roomId} is already booked by ${guest?.fullName || 'Guest'} from ${new Date(existingCheckIn).toLocaleDateString()} to ${new Date(existingCheckOut).toLocaleDateString()}`
+        });
+      }
+    }
+    
+    return Promise.resolve({
+      hasConflict: conflicts.length > 0,
+      conflicts,
+      warnings: [],
+      suggestions: []
+    });
+  };
   
   const handleMoveReservation = async (reservationId: string, newRoomId: string, newCheckIn: Date, newCheckOut: Date) => {
+    console.log('🎯 DRAG-DROP DEBUG: handleMoveReservation called with:', {
+      reservationId,
+      newRoomId,
+      newCheckIn: newCheckIn.toISOString(),
+      newCheckOut: newCheckOut.toISOString()
+    });
+    
     try {
-      const reservation = reservations.find(r => r.id === reservationId);
+      const reservation = localReservations.find(r => r.id === reservationId);
       if (!reservation) {
+        console.error('❌ DRAG-DROP ERROR: Reservation not found:', { reservationId, availableIds: localReservations.map(r => r.id) });
         throw new Error('Reservation not found');
       }
+      
+      console.log('✅ DRAG-DROP: Found reservation:', {
+        id: reservation.id,
+        currentRoom: reservation.roomId,
+        newRoom: newRoomId,
+        guestId: reservation.guestId
+      });
 
-      const guest = SAMPLE_GUESTS.find(g => g.id === reservation.guestId);
+      // FAST conflict detection using local data (no database calls)
+      console.log('⚡ DRAG-DROP: Using instant local conflict detection...');
+      const conflictResult = await basicRoomAvailabilityCheck(reservationId, newRoomId, newCheckIn, newCheckOut);
+      
+      if (conflictResult.hasConflict) {
+        const errorMessages = conflictResult.conflicts.map((c: any) => c.message).join('\n');
+        hotelNotification.error('Move Blocked!', errorMessages, 5);
+        
+        // Show alternatives if available
+        const firstConflict = conflictResult.conflicts[0];
+        if (firstConflict?.suggestedAlternatives && firstConflict.suggestedAlternatives.length > 0) {
+          const alternatives = firstConflict.suggestedAlternatives;
+          const alternativeMessage = `Try these available rooms: ${alternatives.map((r: any) => `Room ${r.number}`).join(', ')}`;
+          hotelNotification.info('Alternative Rooms', alternativeMessage, 7);
+        }
+        return;
+      }
+      
+      // Show warnings
+      if (conflictResult.warnings.length > 0) {
+        const warningMessages = conflictResult.warnings.map((w: any) => w.message).join('\n');
+        hotelNotification.warning('Move Warnings', warningMessages, 4);
+      }
+
+      console.log('📍 DRAG-DROP: Past conflict detection, proceeding with move...');
+
+      const guest = guests.find(g => g.id === reservation.guestId);
       const newRoom = rooms.find(r => r.id === newRoomId);
       const oldRoom = rooms.find(r => r.id === reservation.roomId);
 
@@ -1858,11 +2096,44 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
         return; // Exit early, dialog handlers will complete the move
       }
 
-      // If no room type change, proceed normally
-      await updateReservation(reservationId, updatedReservationData);
+      // If no room type change, proceed with optimistic updates for instant visual feedback
+      console.log('🔄 DRAG-DROP: Starting optimistic update with data:', updatedReservationData);
+      
+      const { OptimisticUpdateService } = await import('../../../lib/hotel/services/OptimisticUpdateService');
+      const optimisticService = OptimisticUpdateService.getInstance();
+      
+      console.log('🚀 DRAG-DROP: Calling optimisticMoveReservation...');
+      const result = await optimisticService.optimisticMoveReservation(
+        reservationId,
+        reservation,
+        newRoomId,
+        newCheckIn,
+        newCheckOut,
+        updateReservationInState,
+        async () => {
+          console.log('📡 DRAG-DROP: About to call updateReservation with:', { reservationId, updatedReservationData });
+          const updateResult = await updateReservation(reservationId, updatedReservationData);
+          console.log('✅ DRAG-DROP: updateReservation completed:', updateResult);
+          return updateResult;
+        }
+      );
+      
+      console.log('📊 DRAG-DROP: OptimisticUpdateService result:', result);
+
+      if (!result.success) {
+        console.error('❌ DRAG-DROP: OptimisticUpdateService failed:', result.error);
+        hotelNotification.error(
+          'Move Failed',
+          result.error || 'Failed to move reservation. Please try again.',
+          4
+        );
+        return;
+      }
 
       const successMessage = `${guest?.fullName || 'Guest'} moved from ${formatRoomNumber(oldRoom)} to ${formatRoomNumber(newRoom)} • ${newCheckIn.toLocaleDateString()} - ${newCheckOut.toLocaleDateString()}`;
 
+      console.log('🎉 DRAG-DROP: Move successful! Showing notification:', successMessage);
+      
       // Show success notification
       hotelNotification.success(
         'Reservation Moved Successfully!',
@@ -1880,12 +2151,43 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
     }
   };
 
+  // Arrow key reservation movement handler
+  const handleMoveReservationArrow = async (direction: 'left' | 'right') => {
+    if (!selectedReservation) {
+      hotelNotification.info('No Selection', 'Please select a reservation first to move it with arrow keys.', 3);
+      return;
+    }
+
+    const reservation = localReservations.find(r => r.id === selectedReservation.id);
+    if (!reservation) {
+      hotelNotification.error('Reservation Not Found', 'Selected reservation could not be found.', 3);
+      return;
+    }
+
+    // Calculate new dates (move 1 day left or right)
+    const daysToMove = direction === 'left' ? -1 : 1;
+    const newCheckIn = addDays(reservation.checkIn, daysToMove);
+    const newCheckOut = addDays(reservation.checkOut, daysToMove);
+
+    console.log(`🔄 Arrow key move ${direction}:`, {
+      reservationId: reservation.id,
+      currentCheckIn: reservation.checkIn,
+      currentCheckOut: reservation.checkOut,
+      newCheckIn,
+      newCheckOut,
+      roomId: reservation.roomId
+    });
+
+    // Use existing move function with same room, new dates
+    await handleMoveReservation(reservation.id, reservation.roomId, newCheckIn, newCheckOut);
+  };
+
   // Room change dialog handlers
   const handleConfirmRoomChange = async () => {
     if (!roomChangeDialog.show || !roomChangeDialog.reservationId) return;
     
     // Get reservation and room data from current state
-    const reservation = reservations.find(r => r.id === roomChangeDialog.reservationId);
+    const reservation = localReservations.find(r => r.id === roomChangeDialog.reservationId);
     const targetRoom = rooms.find(r => r.id === roomChangeDialog.toRoomId);
     const currentRoom = rooms.find(r => r.id === roomChangeDialog.fromRoomId);
     
@@ -1916,12 +2218,28 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
         ...newPricing.fees
       };
 
-      await updateReservation(roomChangeDialog.reservationId, updatedReservationData);
+      // Use optimistic updates for smooth UX
+      const { OptimisticUpdateService } = await import('../../../lib/hotel/services/OptimisticUpdateService');
+      const optimisticService = OptimisticUpdateService.getInstance();
+      
+      const result = await optimisticService.optimisticUpdateReservation(
+        roomChangeDialog.reservationId,
+        reservation,
+        updatedReservationData,
+        updateReservationInState,
+        async () => {
+          await updateReservation(roomChangeDialog.reservationId, updatedReservationData);
+        }
+      );
 
-      const guest = SAMPLE_GUESTS.find(g => g.id === reservation.guestId);
-      const successMessage = `${guest?.fullName || 'Guest'} moved from ${formatRoomNumber(currentRoom)} to ${formatRoomNumber(targetRoom)} with updated pricing`;
-
-      hotelNotification.success('Room Change Successful!', successMessage, 5);
+      if (result.success) {
+        const guest = guests.find(g => g.id === reservation.guestId);
+        const successMessage = `${guest?.fullName || 'Guest'} moved from ${formatRoomNumber(currentRoom)} to ${formatRoomNumber(targetRoom)} with updated pricing`;
+        hotelNotification.success('Room Change Successful!', successMessage, 5);
+      } else {
+        hotelNotification.error('Move Failed!', result.error || 'Failed to move reservation', 5);
+        return;
+      }
       
       closeRoomChangeDialog();
     } catch (error) {
@@ -1934,7 +2252,7 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
     if (!roomChangeDialog.show || !roomChangeDialog.reservationId) return;
     
     // Get reservation and room data from current state
-    const reservation = reservations.find(r => r.id === roomChangeDialog.reservationId);
+    const reservation = localReservations.find(r => r.id === roomChangeDialog.reservationId);
     const targetRoom = rooms.find(r => r.id === roomChangeDialog.toRoomId);
     const currentRoom = rooms.find(r => r.id === roomChangeDialog.fromRoomId);
     
@@ -1950,12 +2268,29 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
         totalAmount: reservation.totalAmount
       };
 
-      await updateReservation(roomChangeDialog.reservationId, updatedReservationData);
+      // Use optimistic updates for instant visual feedback
+      const { OptimisticUpdateService } = await import('../../../lib/hotel/services/OptimisticUpdateService');
+      const optimisticService = OptimisticUpdateService.getInstance();
+      
+      const result = await optimisticService.optimisticUpdateReservation(
+        roomChangeDialog.reservationId,
+        reservation,
+        updatedReservationData,
+        updateReservationInState,
+        async () => {
+          await updateReservation(roomChangeDialog.reservationId, updatedReservationData);
+        }
+      );
 
-      const guest = SAMPLE_GUESTS.find(g => g.id === reservation.guestId);
-      const successMessage = `${guest?.fullName || 'Guest'} received a FREE UPGRADE from ${formatRoomNumber(currentRoom)} to ${formatRoomNumber(targetRoom)}!`;
+      if (result.success) {
+        const guest = guests.find(g => g.id === reservation.guestId);
+        const successMessage = `${guest?.fullName || 'Guest'} received a FREE UPGRADE from ${formatRoomNumber(currentRoom)} to ${formatRoomNumber(targetRoom)}!`;
 
-      hotelNotification.success('Free Upgrade Applied!', successMessage, 7);
+        hotelNotification.success('Free Upgrade Applied!', successMessage, 7);
+      } else {
+        hotelNotification.error('Upgrade Failed!', result.error || 'Failed to apply free upgrade', 5);
+        return;
+      }
       
       closeRoomChangeDialog();
     } catch (error) {
@@ -1977,7 +2312,7 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
     handleDragCreateMove(roomId, dayIndex);
   };
 
-  const handleDragCreateEndWrapper = (roomId: string, halfDayIndex: number) => {
+  const handleDragCreateEndWrapper = async (roomId: string, halfDayIndex: number) => {
     handleDragCreateEnd();
     
     if (dragCreatePreview && dragCreateDates) {
@@ -1987,6 +2322,47 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
       
       checkInDate.setHours(15, 0, 0, 0); // 3 PM check-in
       checkOutDate.setHours(11, 0, 0, 0); // 11 AM check-out
+      
+      // Check for conflicts before opening modal
+      try {
+        const { ConflictDetectionService } = await import('../../../lib/hotel/services/ConflictDetectionService');
+        const conflictService = ConflictDetectionService.getInstance();
+        const conflictResult = await conflictService.checkNewReservation(roomId, checkInDate, checkOutDate, '');
+        
+        if (conflictResult.hasConflict) {
+          // Show conflict notification
+          const errorMessages = conflictResult.conflicts.map((c: any) => c.message).join('\n');
+          hotelNotification.error('Booking Conflict!', errorMessages, 5);
+          
+          // If there are suggested alternatives, show them
+          const firstConflict = conflictResult.conflicts[0];
+          if (firstConflict?.suggestedAlternatives && firstConflict.suggestedAlternatives.length > 0) {
+            const alternatives = firstConflict.suggestedAlternatives;
+            const alternativeMessage = `Available alternatives: ${alternatives.map(r => `Room ${r.number}`).join(', ')}`;
+            hotelNotification.info('Alternative Rooms Available', alternativeMessage, 7);
+          }
+          
+          // Clear drag create state without opening modal
+          clearDragCreate();
+          return;
+        }
+        
+        // Show warnings if any
+        if (conflictResult.warnings.length > 0) {
+          const warningMessages = conflictResult.warnings.map((w: any) => w.message).join('\n');
+          hotelNotification.warning('Booking Warnings', warningMessages, 4);
+        }
+        
+        // Show suggestions if any
+        if (conflictResult.suggestions.length > 0) {
+          const suggestionMessages = conflictResult.suggestions.map(s => s.message).join('\n');
+          hotelNotification.info('Suggestions', suggestionMessages, 6);
+        }
+        
+      } catch (error) {
+        console.error('Error checking conflicts:', error);
+        hotelNotification.warning('Validation Warning', 'Could not verify room availability. Please check manually.', 3);
+      }
       
       // Find the room and open booking modal
       const room = rooms.find(r => r.id === roomId);
@@ -2004,13 +2380,13 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
     try {
       console.log('Resize reservation:', { reservationId, side, newDate });
       
-      const reservation = reservations.find(r => r.id === reservationId);
+      const reservation = localReservations.find(r => r.id === reservationId);
       if (!reservation) {
         throw new Error('Reservation not found');
       }
 
       const room = rooms.find(r => r.id === reservation.roomId);
-      const guest = SAMPLE_GUESTS.find(g => g.id === reservation.guestId);
+      const guest = guests.find(g => g.id === reservation.guestId);
       
       // Calculate new dates
       const newCheckIn = side === 'start' ? newDate : reservation.checkIn;
@@ -2028,7 +2404,7 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
       }
 
       // Check for conflicts with other reservations in the same room
-      const hasConflict = reservations.some(r => 
+      const hasConflict = localReservations.some(r => 
         r.id !== reservationId && 
         r.roomId === reservation.roomId &&
         (
@@ -2059,10 +2435,11 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
           hasPets: reservation.petFee > 0,
           needsParking: reservation.parkingFee > 0,
           additionalCharges: reservation.additionalCharges
-        }
+        },
+        rooms
       );
 
-      // Update reservation
+      // Update reservation with optimistic updates for instant visual feedback
       const updatedData = {
         checkIn: newCheckIn,
         checkOut: newCheckOut,
@@ -2072,19 +2449,40 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
         ...newPricing.fees
       };
 
-      await updateReservation(reservationId, updatedData);
-
-      // Show success notification with pricing info
-      const oldTotal = reservation.totalAmount;
-      const newTotal = newPricing.total;
-      const priceDiff = newTotal - oldTotal;
-      const priceChange = priceDiff > 0 ? `+€${priceDiff.toFixed(2)}` : `€${priceDiff.toFixed(2)}`;
-
-      hotelNotification.success(
-        'Reservation Updated!',
-        `${guest?.fullName || 'Guest'} • ${room ? formatRoomNumber(room) : 'Room'} • ${newCheckIn.toLocaleDateString()} - ${newCheckOut.toLocaleDateString()} • ${priceChange} (€${newTotal.toFixed(2)} total)`,
-        6
+      // Use OptimisticUpdateService for instant UI feedback
+      const { OptimisticUpdateService } = await import('../../../lib/hotel/services/OptimisticUpdateService');
+      const optimisticService = OptimisticUpdateService.getInstance();
+      
+      const result = await optimisticService.optimisticUpdateReservation(
+        reservationId,
+        reservation,
+        updatedData,
+        updateReservationInState,
+        async () => {
+          // This is the actual server update
+          await updateReservation(reservationId, updatedData);
+        }
       );
+
+      if (result.success) {
+        // Show success notification with pricing info
+        const oldTotal = reservation.totalAmount;
+        const newTotal = newPricing.total;
+        const priceDiff = newTotal - oldTotal;
+        const priceChange = priceDiff > 0 ? `+€${priceDiff.toFixed(2)}` : `€${priceDiff.toFixed(2)}`;
+
+        hotelNotification.success(
+          'Reservation Updated!',
+          `${guest?.fullName || 'Guest'} • ${room ? formatRoomNumber(room) : 'Room'} • ${newCheckIn.toLocaleDateString()} - ${newCheckOut.toLocaleDateString()} • ${priceChange} (€${newTotal.toFixed(2)} total)`,
+          6
+        );
+      } else {
+        hotelNotification.error(
+          'Update Failed',
+          result.error || 'Failed to update reservation. Please try again.',
+          4
+        );
+      }
 
     } catch (error) {
       console.error('Error resizing reservation:', error);
@@ -2165,7 +2563,7 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
     if (!selectedReservation) return null;
     
     const room = rooms.find(r => r.id === selectedReservation.roomId);
-    const guest = SAMPLE_GUESTS.find(g => g.id === selectedReservation.guestId);
+    const guest = guests.find(g => g.id === selectedReservation.guestId);
     
     return {
       id: `event-${selectedReservation.id}`,
@@ -2198,7 +2596,7 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
 
     try {
       // Add order charges to reservation bill
-      const guest = SAMPLE_GUESTS.find(g => g.id === hotelOrdersReservation.guestId);
+      const guest = guests.find(g => g.id === hotelOrdersReservation.guestId);
       const room = rooms.find(r => r.id === hotelOrdersReservation.roomId);
       
       // Convert OrderItems to RoomServiceItems
@@ -2250,6 +2648,36 @@ Room Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item
     <DndProvider backend={HTML5Backend}>
       <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-white' : 'h-full'}`}>
       <div className="h-full flex flex-col">
+        {/* Mode Status Indicator */}
+        {(isDragCreateMode || isExpansionMode || isMoveMode) && (
+          <div className={`px-4 py-2 text-sm font-medium text-white ${
+            isDragCreateMode ? 'bg-blue-600' : 
+            isExpansionMode ? 'bg-green-600' : 
+            'bg-purple-600'
+          }`}>
+            <div className="flex items-center justify-center space-x-2">
+              {isDragCreateMode && (
+                <>
+                  <MousePointer2 className="h-4 w-4" />
+                  <span>Drag Create Mode: Click PM slots to start, AM slots to finish creating reservations</span>
+                </>
+              )}
+              {isExpansionMode && (
+                <>
+                  <ArrowLeftRight className="h-4 w-4" />
+                  <span>Expansion Mode: Use resize controls (← →) on reservations to extend or shorten stays</span>
+                </>
+              )}
+              {isMoveMode && (
+                <>
+                  <Move className="h-4 w-4" />
+                  <span>Move Mode: Drag reservations or use arrow controls to move between rooms and dates</span>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200">
           <div>
@@ -2269,7 +2697,8 @@ Room Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item
             <Button 
               variant={isDragCreateMode ? "default" : "outline"} 
               onClick={toggleDragCreateMode}
-              className={isDragCreateMode ? "bg-blue-600 text-white" : ""}
+              className={`transition-all duration-200 ${isDragCreateMode ? "bg-blue-600 hover:bg-blue-700 text-white shadow-lg" : "hover:bg-blue-50"}`}
+              title={isDragCreateMode ? 'Click to exit drag mode' : 'Click PM slots to start, AM slots to end reservation creation'}
             >
               {isDragCreateMode ? <Square className="h-4 w-4" /> : <MousePointer2 className="h-4 w-4" />}
               {isDragCreateMode ? 'Exit Drag Mode' : 'Drag to Create'}
@@ -2278,7 +2707,8 @@ Room Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item
             <Button 
               variant={isExpansionMode ? "default" : "outline"} 
               onClick={toggleExpansionMode}
-              className={isExpansionMode ? "bg-green-600 text-white" : ""}
+              className={`transition-all duration-200 ${isExpansionMode ? "bg-green-600 hover:bg-green-700 text-white shadow-lg" : "hover:bg-green-50"}`}
+              title={isExpansionMode ? 'Click to exit expand mode' : 'Show resize controls on reservations to extend/shorten stays'}
             >
               {isExpansionMode ? <Square className="h-4 w-4" /> : <ArrowLeftRight className="h-4 w-4" />}
               {isExpansionMode ? 'Exit Expand Mode' : 'Expand Reservations'}
@@ -2287,7 +2717,8 @@ Room Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item
             <Button 
               variant={isMoveMode ? "default" : "outline"} 
               onClick={toggleMoveMode}
-              className={isMoveMode ? "bg-purple-600 text-white" : ""}
+              className={`transition-all duration-200 ${isMoveMode ? "bg-purple-600 hover:bg-purple-700 text-white shadow-lg" : "hover:bg-purple-50"}`}
+              title={isMoveMode ? 'Click to exit move mode' : 'Show drag handles and move controls on reservations'}
             >
               {isMoveMode ? <Square className="h-4 w-4" /> : <Move className="h-4 w-4" />}
               {isMoveMode ? 'Exit Move Mode' : 'Move Reservations'}
@@ -2344,6 +2775,7 @@ Room Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item
                   key={`overview-${floor}`}
                   floor={parseInt(floor)}
                   rooms={rooms}
+                  guests={guests}
                   isExpanded={expandedOverviewFloors[parseInt(floor)]}
                   onToggle={() => toggleOverviewFloor(parseInt(floor))}
                   occupancyData={currentOccupancy}
@@ -2372,7 +2804,8 @@ Room Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item
                 key={floor}
                 floor={parseInt(floor)}
                 rooms={rooms}
-                reservations={reservations}
+                reservations={localReservations}
+                guests={guests}
                 startDate={currentDate}
                 isExpanded={expandedFloors[parseInt(floor)]}
                 onToggle={() => toggleFloor(parseInt(floor))}
@@ -2421,16 +2854,17 @@ Room Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item
             clearDragCreate(); // Clear drag create dates and state when closing
           }}
           room={selectedRoom}
+          currentDate={currentDate}
           preSelectedDates={dragCreateDates} // Pass pre-selected dates from drag
         />
       )}
 
       {/* Room Change Confirmation Dialog */}
       {roomChangeDialog.show && (() => {
-        const reservation = reservations.find(r => r.id === roomChangeDialog.reservationId);
+        const reservation = localReservations.find(r => r.id === roomChangeDialog.reservationId);
         const currentRoom = rooms.find(r => r.id === roomChangeDialog.fromRoomId);
         const targetRoom = rooms.find(r => r.id === roomChangeDialog.toRoomId);
-        const guest = reservation ? SAMPLE_GUESTS.find(g => g.id === reservation.guestId) || null : null;
+        const guest = reservation ? guests.find(g => g.id === reservation.guestId) || null : null;
         
         if (!reservation || !currentRoom || !targetRoom) return null;
         

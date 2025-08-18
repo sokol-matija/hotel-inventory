@@ -71,7 +71,7 @@ export class HotelDataServiceFixed {
       }
 
       // Get room types separately
-      const roomTypeIds = [...new Set(roomsData.map(room => room.room_type_id))];
+      const roomTypeIds = Array.from(new Set(roomsData.map(room => room.room_type_id)));
       const { data: roomTypesData, error: roomTypesError } = await supabase
         .from('room_types')
         .select('*')
@@ -82,7 +82,7 @@ export class HotelDataServiceFixed {
       }
 
       // Map rooms with room types
-      return roomsData.map(room => this.mapRoomFromDB(room, roomTypesData));
+      return roomsData.map(room => this.mapRoomFromDB(room, roomTypesData || []));
     } catch (error) {
       console.error('Error fetching rooms:', error);
       return [];
@@ -173,8 +173,8 @@ export class HotelDataServiceFixed {
       }
 
       // Get related data separately
-      const guestIds = [...new Set(reservationsData.map(r => r.primary_guest_id))];
-      const roomIds = [...new Set(reservationsData.map(r => r.room_id))];
+      const guestIds = Array.from(new Set(reservationsData.map(r => r.primary_guest_id)));
+      const roomIds = Array.from(new Set(reservationsData.map(r => r.room_id)));
 
       const [
         { data: guestsData },
@@ -348,15 +348,18 @@ export class HotelDataServiceFixed {
 
   // Mapping functions
   private mapHotelFromDB(data: HotelRow): Hotel {
+    const address = data.address as any;
+    const contact = data.contact_info as any;
+    
     return {
       id: data.id,
       name: data.name,
-      businessName: data.business_name,
-      address: data.address as any,
-      contactInfo: data.contact_info as any,
-      oib: data.oib,
-      currency: data.default_currency || 'EUR',
-      timezone: data.timezone || 'Europe/Zagreb'
+      address: address?.street || 'Unknown address',
+      phone: contact?.phone || '',
+      fax: contact?.fax || '',
+      email: contact?.email || '',
+      website: contact?.website || '',
+      taxId: data.oib
     };
   }
 
