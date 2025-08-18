@@ -45,15 +45,103 @@ interface HotelTimelineProps {
 }
 
 // Timeline header component showing dates
+// Room availability interfaces
+interface RoomTypeAvailability {
+  total: number;
+  available: number;
+  occupied: number;
+}
+
+interface DayAvailability {
+  date: Date;
+  totalRooms: number;
+  availableRooms: number;
+  occupiedRooms: number;
+  occupancyRate: number;
+  roomTypes: {
+    standard: RoomTypeAvailability;
+    premium: RoomTypeAvailability;
+    suite: RoomTypeAvailability;
+  };
+  availableRoomsList: Room[];
+  occupiedReservations: Reservation[];
+}
+
 function TimelineHeader({ 
   startDate, 
-  onNavigate 
+  onNavigate,
+  rooms,
+  reservations,
+  onAvailabilityClick
 }: { 
   startDate: Date; 
   onNavigate: (action: 'PREV' | 'NEXT' | 'TODAY') => void;
+  rooms: Room[];
+  reservations: Reservation[];
+  onAvailabilityClick?: (date: Date, availabilityData: DayAvailability) => void;
 }) {
   const dates = Array.from({ length: 14 }, (_, i) => addDays(startDate, i));
-  
+  const [showFreeRooms, setShowFreeRooms] = useState(true);
+
+  // Calculate availability for each date
+  const calculateDayAvailability = (date: Date): DayAvailability => {
+    const dateStart = new Date(date);
+    dateStart.setHours(0, 0, 0, 0);
+    const dateEnd = new Date(date);
+    dateEnd.setHours(23, 59, 59, 999);
+
+    // Get reservations that occupy this date
+    const occupiedReservations = reservations.filter(reservation => {
+      const checkIn = new Date(reservation.checkIn);
+      const checkOut = new Date(reservation.checkOut);
+      
+      // Check if this date falls within the reservation period
+      return checkIn <= dateEnd && checkOut > dateStart;
+    });
+
+    const occupiedRoomIds = new Set(occupiedReservations.map(r => r.roomId));
+    const availableRooms = rooms.filter(room => !occupiedRoomIds.has(room.id));
+
+    // Group by room type
+    const roomsByType = {
+      standard: rooms.filter(r => !r.isPremium && r.floor <= 2),
+      premium: rooms.filter(r => r.isPremium && r.floor <= 3),
+      suite: rooms.filter(r => r.floor >= 4)
+    };
+
+    const availableByType = {
+      standard: availableRooms.filter(r => !r.isPremium && r.floor <= 2),
+      premium: availableRooms.filter(r => r.isPremium && r.floor <= 3),
+      suite: availableRooms.filter(r => r.floor >= 4)
+    };
+
+    const occupiedByType = {
+      standard: roomsByType.standard.length - availableByType.standard.length,
+      premium: roomsByType.premium.length - availableByType.premium.length,
+      suite: roomsByType.suite.length - availableByType.suite.length
+    };
+
+    return {
+      date,
+      totalRooms: rooms.length,
+      availableRooms: availableRooms.length,
+      occupiedRooms: occupiedRoomIds.size,
+      occupancyRate: Math.round((occupiedRoomIds.size / rooms.length) * 100),
+      roomTypes: {
+        standard: { total: roomsByType.standard.length, available: availableByType.standard.length, occupied: occupiedByType.standard },
+        premium: { total: roomsByType.premium.length, available: availableByType.premium.length, occupied: occupiedByType.premium },
+        suite: { total: roomsByType.suite.length, available: availableByType.suite.length, occupied: occupiedByType.suite }
+      },
+      availableRoomsList: availableRooms,
+      occupiedReservations
+    };
+  };
+
+  const handleAvailabilityClick = (date: Date) => {
+    const availabilityData = calculateDayAvailability(date);
+    onAvailabilityClick?.(date, availabilityData);
+  };
+
   return (
     <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
       {/* Navigation row */}
@@ -74,12 +162,22 @@ function TimelineHeader({
           {format(startDate, 'MMMM yyyy')} - 14 Day View
         </div>
         
-        <div className="text-sm text-gray-500">
-          Hotel Porec - 46 Rooms
+        <div className="flex items-center space-x-4">
+          <div className="text-sm text-gray-500">
+            Hotel Porec - {rooms.length} Rooms
+          </div>
+          <Button
+            variant={showFreeRooms ? "default" : "outline"}
+            size="sm"
+            onClick={() => setShowFreeRooms(!showFreeRooms)}
+            className="text-xs"
+          >
+            {showFreeRooms ? "Free Rooms" : "Occupied"}
+          </Button>
         </div>
       </div>
       
-      {/* Date headers - Clean design with proper grid alignment */}
+      {/* Date headers with availability indicators */}
       <div className="border-b border-gray-200 relative z-20">
         {/* Single unified header row matching body grid exactly */}
         <div className="grid grid-cols-[180px_repeat(28,minmax(22px,1fr))] border-b border-gray-200">
@@ -89,6 +187,7 @@ function TimelineHeader({
           {dates.map((date, index) => {
             const isToday = isSameDay(date, new Date());
             const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+            const availability = calculateDayAvailability(date);
             
             return (
               <React.Fragment key={index}>
@@ -100,11 +199,28 @@ function TimelineHeader({
                       : isWeekend
                       ? 'bg-orange-50 text-orange-700'
                       : 'bg-gray-50 text-gray-600'
-                  } relative`}
-                  title={`${format(date, 'EEEE, MMMM dd, yyyy')} - Morning (Check-out at 11:00 AM)`}
+                  } relative cursor-pointer hover:bg-opacity-80 transition-all`}
+                  title={`${format(date, 'EEEE, MMMM dd, yyyy')} - Morning (Check-out at 11:00 AM)\nClick for room details`}
+                  onClick={() => handleAvailabilityClick(date)}
                 >
                   <div className="font-medium">{format(date, 'EEE')}</div>
                   <div className="font-bold">{format(date, 'dd')}</div>
+                  {/* Availability indicator - centered */}
+                  <div className={`absolute inset-0 flex items-center justify-center pointer-events-none`}>
+                    <div className={`min-w-[22px] h-5 px-1 rounded text-[10px] font-bold flex items-center justify-center shadow-sm ${
+                      showFreeRooms 
+                        ? availability.availableRooms === 0 
+                          ? 'bg-red-500 text-white'
+                          : availability.availableRooms <= 5 
+                          ? 'bg-orange-500 text-white'
+                          : 'bg-green-500 text-white'
+                        : availability.occupiedRooms === 0
+                        ? 'bg-gray-300 text-gray-700'
+                        : 'bg-blue-500 text-white'
+                    }`}>
+                      {showFreeRooms ? availability.availableRooms : availability.occupiedRooms}
+                    </div>
+                  </div>
                   {/* Subtle visual indicator for check-out zone */}
                   <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-red-400 opacity-30"></div>
                 </div>
@@ -117,11 +233,28 @@ function TimelineHeader({
                       : isWeekend
                       ? 'bg-orange-50 text-orange-700'
                       : 'bg-gray-50 text-gray-600'
-                  } relative`}
-                  title={`${format(date, 'EEEE, MMMM dd, yyyy')} - Afternoon (Check-in at 3:00 PM)`}
+                  } relative cursor-pointer hover:bg-opacity-80 transition-all`}
+                  title={`${format(date, 'EEEE, MMMM dd, yyyy')} - Afternoon (Check-in at 3:00 PM)\nClick for room details`}
+                  onClick={() => handleAvailabilityClick(date)}
                 >
                   <div className="font-medium opacity-30">{format(date, 'EEE')}</div>
                   <div className="font-bold opacity-30">{format(date, 'dd')}</div>
+                  {/* Availability indicator - centered */}
+                  <div className={`absolute inset-0 flex items-center justify-center pointer-events-none`}>
+                    <div className={`min-w-[22px] h-5 px-1 rounded text-[10px] font-bold flex items-center justify-center shadow-sm ${
+                      showFreeRooms 
+                        ? availability.availableRooms === 0 
+                          ? 'bg-red-500 text-white'
+                          : availability.availableRooms <= 5 
+                          ? 'bg-orange-500 text-white'
+                          : 'bg-green-500 text-white'
+                        : availability.occupiedRooms === 0
+                        ? 'bg-gray-300 text-gray-700'
+                        : 'bg-blue-500 text-white'
+                    }`}>
+                      {showFreeRooms ? availability.availableRooms : availability.occupiedRooms}
+                    </div>
+                  </div>
                   {/* Subtle visual indicator for check-in zone */}
                   <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-400 opacity-30"></div>
                 </div>
@@ -131,6 +264,160 @@ function TimelineHeader({
         </div>
       </div>
     </div>
+  );
+}
+
+// Room Availability Details Modal
+function RoomAvailabilityModal({ 
+  isOpen, 
+  onClose, 
+  date, 
+  availabilityData 
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  date: Date | null;
+  availabilityData: DayAvailability | null;
+}) {
+  if (!isOpen || !date || !availabilityData) return null;
+
+  const getRoomTypeLabel = (type: string) => {
+    switch (type) {
+      case 'standard': return 'Standard Rooms';
+      case 'premium': return 'Premium Rooms';
+      case 'suite': return 'Suites';
+      default: return type;
+    }
+  };
+
+  const getRoomTypeColor = (type: string) => {
+    switch (type) {
+      case 'standard': return 'border-blue-200 bg-blue-50';
+      case 'premium': return 'border-amber-200 bg-amber-50';
+      case 'suite': return 'border-purple-200 bg-purple-50';
+      default: return 'border-gray-200 bg-gray-50';
+    }
+  };
+
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+      {/* Backdrop */}
+      <div 
+        className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      
+      {/* Modal */}
+      <div className="relative bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">
+                Room Availability
+              </h2>
+              <p className="text-sm text-gray-600 mt-1">
+                {format(date, 'EEEE, MMMM dd, yyyy')}
+              </p>
+            </div>
+            <Button variant="ghost" size="sm" onClick={onClose} className="hover:bg-white/50">
+              ×
+            </Button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 overflow-y-auto">
+          {/* Overview Stats */}
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
+              <div className="text-2xl font-bold text-green-700">{availabilityData.availableRooms}</div>
+              <div className="text-sm text-green-600">Available</div>
+            </div>
+            <div className="text-center p-4 bg-red-50 rounded-lg border border-red-200">
+              <div className="text-2xl font-bold text-red-700">{availabilityData.occupiedRooms}</div>
+              <div className="text-sm text-red-600">Occupied</div>
+            </div>
+            <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="text-2xl font-bold text-blue-700">{availabilityData.occupancyRate}%</div>
+              <div className="text-sm text-blue-600">Occupancy</div>
+            </div>
+          </div>
+
+          {/* Room Types Breakdown */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">By Room Type</h3>
+            
+            {Object.entries(availabilityData.roomTypes).map(([type, data]) => (
+              <div key={type} className={`p-4 rounded-lg border-2 ${getRoomTypeColor(type)}`}>
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-semibold text-gray-800">{getRoomTypeLabel(type)}</h4>
+                  <Badge variant="outline" className="text-xs">
+                    {data.total} Total
+                  </Badge>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center">
+                    <div className="text-xl font-bold text-green-700">{data.available}</div>
+                    <div className="text-xs text-gray-600">Available</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xl font-bold text-red-700">{data.occupied}</div>
+                    <div className="text-xs text-gray-600">Occupied</div>
+                  </div>
+                </div>
+                
+                {/* Progress bar */}
+                <div className="mt-3">
+                  <div className="flex justify-between text-xs text-gray-600 mb-1">
+                    <span>Occupancy</span>
+                    <span>{data.total > 0 ? Math.round((data.occupied / data.total) * 100) : 0}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-gradient-to-r from-red-400 to-red-600 h-2 rounded-full transition-all duration-300" 
+                      style={{ width: `${data.total > 0 ? (data.occupied / data.total) * 100 : 0}%` }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Available Rooms List */}
+          {availabilityData.availableRooms > 0 && (
+            <div className="mt-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">Available Rooms</h3>
+              <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
+                {availabilityData.availableRoomsList.map(room => (
+                  <div 
+                    key={room.id}
+                    className={`p-2 text-center rounded-md border text-xs font-medium ${
+                      room.isPremium 
+                        ? 'bg-amber-50 border-amber-200 text-amber-700' 
+                        : room.floor >= 4
+                        ? 'bg-purple-50 border-purple-200 text-purple-700'
+                        : 'bg-blue-50 border-blue-200 text-blue-700'
+                    }`}
+                  >
+                    {room.number}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 flex justify-end">
+          <Button variant="outline" onClick={onClose}>
+            Close
+          </Button>
+        </div>
+      </div>
+    </div>,
+    document.body
   );
 }
 
@@ -1888,6 +2175,11 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
   // Additional local state not in main hook (hotel orders modal)
   const [showHotelOrdersModal, setShowHotelOrdersModal] = useState(false);
   const [hotelOrdersReservation, setHotelOrdersReservation] = useState<Reservation | null>(null);
+
+  // Room availability modal state
+  const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
+  const [selectedAvailabilityDate, setSelectedAvailabilityDate] = useState<Date | null>(null);
+  const [selectedAvailabilityData, setSelectedAvailabilityData] = useState<DayAvailability | null>(null);
   
   // Note: Removed global mouse event listener since we're using two-click system instead of drag
 
@@ -2590,6 +2882,19 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
     handleShowDrinksModal(reservation.id);
   };
 
+  // Handle showing room availability details modal
+  const handleAvailabilityClick = (date: Date, availabilityData: DayAvailability) => {
+    setSelectedAvailabilityDate(date);
+    setSelectedAvailabilityData(availabilityData);
+    setShowAvailabilityModal(true);
+  };
+
+  const handleCloseAvailabilityModal = () => {
+    setShowAvailabilityModal(false);
+    setSelectedAvailabilityDate(null);
+    setSelectedAvailabilityData(null);
+  };
+
   // Handle hotel orders completion
   const handleDrinksOrderComplete = async (orderItems: OrderItem[], totalAmount: number) => {
     if (!hotelOrdersReservation) return;
@@ -2795,6 +3100,9 @@ Room Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item
           <TimelineHeader 
             startDate={currentDate}
             onNavigate={handleNavigate}
+            rooms={rooms}
+            reservations={localReservations}
+            onAvailabilityClick={handleAvailabilityClick}
           />
           
           {/* Floor sections */}
@@ -2894,6 +3202,14 @@ Room Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item
           onOrderComplete={handleDrinksOrderComplete}
         />
       )}
+
+      {/* Room Availability Details Modal */}
+      <RoomAvailabilityModal
+        isOpen={showAvailabilityModal}
+        onClose={handleCloseAvailabilityModal}
+        date={selectedAvailabilityDate}
+        availabilityData={selectedAvailabilityData}
+      />
       </div>
     </DndProvider>
   );
