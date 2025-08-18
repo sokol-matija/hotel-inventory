@@ -38,6 +38,11 @@ import HotelOrdersModal from './RoomService/HotelOrdersModal';
 import hotelNotification from '../../../lib/notifications';
 import { OrderItem } from '../../../lib/hotel/orderTypes';
 import { useHotelTimelineState } from '../../../lib/hooks/useHotelTimelineState';
+import { useDragCreate } from '../../../lib/hooks/useDragCreate';
+import { BookingCreationService } from '../../../lib/hotel/services/BookingCreationService';
+import DragCreateGuidance from './DragCreate/DragCreateGuidance';
+import DragCreateButton from './DragCreate/DragCreateButton';
+import ModernRoomRow from './DragCreate/ModernRoomRow';
 
 interface HotelTimelineProps {
   isFullscreen?: boolean;
@@ -1637,7 +1642,10 @@ function FloorSection({
   onShowDrinksModal,
   calculateContextMenuPosition,
   // New props for move mode
-  isMoveMode
+  isMoveMode,
+  // New drag-create system props
+  shouldHighlightCell,
+  onCellClick
 }: {
   floor: number;
   rooms: Room[];
@@ -1667,6 +1675,9 @@ function FloorSection({
   calculateContextMenuPosition?: (e: React.MouseEvent, menuWidth?: number, menuHeight?: number) => { x: number; y: number };
   // New props for move mode
   isMoveMode?: boolean;
+  // New drag-create system props
+  shouldHighlightCell?: (roomId: string, dayIndex: number, isAM: boolean) => 'selectable' | 'preview' | 'none';
+  onCellClick?: (roomId: string, date: Date, isAM: boolean) => void;
 }) {
   const floorName = floor === 4 ? 'Rooftop Premium' : `Floor ${floor}`;
   const occupiedRooms = rooms.filter(room => 
@@ -2105,6 +2116,10 @@ function RoomOverviewFloorSection({
 // Main timeline component
 export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen }: HotelTimelineProps) {
   const { reservations, rooms, guests, isUpdating, createReservation, createGuest, updateReservation, updateReservationStatus, deleteReservation } = useHotel();
+  
+  // New drag-create functionality with modern architecture
+  const dragCreate = useDragCreate();
+  const bookingCreationService = BookingCreationService.getInstance();
   
   // Create local state for immediate optimistic updates
   const [localReservations, setLocalReservations] = useState<Reservation[]>([]);
@@ -2895,6 +2910,33 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
     setSelectedAvailabilityData(null);
   };
 
+  // Modern drag-create cell click handler
+  const handleDragCreateCellClick = useCallback(async (roomId: string, date: Date, isAM: boolean) => {
+    try {
+      if (dragCreate.state.mode === 'selecting_checkin' && !isAM) {
+        // First click - select check-in (PM cells only)
+        await dragCreate.actions.selectCheckIn(roomId, date);
+      } else if (dragCreate.state.mode === 'selecting_checkout' && isAM) {
+        // Second click - select and confirm check-out (AM cells only)
+        await dragCreate.actions.selectCheckOut(roomId, date, true);
+        
+        // After selecting checkout, if we have a valid selection, open booking modal
+        // Check the state after the action completes
+        setTimeout(() => {
+          if (dragCreate.state.mode === 'confirming' && dragCreate.selection) {
+            const room = rooms.find(r => r.id === roomId);
+            if (room) {
+              handleRoomClick(room);
+            }
+          }
+        }, 100);
+      }
+    } catch (error) {
+      console.error('Error handling drag-create cell click:', error);
+      hotelNotification.error('Selection Error', 'Failed to process cell selection', 3);
+    }
+  }, [dragCreate, rooms, handleRoomClick]);
+
   // Handle hotel orders completion
   const handleDrinksOrderComplete = async (orderItems: OrderItem[], totalAmount: number) => {
     if (!hotelOrdersReservation) return;
@@ -2999,15 +3041,10 @@ Room Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item
           </div>
           
           <div className="flex items-center space-x-2">
-            <Button 
-              variant={isDragCreateMode ? "default" : "outline"} 
-              onClick={toggleDragCreateMode}
-              className={`transition-all duration-200 ${isDragCreateMode ? "bg-blue-600 hover:bg-blue-700 text-white shadow-lg" : "hover:bg-blue-50"}`}
-              title={isDragCreateMode ? 'Click to exit drag mode' : 'Click PM slots to start, AM slots to end reservation creation'}
-            >
-              {isDragCreateMode ? <Square className="h-4 w-4" /> : <MousePointer2 className="h-4 w-4" />}
-              {isDragCreateMode ? 'Exit Drag Mode' : 'Drag to Create'}
-            </Button>
+            <DragCreateButton
+              state={dragCreate.state}
+              onToggle={() => dragCreate.isEnabled ? dragCreate.actions.disable() : dragCreate.actions.enable()}
+            />
             
             <Button 
               variant={isExpansionMode ? "default" : "outline"} 
@@ -3122,19 +3159,33 @@ Room Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item
                 isFullscreen={isFullscreen}
                 onUpdateReservationStatus={updateReservationStatus}
                 onDeleteReservation={deleteReservation}
-                isDragCreateMode={isDragCreateMode}
-                isDragCreating={isDragCreating}
-                dragCreateStart={dragCreateStart}
-                dragCreateEnd={dragCreateEnd}
-                dragCreatePreview={dragCreatePreview}
-                onDragCreateStart={handleDragCreateStartWrapper}
-                onDragCreateMove={handleDragCreateMoveWrapper}
-                onDragCreateEnd={handleDragCreateEndWrapper}
+                isDragCreateMode={dragCreate.isEnabled}
+                isDragCreating={dragCreate.state.mode === 'selecting_checkout'}
+                dragCreateStart={null} // Legacy - not used with new system
+                dragCreateEnd={null}   // Legacy - not used with new system  
+                dragCreatePreview={dragCreate.preview}
+                onDragCreateStart={(roomId: string, halfDayIndex: number) => {
+                  // Bridge old system to new: convert half-day index to date and isAM
+                  const dayIndex = Math.floor(halfDayIndex / 2);
+                  const date = addDays(currentDate, dayIndex);
+                  const isAM = (halfDayIndex % 2) === 0;
+                  handleDragCreateCellClick(roomId, date, !isAM); // !isAM because start is PM
+                }}
+                onDragCreateMove={() => {}}  // Legacy - not used in new system
+                onDragCreateEnd={(roomId: string, halfDayIndex: number) => {
+                  // Bridge old system to new: convert half-day index to date and isAM
+                  const dayIndex = Math.floor(halfDayIndex / 2);
+                  const date = addDays(currentDate, dayIndex);
+                  const isAM = (halfDayIndex % 2) === 0;
+                  handleDragCreateCellClick(roomId, date, isAM); // AM because end is AM
+                }}
                 isExpansionMode={isExpansionMode}
                 isMoveMode={isMoveMode}
                 onResizeReservation={handleResizeReservation}
                 onShowDrinksModal={handleShowDrinksModalWrapper}
                 calculateContextMenuPosition={calculateContextMenuPosition}
+                shouldHighlightCell={dragCreate.shouldHighlightCell}
+                onCellClick={handleDragCreateCellClick}
               />
             ))}
           </div>
@@ -3209,6 +3260,12 @@ Room Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item
         onClose={handleCloseAvailabilityModal}
         date={selectedAvailabilityDate}
         availabilityData={selectedAvailabilityData}
+      />
+
+      {/* Drag-Create Guidance Overlay */}
+      <DragCreateGuidance
+        state={dragCreate.state}
+        onDisable={dragCreate.actions.disable}
       />
       </div>
     </DndProvider>
