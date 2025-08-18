@@ -177,7 +177,42 @@ function TimelineHeader({
         </div>
       </div>
       
-      {/* Date headers with availability indicators */}
+      {/* Availability row - separate row for room availability indicators */}
+      <div className="border-b border-gray-200 bg-gray-25">
+        <div className="grid grid-cols-[180px_repeat(14,minmax(44px,1fr))] gap-0">
+          <div className="p-2 bg-gray-50 border-r border-gray-200 font-medium text-gray-700 text-sm text-center">
+            Available
+          </div>
+          {dates.map((date, index) => {
+            const availability = calculateDayAvailability(date);
+            
+            return (
+              <div 
+                key={`availability-${index}`}
+                className="p-2 text-center border-r border-gray-200 cursor-pointer hover:bg-gray-50 transition-all"
+                title={`${format(date, 'EEEE, MMMM dd, yyyy')} - Click for detailed breakdown`}
+                onClick={() => handleAvailabilityClick(date)}
+              >
+                <div className={`inline-flex items-center justify-center min-w-[30px] h-6 px-2 rounded-md text-xs font-bold shadow-sm ${
+                  showFreeRooms 
+                    ? availability.availableRooms === 0 
+                      ? 'bg-red-500 text-white'
+                      : availability.availableRooms <= 5 
+                      ? 'bg-orange-500 text-white'
+                      : 'bg-green-500 text-white'
+                    : availability.occupiedRooms === 0
+                    ? 'bg-gray-300 text-gray-700'
+                    : 'bg-blue-500 text-white'
+                }`}>
+                  {showFreeRooms ? availability.availableRooms : availability.occupiedRooms}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Date headers - Clean design with proper grid alignment */}
       <div className="border-b border-gray-200 relative z-20">
         {/* Single unified header row matching body grid exactly */}
         <div className="grid grid-cols-[180px_repeat(28,minmax(22px,1fr))] border-b border-gray-200">
@@ -187,7 +222,6 @@ function TimelineHeader({
           {dates.map((date, index) => {
             const isToday = isSameDay(date, new Date());
             const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-            const availability = calculateDayAvailability(date);
             
             return (
               <React.Fragment key={index}>
@@ -199,28 +233,11 @@ function TimelineHeader({
                       : isWeekend
                       ? 'bg-orange-50 text-orange-700'
                       : 'bg-gray-50 text-gray-600'
-                  } relative cursor-pointer hover:bg-opacity-80 transition-all`}
-                  title={`${format(date, 'EEEE, MMMM dd, yyyy')} - Morning (Check-out at 11:00 AM)\nClick for room details`}
-                  onClick={() => handleAvailabilityClick(date)}
+                  } relative`}
+                  title={`${format(date, 'EEEE, MMMM dd, yyyy')} - Morning (Check-out at 11:00 AM)`}
                 >
                   <div className="font-medium">{format(date, 'EEE')}</div>
                   <div className="font-bold">{format(date, 'dd')}</div>
-                  {/* Availability indicator - centered */}
-                  <div className={`absolute inset-0 flex items-center justify-center pointer-events-none`}>
-                    <div className={`min-w-[22px] h-5 px-1 rounded text-[10px] font-bold flex items-center justify-center shadow-sm ${
-                      showFreeRooms 
-                        ? availability.availableRooms === 0 
-                          ? 'bg-red-500 text-white'
-                          : availability.availableRooms <= 5 
-                          ? 'bg-orange-500 text-white'
-                          : 'bg-green-500 text-white'
-                        : availability.occupiedRooms === 0
-                        ? 'bg-gray-300 text-gray-700'
-                        : 'bg-blue-500 text-white'
-                    }`}>
-                      {showFreeRooms ? availability.availableRooms : availability.occupiedRooms}
-                    </div>
-                  </div>
                   {/* Subtle visual indicator for check-out zone */}
                   <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-red-400 opacity-30"></div>
                 </div>
@@ -233,28 +250,11 @@ function TimelineHeader({
                       : isWeekend
                       ? 'bg-orange-50 text-orange-700'
                       : 'bg-gray-50 text-gray-600'
-                  } relative cursor-pointer hover:bg-opacity-80 transition-all`}
-                  title={`${format(date, 'EEEE, MMMM dd, yyyy')} - Afternoon (Check-in at 3:00 PM)\nClick for room details`}
-                  onClick={() => handleAvailabilityClick(date)}
+                  } relative`}
+                  title={`${format(date, 'EEEE, MMMM dd, yyyy')} - Afternoon (Check-in at 3:00 PM)`}
                 >
                   <div className="font-medium opacity-30">{format(date, 'EEE')}</div>
                   <div className="font-bold opacity-30">{format(date, 'dd')}</div>
-                  {/* Availability indicator - centered */}
-                  <div className={`absolute inset-0 flex items-center justify-center pointer-events-none`}>
-                    <div className={`min-w-[22px] h-5 px-1 rounded text-[10px] font-bold flex items-center justify-center shadow-sm ${
-                      showFreeRooms 
-                        ? availability.availableRooms === 0 
-                          ? 'bg-red-500 text-white'
-                          : availability.availableRooms <= 5 
-                          ? 'bg-orange-500 text-white'
-                          : 'bg-green-500 text-white'
-                        : availability.occupiedRooms === 0
-                        ? 'bg-gray-300 text-gray-700'
-                        : 'bg-blue-500 text-white'
-                    }`}>
-                      {showFreeRooms ? availability.availableRooms : availability.occupiedRooms}
-                    </div>
-                  </div>
                   {/* Subtle visual indicator for check-in zone */}
                   <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-400 opacity-30"></div>
                 </div>
