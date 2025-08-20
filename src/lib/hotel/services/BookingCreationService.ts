@@ -15,7 +15,7 @@
  * @since August 2025
  */
 
-import { DragCreateService, DragCreateSelection } from './DragCreateService';
+// DragCreateService removed - using simple approach
 import { ConflictDetectionService } from './ConflictDetectionService';
 import { OptimisticUpdateService } from './OptimisticUpdateService';
 import { Reservation, Room, Guest } from '../types';
@@ -50,12 +50,10 @@ export interface BookingCreationResult {
 
 export class BookingCreationService {
   private static instance: BookingCreationService;
-  private dragCreateService: DragCreateService;
   private conflictService: ConflictDetectionService;
   private optimisticService: OptimisticUpdateService;
 
   private constructor() {
-    this.dragCreateService = DragCreateService.getInstance();
     this.conflictService = ConflictDetectionService.getInstance();
     this.optimisticService = OptimisticUpdateService.getInstance();
   }
@@ -75,21 +73,11 @@ export class BookingCreationService {
     removeReservationFromState: (id: string) => void,
     serverCreate: (data: BookingCreationData) => Promise<Reservation>
   ): Promise<BookingCreationResult> {
-    const dragState = this.dragCreateService.getState();
-    
-    if (!dragState.selection || dragState.mode !== 'confirming') {
-      return {
-        success: false,
-        error: 'No valid drag-create selection to create booking from'
-      };
-    }
-
-    return this.createBookingWithOptimisticUpdate(
-      this.convertSelectionToBookingData(dragState.selection),
-      addReservationToState,
-      removeReservationFromState,
-      serverCreate
-    );
+    // Method disabled - using simple drag-create approach
+    return {
+      success: false,
+      error: 'createFromDragCreate method disabled - using simple approach'
+    };
   }
 
   /**
@@ -157,10 +145,7 @@ export class BookingCreationService {
           3
         );
 
-        // Complete drag-create workflow if applicable
-        if (bookingData.bookingSource === 'drag_create') {
-          this.dragCreateService.completeCreation();
-        }
+        // Drag-create completion handled by simple approach
 
         return {
           success: true,
@@ -250,20 +235,6 @@ export class BookingCreationService {
     }
   }
 
-  /**
-   * Convert drag-create selection to booking data
-   */
-  private convertSelectionToBookingData(selection: DragCreateSelection): BookingCreationData {
-    return {
-      roomId: selection.roomId,
-      checkIn: selection.checkIn,
-      checkOut: selection.checkOut,
-      adults: 2, // Default values - should be collected from modal
-      children: 0,
-      bookingSource: 'drag_create',
-      specialRequests: 'Created via drag-to-create interface'
-    };
-  }
 
   /**
    * Generate temporary reservation for optimistic updates
@@ -304,17 +275,9 @@ export class BookingCreationService {
   }
 
   /**
-   * Get current drag-create state for external access
-   */
-  public getDragCreateState() {
-    return this.dragCreateService.getState();
-  }
-
-  /**
    * Clean up and reset all services
    */
   public reset(): void {
-    this.dragCreateService.disable();
     // Clear any pending optimistic operations
     this.optimisticService.clearCompletedOperations();
   }
