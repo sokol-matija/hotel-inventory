@@ -82,7 +82,7 @@ export const EnhancedDailyViewModal: React.FC<EnhancedDailyViewModalProps> = ({
         .from('reservations')
         .select(`
           *,
-          guests (*),
+          guest:guests(*),
           guest_children (*)
         `)
         .eq('id', reservationId)
@@ -95,10 +95,10 @@ export const EnhancedDailyViewModal: React.FC<EnhancedDailyViewModalProps> = ({
       const guests: Guest[] = [];
       
       // Add main guest (adult)
-      if (reservationData.guests) {
+      if (reservationData.guest) {
         guests.push({
-          id: reservationData.guests.id,
-          name: reservationData.guests.full_name,
+          id: reservationData.guest.id,
+          name: reservationData.guest.full_name,
           type: 'adult'
         });
       }
