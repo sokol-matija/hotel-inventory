@@ -97,8 +97,9 @@ function TimelineHeader({
       const checkIn = new Date(reservation.checkIn);
       const checkOut = new Date(reservation.checkOut);
       
-      // Check if this date falls within the reservation period
-      return checkIn <= dateEnd && checkOut > dateStart;
+      // Room is occupied from checkin day UNTIL checkout day (exclusive)
+      // This means checkout day is available for new bookings
+      return checkIn <= dateEnd && checkOut > dateEnd;
     });
 
     const occupiedRoomIds = new Set(occupiedReservations.map(r => r.roomId));
