@@ -21,6 +21,7 @@ import { supabase, Database } from '../../supabase';
 import { logger, logUserActivity, logBusinessOperation, trackError } from '../../logging/LoggingService';
 import { performanceMonitor } from '../../monitoring/PerformanceMonitoringService';
 import { auditTrail } from '../../audit/AuditTrailService';
+import { OptimisticUpdateService } from '../services/OptimisticUpdateService';
 
 interface HotelContextType {
   // Data state
@@ -433,38 +434,119 @@ export function SupabaseHotelProvider({ children }: { children: React.ReactNode 
   // Reservation actions
   const updateReservationStatus = useCallback(async (id: string, newStatus: ReservationStatus) => {
     const operationStart = performance.now();
-    setIsUpdating(true);
     
-    try {
-      logger.info('HotelContext', 'Updating reservation status', { reservationId: id, newStatus });
-      
-      const oldReservation = reservations.find(r => r.id === id);
-      await performanceMonitor.measureAsync(
-        'update_reservation_status',
-        () => hotelDataService.updateReservation(id, { status: newStatus }),
-        'database_operation'
-      );
-      
-      logBusinessOperation('update', 'reservation', id, { oldStatus: oldReservation?.status, newStatus });
-      auditTrail.logAuditEvent('update', 'reservation', id, 
-        { status: oldReservation?.status }, 
-        { status: newStatus }, 
-        'success'
-      );
-      
-      const duration = performance.now() - operationStart;
-      performanceMonitor.recordDatabaseOperation('update_reservation_status', 'reservations', duration, 1, 'UPDATE');
-      
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to update reservation status');
-      logger.error('HotelContext', 'Failed to update reservation status', { reservationId: id, newStatus, error: error.message });
-      trackError(error, { operation: 'updateReservationStatus', reservationId: id, newStatus });
-      
-      auditTrail.logAuditEvent('update', 'reservation', id, undefined, { status: newStatus }, 'failure', error.message);
-      throw error;
-    } finally {
-      setIsUpdating(false);
+    // Get the OptimisticUpdateService instance
+    const optimisticService = OptimisticUpdateService.getInstance();
+    
+    // Find the current reservation
+    const currentReservation = reservations.find(r => r.id === id);
+    if (!currentReservation) {
+      throw new Error(`Reservation with id ${id} not found`);
     }
+
+    logger.info('HotelContext', 'Starting optimistic reservation status update', { 
+      reservationId: id, 
+      oldStatus: currentReservation.status,
+      newStatus 
+    });
+
+    // Use optimistic update service
+    const result = await optimisticService.executeOptimisticUpdate(
+      `status-update-${id}-${Date.now()}`,
+      {
+        type: 'update',
+        entity: 'reservation',
+        originalData: currentReservation,
+        newData: { status: newStatus },
+        
+        // Optimistic update function - immediately update the UI
+        optimisticUpdate: () => {
+          console.log(`🔄 Optimistically updating reservation ${id} status to ${newStatus}`);
+          setReservations(prev => 
+            prev.map(r => r.id === id ? { ...r, status: newStatus } : r)
+          );
+          setLastUpdated(new Date());
+        },
+        
+        // Rollback function - restore original status if server update fails
+        rollbackUpdate: () => {
+          console.log(`⬅️ Rolling back reservation ${id} status to ${currentReservation.status}`);
+          setReservations(prev => 
+            prev.map(r => r.id === id ? { ...r, status: currentReservation.status } : r)
+          );
+        },
+        
+        // Server update function
+        serverUpdate: async () => {
+          setIsUpdating(true);
+          try {
+            await performanceMonitor.measureAsync(
+              'update_reservation_status',
+              () => hotelDataService.updateReservation(id, { status: newStatus }),
+              'database_operation'
+            );
+            
+            // Log successful operation
+            logBusinessOperation('update', 'reservation', id, { 
+              oldStatus: currentReservation.status, 
+              newStatus 
+            });
+            
+            auditTrail.logAuditEvent('update', 'reservation', id, 
+              { status: currentReservation.status }, 
+              { status: newStatus }, 
+              'success'
+            );
+            
+            const duration = performance.now() - operationStart;
+            performanceMonitor.recordDatabaseOperation(
+              'update_reservation_status', 
+              'reservations', 
+              duration, 
+              1, 
+              'UPDATE'
+            );
+            
+            console.log(`✅ Server confirmed status update for reservation ${id}`);
+            
+          } catch (err) {
+            const error = err instanceof Error ? err : new Error('Failed to update reservation status');
+            
+            logger.error('HotelContext', 'Failed to update reservation status', { 
+              reservationId: id, 
+              newStatus, 
+              error: error.message 
+            });
+            
+            trackError(error, { 
+              operation: 'updateReservationStatus', 
+              reservationId: id, 
+              newStatus 
+            });
+            
+            auditTrail.logAuditEvent('update', 'reservation', id, 
+              undefined, 
+              { status: newStatus }, 
+              'failure', 
+              error.message
+            );
+            
+            console.log(`❌ Server update failed for reservation ${id}:`, error.message);
+            throw error;
+            
+          } finally {
+            setIsUpdating(false);
+          }
+        }
+      }
+    );
+
+    if (!result.success) {
+      console.error('Optimistic update failed:', result.error);
+      throw new Error(result.error || 'Failed to update reservation status');
+    }
+    
+    console.log(`🎉 Successfully updated reservation ${id} status to ${newStatus}`);
   }, [reservations]);
 
   const updateReservationNotes = useCallback(async (id: string, notes: string) => {

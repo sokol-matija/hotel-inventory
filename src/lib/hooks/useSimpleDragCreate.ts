@@ -5,7 +5,7 @@
  * complex state machines or services. Just basic state management.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 
 export interface DragCreateSelection {
   roomId: string;
@@ -31,6 +31,12 @@ export function useSimpleDragCreate() {
     isSelecting: false,
     hoverPreview: null
   });
+
+  const stateRef = useRef(state);
+  
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
 
   const enable = useCallback(() => {
     setState({
@@ -64,23 +70,29 @@ export function useSimpleDragCreate() {
   }, []);
 
   const completeSelection = useCallback((checkOutDate: Date) => {
-    if (!state.currentSelection) return null;
+    let completedSelection: DragCreateSelection | null = null;
     
-    console.log('🔵 Completing selection:', { checkOutDate });
-    const completedSelection = {
-      ...state.currentSelection,
-      checkOutDate
-    };
-
-    setState({
-      isEnabled: true,
-      currentSelection: completedSelection,
-      isSelecting: false,
-      hoverPreview: null
+    setState(prevState => {
+      if (!prevState.currentSelection) {
+        return prevState;
+      }
+      
+      console.log('🔵 Completing selection:', { checkOutDate });
+      completedSelection = {
+        ...prevState.currentSelection,
+        checkOutDate
+      };
+      
+      return {
+        isEnabled: true,
+        currentSelection: completedSelection,
+        isSelecting: false,
+        hoverPreview: null
+      };
     });
-
+    
     return completedSelection;
-  }, [state.currentSelection]);
+  }, []);
 
   const cancel = useCallback(() => {
     console.log('❌ Cancelling selection');
@@ -93,16 +105,18 @@ export function useSimpleDragCreate() {
   }, []);
 
   const setHoverPreview = useCallback((roomId: string, hoverDate: Date, isAM: boolean) => {
-    if (!state.isSelecting || !state.currentSelection) return;
-    if (roomId !== state.currentSelection.roomId) return;
-    
-    console.log('🎯 Setting hover preview:', { roomId, hoverDate: hoverDate.toLocaleDateString(), isAM, checkIn: state.currentSelection.checkInDate.toLocaleDateString() });
-    
-    setState(prev => ({
-      ...prev,
-      hoverPreview: { roomId, hoverDate, isAM }
-    }));
-  }, [state.isSelecting, state.currentSelection]);
+    setState(prev => {
+      if (!prev.isSelecting || !prev.currentSelection) return prev;
+      if (roomId !== prev.currentSelection.roomId) return prev;
+      
+      console.log('🎯 Setting hover preview:', { roomId, hoverDate: hoverDate.toLocaleDateString(), isAM, checkIn: prev.currentSelection.checkInDate.toLocaleDateString() });
+      
+      return {
+        ...prev,
+        hoverPreview: { roomId, hoverDate, isAM }
+      };
+    });
+  }, []);
 
   const clearHoverPreview = useCallback(() => {
     setState(prev => ({
@@ -112,20 +126,21 @@ export function useSimpleDragCreate() {
   }, []);
 
   const shouldHighlightCell = useCallback((roomId: string, date: Date, isAM: boolean) => {
-    if (!state.isEnabled) return 'none';
+    const currentState = stateRef.current;
+    if (!currentState.isEnabled) return 'none';
 
-    if (!state.isSelecting) {
+    if (!currentState.isSelecting) {
       // First click: highlight PM cells only (all rooms available for selection)
       return !isAM ? 'selectable' : 'none';
-    } else if (state.currentSelection) {
-      const isSameRoom = roomId === state.currentSelection.roomId;
+    } else if (currentState.currentSelection) {
+      const isSameRoom = roomId === currentState.currentSelection.roomId;
       
       // Only highlight cells in the SAME ROOM where drag started
       if (!isSameRoom) return 'none';
       
       // PRIORITY: Only AM cells after the hovered PM position are selectable for ending reservation
-      if (isAM && state.hoverPreview) {
-        const dayAfterHover = new Date(state.hoverPreview.hoverDate);
+      if (isAM && currentState.hoverPreview) {
+        const dayAfterHover = new Date(currentState.hoverPreview.hoverDate);
         dayAfterHover.setDate(dayAfterHover.getDate() + 1);
         dayAfterHover.setHours(0, 0, 0, 0); // Start of day
         
@@ -138,8 +153,8 @@ export function useSimpleDragCreate() {
       }
       
       // Show hover preview (growing reservation box effect) - PM cells up to hovered position
-      if (state.hoverPreview && state.hoverPreview.roomId === roomId && 
-          date >= state.currentSelection.checkInDate && date <= state.hoverPreview.hoverDate) {
+      if (currentState.hoverPreview && currentState.hoverPreview.roomId === roomId && 
+          date >= currentState.currentSelection.checkInDate && date <= currentState.hoverPreview.hoverDate) {
         
         // For PM cells: show preview up to hover position 
         if (!isAM) {
@@ -148,7 +163,7 @@ export function useSimpleDragCreate() {
         }
         
         // For AM cells: show preview only if it's the same day as hover position (checkout)
-        const hoverDay = new Date(state.hoverPreview.hoverDate);
+        const hoverDay = new Date(currentState.hoverPreview.hoverDate);
         hoverDay.setHours(0, 0, 0, 0);
         const currentDay = new Date(date);
         currentDay.setHours(0, 0, 0, 0);
@@ -160,13 +175,13 @@ export function useSimpleDragCreate() {
       }
       
       // Show basic preview for current selection span (check-in onwards, but not the selectable AM cells)
-      if (date >= state.currentSelection.checkInDate) {
+      if (date >= currentState.currentSelection.checkInDate) {
         return 'preview';
       }
     }
 
     return 'none';
-  }, [state.isEnabled, state.isSelecting, state.currentSelection, state.hoverPreview]);
+  }, []);
 
   return {
     state,

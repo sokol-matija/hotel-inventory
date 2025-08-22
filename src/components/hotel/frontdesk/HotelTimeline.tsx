@@ -39,9 +39,10 @@ import HotelOrdersModal from './RoomService/HotelOrdersModal';
 import hotelNotification from '../../../lib/notifications';
 import { OrderItem } from '../../../lib/hotel/orderTypes';
 import { useHotelTimelineState } from '../../../lib/hooks/useHotelTimelineState';
-import { useSimpleDragCreate } from '../../../lib/hooks/useSimpleDragCreate';
+import { useSimpleDragCreate, DragCreateSelection } from '../../../lib/hooks/useSimpleDragCreate';
 import SimpleDragCreateButton from './SimpleDragCreateButton';
 import { ExpandedDailyViewModal } from './modals/ExpandedDailyViewModal';
+import DragCreateOverlay from './DragCreateOverlay';
 
 interface HotelTimelineProps {
   isFullscreen?: boolean;
@@ -478,6 +479,9 @@ function ReservationBlock({
     reservation: null
   });
 
+  // State for optimistic status updates
+  const [optimisticStatusUpdates, setOptimisticStatusUpdates] = useState<Set<string>>(new Set());
+
   // Flag to prevent click through when closing context menu
   const [isClosingContextMenu, setIsClosingContextMenu] = useState(false);
 
@@ -835,21 +839,44 @@ function ReservationBlock({
               onClick={() => console.log('[CONTEXT MENU] Menu clicked')}
             >
               <button 
-                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3"
+                className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3 transition-all duration-200 ${
+                  contextMenu.reservation && optimisticStatusUpdates.has(contextMenu.reservation.id) 
+                    ? 'opacity-70 cursor-wait' 
+                    : ''
+                }`}
+                disabled={contextMenu.reservation ? optimisticStatusUpdates.has(contextMenu.reservation.id) : false}
                 onClick={async () => {
                   console.log('Fast Check-in clicked for:', contextMenu.reservation?.id);
                   if (contextMenu.reservation && onUpdateReservationStatus) {
+                    const reservationId = contextMenu.reservation.id;
+                    
+                    // Add to optimistic updates
+                    setOptimisticStatusUpdates(prev => new Set(prev.add(reservationId)));
+                    
                     try {
-                      await onUpdateReservationStatus(contextMenu.reservation.id, 'checked-in');
+                      await onUpdateReservationStatus(reservationId, 'checked-in');
                       console.log('✅ Guest checked in successfully');
                     } catch (error) {
                       console.error('❌ Failed to check in guest:', error);
+                    } finally {
+                      // Remove from optimistic updates
+                      setOptimisticStatusUpdates(prev => {
+                        const next = new Set(prev);
+                        next.delete(reservationId);
+                        return next;
+                      });
                     }
                   }
                   setContextMenu({ show: false, x: 0, y: 0, reservation: null });
                 }}
               >
-                <span className="text-green-600">✓</span>
+                <span className={`text-green-600 transition-all duration-200 ${
+                  contextMenu.reservation && optimisticStatusUpdates.has(contextMenu.reservation.id) 
+                    ? 'animate-spin' 
+                    : ''
+                }`}>
+                  {contextMenu.reservation && optimisticStatusUpdates.has(contextMenu.reservation.id) ? '⟳' : '✓'}
+                </span>
                 <span>Fast Check-in</span>
               </button>
               
@@ -868,21 +895,44 @@ function ReservationBlock({
               </button>
               
               <button 
-                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3"
+                className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3 transition-all duration-200 ${
+                  contextMenu.reservation && optimisticStatusUpdates.has(contextMenu.reservation.id) 
+                    ? 'opacity-70 cursor-wait' 
+                    : ''
+                }`}
+                disabled={contextMenu.reservation ? optimisticStatusUpdates.has(contextMenu.reservation.id) : false}
                 onClick={async () => {
                   console.log('Fast Check-out clicked for:', contextMenu.reservation?.id);
                   if (contextMenu.reservation && onUpdateReservationStatus) {
+                    const reservationId = contextMenu.reservation.id;
+                    
+                    // Add to optimistic updates
+                    setOptimisticStatusUpdates(prev => new Set(prev.add(reservationId)));
+                    
                     try {
-                      await onUpdateReservationStatus(contextMenu.reservation.id, 'checked-out');
+                      await onUpdateReservationStatus(reservationId, 'checked-out');
                       console.log('✅ Guest checked out successfully');
                     } catch (error) {
                       console.error('❌ Failed to check out guest:', error);
+                    } finally {
+                      // Remove from optimistic updates
+                      setOptimisticStatusUpdates(prev => {
+                        const next = new Set(prev);
+                        next.delete(reservationId);
+                        return next;
+                      });
                     }
                   }
                   setContextMenu({ show: false, x: 0, y: 0, reservation: null });
                 }}
               >
-                <span className="text-blue-600">↗</span>
+                <span className={`text-blue-600 transition-all duration-200 ${
+                  contextMenu.reservation && optimisticStatusUpdates.has(contextMenu.reservation.id) 
+                    ? 'animate-spin' 
+                    : ''
+                }`}>
+                  {contextMenu.reservation && optimisticStatusUpdates.has(contextMenu.reservation.id) ? '⟳' : '↗'}
+                </span>
                 <span>Fast Check-out</span>
               </button>
               
@@ -973,21 +1023,44 @@ function ReservationBlock({
               onClick={() => console.log('[CONTEXT MENU] Menu clicked')}
             >
               <button 
-                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3"
+                className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3 transition-all duration-200 ${
+                  contextMenu.reservation && optimisticStatusUpdates.has(contextMenu.reservation.id) 
+                    ? 'opacity-70 cursor-wait' 
+                    : ''
+                }`}
+                disabled={contextMenu.reservation ? optimisticStatusUpdates.has(contextMenu.reservation.id) : false}
                 onClick={async () => {
                   console.log('Fast Check-in clicked for:', contextMenu.reservation?.id);
                   if (contextMenu.reservation && onUpdateReservationStatus) {
+                    const reservationId = contextMenu.reservation.id;
+                    
+                    // Add to optimistic updates
+                    setOptimisticStatusUpdates(prev => new Set(prev.add(reservationId)));
+                    
                     try {
-                      await onUpdateReservationStatus(contextMenu.reservation.id, 'checked-in');
+                      await onUpdateReservationStatus(reservationId, 'checked-in');
                       console.log('✅ Guest checked in successfully');
                     } catch (error) {
                       console.error('❌ Failed to check in guest:', error);
+                    } finally {
+                      // Remove from optimistic updates
+                      setOptimisticStatusUpdates(prev => {
+                        const next = new Set(prev);
+                        next.delete(reservationId);
+                        return next;
+                      });
                     }
                   }
                   setContextMenu({ show: false, x: 0, y: 0, reservation: null });
                 }}
               >
-                <span className="text-green-600">✓</span>
+                <span className={`text-green-600 transition-all duration-200 ${
+                  contextMenu.reservation && optimisticStatusUpdates.has(contextMenu.reservation.id) 
+                    ? 'animate-spin' 
+                    : ''
+                }`}>
+                  {contextMenu.reservation && optimisticStatusUpdates.has(contextMenu.reservation.id) ? '⟳' : '✓'}
+                </span>
                 <span>Fast Check-in</span>
               </button>
               
@@ -1006,21 +1079,44 @@ function ReservationBlock({
               </button>
               
               <button 
-                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3"
+                className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3 transition-all duration-200 ${
+                  contextMenu.reservation && optimisticStatusUpdates.has(contextMenu.reservation.id) 
+                    ? 'opacity-70 cursor-wait' 
+                    : ''
+                }`}
+                disabled={contextMenu.reservation ? optimisticStatusUpdates.has(contextMenu.reservation.id) : false}
                 onClick={async () => {
                   console.log('Fast Check-out clicked for:', contextMenu.reservation?.id);
                   if (contextMenu.reservation && onUpdateReservationStatus) {
+                    const reservationId = contextMenu.reservation.id;
+                    
+                    // Add to optimistic updates
+                    setOptimisticStatusUpdates(prev => new Set(prev.add(reservationId)));
+                    
                     try {
-                      await onUpdateReservationStatus(contextMenu.reservation.id, 'checked-out');
+                      await onUpdateReservationStatus(reservationId, 'checked-out');
                       console.log('✅ Guest checked out successfully');
                     } catch (error) {
                       console.error('❌ Failed to check out guest:', error);
+                    } finally {
+                      // Remove from optimistic updates
+                      setOptimisticStatusUpdates(prev => {
+                        const next = new Set(prev);
+                        next.delete(reservationId);
+                        return next;
+                      });
                     }
                   }
                   setContextMenu({ show: false, x: 0, y: 0, reservation: null });
                 }}
               >
-                <span className="text-blue-600">↗</span>
+                <span className={`text-blue-600 transition-all duration-200 ${
+                  contextMenu.reservation && optimisticStatusUpdates.has(contextMenu.reservation.id) 
+                    ? 'animate-spin' 
+                    : ''
+                }`}>
+                  {contextMenu.reservation && optimisticStatusUpdates.has(contextMenu.reservation.id) ? '⟳' : '↗'}
+                </span>
                 <span>Fast Check-out</span>
               </button>
               
@@ -1230,7 +1326,8 @@ function DroppableDateCell({
   onCellClick,
   // Simple drag-create visual feedback
   shouldHighlightCell,
-  dragCreate
+  dragCreate,
+  cellRefs
 }: {
   room: Room;
   dayIndex: number;
@@ -1253,6 +1350,7 @@ function DroppableDateCell({
   // Simple drag-create visual feedback
   shouldHighlightCell?: (roomId: string, date: Date, isAM: boolean) => 'selectable' | 'preview' | 'hover-preview' | 'none';
   dragCreate?: any; // Drag create hook object
+  cellRefs?: Map<string, HTMLElement>;
 }) {
   const isWeekend = date.getDay() === 0 || date.getDay() === 6;
   
@@ -1434,9 +1532,17 @@ function DroppableDateCell({
     }
   };
 
+  // Register cell ref for overlay system
+  const cellKey = `${room.id}-${date.toISOString().split('T')[0]}-${isSecondHalf ? 'PM' : 'AM'}`;
+
   return (
     <div 
-      ref={drop as any}
+      ref={(el) => {
+        drop(el);
+        if (el && cellRefs) {
+          cellRefs.set(cellKey, el);
+        }
+      }}
       className={`h-12 border-r border-gray-200 transition-all duration-200 relative ${
         // Priority 1: Simple drag-create highlighting (new system)
         getSimpleDragCreateStyle() ||
@@ -1544,7 +1650,8 @@ function RoomRow({
   // Simple drag-create visual feedback
   shouldHighlightCell,
   dragCreate,
-  onShowExpandedDailyView
+  onShowExpandedDailyView,
+  cellRefs
 }: {
   room: Room;
   reservations: Reservation[];
@@ -1577,6 +1684,7 @@ function RoomRow({
   shouldHighlightCell?: (roomId: string, date: Date, isAM: boolean) => 'selectable' | 'preview' | 'hover-preview' | 'none';
   dragCreate?: any; // Drag create hook object
   onShowExpandedDailyView?: (reservation: Reservation) => void;
+  cellRefs?: Map<string, HTMLElement>;
 }) {
   // Find reservations for this room
   const roomReservations = reservations.filter(r => r.roomId === room.id);
@@ -1628,6 +1736,7 @@ function RoomRow({
               onCellClick={onCellClick}
               shouldHighlightCell={shouldHighlightCell}
               dragCreate={dragCreate}
+              cellRefs={cellRefs}
             />
           );
         })}
@@ -1699,7 +1808,8 @@ function FloorSection({
   shouldHighlightCell,
   onCellClick,
   dragCreate,
-  onShowExpandedDailyView
+  onShowExpandedDailyView,
+  cellRefs
 }: {
   floor: number;
   rooms: Room[];
@@ -1734,6 +1844,7 @@ function FloorSection({
   onCellClick?: (roomId: string, date: Date, isAM: boolean) => void;
   dragCreate?: any; // Drag create hook object
   onShowExpandedDailyView?: (reservation: Reservation) => void;
+  cellRefs?: Map<string, HTMLElement>;
 }) {
   const floorName = floor === 4 ? 'Rooftop Premium' : `Floor ${floor}`;
   const occupiedRooms = rooms.filter(room => 
@@ -1803,6 +1914,7 @@ function FloorSection({
               shouldHighlightCell={shouldHighlightCell}
               dragCreate={dragCreate}
               onShowExpandedDailyView={onShowExpandedDailyView}
+              cellRefs={cellRefs}
             />
           ))}
         </div>
@@ -2182,6 +2294,10 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
   
   // State to bridge drag-create dates to modal
   const [dragCreatePreSelectedDates, setDragCreatePreSelectedDates] = useState<{checkIn: Date, checkOut: Date} | null>(null);
+  
+  // Refs for overlay system
+  const timelineRef = useRef<HTMLDivElement>(null);
+  const cellRefs = useRef<Map<string, HTMLElement>>(new Map());
   
   // Create local state for immediate optimistic updates
   const [localReservations, setLocalReservations] = useState<Reservation[]>([]);
@@ -2846,13 +2962,13 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
     } else if (dragCreate.state.isSelecting && dragCreate.state.currentSelection && isAM) {
       // Second click: AM cell - complete selection (check-out)
       console.log('🔵 Completing check-out selection');
-      const completedSelection = dragCreate.actions.completeSelection(date);
+      const completedSelection = dragCreate.actions.completeSelection(date) as DragCreateSelection | null;
       
-      if (completedSelection) {
+      if (completedSelection && completedSelection.checkOutDate) {
         // Store the drag-create dates for the modal
         const dragDates = {
           checkIn: completedSelection.checkInDate,
-          checkOut: completedSelection.checkOutDate!
+          checkOut: completedSelection.checkOutDate
         };
         setDragCreatePreSelectedDates(dragDates);
         console.log('📅 Drag-create dates stored:', dragDates);
@@ -3063,7 +3179,7 @@ Room Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item
         )}
         
         {/* Timeline container */}
-        <div className="flex-1 overflow-auto">
+        <div ref={timelineRef} className="flex-1 overflow-auto relative">
           {/* Timeline header with dates */}
           <TimelineHeader 
             startDate={currentDate}
@@ -3101,9 +3217,17 @@ Room Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item
                 shouldHighlightCell={dragCreate.shouldHighlightCell}
                 dragCreate={dragCreate}
                 onShowExpandedDailyView={handleShowExpandedDailyView}
+                cellRefs={cellRefs.current}
               />
             ))}
           </div>
+          
+          {/* Drag Create Overlay */}
+          <DragCreateOverlay
+            dragCreateState={dragCreate.state}
+            timelineRef={timelineRef}
+            cellRefs={cellRefs.current}
+          />
         </div>
       </div>
 
