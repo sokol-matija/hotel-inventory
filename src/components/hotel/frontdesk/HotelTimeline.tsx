@@ -1379,7 +1379,7 @@ function DroppableDateCell({
           ? 'bg-gradient-to-br from-emerald-50 to-emerald-100 border-2 border-emerald-400 cursor-pointer hover:from-emerald-100 hover:to-emerald-200 hover:shadow-lg hover:shadow-emerald-200/50 transition-all duration-200' // AM - check-out selectable (no pulse)
           : 'bg-gradient-to-br from-sky-50 to-sky-100 border-2 border-sky-400 cursor-pointer hover:from-sky-100 hover:to-sky-200 hover:shadow-lg hover:shadow-sky-200/50 transition-all duration-200';   // PM - check-in selectable
       case 'hover-preview':
-        return 'bg-gradient-to-r from-indigo-100 to-purple-100 border-2 border-indigo-400 shadow-md transform scale-105 z-10'; // Growing reservation box effect
+        return 'bg-gradient-to-r from-orange-400 to-orange-500 text-white text-xs font-medium flex items-center justify-center shadow-sm'; // Connected reservation bar (no border/radius for seamless connection)
       case 'preview':
         return 'bg-gradient-to-r from-blue-50 via-blue-100 to-blue-50 border border-blue-300 opacity-80'; // Subtle preview (no pulse, no distracting animation)
       default:
@@ -1390,6 +1390,7 @@ function DroppableDateCell({
   const handleMouseEnter = () => {
     // Show growing reservation box during selection
     if (dragCreate?.actions?.setHoverPreview && dragCreate?.state?.isSelecting) {
+      console.log('🖱️  Mouse enter cell:', { roomId: room.id, date: date.toLocaleDateString(), isAM: !isSecondHalf });
       dragCreate.actions.setHoverPreview(room.id, date);
     }
   };
@@ -1462,7 +1463,12 @@ function DroppableDateCell({
         </div>
       )}
       
-      {/* OLD visual feedback overlays - DISABLED (using new shouldHighlightCell system) */}
+      {/* Hover preview content - reservation box style */}
+      {getSimpleDragCreateStyle().includes('hover-preview') && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-white text-xs font-bold">NEW</span>
+        </div>
+      )}
 
       {/* Half-day visual indicator */}
       <div className={`absolute bottom-0 left-0 right-0 h-0.5 ${

@@ -95,6 +95,8 @@ export function useSimpleDragCreate() {
     if (!state.isSelecting || !state.currentSelection) return;
     if (roomId !== state.currentSelection.roomId) return;
     
+    console.log('🎯 Setting hover preview:', { roomId, hoverDate: hoverDate.toLocaleDateString(), checkIn: state.currentSelection.checkInDate.toLocaleDateString() });
+    
     setState(prev => ({
       ...prev,
       hoverPreview: { roomId, hoverDate }
@@ -120,14 +122,25 @@ export function useSimpleDragCreate() {
       // Only highlight cells in the SAME ROOM where drag started
       if (!isSameRoom) return 'none';
       
-      // PRIORITY: AM cells after check-in date are selectable for ending reservation
-      if (isAM && date > state.currentSelection.checkInDate) {
-        return 'selectable';
+      // PRIORITY: Only AM cells after the hovered PM position are selectable for ending reservation
+      if (isAM && state.hoverPreview) {
+        const dayAfterHover = new Date(state.hoverPreview.hoverDate);
+        dayAfterHover.setDate(dayAfterHover.getDate() + 1);
+        dayAfterHover.setHours(0, 0, 0, 0); // Start of day
+        
+        const currentDateStart = new Date(date);
+        currentDateStart.setHours(0, 0, 0, 0);
+        
+        if (currentDateStart >= dayAfterHover) {
+          return 'selectable';
+        }
       }
       
-      // Show hover preview (growing reservation box effect)
+      // Show hover preview (growing reservation box effect) - ONLY for PM cells from check-in onwards
       if (state.hoverPreview && state.hoverPreview.roomId === roomId && 
-          date >= state.currentSelection.checkInDate && date <= state.hoverPreview.hoverDate) {
+          date >= state.currentSelection.checkInDate && date <= state.hoverPreview.hoverDate &&
+          !isAM) { // CONSTRAINT: Only show hover preview on PM cells (reservations span PM to AM)
+        console.log('📦 Showing hover preview for PM cell:', { roomId, date: date.toLocaleDateString() });
         return 'hover-preview';
       }
       
