@@ -17,20 +17,26 @@ export interface SimpleDragCreateState {
   isEnabled: boolean;
   currentSelection: DragCreateSelection | null;
   isSelecting: boolean;
+  hoverPreview: {
+    roomId: string;
+    hoverDate: Date;
+  } | null;
 }
 
 export function useSimpleDragCreate() {
   const [state, setState] = useState<SimpleDragCreateState>({
     isEnabled: false,
     currentSelection: null,
-    isSelecting: false
+    isSelecting: false,
+    hoverPreview: null
   });
 
   const enable = useCallback(() => {
     setState({
       isEnabled: true,
       currentSelection: null,
-      isSelecting: false
+      isSelecting: false,
+      hoverPreview: null
     });
   }, []);
 
@@ -38,7 +44,8 @@ export function useSimpleDragCreate() {
     setState({
       isEnabled: false,
       currentSelection: null,
-      isSelecting: false
+      isSelecting: false,
+      hoverPreview: null
     });
   }, []);
 
@@ -50,7 +57,8 @@ export function useSimpleDragCreate() {
         roomId,
         checkInDate
       },
-      isSelecting: true
+      isSelecting: true,
+      hoverPreview: null
     });
   }, []);
 
@@ -66,7 +74,8 @@ export function useSimpleDragCreate() {
     setState({
       isEnabled: true,
       currentSelection: completedSelection,
-      isSelecting: false
+      isSelecting: false,
+      hoverPreview: null
     });
 
     return completedSelection;
@@ -77,7 +86,25 @@ export function useSimpleDragCreate() {
     setState(prev => ({
       ...prev,
       currentSelection: null,
-      isSelecting: false
+      isSelecting: false,
+      hoverPreview: null
+    }));
+  }, []);
+
+  const setHoverPreview = useCallback((roomId: string, hoverDate: Date) => {
+    if (!state.isSelecting || !state.currentSelection) return;
+    if (roomId !== state.currentSelection.roomId) return;
+    
+    setState(prev => ({
+      ...prev,
+      hoverPreview: { roomId, hoverDate }
+    }));
+  }, [state.isSelecting, state.currentSelection]);
+
+  const clearHoverPreview = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      hoverPreview: null
     }));
   }, []);
 
@@ -85,22 +112,33 @@ export function useSimpleDragCreate() {
     if (!state.isEnabled) return 'none';
 
     if (!state.isSelecting) {
-      // First click: highlight PM cells only
+      // First click: highlight PM cells only (all rooms available for selection)
       return !isAM ? 'selectable' : 'none';
     } else if (state.currentSelection) {
-      // Second click: highlight AM cells after the check-in date
+      const isSameRoom = roomId === state.currentSelection.roomId;
+      
+      // Only highlight cells in the SAME ROOM where drag started
+      if (!isSameRoom) return 'none';
+      
+      // PRIORITY: AM cells after check-in date are selectable for ending reservation
       if (isAM && date > state.currentSelection.checkInDate) {
         return 'selectable';
       }
-      // Show preview for the current selection
-      if (roomId === state.currentSelection.roomId && 
-          date >= state.currentSelection.checkInDate) {
+      
+      // Show hover preview (growing reservation box effect)
+      if (state.hoverPreview && state.hoverPreview.roomId === roomId && 
+          date >= state.currentSelection.checkInDate && date <= state.hoverPreview.hoverDate) {
+        return 'hover-preview';
+      }
+      
+      // Show basic preview for current selection span (check-in onwards, but not the selectable AM cells)
+      if (date >= state.currentSelection.checkInDate) {
         return 'preview';
       }
     }
 
     return 'none';
-  }, [state.isEnabled, state.isSelecting, state.currentSelection]);
+  }, [state.isEnabled, state.isSelecting, state.currentSelection, state.hoverPreview]);
 
   return {
     state,
@@ -109,7 +147,9 @@ export function useSimpleDragCreate() {
       disable,
       startSelection,
       completeSelection,
-      cancel
+      cancel,
+      setHoverPreview,
+      clearHoverPreview
     },
     shouldHighlightCell
   };
