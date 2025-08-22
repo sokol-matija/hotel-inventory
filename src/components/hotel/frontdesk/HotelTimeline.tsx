@@ -1391,7 +1391,7 @@ function DroppableDateCell({
     // Show growing reservation box during selection
     if (dragCreate?.actions?.setHoverPreview && dragCreate?.state?.isSelecting) {
       console.log('🖱️  Mouse enter cell:', { roomId: room.id, date: date.toLocaleDateString(), isAM: !isSecondHalf });
-      dragCreate.actions.setHoverPreview(room.id, date);
+      dragCreate.actions.setHoverPreview(room.id, date, !isSecondHalf);
     }
   };
   
@@ -1638,9 +1638,13 @@ function RoomRow({
             const startDayIndex = Math.floor((checkInDate.getTime() - timelineStart.getTime()) / (24 * 60 * 60 * 1000));
             const endDayIndex = Math.floor((hoverDate.getTime() - timelineStart.getTime()) / (24 * 60 * 60 * 1000));
             
-            // Convert to half-day grid positions (PM check-in = odd index, AM check-out = even index)  
-            const startHalfDayIndex = startDayIndex * 2 + 1; // PM cell
-            const endHalfDayIndex = endDayIndex * 2 + 1; // PM cell (or +2 for AM checkout)
+            // Convert to half-day grid positions (PM check-in to hovered position)  
+            const startHalfDayIndex = startDayIndex * 2 + 1; // PM cell (check-in)
+            
+            // End at exact hovered cell (AM or PM)
+            const endHalfDayIndex = dragCreate.state.hoverPreview.isAM 
+              ? endDayIndex * 2      // AM cell of hovered day
+              : endDayIndex * 2 + 1; // PM cell of hovered day
             
             // Grid column positions (1-based for CSS grid, +1 for room name column)
             const gridColumnStart = startHalfDayIndex + 2;

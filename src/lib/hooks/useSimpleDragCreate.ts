@@ -20,6 +20,7 @@ export interface SimpleDragCreateState {
   hoverPreview: {
     roomId: string;
     hoverDate: Date;
+    isAM: boolean;
   } | null;
 }
 
@@ -91,15 +92,15 @@ export function useSimpleDragCreate() {
     }));
   }, []);
 
-  const setHoverPreview = useCallback((roomId: string, hoverDate: Date) => {
+  const setHoverPreview = useCallback((roomId: string, hoverDate: Date, isAM: boolean) => {
     if (!state.isSelecting || !state.currentSelection) return;
     if (roomId !== state.currentSelection.roomId) return;
     
-    console.log('🎯 Setting hover preview:', { roomId, hoverDate: hoverDate.toLocaleDateString(), checkIn: state.currentSelection.checkInDate.toLocaleDateString() });
+    console.log('🎯 Setting hover preview:', { roomId, hoverDate: hoverDate.toLocaleDateString(), isAM, checkIn: state.currentSelection.checkInDate.toLocaleDateString() });
     
     setState(prev => ({
       ...prev,
-      hoverPreview: { roomId, hoverDate }
+      hoverPreview: { roomId, hoverDate, isAM }
     }));
   }, [state.isSelecting, state.currentSelection]);
 
