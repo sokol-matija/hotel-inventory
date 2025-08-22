@@ -1,14 +1,39 @@
 // FrontDeskV2Layout - Clean front desk module with dedicated sidebar
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { Menu, TrendingUp, Users, Home, DollarSign } from 'lucide-react';
 import FrontDeskV2Sidebar from './components/FrontDeskV2Sidebar';
 // import { GuestProvider } from '../../../lib/hotel/contexts/GuestContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import GuestCrudPage from './pages/GuestCrudPage';
+import { useHotel } from '../../../lib/hotel/state/SupabaseHotelContext';
 
 // Dashboard component
 function DashboardPage() {
+  const { rooms, isLoading, roomsByFloor } = useHotel();
+  
+  // Format room type for display
+  const formatRoomType = (roomType: string) => {
+    return roomType.charAt(0).toUpperCase() + roomType.slice(1) + ' Room';
+  };
+  
+  // Get floor 3 rooms (301-318)
+  const floor3Rooms = useMemo(() => {
+    return rooms
+      .filter(room => room.floor === 3)
+      .sort((a, b) => a.number.localeCompare(b.number));
+  }, [rooms]);
+  
+  if (isLoading) {
+    return (
+      <div className="flex-1 overflow-auto p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-gray-500">Loading rooms...</div>
+        </div>
+      </div>
+    );
+  }
+  
   return (
     <div className="flex-1 overflow-auto p-6">
       {/* Dashboard Cards */}
@@ -137,8 +162,8 @@ function DashboardPage() {
             <div className="bg-white rounded-lg p-4">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-4">
-                  <h4 className="font-medium">Floor 1</h4>
-                  <span className="text-sm text-gray-500">18 rooms</span>
+                  <h4 className="font-medium">Floor 3</h4>
+                  <span className="text-sm text-gray-500">{floor3Rooms.length} rooms</span>
                   <span className="px-2 py-1 text-xs bg-gray-900 text-white rounded-full">
                     100% occupied
                   </span>
@@ -147,15 +172,16 @@ function DashboardPage() {
 
               {/* Room Grid */}
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                {Array.from({ length: 18 }, (_, i) => {
-                  const roomNumber = 101 + i;
-                  const roomTypes = ['Family Room', 'Double Room', 'Double Room', 'Double Room', 'Double Room', 'Triple Room'];
-                  const roomType = roomTypes[i % roomTypes.length];
+                {floor3Rooms.map((room) => {
+                  const isPremium = room.isPremium;
                   
                   return (
-                    <div key={roomNumber} className="border rounded-lg p-3 bg-gray-50 hover:bg-gray-100 cursor-pointer">
-                      <div className="font-medium text-sm mb-1">{roomNumber}</div>
-                      <div className="text-xs text-gray-500 mb-2">{roomType}</div>
+                    <div key={room.id} className="border rounded-lg p-3 bg-gray-50 hover:bg-gray-100 cursor-pointer">
+                      <div className="font-medium text-sm mb-1 flex items-center">
+                        {isPremium && <span className="text-yellow-500 mr-1">⭐</span>}
+                        {room.number}
+                      </div>
+                      <div className="text-xs text-gray-500 mb-2">{formatRoomType(room.type)}</div>
                       <div className="text-xs text-gray-400 italic">
                         Click to create<br />booking
                       </div>

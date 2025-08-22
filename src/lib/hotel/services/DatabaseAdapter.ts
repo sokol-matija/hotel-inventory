@@ -527,6 +527,7 @@ export class DatabaseAdapter {
 
   private getRoomTypeEnglishName(roomType: string): string {
     const mapping: Record<string, string> = {
+      // Legacy single letter codes
       'BD': 'Big Double Room',
       'BS': 'Big Single Room',
       'D': 'Double Room',
@@ -534,9 +535,15 @@ export class DatabaseAdapter {
       'S': 'Single Room',
       'F': 'Family Room',
       'A': 'Apartment',
-      'RA': '401 Rooftop Apartment'
+      'RA': '401 Rooftop Apartment',
+      // Current database room types (lowercase)
+      'single': 'Single Room',
+      'double': 'Double Room',
+      'triple': 'Triple Room',
+      'family': 'Family Room',
+      'apartment': 'Apartment'
     };
-    return mapping[roomType] || 'Double Room';
+    return mapping[roomType] || `${roomType.charAt(0).toUpperCase()}${roomType.slice(1)} Room`;
   }
 
   private generateConfirmationNumber(): string {

@@ -2566,7 +2566,8 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
           hasPets: reservation.petFee > 0,
           needsParking: reservation.parkingFee > 0,
           additionalCharges: reservation.additionalCharges
-        }
+        },
+        rooms
       );
 
       const updatedReservationData = {

@@ -33,12 +33,6 @@ const frontDeskSidebarItems = [
     label: 'Reservations'
   },
   { 
-    key: 'front-desk-v2', 
-    path: '/hotel/front-desk-v2', 
-    icon: Sparkles,
-    label: 'Front Desk V2 (Clean)'
-  },
-  { 
     key: 'guests', 
     path: '/hotel/front-desk/guests', 
     icon: Users,
