@@ -25,6 +25,7 @@ import {
   MousePointer2,
   Square,
   ArrowLeftRight,
+  BarChart3,
 
 } from 'lucide-react';
 import { useHotel } from '../../../lib/hotel/state/SupabaseHotelContext';
@@ -40,6 +41,7 @@ import { OrderItem } from '../../../lib/hotel/orderTypes';
 import { useHotelTimelineState } from '../../../lib/hooks/useHotelTimelineState';
 import { useSimpleDragCreate } from '../../../lib/hooks/useSimpleDragCreate';
 import SimpleDragCreateButton from './SimpleDragCreateButton';
+import { ExpandedDailyViewModal } from './modals/ExpandedDailyViewModal';
 
 interface HotelTimelineProps {
   isFullscreen?: boolean;
@@ -444,7 +446,8 @@ function ReservationBlock({
   isMoveMode = false,
   onResizeReservation,
   onShowDrinksModal,
-  calculateContextMenuPosition
+  calculateContextMenuPosition,
+  onShowExpandedDailyView
 }: {
   reservation: Reservation;
   guest: any;
@@ -460,6 +463,7 @@ function ReservationBlock({
   onResizeReservation?: (reservationId: string, side: 'start' | 'end', newDate: Date) => void;
   onShowDrinksModal?: (reservation: Reservation) => void;
   calculateContextMenuPosition?: (e: React.MouseEvent, menuWidth?: number, menuHeight?: number) => { x: number; y: number };
+  onShowExpandedDailyView?: (reservation: Reservation) => void;
 }) {
   // Context menu state - simple implementation
   const [contextMenu, setContextMenu] = useState<{
@@ -850,6 +854,20 @@ function ReservationBlock({
               </button>
               
               <button 
+                className="w-full text-left px-4 py-2 text-sm hover:bg-blue-50 text-blue-700 flex items-center space-x-3 border-t border-gray-100"
+                onClick={() => {
+                  console.log('🔍 Expand Day-by-Day View clicked for:', contextMenu.reservation?.id);
+                  if (contextMenu.reservation && onShowExpandedDailyView) {
+                    onShowExpandedDailyView(contextMenu.reservation);
+                  }
+                  setContextMenu({ show: false, x: 0, y: 0, reservation: null });
+                }}
+              >
+                <span className="text-blue-600"><BarChart3 className="h-4 w-4" /></span>
+                <span>Expand Day-by-Day View</span>
+              </button>
+              
+              <button 
                 className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3"
                 onClick={async () => {
                   console.log('Fast Check-out clicked for:', contextMenu.reservation?.id);
@@ -971,6 +989,20 @@ function ReservationBlock({
               >
                 <span className="text-green-600">✓</span>
                 <span>Fast Check-in</span>
+              </button>
+              
+              <button 
+                className="w-full text-left px-4 py-2 text-sm hover:bg-blue-50 text-blue-700 flex items-center space-x-3 border-t border-gray-100"
+                onClick={() => {
+                  console.log('🔍 Expand Day-by-Day View clicked for:', contextMenu.reservation?.id);
+                  if (contextMenu.reservation && onShowExpandedDailyView) {
+                    onShowExpandedDailyView(contextMenu.reservation);
+                  }
+                  setContextMenu({ show: false, x: 0, y: 0, reservation: null });
+                }}
+              >
+                <span className="text-blue-600"><BarChart3 className="h-4 w-4" /></span>
+                <span>Expand Day-by-Day View</span>
               </button>
               
               <button 
@@ -1511,7 +1543,8 @@ function RoomRow({
   onCellClick,
   // Simple drag-create visual feedback
   shouldHighlightCell,
-  dragCreate
+  dragCreate,
+  onShowExpandedDailyView
 }: {
   room: Room;
   reservations: Reservation[];
@@ -1543,6 +1576,7 @@ function RoomRow({
   // Simple drag-create visual feedback
   shouldHighlightCell?: (roomId: string, date: Date, isAM: boolean) => 'selectable' | 'preview' | 'hover-preview' | 'none';
   dragCreate?: any; // Drag create hook object
+  onShowExpandedDailyView?: (reservation: Reservation) => void;
 }) {
   // Find reservations for this room
   const roomReservations = reservations.filter(r => r.roomId === room.id);
@@ -1622,52 +1656,10 @@ function RoomRow({
               onResizeReservation={onResizeReservation}
               onShowDrinksModal={onShowDrinksModal}
               calculateContextMenuPosition={calculateContextMenuPosition}
+              onShowExpandedDailyView={onShowExpandedDailyView}
             />
           );
         })}
-        
-        {/* Hover preview overlay - seamless like real reservations */}
-        {dragCreate?.state?.isSelecting && dragCreate.state.hoverPreview && 
-         dragCreate.state.hoverPreview.roomId === room.id && dragCreate.state.currentSelection && (
-          (() => {
-            const timelineStart = startOfDay(startDate);
-            const checkInDate = startOfDay(dragCreate.state.currentSelection.checkInDate);
-            const hoverDate = startOfDay(dragCreate.state.hoverPreview.hoverDate);
-            
-            // Calculate grid positions (PM check-in to hovered position)
-            const startDayIndex = Math.floor((checkInDate.getTime() - timelineStart.getTime()) / (24 * 60 * 60 * 1000));
-            const endDayIndex = Math.floor((hoverDate.getTime() - timelineStart.getTime()) / (24 * 60 * 60 * 1000));
-            
-            // Convert to half-day grid positions (PM check-in to hovered position)  
-            const startHalfDayIndex = startDayIndex * 2 + 1; // PM cell (check-in)
-            
-            // End at exact hovered cell (AM or PM)
-            const endHalfDayIndex = dragCreate.state.hoverPreview.isAM 
-              ? endDayIndex * 2      // AM cell of hovered day
-              : endDayIndex * 2 + 1; // PM cell of hovered day
-            
-            // Grid column positions (1-based for CSS grid, +1 for room name column)
-            const gridColumnStart = startHalfDayIndex + 2;
-            const gridColumnEnd = endHalfDayIndex + 2;
-            
-            if (startHalfDayIndex >= 28 || endHalfDayIndex <= 0 || gridColumnEnd <= gridColumnStart) {
-              return null;
-            }
-            
-            return (
-              <div
-                className="h-12 bg-gradient-to-r from-orange-400 to-orange-500 rounded border border-orange-600 shadow-md flex flex-col items-center justify-center text-white text-xs font-medium pointer-events-none z-10"
-                style={{
-                  gridColumn: `${gridColumnStart} / ${gridColumnEnd + 1}`,
-                  gridRow: '1'
-                }}
-              >
-                <span className="font-bold truncate">New Booking</span>
-                <span className="opacity-90 truncate">Preview</span>
-              </div>
-            );
-          })()
-        )}
       </div>
     </div>
   );
@@ -1706,7 +1698,8 @@ function FloorSection({
   // New drag-create system props
   shouldHighlightCell,
   onCellClick,
-  dragCreate
+  dragCreate,
+  onShowExpandedDailyView
 }: {
   floor: number;
   rooms: Room[];
@@ -1740,6 +1733,7 @@ function FloorSection({
   shouldHighlightCell?: (roomId: string, date: Date, isAM: boolean) => 'selectable' | 'preview' | 'hover-preview' | 'none';
   onCellClick?: (roomId: string, date: Date, isAM: boolean) => void;
   dragCreate?: any; // Drag create hook object
+  onShowExpandedDailyView?: (reservation: Reservation) => void;
 }) {
   const floorName = floor === 4 ? 'Rooftop Premium' : `Floor ${floor}`;
   const occupiedRooms = rooms.filter(room => 
@@ -1808,6 +1802,7 @@ function FloorSection({
               onCellClick={onCellClick}
               shouldHighlightCell={shouldHighlightCell}
               dragCreate={dragCreate}
+              onShowExpandedDailyView={onShowExpandedDailyView}
             />
           ))}
         </div>
@@ -2244,6 +2239,10 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
   const [showHotelOrdersModal, setShowHotelOrdersModal] = useState(false);
   const [hotelOrdersReservation, setHotelOrdersReservation] = useState<Reservation | null>(null);
 
+  // Expanded daily view modal state
+  const [showExpandedDailyView, setShowExpandedDailyView] = useState(false);
+  const [expandedReservation, setExpandedReservation] = useState<Reservation | null>(null);
+
   // Room availability modal state
   const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
   const [selectedAvailabilityDate, setSelectedAvailabilityDate] = useState<Date | null>(null);
@@ -2254,6 +2253,12 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
   // Smart context menu positioning (now using service)
   const calculateContextMenuPosition = (e: React.MouseEvent, menuWidth = 180, menuHeight = 300) => {
     return positionContextMenu(e.clientX, e.clientY);
+  };
+
+  // Handler for expanded daily view
+  const handleShowExpandedDailyView = (reservation: Reservation) => {
+    setExpandedReservation(reservation);
+    setShowExpandedDailyView(true);
   };
 
   // Escape key listener to cancel drag-to-create
@@ -3095,6 +3100,7 @@ Room Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item
                 onCellClick={handleDragCreateCellClick}
                 shouldHighlightCell={dragCreate.shouldHighlightCell}
                 dragCreate={dragCreate}
+                onShowExpandedDailyView={handleShowExpandedDailyView}
               />
             ))}
           </div>
@@ -3174,6 +3180,23 @@ Room Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item
         date={selectedAvailabilityDate}
         availabilityData={selectedAvailabilityData}
       />
+
+      {/* Expanded Daily View Modal */}
+      {showExpandedDailyView && expandedReservation && (
+        <ExpandedDailyViewModal
+          isOpen={showExpandedDailyView}
+          onClose={() => {
+            setShowExpandedDailyView(false);
+            setExpandedReservation(null);
+          }}
+          reservationId={parseInt(expandedReservation.id)}
+          reservationTitle={(() => {
+            const guest = guests.find(g => g.id === expandedReservation.guestId);
+            const room = rooms.find(r => r.id === expandedReservation.roomId);
+            return `${guest?.fullName || 'Guest'} - Room ${room ? formatRoomNumber(room) : 'Unknown'}`;
+          })()}
+        />
+      )}
 
       {/* Simple drag-create is active when enabled */}
       </div>
