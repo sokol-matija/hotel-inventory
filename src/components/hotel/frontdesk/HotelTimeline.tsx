@@ -1379,7 +1379,7 @@ function DroppableDateCell({
           ? 'bg-gradient-to-br from-emerald-50 to-emerald-100 border-2 border-emerald-400 cursor-pointer hover:from-emerald-100 hover:to-emerald-200 hover:shadow-lg hover:shadow-emerald-200/50 transition-all duration-200' // AM - check-out selectable (no pulse)
           : 'bg-gradient-to-br from-sky-50 to-sky-100 border-2 border-sky-400 cursor-pointer hover:from-sky-100 hover:to-sky-200 hover:shadow-lg hover:shadow-sky-200/50 transition-all duration-200';   // PM - check-in selectable
       case 'hover-preview':
-        return 'bg-gradient-to-r from-orange-400 to-orange-500 text-white text-xs font-medium shadow-md border border-orange-600 rounded-md'; // Real reservation styling
+        return 'bg-gradient-to-r from-orange-400 to-orange-500 text-white text-xs font-medium border-r-0 relative z-10 after:content-[""] after:absolute after:top-0 after:right-0 after:w-px after:h-full after:bg-orange-500'; // Connected reservation bar with gap filler
       case 'preview':
         return 'bg-gradient-to-r from-blue-50 via-blue-100 to-blue-50 border border-blue-300 opacity-80'; // Subtle preview (no pulse, no distracting animation)
       default:
