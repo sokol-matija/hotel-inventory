@@ -1379,7 +1379,7 @@ function DroppableDateCell({
           ? 'bg-gradient-to-br from-emerald-50 to-emerald-100 border-2 border-emerald-400 cursor-pointer hover:from-emerald-100 hover:to-emerald-200 hover:shadow-lg hover:shadow-emerald-200/50 transition-all duration-200' // AM - check-out selectable (no pulse)
           : 'bg-gradient-to-br from-sky-50 to-sky-100 border-2 border-sky-400 cursor-pointer hover:from-sky-100 hover:to-sky-200 hover:shadow-lg hover:shadow-sky-200/50 transition-all duration-200';   // PM - check-in selectable
       case 'hover-preview':
-        return 'bg-gradient-to-r from-orange-400 to-orange-500 text-white text-xs font-medium border-r-0 relative z-10 after:content-[""] after:absolute after:top-0 after:right-0 after:w-px after:h-full after:bg-orange-500'; // Connected reservation bar with gap filler
+        return ''; // Now handled by overlay system - no individual cell styling needed
       case 'preview':
         return 'bg-gradient-to-r from-blue-50 via-blue-100 to-blue-50 border border-blue-300 opacity-80'; // Subtle preview (no pulse, no distracting animation)
       default:
@@ -1463,13 +1463,7 @@ function DroppableDateCell({
         </div>
       )}
       
-      {/* Hover preview content - exact reservation box style */}
-      {getSimpleDragCreateStyle().includes('hover-preview') && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center px-1 py-0.5">
-          <span className="text-white text-xs font-bold truncate">New Booking</span>
-          <span className="text-white text-xs opacity-90 truncate">Preview</span>
-        </div>
-      )}
+      {/* Old hover preview content removed - now handled by overlay system */}
 
       {/* Half-day visual indicator */}
       <div className={`absolute bottom-0 left-0 right-0 h-0.5 ${
@@ -1631,6 +1625,45 @@ function RoomRow({
             />
           );
         })}
+        
+        {/* Hover preview overlay - seamless like real reservations */}
+        {dragCreate?.state?.isSelecting && dragCreate.state.hoverPreview && 
+         dragCreate.state.hoverPreview.roomId === room.id && dragCreate.state.currentSelection && (
+          (() => {
+            const timelineStart = startOfDay(startDate);
+            const checkInDate = startOfDay(dragCreate.state.currentSelection.checkInDate);
+            const hoverDate = startOfDay(dragCreate.state.hoverPreview.hoverDate);
+            
+            // Calculate grid positions (PM check-in to hovered position)
+            const startDayIndex = Math.floor((checkInDate.getTime() - timelineStart.getTime()) / (24 * 60 * 60 * 1000));
+            const endDayIndex = Math.floor((hoverDate.getTime() - timelineStart.getTime()) / (24 * 60 * 60 * 1000));
+            
+            // Convert to half-day grid positions (PM check-in = odd index, AM check-out = even index)  
+            const startHalfDayIndex = startDayIndex * 2 + 1; // PM cell
+            const endHalfDayIndex = endDayIndex * 2 + 1; // PM cell (or +2 for AM checkout)
+            
+            // Grid column positions (1-based for CSS grid, +1 for room name column)
+            const gridColumnStart = startHalfDayIndex + 2;
+            const gridColumnEnd = endHalfDayIndex + 2;
+            
+            if (startHalfDayIndex >= 28 || endHalfDayIndex <= 0 || gridColumnEnd <= gridColumnStart) {
+              return null;
+            }
+            
+            return (
+              <div
+                className="h-12 bg-gradient-to-r from-orange-400 to-orange-500 rounded border border-orange-600 shadow-md flex flex-col items-center justify-center text-white text-xs font-medium pointer-events-none z-10"
+                style={{
+                  gridColumn: `${gridColumnStart} / ${gridColumnEnd + 1}`,
+                  gridRow: '1'
+                }}
+              >
+                <span className="font-bold truncate">New Booking</span>
+                <span className="opacity-90 truncate">Preview</span>
+              </div>
+            );
+          })()
+        )}
       </div>
     </div>
   );
