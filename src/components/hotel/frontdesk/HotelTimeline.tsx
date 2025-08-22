@@ -42,6 +42,7 @@ import { useHotelTimelineState } from '../../../lib/hooks/useHotelTimelineState'
 import { useSimpleDragCreate, DragCreateSelection } from '../../../lib/hooks/useSimpleDragCreate';
 import SimpleDragCreateButton from './SimpleDragCreateButton';
 import { ExpandedDailyViewModal } from './modals/ExpandedDailyViewModal';
+import { EnhancedDailyViewModal } from './modals/EnhancedDailyViewModal';
 import DragCreateOverlay from './DragCreateOverlay';
 
 interface HotelTimelineProps {
@@ -3305,15 +3306,15 @@ Room Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item
         availabilityData={selectedAvailabilityData}
       />
 
-      {/* Expanded Daily View Modal */}
+      {/* Enhanced Daily View Modal */}
       {showExpandedDailyView && expandedReservation && (
-        <ExpandedDailyViewModal
+        <EnhancedDailyViewModal
           isOpen={showExpandedDailyView}
           onClose={() => {
             setShowExpandedDailyView(false);
             setExpandedReservation(null);
           }}
-          reservationId={parseInt(expandedReservation.id)}
+          reservationId={expandedReservation.id}
           reservationTitle={(() => {
             const guest = guests.find(g => g.id === expandedReservation.guestId);
             const room = rooms.find(r => r.id === expandedReservation.roomId);

@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { X, Users, Baby, Car, Heart, Shirt, Calendar, Euro } from 'lucide-react';
+import { X, Users, Baby, Car, Heart, Shirt, Calendar, Euro, Plus, Minus, Check, Save } from 'lucide-react';
 import { Button } from '../../../ui/button';
+import { Badge } from '../../../ui/badge';
 import { 
-  ReservationDailyPricingResult, 
-  DailyPricingBreakdown,
-  DailyDetail,
-  dailyReservationPricingService 
-} from '../../../../lib/hotel/services/DailyReservationPricingService';
+  unifiedPricingService, 
+  DayByDayPricingResult,
+  GuestDayPresenceParams 
+} from '../../../../lib/hotel/services/UnifiedPricingService';
 import { format } from 'date-fns';
 
 interface ExpandedDailyViewModalProps {
@@ -16,10 +16,18 @@ interface ExpandedDailyViewModalProps {
   reservationTitle: string; // e.g., "John Doe - Room 202"
 }
 
+interface GuestPresence {
+  guestId: string;
+  guestName: string;
+  guestType: 'adult' | 'child';
+  age?: number;
+  isPresent: boolean;
+}
+
 interface EditableDayState {
   [date: string]: {
     adults: number;
-    children: number[];
+    children: string[];
     parkingSpots: number;
     hasPets: boolean;
     towelRentals: number;
@@ -33,7 +41,7 @@ export const ExpandedDailyViewModal: React.FC<ExpandedDailyViewModalProps> = ({
   reservationId,
   reservationTitle
 }) => {
-  const [pricingData, setPricingData] = useState<ReservationDailyPricingResult | null>(null);
+  const [pricingData, setPricingData] = useState<DayByDayPricingResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editingDay, setEditingDay] = useState<string | null>(null);
@@ -52,7 +60,9 @@ export const ExpandedDailyViewModal: React.FC<ExpandedDailyViewModalProps> = ({
       setLoading(true);
       setError(null);
       
-      const result = await dailyReservationPricingService.calculateDailyPricingBreakdown(reservationId);
+      const result = await unifiedPricingService.calculateDayByDayBreakdown({
+        reservationId: reservationId.toString()
+      });
       setPricingData(result);
       
       // Initialize edit state
@@ -89,19 +99,19 @@ export const ExpandedDailyViewModal: React.FC<ExpandedDailyViewModalProps> = ({
       const editData = editState[dateKey];
       if (!editData) return;
       
-      // Create DailyDetail object for update
-      const dailyDetail: DailyDetail = {
-        reservationId,
+      // Create GuestDayPresenceParams object for update
+      const params: GuestDayPresenceParams = {
+        reservationId: reservationId.toString(),
         stayDate: new Date(dateKey),
         adultsPresent: editData.adults,
         childrenPresent: editData.children,
-        parkingSpotsNeeded: editData.parkingSpots,
-        petsPresent: editData.hasPets,
+        parkingSpots: editData.parkingSpots,
+        hasPets: editData.hasPets,
         towelRentals: editData.towelRentals,
         notes: editData.notes
       };
       
-      await dailyReservationPricingService.updateDailyDetail(dailyDetail);
+      await unifiedPricingService.updateGuestDayPresence(params);
       
       // Reload data to get updated pricing
       await loadPricingData();
