@@ -88,7 +88,12 @@ export const EnhancedDailyViewModal: React.FC<EnhancedDailyViewModalProps> = ({
         .eq('id', reservationId)
         .single();
 
-      if (reservationError) throw reservationError;
+      if (reservationError) {
+        console.error('❌ Reservation query error:', reservationError);
+        throw reservationError;
+      }
+      
+      console.log('✅ Reservation data loaded:', reservationData);
       setReservation(reservationData);
 
       // Build all guests list
@@ -96,15 +101,19 @@ export const EnhancedDailyViewModal: React.FC<EnhancedDailyViewModalProps> = ({
       
       // Add main guest (adult)
       if (reservationData.guest) {
+        console.log('✅ Main guest found:', reservationData.guest);
         guests.push({
           id: reservationData.guest.id,
           name: reservationData.guest.full_name,
           type: 'adult'
         });
+      } else {
+        console.log('❌ No main guest found in reservation data');
       }
 
       // Add children
       if (reservationData.guest_children) {
+        console.log('✅ Children found:', reservationData.guest_children);
         reservationData.guest_children.forEach((child: any) => {
           guests.push({
             id: child.id,
@@ -113,34 +122,94 @@ export const EnhancedDailyViewModal: React.FC<EnhancedDailyViewModalProps> = ({
             age: child.age
           });
         });
+      } else {
+        console.log('ℹ️  No children found in reservation data');
       }
 
+      console.log('👥 Final guests list:', guests);
       setAllGuests(guests);
 
       // Initialize day states
-      const checkIn = new Date(reservationData.check_in);
-      const checkOut = new Date(reservationData.check_out);
+      const checkIn = new Date(reservationData.check_in_date);
+      const checkOut = new Date(reservationData.check_out_date);
       const days: DayState[] = [];
 
-      for (let date = new Date(checkIn); date < checkOut; date.setDate(date.getDate() + 1)) {
-        days.push({
-          date: new Date(date),
-          guestPresences: guests.map(guest => ({
-            guestId: guest.id,
-            isPresent: true // Default: all guests present all days
-          })),
-          services: {
-            parkingSpots: reservationData.parking_required ? 1 : 0,
-            hasPets: reservationData.has_pets || false,
-            petCount: reservationData.pet_count || 0,
-            towelRentals: 0
-          },
-          notes: '',
-          dailyTotal: 0,
-          hasChanges: false
-        });
+      console.log('📅 Initializing day states:', { 
+        checkIn: checkIn.toLocaleDateString(), 
+        checkOut: checkOut.toLocaleDateString(),
+        guestsCount: guests.length 
+      });
+
+      // Load existing daily details if any
+      const { data: existingDetails, error: detailsError } = await supabase
+        .from('reservation_daily_details')
+        .select('*')
+        .eq('reservation_id', reservationId)
+        .order('stay_date');
+
+      if (detailsError) {
+        console.warn('⚠️  Could not load existing daily details:', detailsError);
+      } else {
+        console.log('📊 Loaded existing daily details:', existingDetails);
       }
 
+      const existingDetailsMap = new Map(
+        (existingDetails || []).map(detail => [
+          detail.stay_date, detail
+        ])
+      );
+
+      for (let date = new Date(checkIn); date < checkOut; date.setDate(date.getDate() + 1)) {
+        const dateStr = date.toISOString().split('T')[0];
+        const existingDetail = existingDetailsMap.get(dateStr);
+        
+        const dayState = {
+          date: new Date(date),
+          guestPresences: guests.map(guest => {
+            // If we have existing data, check if this guest was present
+            if (existingDetail) {
+              if (guest.type === 'adult') {
+                // For adults, check if count includes this guest (simplified)
+                return {
+                  guestId: guest.id,
+                  isPresent: existingDetail.adults_present > 0
+                };
+              } else {
+                // For children, check if their ID is in the array
+                return {
+                  guestId: guest.id,
+                  isPresent: existingDetail.children_present?.includes(guest.id) || false
+                };
+              }
+            }
+            
+            // Default: all guests present all days
+            return {
+              guestId: guest.id,
+              isPresent: true
+            };
+          }),
+          services: {
+            parkingSpots: existingDetail?.parking_spots_needed || (reservationData.parking_required ? 1 : 0),
+            hasPets: existingDetail?.pets_present || reservationData.has_pets || false,
+            petCount: reservationData.pet_count || 0,
+            towelRentals: existingDetail?.towel_rentals || 0
+          },
+          notes: existingDetail?.notes || '',
+          dailyTotal: existingDetail?.daily_total || 0,
+          hasChanges: false
+        };
+        
+        console.log('📆 Creating day state for:', {
+          date: date.toLocaleDateString(),
+          guestPresences: dayState.guestPresences,
+          hasExistingDetail: !!existingDetail
+        });
+        
+        days.push(dayState);
+      }
+
+      console.log('🗓️  Final day states:', days);
       setDayStates(days);
 
       // Calculate initial pricing
