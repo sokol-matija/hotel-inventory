@@ -136,12 +136,26 @@ export function useSimpleDragCreate() {
         }
       }
       
-      // Show hover preview (growing reservation box effect) - ONLY for PM cells from check-in onwards
+      // Show hover preview (growing reservation box effect) - PM cells up to hovered position
       if (state.hoverPreview && state.hoverPreview.roomId === roomId && 
-          date >= state.currentSelection.checkInDate && date <= state.hoverPreview.hoverDate &&
-          !isAM) { // CONSTRAINT: Only show hover preview on PM cells (reservations span PM to AM)
-        console.log('📦 Showing hover preview for PM cell:', { roomId, date: date.toLocaleDateString() });
-        return 'hover-preview';
+          date >= state.currentSelection.checkInDate && date <= state.hoverPreview.hoverDate) {
+        
+        // For PM cells: show preview up to hover position 
+        if (!isAM) {
+          console.log('📦 Showing hover preview for PM cell:', { roomId, date: date.toLocaleDateString() });
+          return 'hover-preview';
+        }
+        
+        // For AM cells: show preview only if it's the same day as hover position (checkout)
+        const hoverDay = new Date(state.hoverPreview.hoverDate);
+        hoverDay.setHours(0, 0, 0, 0);
+        const currentDay = new Date(date);
+        currentDay.setHours(0, 0, 0, 0);
+        
+        if (currentDay.getTime() === hoverDay.getTime()) {
+          console.log('📦 Showing hover preview for checkout AM cell:', { roomId, date: date.toLocaleDateString() });
+          return 'hover-preview';
+        }
       }
       
       // Show basic preview for current selection span (check-in onwards, but not the selectable AM cells)
