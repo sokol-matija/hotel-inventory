@@ -60,59 +60,6 @@ export type Database = {
           updated_at?: string | null
         }
       }
-      room_types: {
-        Row: {
-          amenities: string[] | null
-          base_rate: number
-          code: string
-          created_at: string | null
-          default_occupancy: number
-          display_order: number | null
-          hotel_id: string
-          id: string
-          is_active: boolean | null
-          max_occupancy: number
-          name_croatian: string
-          name_english: string
-          name_german: string | null
-          name_italian: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          amenities?: string[] | null
-          base_rate: number
-          code: string
-          created_at?: string | null
-          default_occupancy?: number
-          display_order?: number | null
-          hotel_id: string
-          id?: string
-          is_active?: boolean | null
-          max_occupancy?: number
-          name_croatian: string
-          name_english: string
-          name_german?: string | null
-          name_italian?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          amenities?: string[] | null
-          base_rate?: number
-          code?: string
-          created_at?: string | null
-          default_occupancy?: number
-          display_order?: number | null
-          hotel_id?: string
-          id?: string
-          is_active?: boolean | null
-          max_occupancy?: number
-          name_croatian?: string
-          name_english?: string
-          name_german?: string | null
-          name_italian?: string | null
-          updated_at?: string | null
-        }
-      }
       rooms: {
         Row: {
           amenities_additional: string[] | null
@@ -861,6 +808,301 @@ export type Database = {
           display_order?: number
           created_at?: string
           updated_at?: string
+        }
+      }
+      // New Normalized Schema Tables
+      reservation_guests: {
+        Row: {
+          id: number
+          reservation_id: number
+          guest_id: number
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: number
+          reservation_id: number
+          guest_id: number
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: number
+          reservation_id?: number
+          guest_id?: number
+          created_at?: string | null
+          updated_at?: string | null
+        }
+      }
+      guest_stays: {
+        Row: {
+          id: number
+          reservation_id: number
+          guest_id: number
+          check_in: string
+          check_out: string
+          actual_check_in: string | null
+          actual_check_out: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: number
+          reservation_id: number
+          guest_id: number
+          check_in: string
+          check_out: string
+          actual_check_in?: string | null
+          actual_check_out?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: number
+          reservation_id?: number
+          guest_id?: number
+          check_in?: string
+          check_out?: string
+          actual_check_in?: string | null
+          actual_check_out?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+      }
+      daily_guest_services: {
+        Row: {
+          id: number
+          guest_stay_id: number
+          service_date: string
+          parking_spots: number | null
+          pet_fee: boolean | null
+          extra_towels: number | null
+          extra_bed: boolean | null
+          minibar_consumed: Json | null
+          tourism_tax_paid: boolean | null
+          tourism_tax_amount: number | null
+          notes: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: number
+          guest_stay_id: number
+          service_date: string
+          parking_spots?: number | null
+          pet_fee?: boolean | null
+          extra_towels?: number | null
+          extra_bed?: boolean | null
+          minibar_consumed?: Json | null
+          tourism_tax_paid?: boolean | null
+          tourism_tax_amount?: number | null
+          notes?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: number
+          guest_stay_id?: number
+          service_date?: string
+          parking_spots?: number | null
+          pet_fee?: boolean | null
+          extra_towels?: number | null
+          extra_bed?: boolean | null
+          minibar_consumed?: Json | null
+          tourism_tax_paid?: boolean | null
+          tourism_tax_amount?: number | null
+          notes?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+      }
+      // Enumeration Tables
+      reservation_statuses: {
+        Row: {
+          id: number
+          code: string
+          name: string
+          color: string | null
+          icon: string | null
+          description: string | null
+          is_active: boolean | null
+          display_order: number | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: number
+          code: string
+          name: string
+          color?: string | null
+          icon?: string | null
+          description?: string | null
+          is_active?: boolean | null
+          display_order?: number | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: number
+          code?: string
+          name?: string
+          color?: string | null
+          icon?: string | null
+          description?: string | null
+          is_active?: boolean | null
+          display_order?: number | null
+          created_at?: string | null
+        }
+      }
+      booking_sources: {
+        Row: {
+          id: number
+          code: string
+          name: string
+          default_commission_rate: number | null
+          api_config: Json | null
+          color: string | null
+          icon: string | null
+          is_active: boolean | null
+          display_order: number | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: number
+          code: string
+          name: string
+          default_commission_rate?: number | null
+          api_config?: Json | null
+          color?: string | null
+          icon?: string | null
+          is_active?: boolean | null
+          display_order?: number | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: number
+          code?: string
+          name?: string
+          default_commission_rate?: number | null
+          api_config?: Json | null
+          color?: string | null
+          icon?: string | null
+          is_active?: boolean | null
+          display_order?: number | null
+          created_at?: string | null
+        }
+      }
+      room_types: {
+        Row: {
+          id: number
+          code: string
+          name: string
+          max_occupancy: number
+          base_area_sqm: number | null
+          description: string | null
+          color: string | null
+          icon: string | null
+          is_active: boolean | null
+          display_order: number | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: number
+          code: string
+          name: string
+          max_occupancy: number
+          base_area_sqm?: number | null
+          description?: string | null
+          color?: string | null
+          icon?: string | null
+          is_active?: boolean | null
+          display_order?: number | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: number
+          code?: string
+          name?: string
+          max_occupancy?: number
+          base_area_sqm?: number | null
+          description?: string | null
+          color?: string | null
+          icon?: string | null
+          is_active?: boolean | null
+          display_order?: number | null
+          created_at?: string | null
+        }
+      }
+      // Dynamic Pricing Tables
+      pricing_seasons: {
+        Row: {
+          id: number
+          hotel_id: number | null
+          name: string
+          code: string
+          start_date: string
+          end_date: string
+          year_pattern: number | null
+          priority: number | null
+          is_active: boolean | null
+          color: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: number
+          hotel_id?: number | null
+          name: string
+          code: string
+          start_date: string
+          end_date: string
+          year_pattern?: number | null
+          priority?: number | null
+          is_active?: boolean | null
+          color?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: number
+          hotel_id?: number | null
+          name?: string
+          code?: string
+          start_date?: string
+          end_date?: string
+          year_pattern?: number | null
+          priority?: number | null
+          is_active?: boolean | null
+          color?: string | null
+          created_at?: string | null
+        }
+      }
+      room_pricing: {
+        Row: {
+          id: number
+          room_id: number | null
+          season_id: number | null
+          base_rate: number
+          currency: string | null
+          valid_from: string
+          valid_to: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: number
+          room_id?: number | null
+          season_id?: number | null
+          base_rate: number
+          currency?: string | null
+          valid_from: string
+          valid_to?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: number
+          room_id?: number | null
+          season_id?: number | null
+          base_rate?: number
+          currency?: string | null
+          valid_from?: string
+          valid_to?: string | null
+          created_at?: string | null
         }
       }
     }

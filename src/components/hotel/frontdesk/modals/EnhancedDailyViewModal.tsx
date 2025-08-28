@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
 import { unifiedPricingService, DayByDayPricingResult } from '../../../../lib/hotel/services/UnifiedPricingService';
 import { format, addDays, differenceInDays } from 'date-fns';
 import { supabase } from '../../../../lib/supabase';
+import { reservationAdapter } from '../../../../services/ReservationAdapter';
 
 interface EnhancedDailyViewModalProps {
   isOpen: boolean;
@@ -70,6 +71,13 @@ export const EnhancedDailyViewModal: React.FC<EnhancedDailyViewModalProps> = ({
   
   // UI state
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  
+  // Guest management state
+  const [showAddGuestDialog, setShowAddGuestDialog] = useState(false);
+  const [newGuestName, setNewGuestName] = useState('');
+  const [newGuestAge, setNewGuestAge] = useState('');
+  const [newGuestType, setNewGuestType] = useState<'adult' | 'child'>('child');
+  const [addingGuest, setAddingGuest] = useState(false);
 
   // Load reservation and guest data
   const loadReservationData = useCallback(async () => {
@@ -77,61 +85,50 @@ export const EnhancedDailyViewModal: React.FC<EnhancedDailyViewModalProps> = ({
       setLoading(true);
       setError(null);
 
-      // Get reservation with guests
-      const { data: reservationData, error: reservationError } = await supabase
-        .from('reservations')
-        .select(`
-          *,
-          guest:guests(*),
-          guest_children (*)
-        `)
-        .eq('id', reservationId)
-        .single();
-
-      if (reservationError) {
-        console.error('❌ Reservation query error:', reservationError);
-        throw reservationError;
-      }
+      // Enable new schema in the adapter
+      await reservationAdapter.enableNewSchema();
       
-      console.log('✅ Reservation data loaded:', reservationData);
-      setReservation(reservationData);
-
-      // Build all guests list
-      const guests: Guest[] = [];
+      // Use compatibility layer to get normalized data
+      const normalizedData = await reservationAdapter.getReservationWithGuests(reservationId);
       
-      // Add main guest (adult)
-      if (reservationData.guest) {
-        console.log('✅ Main guest found:', reservationData.guest);
-        guests.push({
-          id: reservationData.guest.id,
-          name: reservationData.guest.full_name,
-          type: 'adult'
-        });
-      } else {
-        console.log('❌ No main guest found in reservation data');
-      }
+      console.log('✅ Normalized reservation data loaded:', normalizedData);
+      setReservation(normalizedData.reservation);
 
-      // Add children
-      if (reservationData.guest_children) {
-        console.log('✅ Children found:', reservationData.guest_children);
-        reservationData.guest_children.forEach((child: any) => {
+      // Convert to Guest format expected by this component
+      const guests: Guest[] = normalizedData.allGuests.map(guest => ({
+        id: guest.id.toString(),
+        name: `${guest.first_name} ${guest.last_name}`,
+        type: guest.guest_type
+      }));
+
+      // Load children from the guest_children table
+      const { data: childrenData, error: childrenError } = await supabase
+        .from('guest_children')
+        .select('*')
+        .in('guest_id', normalizedData.allGuests.map(g => g.id));
+
+      if (childrenError) {
+        console.warn('⚠️ Could not load children:', childrenError);
+      } else if (childrenData && childrenData.length > 0) {
+        console.log('✅ Children found:', childrenData);
+        childrenData.forEach((child: any) => {
           guests.push({
-            id: child.id,
+            id: child.id.toString(),
             name: child.name,
             type: 'child',
             age: child.age
           });
         });
       } else {
-        console.log('ℹ️  No children found in reservation data');
+        console.log('ℹ️  No children found');
       }
 
       console.log('👥 Final guests list:', guests);
       setAllGuests(guests);
 
       // Initialize day states
-      const checkIn = new Date(reservationData.check_in_date);
-      const checkOut = new Date(reservationData.check_out_date);
+      const checkIn = new Date(normalizedData.reservation.check_in_date);
+      const checkOut = new Date(normalizedData.reservation.check_out_date);
       const days: DayState[] = [];
 
       console.log('📅 Initializing day states:', { 
@@ -190,9 +187,9 @@ export const EnhancedDailyViewModal: React.FC<EnhancedDailyViewModalProps> = ({
             };
           }),
           services: {
-            parkingSpots: existingDetail?.parking_spots_needed || (reservationData.parking_required ? 1 : 0),
-            hasPets: existingDetail?.pets_present || reservationData.has_pets || false,
-            petCount: reservationData.pet_count || 0,
+            parkingSpots: existingDetail?.parking_spots_needed || (normalizedData.reservation.parking_required ? 1 : 0),
+            hasPets: existingDetail?.pets_present || normalizedData.reservation.has_pets || false,
+            petCount: normalizedData.reservation.pet_count || 0,
             towelRentals: existingDetail?.towel_rentals || 0
           },
           notes: existingDetail?.notes || '',
@@ -200,7 +197,7 @@ export const EnhancedDailyViewModal: React.FC<EnhancedDailyViewModalProps> = ({
           hasChanges: false
         };
         
-        console.log('📆 Creating day state for:', {
+        console.log('📖 Creating day state for:', {
           date: date.toLocaleDateString(),
           guestPresences: dayState.guestPresences,
           hasExistingDetail: !!existingDetail
@@ -293,6 +290,131 @@ export const EnhancedDailyViewModal: React.FC<EnhancedDailyViewModalProps> = ({
     
     // Recalculate pricing
     await calculatePricing(updatedStates);
+  };
+
+  // Add new guest to reservation
+  const addGuestToReservation = async () => {
+    if (!newGuestName.trim() || !reservationId) return;
+    if (newGuestType === 'child' && !newGuestAge) return;
+
+    try {
+      setAddingGuest(true);
+      setError(null);
+
+      let newGuest: Guest;
+
+      if (newGuestType === 'child') {
+        const age = parseInt(newGuestAge);
+        if (isNaN(age) || age < 0 || age > 17) {
+          throw new Error('Please enter a valid age between 0 and 17');
+        }
+
+        // Insert child into guest_children table
+        const { data: childData, error: insertError } = await supabase
+          .from('guest_children')
+          .insert({
+            reservation_id: reservationId,
+            name: newGuestName.trim(),
+            age: age
+          })
+          .select()
+          .single();
+
+        if (insertError) throw insertError;
+
+        newGuest = {
+          id: childData.id,
+          name: childData.name,
+          type: 'child',
+          age: childData.age
+        };
+      } else {
+        // For adult guests, we'll create a placeholder for now
+        // In a full implementation, you might want to create a proper guest record
+        const placeholderAdultCount = allGuests.filter(g => g.id.startsWith('placeholder-adult')).length;
+        newGuest = {
+          id: `placeholder-adult-${placeholderAdultCount + 1}`,
+          name: newGuestName.trim(),
+          type: 'adult'
+        };
+      }
+
+      const updatedGuests = [...allGuests, newGuest];
+      setAllGuests(updatedGuests);
+
+      // Add guest presence to all day states (default to present)
+      const updatedStates = dayStates.map(dayState => ({
+        ...dayState,
+        guestPresences: [
+          ...dayState.guestPresences,
+          {
+            guestId: newGuest.id,
+            isPresent: true
+          }
+        ],
+        hasChanges: true
+      }));
+
+      setDayStates(updatedStates);
+      setHasUnsavedChanges(true);
+
+      // Clear form and close dialog
+      setNewGuestName('');
+      setNewGuestAge('');
+      setNewGuestType('child');
+      setShowAddGuestDialog(false);
+
+      // Recalculate pricing
+      await calculatePricing(updatedStates);
+
+    } catch (err) {
+      console.error('Error adding guest:', err);
+      setError(err instanceof Error ? err.message : 'Failed to add guest');
+    } finally {
+      setAddingGuest(false);
+    }
+  };
+
+  // Remove guest from reservation
+  const removeGuestFromReservation = async (guestId: string, guestName: string) => {
+    if (!window.confirm(`Are you sure you want to remove ${guestName} from this booking? This cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      setError(null);
+
+      // Delete from database if it's a real guest (not placeholder)
+      if (!guestId.startsWith('placeholder-')) {
+        const { error: deleteError } = await supabase
+          .from('guest_children')
+          .delete()
+          .eq('id', guestId);
+
+        if (deleteError) throw deleteError;
+      }
+
+      // Remove guest from local guest list
+      const updatedGuests = allGuests.filter(guest => guest.id !== guestId);
+      setAllGuests(updatedGuests);
+
+      // Remove guest presence from all day states
+      const updatedStates = dayStates.map(dayState => ({
+        ...dayState,
+        guestPresences: dayState.guestPresences.filter(presence => presence.guestId !== guestId),
+        hasChanges: true
+      }));
+
+      setDayStates(updatedStates);
+      setHasUnsavedChanges(true);
+
+      // Recalculate pricing
+      await calculatePricing(updatedStates);
+
+    } catch (err) {
+      console.error('Error removing guest:', err);
+      setError(err instanceof Error ? err.message : 'Failed to remove guest');
+    }
   };
 
   // Save all changes
@@ -454,29 +576,131 @@ export const EnhancedDailyViewModal: React.FC<EnhancedDailyViewModalProps> = ({
                   </CardContent>
                 </Card>
 
-                {/* Guest Legend */}
+                {/* Guest Management Section */}
                 <Card>
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-lg">Guests in this Booking</CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-lg">Guests in this Booking</CardTitle>
+                      <Button
+                        onClick={() => setShowAddGuestDialog(true)}
+                        size="sm"
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add Guest
+                      </Button>
+                    </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      {allGuests.map(guest => (
-                        <div key={guest.id} className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg">
-                          {guest.type === 'adult' ? (
-                            <Users className="h-4 w-4 text-blue-600" />
-                          ) : (
-                            <Baby className="h-4 w-4 text-green-600" />
-                          )}
-                          <div>
-                            <div className="font-medium text-sm">{guest.name}</div>
-                            {guest.age && (
-                              <div className="text-xs text-gray-500">Age {guest.age}</div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {allGuests.map(guest => {
+                        const isPlaceholder = guest.id.startsWith('placeholder-');
+                        const isPrimaryGuest = guest.type === 'adult' && !isPlaceholder;
+                        
+                        return (
+                          <div key={guest.id} className={`flex items-center justify-between p-3 rounded-lg ${isPlaceholder ? 'bg-yellow-50 border border-yellow-200' : 'bg-gray-50'}`}>
+                            <div className="flex items-center space-x-2">
+                              {guest.type === 'adult' ? (
+                                <Users className={`h-4 w-4 ${isPlaceholder ? 'text-yellow-600' : 'text-blue-600'}`} />
+                              ) : (
+                                <Baby className="h-4 w-4 text-green-600" />
+                              )}
+                              <div>
+                                <div className="font-medium text-sm">{guest.name}</div>
+                                {guest.age && (
+                                  <div className="text-xs text-gray-500">Age {guest.age}</div>
+                                )}
+                                <div className="text-xs text-gray-400">
+                                  {isPrimaryGuest ? 'Primary Guest' : 
+                                   isPlaceholder ? 'Placeholder' : 
+                                   guest.type === 'adult' ? 'Adult' : 'Child'}
+                                </div>
+                              </div>
+                            </div>
+                            {!isPrimaryGuest && (
+                              <Button
+                                onClick={() => removeGuestFromReservation(guest.id, guest.name)}
+                                size="sm"
+                                variant="outline"
+                                className="text-red-600 hover:text-red-700 hover:border-red-300"
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
                             )}
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
+                    
+                    {/* Add Guest Dialog */}
+                    {showAddGuestDialog && (
+                      <div className="fixed inset-0 z-50 flex items-center justify-center">
+                        <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setShowAddGuestDialog(false)} />
+                        <div className="relative bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
+                          <h3 className="text-lg font-semibold mb-4">Add Guest to Booking</h3>
+                          <div className="space-y-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Guest Type
+                              </label>
+                              <select
+                                value={newGuestType}
+                                onChange={(e) => setNewGuestType(e.target.value as 'adult' | 'child')}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              >
+                                <option value="child">Child</option>
+                                <option value="adult">Adult</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Guest Name
+                              </label>
+                              <input
+                                type="text"
+                                value={newGuestName}
+                                onChange={(e) => setNewGuestName(e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="Enter guest name"
+                              />
+                            </div>
+                            {newGuestType === 'child' && (
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Age
+                                </label>
+                                <input
+                                  type="number"
+                                  value={newGuestAge}
+                                  onChange={(e) => setNewGuestAge(e.target.value)}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  placeholder="Enter age (0-17)"
+                                  min="0"
+                                  max="17"
+                                />
+                              </div>
+                            )}
+                            <div className="flex space-x-3 pt-4">
+                              <Button
+                                onClick={() => setShowAddGuestDialog(false)}
+                                variant="outline"
+                                className="flex-1"
+                                disabled={addingGuest}
+                              >
+                                Cancel
+                              </Button>
+                              <Button
+                                onClick={addGuestToReservation}
+                                className="flex-1 bg-green-600 hover:bg-green-700"
+                                disabled={!newGuestName.trim() || (newGuestType === 'child' && !newGuestAge) || addingGuest}
+                              >
+                                {addingGuest ? 'Adding...' : 'Add Guest'}
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 
@@ -522,12 +746,13 @@ export const EnhancedDailyViewModal: React.FC<EnhancedDailyViewModalProps> = ({
                               {allGuests.map(guest => {
                                 const presence = dayState.guestPresences.find(p => p.guestId === guest.id);
                                 const isPresent = presence?.isPresent || false;
+                                const isPlaceholder = guest.id.startsWith('placeholder-');
                                 
                                 return (
-                                  <div key={guest.id} className="flex items-center justify-between p-2 rounded-lg border">
+                                  <div key={guest.id} className={`flex items-center justify-between p-2 rounded-lg border ${isPlaceholder ? 'border-yellow-200 bg-yellow-50/50' : ''}`}>
                                     <div className="flex items-center space-x-2">
                                       {guest.type === 'adult' ? (
-                                        <Users className="h-4 w-4 text-blue-600" />
+                                        <Users className={`h-4 w-4 ${isPlaceholder ? 'text-yellow-600' : 'text-blue-600'}`} />
                                       ) : (
                                         <Baby className="h-4 w-4 text-green-600" />
                                       )}
@@ -535,6 +760,9 @@ export const EnhancedDailyViewModal: React.FC<EnhancedDailyViewModalProps> = ({
                                         <div className="font-medium text-sm">{guest.name}</div>
                                         {guest.age && (
                                           <div className="text-xs text-gray-500">Age {guest.age}</div>
+                                        )}
+                                        {isPlaceholder && (
+                                          <div className="text-xs text-yellow-600">Placeholder</div>
                                         )}
                                       </div>
                                     </div>
@@ -656,32 +884,6 @@ export const EnhancedDailyViewModal: React.FC<EnhancedDailyViewModalProps> = ({
                 </div>
               </div>
             )}
-          </div>
-
-          {/* Footer */}
-          <div className="flex justify-between items-center p-6 border-t border-gray-200 bg-gray-50">
-            <div className="text-sm text-gray-600">
-              {hasUnsavedChanges && (
-                <span className="text-orange-600 font-medium">
-                  You have unsaved changes. Don't forget to save!
-                </span>
-              )}
-            </div>
-            <div className="flex space-x-3">
-              <Button onClick={onClose} variant="outline">
-                Close
-              </Button>
-              {hasUnsavedChanges && (
-                <Button 
-                  onClick={saveAllChanges}
-                  disabled={saving}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  <Save className="h-4 w-4 mr-2" />
-                  {saving ? 'Saving...' : 'Save All Changes'}
-                </Button>
-              )}
-            </div>
           </div>
         </div>
       </div>

@@ -19,6 +19,7 @@ import {
 import { Room, Guest } from '../../../lib/hotel/types';
 import { useHotel } from '../../../lib/hotel/state/SupabaseHotelContext';
 import hotelNotification from '../../../lib/notifications';
+import { reservationAdapter } from '../../../services/ReservationAdapter';
 
 interface Child {
   id: string;
@@ -53,7 +54,7 @@ export default function NewCreateBookingModal({
   currentDate,
   preSelectedDates
 }: NewCreateBookingModalProps) {
-  const { guests, createReservation, createGuest } = useHotel();
+  const { guests, createGuest } = useHotel();
   
   // Form state
   const [checkInDate, setCheckInDate] = useState(
@@ -198,15 +199,34 @@ export default function NewCreateBookingModal({
       errors.push('Check-out date must be after check-in date');
     }
     
-    // Guest validation
+    // Guest validation and email uniqueness
+    const usedEmails = new Set<string>();
+    
     for (const guest of bookingGuests) {
       if (guest.type === 'new' && guest.newGuestData) {
         const { firstName, lastName, email } = guest.newGuestData;
         if (!firstName.trim()) errors.push('All guests must have a first name');
         if (!lastName.trim()) errors.push('All guests must have a last name');
-        if (!email.trim() || !email.includes('@')) errors.push('All guests must have a valid email');
+        
+        // Email validation - allow empty for additional guests (they'll get placeholder emails)
+        if (email.trim()) {
+          if (!email.includes('@')) {
+            errors.push(`Invalid email format for ${firstName} ${lastName}`);
+          } else if (usedEmails.has(email.toLowerCase())) {
+            errors.push(`Email ${email} is used by multiple guests. Each guest must have a unique email.`);
+          } else {
+            usedEmails.add(email.toLowerCase());
+          }
+        }
       } else if (guest.type === 'existing' && !guest.existingGuest) {
         errors.push('Please select an existing guest or switch to new guest');
+      } else if (guest.type === 'existing' && guest.existingGuest) {
+        // Check existing guest email uniqueness
+        if (guest.existingGuest.email && usedEmails.has(guest.existingGuest.email.toLowerCase())) {
+          errors.push(`Email ${guest.existingGuest.email} is used by multiple guests. Each guest must have a unique email.`);
+        } else if (guest.existingGuest.email) {
+          usedEmails.add(guest.existingGuest.email.toLowerCase());
+        }
       }
     }
     
@@ -217,9 +237,9 @@ export default function NewCreateBookingModal({
     }
     
     return errors;
-  };
+  };;
 
-  // Form submission
+  // Form submission using clean ReservationAdapter
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -234,102 +254,147 @@ export default function NewCreateBookingModal({
     try {
       setIsSubmitting(true);
       
-      // For now, use the primary guest approach
-      let primaryGuestId: string;
+      // Prepare all guests for the reservation
+      const allGuests = [];
       
-      const primaryBookingGuest = bookingGuests[0];
-      
-      if (primaryBookingGuest.type === 'new' && primaryBookingGuest.newGuestData) {
-        // Create new guest and use their data for reservation
-        const createdGuest = await createGuest({
-          firstName: primaryBookingGuest.newGuestData.firstName,
-          lastName: primaryBookingGuest.newGuestData.lastName,
-          fullName: `${primaryBookingGuest.newGuestData.firstName} ${primaryBookingGuest.newGuestData.lastName}`,
-          email: primaryBookingGuest.newGuestData.email,
-          phone: primaryBookingGuest.newGuestData.phone,
-          nationality: primaryBookingGuest.newGuestData.nationality,
-          preferredLanguage: 'en',
-          dietaryRestrictions: [],
-          hasPets: hasPets,
-          isVip: false,
-          vipLevel: 0,
-          children: children.map(c => ({
-            name: `Child (${c.age}y)`,
-            age: c.age,
-            dateOfBirth: new Date(new Date().getFullYear() - c.age, 0, 1)
-          })),
-          createdAt: new Date(),
-          updatedAt: new Date()
-        });
+      // Process all booking guests (adults)
+      for (let i = 0; i < bookingGuests.length; i++) {
+        const bookingGuest = bookingGuests[i];
         
-        primaryGuestId = createdGuest.id;
-        
-      } else if (primaryBookingGuest.existingGuest) {
-        primaryGuestId = primaryBookingGuest.existingGuest.id;
-      } else {
-        throw new Error('No valid guest selected');
+        if (bookingGuest.type === 'new' && bookingGuest.newGuestData) {
+          // Create new guest - use actual email or make it unique if empty
+          const email = bookingGuest.newGuestData.email.trim() || 
+                       `guest${Date.now()}_${i}@placeholder.local`;
+          
+          const createdGuest = await createGuest({
+            firstName: bookingGuest.newGuestData.firstName,
+            lastName: bookingGuest.newGuestData.lastName,
+            fullName: `${bookingGuest.newGuestData.firstName} ${bookingGuest.newGuestData.lastName}`,
+            email: email,
+            phone: bookingGuest.newGuestData.phone,
+            nationality: bookingGuest.newGuestData.nationality,
+            preferredLanguage: 'en',
+            dietaryRestrictions: [],
+            hasPets: i === 0 ? hasPets : false, // Only primary guest can have pets
+            isVip: false,
+            vipLevel: 0,
+            children: i === 0 ? children.map(c => ({
+              name: `Child (${c.age}y)`,
+              age: c.age,
+              dateOfBirth: new Date(new Date().getFullYear() - c.age, 0, 1)
+            })) : [], // Only primary guest has children
+            createdAt: new Date(),
+            updatedAt: new Date()
+          });
+          
+          allGuests.push({
+            first_name: createdGuest.firstName,
+            last_name: createdGuest.lastName,
+            email: createdGuest.email,
+            phone: createdGuest.phone,
+            guest_type: 'adult' as const,
+            // Can add custom check-in/check-out per guest in future
+            check_in: checkInDate.toISOString().split('T')[0],
+            check_out: checkOutDate.toISOString().split('T')[0]
+          });
+          
+        } else if (bookingGuest.existingGuest) {
+          allGuests.push({
+            first_name: bookingGuest.existingGuest.firstName,
+            last_name: bookingGuest.existingGuest.lastName,
+            email: bookingGuest.existingGuest.email,
+            phone: bookingGuest.existingGuest.phone,
+            guest_type: 'adult' as const,
+            check_in: checkInDate.toISOString().split('T')[0],
+            check_out: checkOutDate.toISOString().split('T')[0]
+          });
+        } else {
+          // Create placeholder guest with unique email
+          const uniqueEmail = `placeholder_guest_${Date.now()}_${i}@hotel.placeholder`;
+          
+          const placeholderGuest = await createGuest({
+            firstName: 'Guest',
+            lastName: `${i + 1}`,
+            fullName: `Guest ${i + 1}`,
+            email: uniqueEmail,
+            phone: '',
+            nationality: '',
+            preferredLanguage: 'en',
+            dietaryRestrictions: [],
+            hasPets: false,
+            isVip: false,
+            vipLevel: 0,
+            children: [],
+            createdAt: new Date(),
+            updatedAt: new Date()
+          });
+          
+          allGuests.push({
+            first_name: placeholderGuest.firstName,
+            last_name: placeholderGuest.lastName,
+            email: placeholderGuest.email,
+            phone: placeholderGuest.phone,
+            guest_type: 'adult' as const,
+            check_in: checkInDate.toISOString().split('T')[0],
+            check_out: checkOutDate.toISOString().split('T')[0]
+          });
+        }
       }
       
-      // Create reservation with primary guest
-      const reservationData = {
-        guestId: primaryGuestId,
-        roomId: room.id,
-        checkIn: checkInDate,
-        checkOut: checkOutDate,
-        numberOfGuests: bookingGuests.length + children.length,
-        adults: bookingGuests.length,
-        children: children.map(c => ({
-          name: `Child (${c.age}y)`,
-          age: c.age,
-          dateOfBirth: new Date(new Date().getFullYear() - c.age, 0, 1)
-        })),
-        status: 'confirmed' as const,
-        bookingSource: 'direct' as const,
-        specialRequests,
+      // Add children as separate guests - each with unique placeholder email
+      for (let childIndex = 0; childIndex < children.length; childIndex++) {
+        const child = children[childIndex];
+        const uniqueChildEmail = `child_${Date.now()}_${childIndex}@hotel.placeholder`;
         
-        // Pricing breakdown - all required fields
-        seasonalPeriod: 'A' as const, // Default seasonal period
-        baseRoomRate: pricing.baseRate,
-        numberOfNights: pricing.nights,
-        subtotal: pricing.roomTotal,
-        childrenDiscounts: pricing.childrenDiscount,
-        tourismTax: pricing.tourismTax,
-        vatAmount: pricing.vatAmount,
-        petFee: pricing.petFee,
-        parkingFee: pricing.parkingFee,
-        shortStaySuplement: 0,
-        additionalCharges: 0,
-        roomServiceItems: [],
-        totalAmount: pricing.total,
+        allGuests.push({
+          first_name: 'Child',
+          last_name: `(${child.age}y)`,
+          email: uniqueChildEmail, // Unique email to avoid constraint violations
+          phone: '',
+          guest_type: 'child' as const,
+          check_in: checkInDate.toISOString().split('T')[0],
+          check_out: checkOutDate.toISOString().split('T')[0]
+        });
+      }
+      
+      // Use our clean ReservationAdapter to create the reservation
+      const result = await reservationAdapter.createReservationWithGuests({
+        room_id: room.id.toString(),
+        check_in: checkInDate.toISOString().split('T')[0],
+        check_out: checkOutDate.toISOString().split('T')[0],
+        guests: allGuests,
+        status: 'confirmed'
+      });
+      
+      if (result.success) {
+        const primaryGuest = allGuests[0];
+        const totalGuestCount = allGuests.length;
+        const guestText = totalGuestCount === 1 ? 'guest' : 'guests';
         
-        // Payment status
-        paymentStatus: 'pending',
+        hotelNotification.success(
+          'Booking Created Successfully',
+          `Reservation for ${primaryGuest.first_name} ${primaryGuest.last_name} and ${totalGuestCount - 1} other ${guestText} in Room ${room.number} has been created with proper guest tracking.`
+        );
         
-        // Notes
-        notes: specialRequests || ''
-      };
-      
-      await createReservation(reservationData);
-      
-      // Get guest name for notification
-      const guestName = primaryBookingGuest.type === 'new' 
-        ? `${primaryBookingGuest.newGuestData!.firstName} ${primaryBookingGuest.newGuestData!.lastName}`
-        : primaryBookingGuest.existingGuest!.fullName;
-      
-      hotelNotification.success(
-        'Booking Created Successfully',
-        `Reservation for ${guestName} in Room ${room.number} has been created.`
-      );
-      
-      onClose();
+        onClose();
+      } else {
+        throw new Error('Reservation creation failed');
+      }
       
     } catch (error) {
       console.error('Booking creation failed:', error);
-      hotelNotification.error('Booking Failed', 'Unable to create booking. Please try again.');
+      
+      // Provide more specific error messages
+      if (error instanceof Error && error.message.includes('23505')) {
+        hotelNotification.error('Duplicate Email Error', 
+          'A guest with this email already exists. Please use different email addresses for each guest.');
+      } else {
+        hotelNotification.error('Booking Failed', 'Unable to create booking. Please try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }
-  };
+  };;
 
   if (!isOpen) return null;
 
