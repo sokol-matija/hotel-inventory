@@ -33,7 +33,7 @@ import { RESERVATION_STATUS_COLORS, formatRoomNumber, getRoomTypeDisplay } from 
 import { getCountryFlag } from '../../../lib/hotel/countryFlags';
 import { CalendarEvent, ReservationStatus, Reservation, Room, Guest } from '../../../lib/hotel/types';
 import ReservationPopup from './Reservations/ReservationPopup';
-import NewCreateBookingModal from './NewCreateBookingModal';
+import ModernCreateBookingModal from './ModernCreateBookingModal';
 import RoomChangeConfirmDialog from './RoomChangeConfirmDialog';
 import HotelOrdersModal from './RoomService/HotelOrdersModal';
 import hotelNotification from '../../../lib/notifications';
@@ -3246,7 +3246,7 @@ Room Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item
 
       {/* Create Booking Modal */}
       {selectedRoom && (
-        <NewCreateBookingModal
+        <ModernCreateBookingModal
           isOpen={showCreateBooking}
           onClose={() => {
             closeCreateBooking();
