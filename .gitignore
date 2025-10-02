@@ -36,3 +36,27 @@ example/
 *.pkl
 
 p12 cert/87246357068.49208351934.A.1.p12
+.certificates/
+.env.fiscal
+
+*.png
+
+images/Mara Hotel Logo and Mosaic/LOGO1.pdf
+
+e2e/
+
+images/
+
+playwright-report/data/
+
+playwright-report/
+
+scripts/test-fina-cert.js
+
+*.webm
+
+test-results/
+
+src/lib/hooks/__tests__/
+
+src/lib/hotel/state/__tests__/
