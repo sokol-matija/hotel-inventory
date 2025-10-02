@@ -31,8 +31,10 @@ export const HOTEL_FISCAL_CONFIG: FiscalConfiguration = {
   },
   workingHours: '0-24',
   certificate: {
-    file: 'FISKAL_3.p12', // Most recent certificate from DOS system
-    password: 'Hporec1', // Decoded from base64 in config.xml
+    file: process.env.REACT_APP_FISCAL_CERT_FILE || '87246357068.49208351934.A.1.p12', // New FINA certificate
+    password: process.env.REACT_APP_FISCAL_CERT_PASSWORD || 'Marvel247@$&', // New certificate password
+    passwordBackup: process.env.REACT_APP_FISCAL_CERT_PASSWORD_BACKUP || 'Marvel2479@$&(', // Backup password
+    path: process.env.REACT_APP_FISCAL_CERT_PATH || '.certificates/87246357068.49208351934.A.1.p12',
   },
 };
 

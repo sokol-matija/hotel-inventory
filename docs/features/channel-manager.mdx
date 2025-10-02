@@ -1,0 +1,394 @@
+---
+title: 'Channel Manager Integration'
+description: 'Comprehensive OTA channel management with real-time synchronization'
+---
+
+## Overview
+
+The Hotel Inventory Management System includes a powerful channel manager that seamlessly integrates with major Online Travel Agencies (OTAs) and booking platforms. Built with enterprise-grade architecture, it ensures reliable, real-time synchronization of inventory, rates, and reservations.
+
+## Supported Channels
+
+### Major OTA Platforms
+
+<CardGroup cols={2}>
+  <Card title="Booking.com" icon="bed">
+    Full inventory and rate synchronization with Europe's largest OTA
+  </Card>
+  <Card title="Expedia Group" icon="plane">
+    Integration with Expedia, Hotels.com, and affiliated brands
+  </Card>
+  <Card title="Airbnb" icon="home">
+    Seamless connection for short-term rental properties
+  </Card>
+  <Card title="Agoda" icon="globe">
+    Strong presence in Asian markets
+  </Card>
+</CardGroup>
+
+### Regional Platforms
+
+- **European**: HRS, Lastminute.com, eDreams
+- **Asian**: Ctrip, Rakuten Travel
+- **Direct Booking**: Property management websites
+
+## Key Features
+
+### Real-time Synchronization
+
+<Tabs>
+  <Tab title="Inventory Management">
+    - **Room Availability**: Instant updates across all channels
+    - **Rate Synchronization**: Dynamic pricing updates
+    - **Restriction Management**: Minimum stays, closed dates
+    - **Overbooking Protection**: Smart availability calculations
+  </Tab>
+
+  <Tab title="Reservation Management">
+    - **Instant Booking Imports**: New reservations appear immediately
+    - **Modification Sync**: Changes reflected across all platforms
+    - **Cancellation Handling**: Automatic inventory release
+    - **Guest Data Import**: Complete guest information transfer
+  </Tab>
+
+  <Tab title="Conflict Resolution">
+    - **Double Booking Prevention**: Smart conflict detection
+    - **Rate Discrepancy Alerts**: Automatic rate comparison
+    - **Manual Override Options**: Hotel manager intervention tools
+    - **Alternative Room Suggestions**: Intelligent room type mapping
+  </Tab>
+</Tabs>
+
+### Performance Monitoring
+
+<CardGroup cols={3}>
+  <Card title="Success Rate" icon="check-circle">
+    Monitor synchronization success rates across all channels
+  </Card>
+  <Card title="Response Times" icon="clock">
+    Track API performance and identify bottlenecks
+  </Card>
+  <Card title="Error Analytics" icon="exclamation-triangle">
+    Detailed error reporting and resolution tracking
+  </Card>
+</CardGroup>
+
+## Configuration
+
+### Channel Setup
+
+<Steps>
+  <Step title="API Credentials">
+    Configure API keys and authentication for each channel:
+    ```json
+    {
+      "channels": {
+        "booking_com": {
+          "api_key": "your_booking_api_key",
+          "hotel_id": "your_hotel_id",
+          "enabled": true
+        },
+        "expedia": {
+          "eqc_id": "your_eqc_id",
+          "username": "your_username",
+          "password": "your_password",
+          "enabled": true
+        }
+      }
+    }
+    ```
+  </Step>
+
+  <Step title="Room Mapping">
+    Map your internal room types to channel-specific room codes:
+    ```json
+    {
+      "room_mapping": {
+        "standard_double": {
+          "booking_com": "STD_DBL",
+          "expedia": "STANDARD",
+          "internal_id": "room_type_1"
+        }
+      }
+    }
+    ```
+  </Step>
+
+  <Step title="Rate Plans">
+    Configure rate plans and pricing strategies:
+    ```json
+    {
+      "rate_plans": {
+        "bar_rate": {
+          "name": "Best Available Rate",
+          "currency": "EUR",
+          "inclusive": true,
+          "cancellation_policy": "flexible"
+        }
+      }
+    }
+    ```
+  </Step>
+
+  <Step title="Sync Settings">
+    Define synchronization preferences:
+    ```json
+    {
+      "sync_settings": {
+        "inventory_sync_interval": 300,
+        "rate_sync_interval": 600,
+        "max_retry_attempts": 3,
+        "conflict_resolution": "auto"
+      }
+    }
+    ```
+  </Step>
+</Steps>
+
+### Environment Variables
+
+```bash
+# Channel Manager Configuration
+REACT_APP_CHANNEL_MANAGER_ENABLED=true
+
+# Booking.com Integration
+REACT_APP_BOOKING_COM_API_KEY=your_api_key
+REACT_APP_BOOKING_COM_HOTEL_ID=your_hotel_id
+
+# Expedia Integration
+REACT_APP_EXPEDIA_EQC_ID=your_eqc_id
+REACT_APP_EXPEDIA_USERNAME=your_username
+REACT_APP_EXPEDIA_PASSWORD=your_password
+
+# Phobs Channel Manager (if using)
+REACT_APP_PHOBS_API_KEY=your_phobs_api_key
+REACT_APP_PHOBS_SECRET_KEY=your_phobs_secret
+REACT_APP_PHOBS_HOTEL_ID=your_hotel_id
+```
+
+## Usage
+
+### Dashboard Overview
+
+The channel manager dashboard provides:
+
+- **Real-time Status**: Visual indicators for each channel's connection status
+- **Performance Metrics**: Success rates, response times, and error counts
+- **Recent Activity**: Log of recent synchronization events
+- **Quick Actions**: Manual sync triggers and configuration shortcuts
+
+### Managing Inventory
+
+<Tabs>
+  <Tab title="Room Availability">
+    ```typescript
+    // Update availability across all channels
+    const updateAvailability = async (roomType: string, date: Date, available: number) => {
+      const result = await channelManager.updateInventory({
+        roomType,
+        date,
+        available,
+        channels: ['booking_com', 'expedia', 'airbnb']
+      });
+
+      return result;
+    };
+    ```
+  </Tab>
+
+  <Tab title="Rate Updates">
+    ```typescript
+    // Sync rates to all connected channels
+    const updateRates = async (roomType: string, dateRange: DateRange, rate: number) => {
+      const result = await channelManager.updateRates({
+        roomType,
+        startDate: dateRange.start,
+        endDate: dateRange.end,
+        rate,
+        currency: 'EUR'
+      });
+
+      return result;
+    };
+    ```
+  </Tab>
+
+  <Tab title="Restrictions">
+    ```typescript
+    // Set minimum stay restrictions
+    const setRestrictions = async (roomType: string, restrictions: Restrictions) => {
+      const result = await channelManager.updateRestrictions({
+        roomType,
+        minimumStay: restrictions.minStay,
+        maximumStay: restrictions.maxStay,
+        closedToArrival: restrictions.cta,
+        closedToDeparture: restrictions.ctd
+      });
+
+      return result;
+    };
+    ```
+  </Tab>
+</Tabs>
+
+### Handling Reservations
+
+<Steps>
+  <Step title="Automatic Import">
+    New reservations are automatically imported and processed:
+    - Guest information validation
+    - Room assignment
+    - Inventory adjustment
+    - Confirmation email sending
+  </Step>
+
+  <Step title="Modification Sync">
+    Changes to existing reservations are synchronized:
+    - Date changes
+    - Room type modifications
+    - Guest information updates
+    - Special requests
+  </Step>
+
+  <Step title="Cancellation Processing">
+    Cancellations are handled automatically:
+    - Inventory release
+    - Channel notification
+    - Refund processing (if applicable)
+    - Guest communication
+  </Step>
+</Steps>
+
+## Error Handling
+
+### Common Issues and Solutions
+
+<AccordionGroup>
+  <Accordion title="Authentication Failures">
+    **Symptoms**: 401/403 errors in logs
+
+    **Solutions**:
+    - Verify API credentials are correct
+    - Check if credentials have expired
+    - Ensure proper permissions are granted
+    - Regenerate API keys if necessary
+  </Accordion>
+
+  <Accordion title="Rate Synchronization Errors">
+    **Symptoms**: Rate discrepancies between channels
+
+    **Solutions**:
+    - Check currency settings
+    - Verify rate plan mappings
+    - Ensure date ranges are valid
+    - Review tax inclusion settings
+  </Accordion>
+
+  <Accordion title="Inventory Mismatches">
+    **Symptoms**: Different availability on different channels
+
+    **Solutions**:
+    - Force manual inventory sync
+    - Check for pending reservations
+    - Verify room type mappings
+    - Review overbooking settings
+  </Accordion>
+
+  <Accordion title="Connection Timeouts">
+    **Symptoms**: Intermittent sync failures
+
+    **Solutions**:
+    - Check network connectivity
+    - Increase timeout settings
+    - Implement retry logic
+    - Contact channel technical support
+  </Accordion>
+</AccordionGroup>
+
+### Error Recovery
+
+The system includes automatic error recovery mechanisms:
+
+- **Retry Logic**: Failed operations are automatically retried with exponential backoff
+- **Queue Management**: Failed sync requests are queued for later processing
+- **Manual Intervention**: Hotel managers can manually trigger sync operations
+- **Rollback Capability**: Failed changes can be rolled back to previous state
+
+## Monitoring and Analytics
+
+### Performance Metrics
+
+<CardGroup cols={2}>
+  <Card title="Sync Success Rate" icon="percentage">
+    Track the percentage of successful synchronization operations
+  </Card>
+  <Card title="Average Response Time" icon="stopwatch">
+    Monitor API response times for performance optimization
+  </Card>
+  <Card title="Error Rate Trends" icon="trending-down">
+    Analyze error patterns and identify improvement opportunities
+  </Card>
+  <Card title="Booking Conversion" icon="chart-line">
+    Track bookings and revenue by channel
+  </Card>
+</CardGroup>
+
+### Reporting
+
+Generate comprehensive reports on:
+
+- **Channel Performance**: Bookings, revenue, and conversion rates by channel
+- **Inventory Utilization**: Room occupancy and pricing optimization insights
+- **Error Analysis**: Detailed breakdown of sync issues and resolutions
+- **Revenue Attribution**: Track revenue sources and commission analysis
+
+## Best Practices
+
+### Optimization Tips
+
+<Tabs>
+  <Tab title="Rate Management">
+    - **Dynamic Pricing**: Use market data to optimize rates
+    - **Seasonal Adjustments**: Plan rate changes in advance
+    - **Competitor Analysis**: Monitor competitor pricing
+    - **Revenue Management**: Balance rate and occupancy
+  </Tab>
+
+  <Tab title="Inventory Control">
+    - **Overbooking Strategy**: Set conservative overbooking limits
+    - **Last Room Availability**: Manage high-demand periods carefully
+    - **Minimum Stays**: Use restrictions to optimize revenue
+    - **Channel Mix**: Balance direct and OTA bookings
+  </Tab>
+
+  <Tab title="Content Management">
+    - **Room Descriptions**: Keep content consistent across channels
+    - **Photo Quality**: Use high-quality, recent photos
+    - **Amenity Lists**: Ensure accuracy and completeness
+    - **Policies**: Maintain clear and consistent policies
+  </Tab>
+</Tabs>
+
+### Security Considerations
+
+- **API Key Management**: Regularly rotate API keys
+- **Access Control**: Limit access to channel management features
+- **Audit Logging**: Track all configuration changes
+- **Data Protection**: Ensure guest data privacy compliance
+
+## Troubleshooting
+
+For technical support:
+
+1. **Check System Status**: Monitor the dashboard for real-time status
+2. **Review Logs**: Examine detailed error logs for specific issues
+3. **Test Connectivity**: Use built-in connection testing tools
+4. **Contact Support**: Reach out to our technical support team
+
+<Card
+  title="Technical Support"
+  icon="headset"
+  href="mailto:support@hotelinventory.com"
+>
+  Get help with channel manager configuration and troubleshooting
+</Card>

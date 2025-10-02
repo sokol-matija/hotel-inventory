@@ -60,3 +60,11 @@ test-results/
 src/lib/hooks/__tests__/
 
 src/lib/hotel/state/__tests__/
+
+src/__tests__/utils/
+
+src/__tests__/factories/
+
+src/components/hotel/frontdesk/__tests__/BookingCreation.integration.test.tsx
+
+src/components/hotel/frontdesk/__tests__/

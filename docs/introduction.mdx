@@ -1,0 +1,116 @@
+---
+title: Introduction
+description: 'Welcome to the Hotel Inventory Management System - A comprehensive solution for modern hotel operations'
+---
+
+<img
+  className="block dark:hidden"
+  src="/images/hero-light.png"
+  alt="Hero Light"
+/>
+<img
+  className="hidden dark:block"
+  src="/images/hero-dark.png"
+  alt="Hero Dark"
+/>
+
+## Welcome to Hotel Inventory Management System
+
+The Hotel Inventory Management System is a comprehensive, modern solution designed to streamline hotel operations with enterprise-grade features and intuitive user experience.
+
+### Key Features
+
+<CardGroup cols={2}>
+  <Card
+    title="Real-time Operations"
+    icon="clock"
+    href="/features/front-desk"
+  >
+    Manage reservations, check-ins, and guest services in real-time with conflict detection
+  </Card>
+  <Card
+    title="Channel Manager Integration"
+    icon="network-wired"
+    href="/features/channel-manager"
+  >
+    Seamlessly sync with OTA platforms including Booking.com, Expedia, and more
+  </Card>
+  <Card
+    title="Croatian Fiscalization"
+    icon="receipt"
+    href="/integrations/croatian-fiscalization"
+  >
+    Built-in support for Croatian fiscal requirements and FINA integration
+  </Card>
+  <Card
+    title="Advanced Analytics"
+    icon="chart-line"
+    href="/features/analytics"
+  >
+    Comprehensive reporting and business intelligence for data-driven decisions
+  </Card>
+</CardGroup>
+
+## Technology Stack
+
+Built with modern, scalable technologies:
+
+- **Frontend**: React 19 with TypeScript
+- **Backend**: Supabase (PostgreSQL + Edge Functions)
+- **UI Framework**: Tailwind CSS + shadcn/ui
+- **Animation**: GSAP for smooth interactions
+- **Internationalization**: i18next (EN/DE/HR/IT)
+- **Drag & Drop**: React DnD
+
+## Quick Start
+
+<Steps>
+  <Step title="Installation">
+    Clone the repository and install dependencies
+    ```bash
+    git clone https://github.com/your-username/hotel-inventory
+    cd hotel-inventory
+    npm install
+    ```
+  </Step>
+  <Step title="Environment Setup">
+    Configure your environment variables
+    ```bash
+    cp .env.sample .env
+    # Edit .env with your Supabase credentials
+    ```
+  </Step>
+  <Step title="Database Setup">
+    Run the database migrations
+    ```bash
+    npm run db:migrate
+    ```
+  </Step>
+  <Step title="Start Development">
+    Launch the development server
+    ```bash
+    npm run dev
+    ```
+  </Step>
+</Steps>
+
+## Support
+
+Need help? Reach out to our support team:
+
+<CardGroup cols={2}>
+  <Card
+    title="Documentation"
+    icon="book-open"
+    href="/technical/api-reference"
+  >
+    Comprehensive guides and API documentation
+  </Card>
+  <Card
+    title="Community Support"
+    icon="users"
+    href="https://github.com/your-username/hotel-inventory/discussions"
+  >
+    Join our community discussions
+  </Card>
+</CardGroup>

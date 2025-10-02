@@ -24,6 +24,8 @@ export interface FiscalConfiguration {
   certificate: {
     file: string;
     password: string;
+    passwordBackup?: string;
+    path?: string;
   };
 }
 

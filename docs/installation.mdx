@@ -1,0 +1,407 @@
+---
+title: 'Installation'
+description: 'Detailed installation guide for Hotel Inventory Management System'
+---
+
+## System Requirements
+
+### Hardware Requirements
+
+- **RAM**: Minimum 4GB, recommended 8GB+
+- **Storage**: At least 2GB free space
+- **Network**: Stable internet connection for Supabase and OTA integrations
+
+### Software Requirements
+
+- **Node.js**: Version 18.0.0 or higher
+- **npm**: Version 8.0.0 or higher (or **yarn** 1.22.0+)
+- **Git**: Latest version
+- **Modern Web Browser**: Chrome, Firefox, Safari, or Edge
+
+## Installation Methods
+
+### Method 1: Development Setup (Recommended)
+
+Perfect for development, testing, and customization.
+
+<Steps>
+  <Step title="Clone Repository">
+    ```bash
+    git clone https://github.com/your-username/hotel-inventory.git
+    cd hotel-inventory
+    ```
+  </Step>
+
+  <Step title="Install Dependencies">
+    ```bash
+    # Using npm
+    npm install
+
+    # Or using yarn
+    yarn install
+    ```
+  </Step>
+
+  <Step title="Environment Configuration">
+    ```bash
+    # Copy environment template
+    cp .env.sample .env
+
+    # Edit with your settings
+    nano .env  # or your preferred editor
+    ```
+  </Step>
+
+  <Step title="Database Setup">
+    ```bash
+    # Install Supabase CLI (if not already installed)
+    npm install -g @supabase/cli
+
+    # Initialize Supabase
+    supabase init
+
+    # Start local Supabase (optional for development)
+    supabase start
+
+    # Run migrations
+    npm run supabase:migrate
+    ```
+  </Step>
+
+  <Step title="Start Development Server">
+    ```bash
+    npm run dev
+    ```
+    Access your application at `http://localhost:3000`
+  </Step>
+</Steps>
+
+### Method 2: Docker Setup
+
+For containerized deployment and consistent environments.
+
+<Steps>
+  <Step title="Prerequisites">
+    Install Docker and Docker Compose on your system
+  </Step>
+
+  <Step title="Clone and Configure">
+    ```bash
+    git clone https://github.com/your-username/hotel-inventory.git
+    cd hotel-inventory
+    cp .env.sample .env
+    ```
+  </Step>
+
+  <Step title="Build and Run">
+    ```bash
+    # Build and start containers
+    docker-compose up -d
+
+    # View logs
+    docker-compose logs -f
+    ```
+  </Step>
+
+  <Step title="Access Application">
+    Application will be available at `http://localhost:3000`
+  </Step>
+</Steps>
+
+### Method 3: Production Deployment
+
+For production environments on cloud platforms.
+
+<Tabs>
+  <Tab title="Vercel">
+    ```bash
+    # Install Vercel CLI
+    npm install -g vercel
+
+    # Deploy
+    vercel --prod
+
+    # Configure environment variables in Vercel dashboard
+    ```
+  </Tab>
+
+  <Tab title="Netlify">
+    ```bash
+    # Install Netlify CLI
+    npm install -g netlify-cli
+
+    # Build
+    npm run build
+
+    # Deploy
+    netlify deploy --prod --dir=build
+    ```
+  </Tab>
+
+  <Tab title="AWS">
+    ```bash
+    # Install AWS CLI and configure
+    aws configure
+
+    # Deploy using your preferred method:
+    # - AWS Amplify
+    # - EC2 with PM2
+    # - ECS/Fargate
+    ```
+  </Tab>
+</Tabs>
+
+## Environment Configuration
+
+### Required Environment Variables
+
+```bash
+# Supabase Configuration (Required)
+REACT_APP_SUPABASE_URL=https://your-project.supabase.co
+REACT_APP_SUPABASE_ANON_KEY=your-anon-key
+
+# Application Settings
+REACT_APP_APP_NAME="Hotel Inventory System"
+REACT_APP_DEFAULT_LANGUAGE=en
+```
+
+### Optional Environment Variables
+
+```bash
+# Croatian Fiscalization (Optional)
+REACT_APP_FINA_ENABLED=true
+REACT_APP_FINA_DEMO_MODE=false
+REACT_APP_FINA_CERT_PATH=./certificates/production.p12
+REACT_APP_FINA_CERT_PASSWORD=your-cert-password
+
+# Channel Manager Integration (Optional)
+REACT_APP_CHANNEL_MANAGER_ENABLED=true
+REACT_APP_PHOBS_API_KEY=your-phobs-api-key
+REACT_APP_PHOBS_SECRET_KEY=your-phobs-secret
+
+# Monitoring and Analytics (Optional)
+REACT_APP_SENTRY_DSN=your-sentry-dsn
+REACT_APP_GOOGLE_ANALYTICS_ID=your-ga-id
+
+# Development Settings (Development Only)
+REACT_APP_DEBUG_MODE=false
+REACT_APP_MOCK_DATA=false
+```
+
+## Database Setup
+
+### Supabase Cloud Setup
+
+<Steps>
+  <Step title="Create Supabase Project">
+    1. Go to [supabase.com](https://supabase.com)
+    2. Create a new account or sign in
+    3. Create a new project
+    4. Note your project URL and anon key
+  </Step>
+
+  <Step title="Configure Environment">
+    Add your Supabase credentials to `.env`:
+    ```bash
+    REACT_APP_SUPABASE_URL=https://your-project.supabase.co
+    REACT_APP_SUPABASE_ANON_KEY=your-anon-key
+    ```
+  </Step>
+
+  <Step title="Run Migrations">
+    ```bash
+    # Link your local project to Supabase
+    supabase link --project-ref your-project-ref
+
+    # Push migrations
+    supabase db push
+    ```
+  </Step>
+
+  <Step title="Set Up Row Level Security">
+    ```bash
+    # Apply RLS policies
+    npm run supabase:rls
+    ```
+  </Step>
+</Steps>
+
+### Local Supabase Setup (Development)
+
+<Steps>
+  <Step title="Start Local Supabase">
+    ```bash
+    # Install Docker first, then:
+    supabase start
+    ```
+  </Step>
+
+  <Step title="Configure Local Environment">
+    ```bash
+    # Use local Supabase URLs
+    REACT_APP_SUPABASE_URL=http://localhost:54321
+    REACT_APP_SUPABASE_ANON_KEY=local-anon-key
+    ```
+  </Step>
+
+  <Step title="Apply Migrations">
+    ```bash
+    supabase db reset
+    ```
+  </Step>
+</Steps>
+
+## SSL Certificate Setup (Croatian Fiscalization)
+
+If you're using Croatian fiscalization features:
+
+<Steps>
+  <Step title="Obtain FINA Certificate">
+    Get your P12 certificate from FINA (Croatian Financial Agency)
+  </Step>
+
+  <Step title="Store Certificate">
+    ```bash
+    # Create certificates directory
+    mkdir .certificates
+
+    # Copy your certificate
+    cp your-certificate.p12 .certificates/
+    ```
+  </Step>
+
+  <Step title="Configure Environment">
+    ```bash
+    REACT_APP_FINA_CERT_PATH=./.certificates/your-certificate.p12
+    REACT_APP_FINA_CERT_PASSWORD=your-certificate-password
+    ```
+  </Step>
+</Steps>
+
+## Verification
+
+After installation, verify everything is working:
+
+### Health Check
+
+```bash
+# Check application health
+curl http://localhost:3000/api/health
+
+# Expected response:
+# {"status": "healthy", "timestamp": "2024-01-01T00:00:00Z"}
+```
+
+### Database Connection
+
+```bash
+# Test database connection
+npm run test:db
+
+# Expected: ✅ Database connection successful
+```
+
+### Feature Tests
+
+```bash
+# Run feature tests
+npm run test:features
+
+# Expected: All tests passing
+```
+
+## Troubleshooting
+
+### Common Installation Issues
+
+<AccordionGroup>
+  <Accordion title="Node.js version conflicts">
+    Use Node Version Manager (nvm) to manage Node.js versions:
+    ```bash
+    # Install nvm (macOS/Linux)
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+
+    # Install and use Node.js 18
+    nvm install 18
+    nvm use 18
+    ```
+  </Accordion>
+
+  <Accordion title="Permission errors during npm install">
+    Fix npm permissions:
+    ```bash
+    # Fix npm permissions (macOS/Linux)
+    sudo chown -R $(whoami) ~/.npm
+
+    # Or use yarn instead
+    npm install -g yarn
+    yarn install
+    ```
+  </Accordion>
+
+  <Accordion title="Supabase connection fails">
+    Check your credentials and network:
+    ```bash
+    # Test Supabase connection
+    curl -H "apikey: YOUR_ANON_KEY" https://YOUR_PROJECT.supabase.co/rest/v1/
+
+    # Check environment variables
+    echo $REACT_APP_SUPABASE_URL
+    echo $REACT_APP_SUPABASE_ANON_KEY
+    ```
+  </Accordion>
+
+  <Accordion title="Port already in use">
+    Change the development port:
+    ```bash
+    # Use different port
+    PORT=3001 npm start
+
+    # Or kill process using port 3000
+    lsof -ti:3000 | xargs kill -9
+    ```
+  </Accordion>
+</AccordionGroup>
+
+### Getting Help
+
+If you encounter issues:
+
+1. **Check the logs**: Look for error messages in the console
+2. **Search documentation**: Use the search function in these docs
+3. **GitHub Issues**: Check existing issues or create a new one
+4. **Community Support**: Join our Discord or discussions
+
+<CardGroup cols={2}>
+  <Card
+    title="GitHub Issues"
+    icon="github"
+    href="https://github.com/your-username/hotel-inventory/issues"
+  >
+    Report bugs and request features
+  </Card>
+  <Card
+    title="Community Support"
+    icon="comments"
+    href="https://github.com/your-username/hotel-inventory/discussions"
+  >
+    Get help from the community
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+After successful installation:
+
+1. **Complete the quickstart guide** to create your first hotel
+2. **Explore the features** documentation to understand capabilities
+3. **Set up integrations** like channel managers or fiscalization
+4. **Configure production deployment** for live usage
+
+<Card
+  title="Continue to Quickstart"
+  icon="rocket"
+  href="/quickstart"
+>
+  Learn how to set up your first hotel and make reservations
+</Card>

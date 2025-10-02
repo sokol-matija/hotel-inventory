@@ -1,0 +1,240 @@
+---
+title: 'Quickstart'
+description: 'Get up and running with Hotel Inventory Management System in minutes'
+---
+
+## Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+- **Node.js** (version 18 or higher)
+- **npm** or **yarn**
+- **Git**
+- **Supabase CLI** (optional, for database management)
+
+## Installation
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/your-username/hotel-inventory.git
+cd hotel-inventory
+```
+
+### 2. Install Dependencies
+
+```bash
+npm install
+```
+
+### 3. Environment Configuration
+
+Copy the sample environment file and configure your settings:
+
+```bash
+cp .env.sample .env
+```
+
+Edit the `.env` file with your configuration:
+
+```bash
+# Supabase Configuration
+REACT_APP_SUPABASE_URL=your_supabase_url
+REACT_APP_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+# Optional: Croatian Fiscalization
+REACT_APP_FINA_DEMO_MODE=true
+REACT_APP_FINA_CERT_PATH=./certificates/demo.p12
+REACT_APP_FINA_CERT_PASSWORD=demo_password
+```
+
+### 4. Database Setup
+
+Run the database migrations to set up your schema:
+
+```bash
+npm run supabase:migrate
+```
+
+### 5. Start Development Server
+
+```bash
+npm run dev
+```
+
+Your application will be available at `http://localhost:3000`.
+
+## First Steps
+
+### 1. Access the Application
+
+Navigate to `http://localhost:3000` in your browser. You should see the hotel management dashboard.
+
+### 2. Create Your First Hotel
+
+<Steps>
+  <Step title="Navigate to Hotel Setup">
+    Click on "Add Hotel" in the dashboard
+  </Step>
+  <Step title="Enter Hotel Details">
+    Fill in your hotel information:
+    - Hotel name
+    - Address
+    - Contact information
+    - Room configuration
+  </Step>
+  <Step title="Configure Rooms">
+    Set up your room types and availability
+  </Step>
+  <Step title="Save Configuration">
+    Complete the setup and save your hotel profile
+  </Step>
+</Steps>
+
+### 3. Make Your First Reservation
+
+<Steps>
+  <Step title="Open Front Desk">
+    Navigate to the Front Desk module
+  </Step>
+  <Step title="Select Date Range">
+    Choose check-in and check-out dates on the timeline
+  </Step>
+  <Step title="Add Guest Information">
+    Enter guest details in the booking modal
+  </Step>
+  <Step title="Confirm Booking">
+    Review and confirm the reservation
+  </Step>
+</Steps>
+
+## Key Features Overview
+
+### Real-time Timeline
+
+The front desk timeline provides:
+- **Drag & Drop**: Move reservations between dates and rooms
+- **Conflict Detection**: Automatic validation prevents double bookings
+- **Live Updates**: Real-time synchronization across all users
+
+### Channel Manager Integration
+
+Connect with major OTA platforms:
+- Booking.com
+- Expedia
+- Airbnb
+- And more...
+
+### Croatian Fiscalization
+
+Built-in support for Croatian fiscal requirements:
+- FINA integration
+- Automatic invoice generation
+- Tax compliance reporting
+
+## Development Commands
+
+Common commands for development:
+
+```bash
+# Start development server
+npm run dev
+
+# Run tests
+npm test
+
+# Build for production
+npm run build
+
+# Database migrations
+npm run supabase:migrate
+
+# Generate TypeScript types
+npm run supabase:types
+
+# Lint code
+npm run lint
+
+# Format code
+npm run format
+```
+
+## Project Structure
+
+```
+hotel-inventory/
+├── src/
+│   ├── components/          # React components
+│   ├── lib/                # Utilities and configurations
+│   ├── pages/              # Page components
+│   └── types/              # TypeScript type definitions
+├── supabase/
+│   ├── migrations/         # Database migrations
+│   └── functions/          # Edge functions
+├── docs/                   # Documentation
+└── public/                 # Static assets
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Explore Features"
+    icon="compass"
+    href="/features/hotel-management"
+  >
+    Learn about all available features
+  </Card>
+  <Card
+    title="Technical Documentation"
+    icon="code"
+    href="/technical/architecture"
+  >
+    Dive into the technical details
+  </Card>
+  <Card
+    title="Integration Guides"
+    icon="plug"
+    href="/integrations/channel-manager-setup"
+  >
+    Set up external integrations
+  </Card>
+  <Card
+    title="Development Guide"
+    icon="wrench"
+    href="/development/setup"
+  >
+    Start contributing to the project
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+### Common Issues
+
+<AccordionGroup>
+  <Accordion title="Application won't start">
+    Check that all environment variables are set correctly and dependencies are installed.
+    ```bash
+    npm install
+    npm run dev
+    ```
+  </Accordion>
+
+  <Accordion title="Database connection issues">
+    Verify your Supabase URL and keys in the `.env` file.
+    ```bash
+    # Check Supabase connection
+    npm run supabase:status
+    ```
+  </Accordion>
+
+  <Accordion title="TypeScript errors">
+    Regenerate types from your database schema:
+    ```bash
+    npm run supabase:types
+    ```
+  </Accordion>
+</AccordionGroup>
+
+Need more help? Check our [full documentation](/technical/api-reference) or reach out to [support](mailto:support@hotelinventory.com).

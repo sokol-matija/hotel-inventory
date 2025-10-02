@@ -2055,6 +2055,7 @@ function RoomOverviewFloorSection({
               return (
                 <div
                   key={room.id}
+                  data-testid={`room-card-${room.number}`}
                   className={`
                     relative p-3 rounded-lg transition-all duration-200 cursor-pointer hover:shadow-md
                     ${isOccupied && status
