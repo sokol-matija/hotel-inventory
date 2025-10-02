@@ -188,13 +188,20 @@ export class HotelPricingEngine {
       isRoom401
     );
     
-    // Calculate VAT breakdown
+    // Calculate VAT breakdown (for display purposes - already included in prices)
     const vat = this.calculateVAT(accommodationTotal, services);
-    
+
     // Final totals
-    const subtotalBeforeVAT = accommodationTotal + this.sumServicesSubtotal(services) + services.tourism.total;
+    // NOTE: VAT is already included in all prices, we just extract it for display
+    // Do NOT add VAT on top - it's already in accommodationTotal and service totals
+    const grandTotal = accommodationTotal +
+                       services.tourism.total +
+                       services.parking.total +
+                       services.pets.total +
+                       services.towelRental.total;
+
+    const subtotalBeforeVAT = grandTotal - vat.totalVAT;
     const totalVATAmount = vat.totalVAT;
-    const grandTotal = subtotalBeforeVAT + totalVATAmount;
     
     return {
       roomType: input.roomType,
