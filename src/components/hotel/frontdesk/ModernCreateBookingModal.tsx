@@ -5,10 +5,10 @@ import { Input } from '../../ui/input';
 import { Label } from '../../ui/label';
 import { Textarea } from '../../ui/textarea';
 import { Badge } from '../../ui/badge';
-import { 
-  X, 
-  Calendar as CalendarIcon, 
-  UserPlus, 
+import {
+  X,
+  Calendar as CalendarIcon,
+  UserPlus,
   Minus,
   Baby,
   Car,
@@ -16,11 +16,19 @@ import {
   CreditCard,
   Users,
   Mail,
-  Phone
+  Phone,
+  User,
+  Search,
+  Trash2,
+  Receipt
 } from 'lucide-react';
-import { Room } from '../../../lib/hotel/types';
+import { Room, Guest, GuestChild, RoomType } from '../../../lib/hotel/types';
 import hotelNotification from '../../../lib/notifications';
 import { supabase } from '../../../lib/supabase';
+import { useHotel } from '../../../lib/hotel/state/SupabaseHotelContext';
+import GuestAutocomplete from './Guests/GuestAutocomplete';
+import { getSeasonalPeriod } from '../../../lib/hotel/pricingCalculator';
+import { HotelPricingEngine } from '../../../lib/hotel/pricingEngine';
 
 interface ModernCreateBookingModalProps {
   isOpen: boolean;
@@ -30,15 +38,6 @@ interface ModernCreateBookingModalProps {
   preSelectedDates?: {checkIn: Date, checkOut: Date} | null;
 }
 
-interface Guest {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  type: 'adult' | 'child';
-  age?: number;
-}
 
 export default function ModernCreateBookingModal({
   isOpen,
@@ -47,6 +46,8 @@ export default function ModernCreateBookingModal({
   currentDate,
   preSelectedDates
 }: ModernCreateBookingModalProps) {
+  const { guests, createReservation, refreshData } = useHotel();
+  
   // Basic booking info
   const [checkInDate, setCheckInDate] = useState(
     preSelectedDates?.checkIn || currentDate || new Date()
@@ -55,19 +56,39 @@ export default function ModernCreateBookingModal({
     preSelectedDates?.checkOut || new Date((currentDate || new Date()).getTime() + 2 * 24 * 60 * 60 * 1000)
   );
   
-  // Guest management - simple approach
-  const [guests, setGuests] = useState<Guest[]>([
-    {
-      id: '1',
-      firstName: '',
-      lastName: '',
-      email: '',
-      phone: '',
-      type: 'adult'
-    }
-  ]);
+  // Enhanced guest management
+  const [bookingGuests, setBookingGuests] = useState<Array<{
+    id: string;
+    firstName: string;
+    lastName: string;
+    fullName: string;
+    email?: string;
+    phone?: string;
+    nationality?: string;
+    dateOfBirth?: string;
+    type: 'adult' | 'child';
+    age?: number;
+    isExisting: boolean;
+    existingGuestId?: number;
+    preferredLanguage: string;
+    dietaryRestrictions: string[];
+    hasPets: boolean;
+    isVip: boolean;
+    vipLevel: number;
+    children: any[];
+    totalStays: number;
+    createdAt: Date;
+    updatedAt: Date;
+  }>>([]);
   
-  // Simple booking-level services (not per guest)
+  // Initialize with one adult guest
+  useEffect(() => {
+    if (bookingGuests.length === 0) {
+      setBookingGuests([createEmptyGuest('adult')]);
+    }
+  }, []);
+  
+  // Simple booking-level services
   const [bookingServices, setBookingServices] = useState({
     needsParking: false,
     parkingSpots: 0,
@@ -82,6 +103,7 @@ export default function ModernCreateBookingModal({
     baseRate: 120,
     roomTotal: 120,
     childrenDiscount: 0,
+    shortStaySupplement: 0,
     petFee: 0,
     parkingFee: 0,
     tourismTax: 0,
@@ -91,67 +113,156 @@ export default function ModernCreateBookingModal({
   
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Calculate pricing whenever dependencies change
+  // Helper function to create empty guest
+  const createEmptyGuest = (type: 'adult' | 'child') => ({
+    id: `new-${Date.now()}-${Math.random()}`,
+    firstName: '',
+    lastName: '',
+    fullName: '',
+    email: '',
+    phone: '',
+    nationality: '',
+    dateOfBirth: '',
+    type,
+    age: type === 'child' ? 12 : undefined,
+    isExisting: false,
+    preferredLanguage: 'en',
+    dietaryRestrictions: [],
+    hasPets: false,
+    isVip: false,
+    vipLevel: 0,
+    children: [],
+    totalStays: 0,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  });
+
+  // Calculate pricing whenever dependencies change using HotelPricingEngine
   useEffect(() => {
-    const nights = Math.max(1, Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)));
-    const baseRate = 120; // Get from room pricing service
-    const roomTotal = baseRate * nights;
-    
-    // Simple children discount calculation
-    const children = guests.filter(g => g.type === 'child');
-    const childrenDiscount = children.reduce((total, child) => {
-      if (child.age && child.age < 3) return total + 0; // Free under 3
-      if (child.age && child.age <= 12) return total + (baseRate * nights * 0.3); // 30% discount 3-12
-      return total; // Full price 13+
-    }, 0);
-    
-    // Simple service fees
-    const petFee = bookingServices.hasPets ? bookingServices.petCount * 20 : 0;
-    const parkingFee = bookingServices.needsParking ? bookingServices.parkingSpots * 7 * nights : 0;
-    
-    const subtotal = roomTotal - childrenDiscount + petFee + parkingFee;
-    const adults = guests.filter(g => g.type === 'adult').length;
-    const adultChildren = children.filter(c => c.age && c.age >= 18).length;
-    const tourismTax = (adults + adultChildren) * 1.5 * nights; // €1.50 per adult per night
-    const vatAmount = subtotal * 0.25; // 25% Croatian VAT
-    const total = subtotal + tourismTax + vatAmount;
-    
-    setPricing({
-      nights,
-      baseRate,
-      roomTotal,
-      childrenDiscount,
-      petFee,
-      parkingFee,
-      tourismTax,
-      vatAmount,
-      total
+    const pricingEngine = HotelPricingEngine.getInstance();
+
+    // Prepare guest children data for the pricing engine
+    const children: GuestChild[] = bookingGuests
+      .filter(g => g.type === 'child' && g.age !== undefined)
+      .map(g => {
+        // Calculate approximate DOB from age if not provided
+        let dob: Date;
+        if (g.dateOfBirth) {
+          dob = new Date(g.dateOfBirth);
+        } else {
+          const today = new Date();
+          dob = new Date(today.getFullYear() - g.age!, today.getMonth(), today.getDate());
+        }
+
+        return {
+          name: `${g.firstName} ${g.lastName}`.trim() || 'Child',
+          age: g.age!,
+          dateOfBirth: dob
+        };
+      });
+
+    const adults = bookingGuests.filter(g => g.type === 'adult').length;
+
+    // Calculate detailed pricing using the engine
+    const calculation = pricingEngine.calculatePricing({
+      roomType: room.type as RoomType,
+      roomId: room.id,
+      checkIn: checkInDate,
+      checkOut: checkOutDate,
+      adults: Math.max(1, adults), // At least 1 adult
+      children,
+      hasPets: bookingServices.hasPets,
+      needsParking: bookingServices.needsParking,
+      pricingTierId: '2026-standard', // Use default 2026 pricing
+      isRoom401: room.number === '401'
     });
-  }, [checkInDate, checkOutDate, guests, bookingServices]);
+
+    // Map the detailed calculation to the simpler pricing state format for the UI
+    setPricing({
+      nights: calculation.nights,
+      baseRate: calculation.baseRoomRate,
+      roomTotal: calculation.accommodationSubtotal,
+      childrenDiscount: calculation.discounts.totalDiscounts,
+      shortStaySupplement: calculation.shortStaySupplement,
+      petFee: calculation.services.pets.total,
+      parkingFee: calculation.services.parking.total,
+      tourismTax: calculation.services.tourism.total,
+      vatAmount: calculation.vat.totalVAT,
+      total: calculation.grandTotal
+    });
+  }, [checkInDate, checkOutDate, bookingGuests, bookingServices, room]);
 
   // Guest management functions
-  const addGuest = () => {
-    const newGuest: Guest = {
-      id: Date.now().toString(),
-      firstName: '',
-      lastName: '',
-      email: '',
-      phone: '',
-      type: 'adult'
-    };
-    setGuests([...guests, newGuest]);
-  };
-
-  const removeGuest = (guestId: string) => {
-    if (guests.length > 1) {
-      setGuests(guests.filter(g => g.id !== guestId));
+  const addAdult = () => {
+    if (bookingGuests.length < room.maxOccupancy) {
+      setBookingGuests([...bookingGuests, createEmptyGuest('adult')]);
     }
   };
 
-  const updateGuest = (guestId: string, field: keyof Guest, value: string | number) => {
-    setGuests(guests.map(g => 
-      g.id === guestId ? { ...g, [field]: value } : g
-    ));
+  const addChild = () => {
+    if (bookingGuests.length < room.maxOccupancy) {
+      setBookingGuests([...bookingGuests, createEmptyGuest('child')]);
+    }
+  };
+
+  const removeGuest = (guestId: string) => {
+    if (bookingGuests.length > 1) {
+      setBookingGuests(bookingGuests.filter(g => g.id !== guestId));
+    }
+  };
+
+  const updateGuest = (guestId: string, field: string, value: string | number | boolean) => {
+    setBookingGuests(bookingGuests.map(g => {
+      if (g.id === guestId) {
+        const updated = { ...g, [field]: value };
+        
+        // Update fullName when firstName or lastName changes
+        if (field === 'firstName' || field === 'lastName') {
+          updated.fullName = `${updated.firstName} ${updated.lastName}`.trim();
+        }
+        
+        // Auto-set age when changing type
+        if (field === 'type') {
+          if (value === 'child' && !updated.age) {
+            updated.age = 12;
+          } else if (value === 'adult') {
+            updated.age = undefined;
+          }
+        }
+        
+        return updated;
+      }
+      return g;
+    }));
+  };
+
+  // Handle selecting existing guest
+  const handleSelectExistingGuest = (guest: Guest, guestIndex: number) => {
+    const updatedGuests = [...bookingGuests];
+    updatedGuests[guestIndex] = {
+      id: guest.id,
+      firstName: guest.firstName,
+      lastName: guest.lastName,
+      fullName: guest.fullName,
+      email: guest.email || '',
+      phone: guest.phone || '',
+      nationality: guest.nationality || '',
+      dateOfBirth: guest.dateOfBirth ? guest.dateOfBirth.toISOString().split('T')[0] : '',
+      type: 'adult' as const,
+      age: undefined,
+      isExisting: true,
+      existingGuestId: parseInt(guest.id),
+      preferredLanguage: guest.preferredLanguage || 'en',
+      dietaryRestrictions: guest.dietaryRestrictions || [],
+      hasPets: guest.hasPets || false,
+      isVip: guest.isVip || false,
+      vipLevel: guest.vipLevel || 0,
+      children: guest.children || [],
+      totalStays: guest.totalStays || 0,
+      createdAt: guest.createdAt || new Date(),
+      updatedAt: guest.updatedAt || new Date()
+    };
+    setBookingGuests(updatedGuests);
   };
 
   // Form validation
@@ -163,34 +274,53 @@ export default function ModernCreateBookingModal({
       errors.push('Check-out date must be after check-in date');
     }
     
-    // At least one guest with basic info
-    const primaryGuest = guests[0];
+    // Guest validation
+    if (bookingGuests.length === 0) {
+      errors.push('At least one guest is required');
+      return errors;
+    }
+
+    // Primary guest validation (first guest must be adult with name)
+    const primaryGuest = bookingGuests[0];
+    if (primaryGuest.type !== 'adult') {
+      errors.push('Primary guest must be an adult');
+    }
     if (!primaryGuest.firstName.trim()) {
       errors.push('Primary guest first name is required');
     }
     if (!primaryGuest.lastName.trim()) {
       errors.push('Primary guest last name is required');
     }
-    if (primaryGuest.email.trim() && !primaryGuest.email.includes('@')) {
-      errors.push('Primary guest email must be valid if provided');
-    }
-    
-    // Email uniqueness check
+
+    // Email validation
     const usedEmails = new Set<string>();
-    guests.forEach((guest, index) => {
-      if (guest.email.trim()) {
+    bookingGuests.forEach((guest, index) => {
+      if (guest.email && guest.email.trim()) {
         const email = guest.email.toLowerCase();
         if (usedEmails.has(email)) {
           errors.push(`Guest ${index + 1} has duplicate email address`);
         } else {
           usedEmails.add(email);
         }
+        
+        if (!guest.email.includes('@')) {
+          errors.push(`Guest ${index + 1} has invalid email format`);
+        }
+      }
+    });
+    
+    // Child age validation
+    bookingGuests.forEach((guest, index) => {
+      if (guest.type === 'child') {
+        if (!guest.age || guest.age < 0 || guest.age >= 18) {
+          errors.push(`Child guest ${index + 1} must have age between 0-17`);
+        }
       }
     });
     
     // Occupancy validation
-    if (guests.length > room.maxOccupancy) {
-      errors.push(`Total guests (${guests.length}) exceeds room capacity (${room.maxOccupancy})`);
+    if (bookingGuests.length > room.maxOccupancy) {
+      errors.push(`Total guests (${bookingGuests.length}) exceeds room capacity (${room.maxOccupancy})`);
     }
     
     // Service validation
@@ -219,54 +349,115 @@ export default function ModernCreateBookingModal({
     try {
       setIsSubmitting(true);
       
-      // Create reservation first
-      const { data: reservation, error: reservationError } = await supabase
-        .from('reservations')
-        .insert({
-          room_id: room.id,
-          check_in: checkInDate.toISOString().split('T')[0],
-          check_out: checkOutDate.toISOString().split('T')[0],
-          adults: guests.filter(g => g.type === 'adult').length,
-          children_count: guests.filter(g => g.type === 'child').length,
-          status: 'confirmed',
-          total_amount: pricing.total,
-          special_requests: bookingServices.specialRequests || null,
-          has_pets: bookingServices.hasPets,
-          pet_count: bookingServices.petCount,
-          parking_required: bookingServices.needsParking
-        })
-        .select()
-        .single();
-
-      if (reservationError) throw reservationError;
+      const primaryGuest = bookingGuests[0];
+      let primaryGuestId: number;
       
-      // Create guests and relationships
-      for (let i = 0; i < guests.length; i++) {
-        const guest = guests[i];
-        
-        // Generate unique email if empty to avoid constraint violations
-        const email = guest.email.trim() || `guest_${Date.now()}_${i}@placeholder.local`;
-        
-        // Create guest
+      // Handle primary guest (create new or use existing)
+      if (primaryGuest.isExisting && primaryGuest.existingGuestId) {
+        primaryGuestId = primaryGuest.existingGuestId;
+      } else {
+        // Create new primary guest
         const { data: createdGuest, error: guestError } = await supabase
           .from('guests')
           .insert({
-            first_name: guest.firstName,
-            last_name: guest.lastName,
-            email: email,
-            phone: guest.phone || null
+            first_name: primaryGuest.firstName,
+            last_name: primaryGuest.lastName,
+            email: primaryGuest.email?.trim() || `guest_${Date.now()}@placeholder.local`,
+            phone: primaryGuest.phone || null,
+            nationality: primaryGuest.nationality || null,
+            date_of_birth: primaryGuest.dateOfBirth || null
           })
           .select()
           .single();
 
         if (guestError) throw guestError;
+        primaryGuestId = createdGuest.id;
+      }
+      
+      // Create reservation
+      const seasonalPeriod = getSeasonalPeriod(checkInDate);
+
+      // Prepare reservation data for debugging
+      const adultsCount = bookingGuests.filter(g => g.type === 'adult').length;
+      const childrenCount = bookingGuests.filter(g => g.type === 'child').length;
+      const reservationData = {
+        guest_id: primaryGuestId,
+        room_id: room.id,
+        check_in_date: checkInDate.toISOString().split('T')[0],
+        check_out_date: checkOutDate.toISOString().split('T')[0],
+        adults: adultsCount,
+        children_count: childrenCount,
+        number_of_guests: adultsCount + childrenCount,
+        status: 'confirmed',
+        seasonal_period: seasonalPeriod,
+        base_room_rate: pricing.baseRate,
+        number_of_nights: pricing.nights,
+        subtotal: pricing.roomTotal - pricing.childrenDiscount + pricing.shortStaySupplement + pricing.petFee + pricing.parkingFee,
+        children_discounts: pricing.childrenDiscount,
+        short_stay_supplement: pricing.shortStaySupplement,
+        tourism_tax: pricing.tourismTax,
+        vat_amount: pricing.vatAmount,
+        pet_fee: pricing.petFee,
+        parking_fee: pricing.parkingFee,
+        total_amount: pricing.total,
+        special_requests: bookingServices.specialRequests || null,
+        has_pets: bookingServices.hasPets,
+        parking_required: bookingServices.needsParking
+      };
+
+      // console.log('📊 BOOKING MODAL DEBUG - Reservation Data:', {
+      //   reservationData,
+      //   bookingGuests,
+      //   pricing,
+      //   bookingServices,
+      //   seasonalPeriod,
+      //   primaryGuestId
+      // });
+
+      const { data: reservation, error: reservationError } = await supabase
+        .from('reservations')
+        .insert(reservationData)
+        .select()
+        .single();
+
+      if (reservationError) {
+        console.error('❌ BOOKING MODAL ERROR - Reservation creation failed:', {
+          error: reservationError,
+          sentData: reservationData
+        });
+        throw reservationError;
+      }
+
+      // console.log('✅ BOOKING MODAL SUCCESS - Reservation created:', reservation);
+      
+      // Create guest relationships and additional guests
+      for (let i = 0; i < bookingGuests.length; i++) {
+        const guest = bookingGuests[i];
+        let guestId: number;
         
-        // Set primary guest
         if (i === 0) {
-          await supabase
-            .from('reservations')
-            .update({ guest_id: createdGuest.id })
-            .eq('id', reservation.id);
+          guestId = primaryGuestId;
+        } else if (guest.isExisting && guest.existingGuestId) {
+          guestId = guest.existingGuestId;
+        } else {
+          // Create additional guest
+          const email = guest.email?.trim() || `guest_${Date.now()}_${i}@placeholder.local`;
+          
+          const { data: additionalGuest, error: addGuestError } = await supabase
+            .from('guests')
+            .insert({
+              first_name: guest.firstName,
+              last_name: guest.lastName,
+              email: email,
+              phone: guest.phone || null,
+              nationality: guest.nationality || null,
+              date_of_birth: guest.dateOfBirth || null
+            })
+            .select()
+            .single();
+
+          if (addGuestError) throw addGuestError;
+          guestId = additionalGuest.id;
         }
         
         // Create reservation-guest relationship
@@ -274,30 +465,59 @@ export default function ModernCreateBookingModal({
           .from('reservation_guests')
           .insert({
             reservation_id: reservation.id,
-            guest_id: createdGuest.id
+            guest_id: guestId
           });
         
-        // Create guest stay (same dates for all guests initially)
+        // Create guest stay
         await supabase
           .from('guest_stays')
           .insert({
             reservation_id: reservation.id,
-            guest_id: createdGuest.id,
-            check_in: checkInDate.toISOString().split('T')[0],
-            check_out: checkOutDate.toISOString().split('T')[0]
+            guest_id: guestId,
+            check_in: checkInDate.toISOString(),
+            check_out: checkOutDate.toISOString()
           });
+
+        // Create guest children record if child
+        if (guest.type === 'child' && guest.age !== undefined) {
+          // Calculate date of birth from age if not provided
+          let dateOfBirth: string;
+          if (guest.dateOfBirth) {
+            dateOfBirth = new Date(guest.dateOfBirth).toISOString().split('T')[0];
+          } else {
+            // Calculate approximate DOB from age
+            const today = new Date();
+            const dob = new Date(today.getFullYear() - guest.age, today.getMonth(), today.getDate());
+            dateOfBirth = dob.toISOString().split('T')[0];
+          }
+
+          await supabase
+            .from('guest_children')
+            .insert({
+              reservation_id: reservation.id,
+              guest_id: guestId,
+              name: `${guest.firstName} ${guest.lastName}`,
+              age: guest.age,
+              date_of_birth: dateOfBirth
+            });
+        }
       }
       
-      const primaryGuest = guests[0];
-      const totalGuests = guests.length;
+      const totalGuests = bookingGuests.length;
+      const adults = bookingGuests.filter(g => g.type === 'adult').length;
+      const children = bookingGuests.filter(g => g.type === 'child').length;
       
       hotelNotification.success(
         'Booking Created Successfully!',
         `Reservation for ${primaryGuest.firstName} ${primaryGuest.lastName} ` +
-        `${totalGuests > 1 ? `and ${totalGuests - 1} other guest${totalGuests > 2 ? 's' : ''}` : ''} ` +
-        `in Room ${room.number} has been created. You can now edit individual guest details if needed.`
+        `and ${totalGuests - 1} other guest${totalGuests > 2 ? 's' : ''} ` +
+        `(${adults} adult${adults !== 1 ? 's' : ''}, ${children} child${children !== 1 ? 'ren' : ''}) ` +
+        `in Room ${room.number} has been created.`
       );
-      
+
+      // Refresh the hotel data to show the new booking in the UI
+      await refreshData();
+
       onClose();
       
     } catch (error: any) {
@@ -306,7 +526,7 @@ export default function ModernCreateBookingModal({
       if (error?.code === '23505' && error?.message?.includes('guests_email_key')) {
         hotelNotification.error(
           'Email Already Exists', 
-          'One of the guest email addresses already exists in the system. Please use different email addresses.'
+          'This email address is already in use. Please use a different email.'
         );
       } else {
         hotelNotification.error('Booking Failed', 'Unable to create booking. Please try again.');
@@ -318,9 +538,12 @@ export default function ModernCreateBookingModal({
 
   if (!isOpen) return null;
 
+  const adultsCount = bookingGuests.filter(g => g.type === 'adult').length;
+  const childrenCount = bookingGuests.filter(g => g.type === 'child').length;
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-4xl max-h-[95vh] overflow-y-auto">
+      <Card className="w-full max-w-5xl max-h-[95vh] overflow-y-auto" data-testid="create-booking-modal">
         <CardHeader>
           <div className="flex justify-between items-center">
             <CardTitle className="flex items-center space-x-2">
@@ -333,7 +556,7 @@ export default function ModernCreateBookingModal({
             </Button>
           </div>
           <p className="text-gray-600 text-sm">
-            Create booking with shared check-in/check-out dates. Individual guest management available after creation.
+            {adultsCount} adult{adultsCount !== 1 ? 's' : ''}, {childrenCount} child{childrenCount !== 1 ? 'ren' : ''} • Max occupancy: {room.maxOccupancy}
           </p>
         </CardHeader>
         
@@ -356,7 +579,7 @@ export default function ModernCreateBookingModal({
                       type="date"
                       value={checkInDate.toISOString().split('T')[0]}
                       onChange={(e) => setCheckInDate(new Date(e.target.value))}
-                      className="mt-1"
+                      className="w-full"
                     />
                   </div>
                   <div>
@@ -365,7 +588,7 @@ export default function ModernCreateBookingModal({
                       type="date"
                       value={checkOutDate.toISOString().split('T')[0]}
                       onChange={(e) => setCheckOutDate(new Date(e.target.value))}
-                      className="mt-1"
+                      className="w-full"
                     />
                   </div>
                 </div>
@@ -375,50 +598,76 @@ export default function ModernCreateBookingModal({
               </CardContent>
             </Card>
 
-            {/* Guests Section */}
+            {/* Enhanced Guests Section */}
             <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg flex items-center">
                     <Users className="h-4 w-4 mr-2" />
-                    Guests ({guests.length})
+                    Guests ({bookingGuests.length}/{room.maxOccupancy})
                   </CardTitle>
-                  <Button
-                    type="button"
-                    onClick={addGuest}
-                    size="sm"
-                    variant="outline"
-                    disabled={guests.length >= room.maxOccupancy}
-                  >
-                    <UserPlus className="h-4 w-4 mr-1" />
-                    Add Guest
-                  </Button>
+                  <div className="flex space-x-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addAdult}
+                      disabled={bookingGuests.length >= room.maxOccupancy}
+                      className="flex items-center"
+                    >
+                      <UserPlus className="h-4 w-4 mr-1" />
+                      Add Adult
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addChild}
+                      disabled={bookingGuests.length >= room.maxOccupancy}
+                      className="flex items-center"
+                    >
+                      <Baby className="h-4 w-4 mr-1" />
+                      Add Child
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {guests.map((guest, index) => (
-                    <div key={guest.id} className="border rounded-lg p-4">
+                  {bookingGuests.map((guest, index) => (
+                    <div key={guest.id} className="border rounded-lg p-4 bg-gray-50">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center space-x-2">
                           {guest.type === 'adult' ? (
-                            <Users className="h-4 w-4 text-blue-600" />
+                            <User className="h-4 w-4 text-blue-600" />
                           ) : (
                             <Baby className="h-4 w-4 text-green-600" />
                           )}
                           <span className="font-medium">
                             {index === 0 ? 'Primary Guest' : `Guest ${index + 1}`}
+                            {guest.type === 'child' && guest.age && ` (Age ${guest.age})`}
                           </span>
+                          <Badge variant={guest.type === 'adult' ? 'default' : 'secondary'}>
+                            {guest.type === 'adult' ? 'Adult' : 'Child'}
+                          </Badge>
+                          {guest.isExisting && (
+                            <Badge variant="outline" className="text-green-600 border-green-600">
+                              Existing Guest
+                            </Badge>
+                          )}
                         </div>
                         <div className="flex items-center space-x-2">
+                          {/* Guest Type Toggle */}
                           <select
                             value={guest.type}
                             onChange={(e) => updateGuest(guest.id, 'type', e.target.value)}
                             className="text-sm border rounded px-2 py-1"
+                            disabled={index === 0} // Primary guest must be adult
                           >
                             <option value="adult">Adult</option>
                             <option value="child">Child</option>
                           </select>
+                          
                           {index > 0 && (
                             <Button
                               type="button"
@@ -426,34 +675,54 @@ export default function ModernCreateBookingModal({
                               size="sm"
                               onClick={() => removeGuest(guest.id)}
                             >
-                              <Minus className="h-3 w-3" />
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           )}
                         </div>
                       </div>
                       
+                      {/* Guest Selection for Existing Guests */}
+                      {!guest.isExisting && guest.type === 'adult' && (
+                        <div className="mb-3">
+                          <Label className="text-sm">Or select existing guest</Label>
+                          <GuestAutocomplete
+                            onGuestSelect={(selectedGuest) => handleSelectExistingGuest(selectedGuest, index)}
+                            onCreateNew={() => {}} // Not needed here
+                            selectedGuest={null}
+                            placeholder="Search existing guests..."
+                            className="mt-1"
+                          />
+                        </div>
+                      )}
+                      
+                      {/* Guest Details Form */}
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                         <div>
-                          <Label className="text-xs">First Name</Label>
+                          <Label className="text-sm">First Name *</Label>
                           <Input
+                            data-testid="guest-first-name"
                             placeholder="John"
                             value={guest.firstName}
                             onChange={(e) => updateGuest(guest.id, 'firstName', e.target.value)}
-                            className="h-8 text-sm"
+                            className="h-9"
+                            disabled={guest.isExisting}
                           />
                         </div>
                         <div>
-                          <Label className="text-xs">Last Name</Label>
+                          <Label className="text-sm">Last Name *</Label>
                           <Input
+                            data-testid="guest-last-name"
                             placeholder="Doe"
                             value={guest.lastName}
                             onChange={(e) => updateGuest(guest.id, 'lastName', e.target.value)}
-                            className="h-8 text-sm"
+                            className="h-9"
+                            disabled={guest.isExisting}
                           />
                         </div>
+                        
                         {guest.type === 'child' && (
                           <div>
-                            <Label className="text-xs">Age</Label>
+                            <Label className="text-sm">Age *</Label>
                             <Input
                               type="number"
                               placeholder="12"
@@ -461,37 +730,69 @@ export default function ModernCreateBookingModal({
                               max="17"
                               value={guest.age || ''}
                               onChange={(e) => updateGuest(guest.id, 'age', parseInt(e.target.value) || 0)}
-                              className="h-8 text-sm"
+                              className="h-9"
                             />
                           </div>
                         )}
+                        
                         <div>
-                          <Label className="text-xs flex items-center">
-                            <Mail className="h-3 w-3 mr-1" />
-                            Email {index === 0 && <span className="text-red-500 ml-1">*</span>}
-                          </Label>
+                          <Label className="text-sm">Email</Label>
                           <Input
+                            data-testid="guest-email"
                             type="email"
                             placeholder="john@example.com"
-                            value={guest.email}
+                            value={guest.email || ''}
                             onChange={(e) => updateGuest(guest.id, 'email', e.target.value)}
-                            className="h-8 text-sm"
+                            className="h-9"
+                            disabled={guest.isExisting}
                           />
                         </div>
                         <div>
-                          <Label className="text-xs flex items-center">
-                            <Phone className="h-3 w-3 mr-1" />
-                            Phone
-                          </Label>
+                          <Label className="text-sm">Phone</Label>
                           <Input
+                            data-testid="guest-phone"
                             type="tel"
                             placeholder="+385 99 123 4567"
-                            value={guest.phone}
+                            value={guest.phone || ''}
                             onChange={(e) => updateGuest(guest.id, 'phone', e.target.value)}
-                            className="h-8 text-sm"
+                            className="h-9"
+                            disabled={guest.isExisting}
                           />
                         </div>
+                        <div>
+                          <Label className="text-sm">Nationality</Label>
+                          <Input
+                            placeholder="Croatian"
+                            value={guest.nationality || ''}
+                            onChange={(e) => updateGuest(guest.id, 'nationality', e.target.value)}
+                            className="h-9"
+                            disabled={guest.isExisting}
+                          />
+                        </div>
+                        {guest.type === 'child' && (
+                          <div>
+                            <Label className="text-sm">Date of Birth</Label>
+                            <Input
+                              type="date"
+                              value={guest.dateOfBirth || ''}
+                              onChange={(e) => updateGuest(guest.id, 'dateOfBirth', e.target.value)}
+                              className="h-9"
+                            />
+                          </div>
+                        )}
                       </div>
+                      
+                      {guest.isExisting && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => updateGuest(guest.id, 'isExisting', false)}
+                          className="mt-2 text-blue-600"
+                        >
+                          Switch to manual entry
+                        </Button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -501,106 +802,87 @@ export default function ModernCreateBookingModal({
             {/* Services Section */}
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Booking Services</CardTitle>
+                <CardTitle className="text-lg flex items-center">
+                  <Car className="h-4 w-4 mr-2" />
+                  Additional Services
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-4">
                   {/* Parking */}
-                  <div className="border rounded-lg p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <Label className="flex items-center">
-                        <Car className="h-4 w-4 mr-2 text-blue-600" />
-                        Parking
-                      </Label>
-                      <input
-                        type="checkbox"
-                        checked={bookingServices.needsParking}
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      id="parking"
+                      checked={bookingServices.needsParking}
+                      onChange={(e) => setBookingServices(prev => ({
+                        ...prev,
+                        needsParking: e.target.checked,
+                        parkingSpots: e.target.checked ? Math.max(1, prev.parkingSpots) : 0
+                      }))}
+                      className="rounded"
+                    />
+                    <Label htmlFor="parking" className="flex-1">Parking Required</Label>
+                    {bookingServices.needsParking && (
+                      <Input
+                        type="number"
+                        min="1"
+                        max="3"
+                        value={bookingServices.parkingSpots}
                         onChange={(e) => setBookingServices(prev => ({
                           ...prev,
-                          needsParking: e.target.checked,
-                          parkingSpots: e.target.checked ? Math.max(1, prev.parkingSpots) : 0
+                          parkingSpots: parseInt(e.target.value) || 1
                         }))}
-                        className="w-4 h-4"
+                        className="w-16"
                       />
-                    </div>
-                    {bookingServices.needsParking && (
-                      <div>
-                        <Label className="text-xs">Number of parking spots</Label>
-                        <Input
-                          type="number"
-                          min="1"
-                          max="3"
-                          value={bookingServices.parkingSpots}
-                          onChange={(e) => setBookingServices(prev => ({
-                            ...prev,
-                            parkingSpots: parseInt(e.target.value) || 1
-                          }))}
-                          className="h-8 text-sm mt-1"
-                        />
-                        <div className="text-xs text-gray-500 mt-1">
-                          €7 per spot per night
-                        </div>
-                      </div>
                     )}
                   </div>
 
                   {/* Pets */}
-                  <div className="border rounded-lg p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <Label className="flex items-center">
-                        <PawPrint className="h-4 w-4 mr-2 text-green-600" />
-                        Pets
-                      </Label>
-                      <input
-                        type="checkbox"
-                        checked={bookingServices.hasPets}
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      id="pets"
+                      checked={bookingServices.hasPets}
+                      onChange={(e) => setBookingServices(prev => ({
+                        ...prev,
+                        hasPets: e.target.checked,
+                        petCount: e.target.checked ? Math.max(1, prev.petCount) : 0
+                      }))}
+                      className="rounded"
+                    />
+                    <Label htmlFor="pets" className="flex-1">Traveling with Pets</Label>
+                    {bookingServices.hasPets && (
+                      <Input
+                        type="number"
+                        min="1"
+                        max="5"
+                        value={bookingServices.petCount}
                         onChange={(e) => setBookingServices(prev => ({
                           ...prev,
-                          hasPets: e.target.checked,
-                          petCount: e.target.checked ? Math.max(1, prev.petCount) : 0
+                          petCount: parseInt(e.target.value) || 1
                         }))}
-                        className="w-4 h-4"
+                        className="w-16"
                       />
-                    </div>
-                    {bookingServices.hasPets && (
-                      <div>
-                        <Label className="text-xs">Number of pets</Label>
-                        <Input
-                          type="number"
-                          min="1"
-                          max="2"
-                          value={bookingServices.petCount}
-                          onChange={(e) => setBookingServices(prev => ({
-                            ...prev,
-                            petCount: parseInt(e.target.value) || 1
-                          }))}
-                          className="h-8 text-sm mt-1"
-                        />
-                        <div className="text-xs text-gray-500 mt-1">
-                          €20 per pet total fee
-                        </div>
-                      </div>
                     )}
                   </div>
-                </div>
-              </CardContent>
-            </Card>
 
-            {/* Special Requests */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Special Requests</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Textarea
-                  placeholder="Any special requests or notes for this booking..."
-                  value={bookingServices.specialRequests}
-                  onChange={(e) => setBookingServices(prev => ({
-                    ...prev,
-                    specialRequests: e.target.value
-                  }))}
-                  rows={3}
-                />
+                  {/* Special Requests */}
+                  <div>
+                    <Label htmlFor="requests">Special Requests</Label>
+                    <textarea
+                      id="requests"
+                      value={bookingServices.specialRequests}
+                      onChange={(e) => setBookingServices(prev => ({
+                        ...prev,
+                        specialRequests: e.target.value
+                      }))}
+                      placeholder="Any special requests or notes..."
+                      className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      rows={3}
+                    />
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
@@ -608,44 +890,75 @@ export default function ModernCreateBookingModal({
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg flex items-center">
-                  <CreditCard className="h-4 w-4 mr-2" />
+                  <Receipt className="h-4 w-4 mr-2" />
                   Pricing Summary
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2 text-sm">
+                <div className="space-y-2">
+                  {/* Base Accommodation */}
                   <div className="flex justify-between">
-                    <span>Room ({pricing.nights} nights × €{pricing.baseRate})</span>
+                    <span>Base Accommodation ({adultsCount + childrenCount} guest{(adultsCount + childrenCount) !== 1 ? 's' : ''} × {pricing.nights} night{pricing.nights !== 1 ? 's' : ''})</span>
                     <span>€{pricing.roomTotal.toFixed(2)}</span>
                   </div>
+
+                  {/* Children Discounts */}
                   {pricing.childrenDiscount > 0 && (
                     <div className="flex justify-between text-green-600">
-                      <span>Children discount</span>
+                      <span>Children Discount ({childrenCount} child{childrenCount !== 1 ? 'ren' : ''})</span>
                       <span>-€{pricing.childrenDiscount.toFixed(2)}</span>
+                    </div>
+                  )}
+
+                  {/* Accommodation Subtotal */}
+                  <div className="flex justify-between text-sm border-t pt-1">
+                    <span className="font-medium">Accommodation Subtotal</span>
+                    <span className="font-medium">€{(pricing.roomTotal - pricing.childrenDiscount).toFixed(2)}</span>
+                  </div>
+
+                  {/* Short Stay Supplement */}
+                  {pricing.shortStaySupplement > 0 && (
+                    <div className="flex justify-between text-orange-600">
+                      <span>Short Stay Supplement (+20% for &lt;3 nights)</span>
+                      <span>+€{pricing.shortStaySupplement.toFixed(2)}</span>
+                    </div>
+                  )}
+
+                  {/* Accommodation Total */}
+                  <div className="flex justify-between text-sm border-t pt-1">
+                    <span className="font-medium">Accommodation Total (incl. VAT)</span>
+                    <span className="font-medium">€{(pricing.roomTotal - pricing.childrenDiscount + pricing.shortStaySupplement).toFixed(2)}</span>
+                  </div>
+
+                  {/* Additional Services */}
+                  {pricing.petFee > 0 && (
+                    <div className="flex justify-between">
+                      <span>Pet Fee (incl. VAT)</span>
+                      <span>€{pricing.petFee.toFixed(2)}</span>
                     </div>
                   )}
                   {pricing.parkingFee > 0 && (
                     <div className="flex justify-between">
-                      <span>Parking ({bookingServices.parkingSpots} spots)</span>
+                      <span>Parking Fee (incl. VAT)</span>
                       <span>€{pricing.parkingFee.toFixed(2)}</span>
                     </div>
                   )}
-                  {pricing.petFee > 0 && (
-                    <div className="flex justify-between">
-                      <span>Pet fee ({bookingServices.petCount} pets)</span>
-                      <span>€{pricing.petFee.toFixed(2)}</span>
-                    </div>
-                  )}
+
+                  {/* Tourism Tax */}
                   <div className="flex justify-between">
-                    <span>Tourism tax</span>
+                    <span>Tourism Tax ({adultsCount} adult{adultsCount !== 1 ? 's' : ''}{childrenCount > 0 ? ` + ${childrenCount} child` + (childrenCount !== 1 ? 'ren' : '') : ''})</span>
                     <span>€{pricing.tourismTax.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>VAT (25%)</span>
+
+                  {/* VAT Breakdown (for info only) */}
+                  <div className="flex justify-between text-xs text-gray-500 italic border-t pt-1">
+                    <span>VAT breakdown (13% accommodation, 25% services - already included in prices above)</span>
                     <span>€{pricing.vatAmount.toFixed(2)}</span>
                   </div>
-                  <div className="border-t pt-2 flex justify-between font-bold text-lg">
-                    <span>Total</span>
+
+                  {/* Grand Total */}
+                  <div className="border-t-2 pt-2 flex justify-between font-bold text-lg">
+                    <span>Total Amount</span>
                     <span>€{pricing.total.toFixed(2)}</span>
                   </div>
                 </div>
@@ -653,21 +966,17 @@ export default function ModernCreateBookingModal({
             </Card>
 
             {/* Actions */}
-            <div className="flex space-x-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onClose}
-                disabled={isSubmitting}
-                className="flex-1"
-              >
+            <div className="flex justify-end space-x-3">
+              <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="flex-1 bg-green-600 hover:bg-green-700"
+                className="flex items-center"
+                data-testid="submit-booking"
               >
+                {isSubmitting && <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />}
                 {isSubmitting ? 'Creating Booking...' : 'Create Booking'}
               </Button>
             </div>
