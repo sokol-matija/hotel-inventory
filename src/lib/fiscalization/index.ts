@@ -3,9 +3,11 @@
 
 import { FiscalizationService } from './FiscalizationService';
 import { FiscalXMLGenerator } from './xmlGenerator';
-import { CertificateManager } from './certificateManager';
 
-export { FiscalizationService, FiscalXMLGenerator, CertificateManager };
+// Note: CertificateManager is server-side only (Edge Function)
+// Not exported to avoid bundling Node.js dependencies in browser
+
+export { FiscalizationService, FiscalXMLGenerator };
 
 export type {
   FiscalEnvironment,
@@ -31,5 +33,6 @@ export {
 
 // Convenience functions to get service instances
 export const getFiscalizationService = () => FiscalizationService.getInstance();
-export const getCertificateManager = () => CertificateManager.getInstance();
 export const getXMLGenerator = () => FiscalXMLGenerator.getInstance();
+
+// getCertificateManager removed - certificate operations now in Edge Function

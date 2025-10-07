@@ -17,23 +17,28 @@ export class FiscalXMLGenerator {
 
   /**
    * Generate Croatian fiscal XML request
-   * UPDATED: Uses corrected structure that resolves s004 "Invalid digital signature" error
-   * Based on official Technical Specification v1.3
+   * UPDATED: Based on working production/test-fina-cert.js
+   * Signature will be added by FiscalXMLSigner
    * SUPPORTS STORNO: Handles negative amounts for cancellation invoices
    */
-  public generateFiscalXML(invoiceData: FiscalInvoiceData, zki: string): string {
+  public generateFiscalXML(invoiceData: FiscalInvoiceData, zki: string): { soapEnvelope: string; signXmlId: string } {
     const environment = getCurrentEnvironment();
     const dateTime = this.formatCroatianDateTime(invoiceData.dateTime);
     const messageId = this.generateUUID();
     const signXmlId = `signXmlId${Date.now()}`;
-    
+
     // For storno invoices, use negative amount
-    const amount = invoiceData.isStorno ? 
-      (-Math.abs(invoiceData.totalAmount)).toFixed(2) : 
+    const amount = invoiceData.isStorno ?
+      (-Math.abs(invoiceData.totalAmount)).toFixed(2) :
       invoiceData.totalAmount.toFixed(2);
-    
-    // CORRECTED SOAP XML structure that resolves s004 error
-    const soapXML = `<?xml version="1.0" encoding="UTF-8"?>
+
+    // Calculate VAT breakdown (25% Croatian standard rate)
+    const baseAmount = Math.abs(invoiceData.totalAmount) / 1.25;
+    const vatAmount = Math.abs(invoiceData.totalAmount) - baseAmount;
+
+    // CORRECTED SOAP XML structure based on working production/test-fina-cert.js
+    // NOTE: Signature will be added by FiscalXMLSigner - do NOT include placeholder signature
+    const soapEnvelope = `<?xml version="1.0" encoding="UTF-8"?>
 <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
     <soap:Body>
         <tns:RacunZahtjev Id="${signXmlId}" xmlns:tns="http://www.apis-it.hr/fin/2012/types/f73">
@@ -43,49 +48,34 @@ export class FiscalXMLGenerator {
             </tns:Zaglavlje>
             <tns:Racun>
                 <tns:Oib>${environment.oib}</tns:Oib>
-                <tns:USustavuPDV>true</tns:USustavuPDV>
+                <tns:USustPdv>true</tns:USustPdv>
                 <tns:DatVrijeme>${dateTime}</tns:DatVrijeme>
-                <tns:OznakaSlijednosti>N</tns:OznakaSlijednosti>
+                <tns:OznSlijed>N</tns:OznSlijed>
                 <tns:BrRac>
                     <tns:BrOznRac>${invoiceData.invoiceNumber}</tns:BrOznRac>
                     <tns:OznPosPr>POSL1</tns:OznPosPr>
                     <tns:OznNapUr>2</tns:OznNapUr>
                 </tns:BrRac>
-                <tns:Racun>
-                    <tns:IznosUkupno>${amount}</tns:IznosUkupno>
-                    <tns:NacinPlac>G</tns:NacinPlac>
-                    <tns:OibOper>${environment.oib}</tns:OibOper>
-                    <tns:ZastKod>${zki}</tns:ZastKod>
-                    <tns:NakDan>false</tns:NakDan>${invoiceData.isStorno && invoiceData.originalJir ? `
-                    <tns:StornoRacun>${invoiceData.originalJir}</tns:StornoRacun>` : ''}${invoiceData.isStorno && invoiceData.stornoReason ? `
-                    <tns:StornoRazlog>${invoiceData.stornoReason}</tns:StornoRazlog>` : ''}
-                </tns:Racun>
+                <tns:Pdv>
+                    <tns:Porez>
+                        <tns:Stopa>25.00</tns:Stopa>
+                        <tns:Osnovica>${baseAmount.toFixed(2)}</tns:Osnovica>
+                        <tns:Iznos>${vatAmount.toFixed(2)}</tns:Iznos>
+                    </tns:Porez>
+                </tns:Pdv>
+                <tns:IznosUkupno>${amount}</tns:IznosUkupno>
+                <tns:NacinPlac>G</tns:NacinPlac>
+                <tns:OibOper>${environment.oib}</tns:OibOper>
+                <tns:ZastKod>${zki}</tns:ZastKod>
+                <tns:NakDost>false</tns:NakDost>${invoiceData.isStorno && invoiceData.originalJir ? `
+                <tns:StornoRacun>${invoiceData.originalJir}</tns:StornoRacun>` : ''}${invoiceData.isStorno && invoiceData.stornoReason ? `
+                <tns:StornoRazlog>${invoiceData.stornoReason}</tns:StornoRazlog>` : ''}
             </tns:Racun>
-            <ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
-                <ds:SignedInfo>
-                    <ds:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
-                    <ds:SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/>
-                    <ds:Reference URI="#${signXmlId}">
-                        <ds:Transforms>
-                            <ds:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/>
-                            <ds:Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
-                        </ds:Transforms>
-                        <ds:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/>
-                        <ds:DigestValue>PLACEHOLDER_DIGEST</ds:DigestValue>
-                    </ds:Reference>
-                </ds:SignedInfo>
-                <ds:SignatureValue>PLACEHOLDER_SIGNATURE</ds:SignatureValue>
-                <ds:KeyInfo>
-                    <ds:X509Data>
-                        <ds:X509Certificate>PLACEHOLDER_CERTIFICATE</ds:X509Certificate>
-                    </ds:X509Data>
-                </ds:KeyInfo>
-            </ds:Signature>
         </tns:RacunZahtjev>
     </soap:Body>
 </soap:Envelope>`;
 
-    return soapXML;
+    return { soapEnvelope, signXmlId };
   }
 
   /**

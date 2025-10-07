@@ -28,5 +28,11 @@
   },
   "include": [
     "src"
+  ],
+  "exclude": [
+    "src/lib/fiscalization/certificateManager.ts",
+    "src/lib/fiscalization/xmlSigner.ts",
+    "src/lib/fiscalization/testFINACert.ts",
+    "src/lib/fiscalization/testCertificate.ts"
   ]
 }

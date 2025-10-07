@@ -2,6 +2,8 @@
 // Handles P12 certificate operations for fiscalization
 
 import { HOTEL_FISCAL_CONFIG, CERTIFICATE_EXTRACTION_GUIDE, getCurrentEnvironment } from './config';
+import type { FiscalXMLSigner } from './xmlSigner';
+import type * as forge from 'node-forge';
 
 export interface CertificateInfo {
   isValid: boolean;
@@ -15,12 +17,35 @@ export interface CertificateInfo {
 
 export class CertificateManager {
   private static instance: CertificateManager;
-  
+  private xmlSigner: FiscalXMLSigner | null = null;
+
   public static getInstance(): CertificateManager {
     if (!CertificateManager.instance) {
       CertificateManager.instance = new CertificateManager();
     }
     return CertificateManager.instance;
+  }
+
+  /**
+   * Get or create XML signer instance (lazy loading)
+   * SERVER-SIDE ONLY - will throw error in browser
+   */
+  private async getXMLSigner(): Promise<FiscalXMLSigner> {
+    // Check if running in browser
+    if (typeof window !== 'undefined') {
+      throw new Error('Certificate operations are not available in browser. Use API endpoint instead.');
+    }
+
+    if (!this.xmlSigner) {
+      // Dynamic import to avoid bundling in browser
+      const { FiscalXMLSigner } = await import('./xmlSigner');
+      const path = await import('path');
+
+      const config = this.getCertificateConfig();
+      const certPath = path.resolve(process.cwd(), config.certificateFile);
+      this.xmlSigner = new FiscalXMLSigner(certPath, config.certificatePassword);
+    }
+    return this.xmlSigner;
   }
 
   /**
@@ -105,43 +130,58 @@ export class CertificateManager {
   }
 
   /**
-   * Generate ZKI (security code) placeholder
-   * Note: Actual implementation requires P12 certificate and RSA signing
+   * Generate ZKI (security code) using real P12 certificate
+   * Based on working production/test-fina-cert.js implementation
+   * SERVER-SIDE ONLY
    */
   public async generateZKI(data: string): Promise<string> {
     const environment = getCurrentEnvironment();
-    
-    // SAFETY: Always indicate test mode
-    if (environment.mode === 'TEST') {
-      console.warn('🚨 FISCAL TEST: Generating test ZKI');
-      // Generate a test ZKI (not cryptographically valid)
-      return this.generateTestZKI(data);
-    }
 
-    throw new Error('Production ZKI generation requires actual P12 certificate implementation');
+    console.log(`🔒 Generating ZKI in ${environment.mode} mode...`);
+
+    try {
+      // Get XML signer (loads certificate) - now async
+      const signer = await this.getXMLSigner();
+      const privateKey = signer.getPrivateKey();
+
+      // Dynamic import of node-forge for server-side only
+      const forge = await import('node-forge');
+
+      // Croatian ZKI Algorithm (SHA1 + MD5) - validated working algorithm
+      const md = forge.default.md.sha1.create();
+      md.update(data, 'utf8');
+      const signature = privateKey.sign(md);
+
+      const md5 = forge.default.md.md5.create();
+      md5.update(signature);
+      const md5Hash = md5.digest();
+
+      const zki = forge.default.util.bytesToHex(md5Hash).toLowerCase();
+      console.log(`🔒 ZKI Generated: ${zki}`);
+
+      return zki;
+    } catch (error) {
+      console.error('❌ ZKI generation failed:', error);
+      throw new Error(`ZKI generation failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   /**
-   * Generate test ZKI for development
+   * Sign SOAP envelope with XML-DSIG
+   * Used by FiscalizationService for Croatian Tax Authority communication
+   * SERVER-SIDE ONLY
    */
-  private generateTestZKI(data: string): string {
-    // Create a deterministic test ZKI based on input data
-    // This is NOT cryptographically secure - only for testing
-    const hash = this.simpleHash(data);
-    return hash.substring(0, 32).toUpperCase();
-  }
-
-  /**
-   * Simple hash function for test ZKI generation
-   */
-  private simpleHash(str: string): string {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash; // Convert to 32-bit integer
+  public async signSOAPEnvelope(soapXml: string, refId: string): Promise<{ success: boolean; signedXml?: string; error?: string }> {
+    try {
+      const signer = await this.getXMLSigner();
+      return signer.signSOAPEnvelope(soapXml, refId);
+    } catch (error) {
+      console.error('❌ SOAP signing failed:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error)
+      };
     }
-    return Math.abs(hash).toString(16).padStart(8, '0').repeat(4);
   }
 
   /**

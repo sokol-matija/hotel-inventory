@@ -6,8 +6,8 @@ const forge = require('node-forge');
 const fs = require('fs');
 const path = require('path');
 
-const CERT_PATH = path.resolve(__dirname, '../example/DosProg/ffgastro/H Porec/FISKAL_3.p12');
-const CERT_PASSWORD = 'Hporec1';
+const CERT_PATH = path.resolve(__dirname, '../.certificates/87246357068.49208351934.A.1.p12');
+const CERT_PASSWORD = 'Marvel247@$&';
 
 // Real fiscal data that produces ZKI: 16ac248e21a738625b98d17e51149e87
 const VALIDATED_FISCAL_DATA = {

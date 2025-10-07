@@ -8,10 +8,11 @@ const forge = require('node-forge');
 const path = require('path');
 const crypto = require('crypto');
 
-// Configuration from DOS system analysis
+// Configuration - NEW FINA Certificate
 const CONFIG = {
-    CERT_PATH: '../example/DosProg/ffgastro/H Porec/FISKAL_3.p12',
-    CERT_PASSWORD: 'Hporec1',
+    CERT_PATH: '../.certificates/87246357068.49208351934.A.1.p12',
+    CERT_PASSWORD: 'Marvel247@$&',
+    CERT_PASSWORD_BACKUP: 'Marvel2479@$&(',
     HOTEL_OIB: '87246357068',
     TEST_URL: 'cistest.apis-it.hr',
     TEST_PORT: 8449,

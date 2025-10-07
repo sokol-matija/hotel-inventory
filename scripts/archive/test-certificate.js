@@ -7,9 +7,10 @@ const crypto = require('crypto');
 const https = require('https');
 const path = require('path');
 
-// Configuration
-const CERT_PATH = path.join(__dirname, '../example/DosProg/ffgastro/H Porec/FISKAL_3.p12');
-const CERT_PASSWORD = 'Hporec1';
+// Configuration - NEW FINA Certificate
+const CERT_PATH = path.join(__dirname, '../.certificates/87246357068.49208351934.A.1.p12');
+const CERT_PASSWORD = 'Marvel247@$&';
+const CERT_PASSWORD_BACKUP = 'Marvel2479@$&(';
 const TEST_OIB = '37014645007';
 const TEST_URL = 'https://cistest.apis-it.hr:8449/FiskalizacijaServiceTest';
 

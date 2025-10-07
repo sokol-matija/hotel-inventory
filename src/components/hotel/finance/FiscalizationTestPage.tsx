@@ -5,11 +5,10 @@ import React, { useState } from 'react';
 import { Button } from '../../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import { Badge } from '../../ui/badge';
-import { 
-  getFiscalizationService, 
-  getCertificateManager,
+import {
+  getFiscalizationService,
   getCurrentEnvironment,
-  CERTIFICATE_EXTRACTION_GUIDE 
+  CERTIFICATE_EXTRACTION_GUIDE
 } from '../../../lib/fiscalization';
 import { FiscalInvoiceData, FiscalResponse } from '../../../lib/fiscalization/types';
 import { AlertTriangle, CheckCircle, XCircle, Download, FileText, Shield } from 'lucide-react';
@@ -49,7 +48,6 @@ export default function FiscalizationTestPage() {
   // Get current environment and service instances
   const environment = getCurrentEnvironment();
   const fiscalizationService = getFiscalizationService();
-  const certificateManager = getCertificateManager();
 
   // Test invoice data
   const TEST_INVOICE: FiscalInvoiceData = {
@@ -115,7 +113,7 @@ export default function FiscalizationTestPage() {
   };
 
   const downloadCertificateGuide = () => {
-    const guide = certificateManager.getCertificateExtractionGuide();
+    const guide = CERTIFICATE_EXTRACTION_GUIDE;
     const blob = new Blob([guide], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -243,9 +241,13 @@ export default function FiscalizationTestPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="text-sm space-y-2">
-            <p><strong>Certificate Files:</strong> FISKAL_3.p12 (from DOS system)</p>
-            <p><strong>Password:</strong> Hporec1</p>
-            <p><strong>Location:</strong> example/DosProg/ffgastro/H Porec/</p>
+            <p><strong>Certificate File:</strong> 87246357068.49208351934.A.1.p12</p>
+            <p><strong>Password:</strong> Marvel247@$&</p>
+            <p><strong>Valid Until:</strong> July 31, 2030</p>
+            <p><strong>Location:</strong> .certificates/</p>
+            <p className="text-xs text-muted-foreground mt-2">
+              <strong>OLD:</strong> FISKAL_3.p12 (Hporec1) - DEPRECATED
+            </p>
           </div>
 
           <div className="flex gap-2">

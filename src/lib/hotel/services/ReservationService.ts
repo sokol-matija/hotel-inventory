@@ -185,13 +185,29 @@ export class ReservationService {
 
       // Fiscalize with Croatian Tax Authority
       const fiscalResponse = await fiscalizationService.fiscalizeInvoice(fiscalInvoiceData);
-      
-      if (fiscalResponse.success && fiscalResponse.jir) {
+
+      if (fiscalResponse.success && fiscalResponse.jir && fiscalResponse.zki) {
         const fiscalData: FiscalData = {
           jir: fiscalResponse.jir,
-          zki: 'generated-zki-code',
+          zki: fiscalResponse.zki, // Real ZKI from fiscalization response
           qrCodeData: fiscalResponse.qrCodeData || fiscalizationService.generateFiscalQRData(fiscalResponse.jir, reservation.totalAmount)
         };
+
+        // Save fiscal data to database
+        try {
+          await this.saveFiscalDataToDatabase(
+            reservation.id,
+            invoiceNumber,
+            fiscalData.jir!,
+            fiscalData.zki!,
+            fiscalData.qrCodeData!,
+            reservation.totalAmount
+          );
+          console.log('✅ Fiscal data saved to database');
+        } catch (dbError) {
+          console.error('❌ Failed to save fiscal data to database:', dbError);
+          // Continue anyway - PDF generation and notification still happen
+        }
 
         // Generate PDF invoice
         await generatePDFInvoice({
@@ -211,9 +227,9 @@ export class ReservationService {
           6
         );
 
-        return { 
-          success: true, 
-          jir: fiscalResponse.jir, 
+        return {
+          success: true,
+          jir: fiscalResponse.jir,
           qrCodeData: fiscalData.qrCodeData,
           fiscalData
         };
@@ -396,5 +412,75 @@ export class ReservationService {
   calculateNights(reservation: Reservation): number {
     const diffTime = reservation.checkOut.getTime() - reservation.checkIn.getTime();
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  }
+
+  /**
+   * Save fiscal data to database
+   * Creates invoice record and fiscal_record entry
+   */
+  private async saveFiscalDataToDatabase(
+    reservationId: string | number,
+    invoiceNumber: string,
+    jir: string,
+    zki: string,
+    qrCodeData: string,
+    totalAmount: number
+  ): Promise<void> {
+    const { supabase } = await import('../../supabase');
+    const reservationIdNum = typeof reservationId === 'string' ? parseInt(reservationId) : reservationId;
+
+    // Step 1: Create or get invoice record
+    const { data: existingInvoice } = await supabase
+      .from('invoices')
+      .select('id')
+      .eq('reservation_id', reservationIdNum)
+      .eq('invoice_number', invoiceNumber)
+      .single();
+
+    let invoiceId: number;
+
+    if (existingInvoice) {
+      invoiceId = existingInvoice.id;
+      console.log(`📋 Using existing invoice ID: ${invoiceId}`);
+    } else {
+      // Create new invoice
+      const { data: newInvoice, error: invoiceError } = await supabase
+        .from('invoices')
+        .insert({
+          invoice_number: invoiceNumber,
+          reservation_id: reservationIdNum,
+          issue_date: new Date().toISOString().split('T')[0],
+          subtotal: totalAmount / 1.25, // Remove VAT
+          vat_amount: totalAmount - (totalAmount / 1.25),
+          total_amount: totalAmount,
+          status: 'sent'
+        })
+        .select('id')
+        .single();
+
+      if (invoiceError) throw invoiceError;
+      invoiceId = newInvoice.id;
+      console.log(`✅ Created new invoice ID: ${invoiceId}`);
+    }
+
+    // Step 2: Create fiscal_record
+    const { error: fiscalError } = await supabase
+      .from('fiscal_records')
+      .insert({
+        invoice_id: invoiceId,
+        jir,
+        zki,
+        qr_code_data: qrCodeData,
+        submitted_at: new Date().toISOString(),
+        response_status: 'success',
+        response_message: 'Croatian Tax Authority accepted invoice',
+        operator_oib: '87246357068', // Hotel OIB
+        business_space_code: 'POSL1',
+        register_number: 2
+      });
+
+    if (fiscalError) throw fiscalError;
+
+    console.log(`✅ Fiscal data saved: JIR=${jir}, ZKI=${zki}`);
   }
 }

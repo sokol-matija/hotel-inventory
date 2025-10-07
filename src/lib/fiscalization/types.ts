@@ -45,6 +45,7 @@ export interface FiscalRequest {
 export interface FiscalResponse {
   success: boolean;
   jir?: string; // Jedinstveni identifikator računa
+  zki?: string; // Zaštitni kod izdavatelja (security code)
   error?: string;
   fiscalReceiptUrl?: string;
   qrCodeData?: string; // QR code data string

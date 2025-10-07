@@ -7,10 +7,11 @@ const https = require('https');
 const crypto = require('crypto');
 const forge = require('node-forge');
 
-// Configuration - PRODUCTION CERT WITH TEST ENDPOINT (SAFER TESTING)
+// Configuration - NEW FINA CERTIFICATE WITH TEST ENDPOINT
 const CONFIG = {
-    CERT_PATH: '../example/DosProg/ffgastro/H Porec/FISKAL_3.p12',
-    CERT_PASSWORD: 'Hporec1',
+    CERT_PATH: '../.certificates/87246357068.49208351934.A.1.p12',
+    CERT_PASSWORD: 'Marvel247@$&',
+    CERT_PASSWORD_BACKUP: 'Marvel2479@$&(',
     HOTEL_OIB: '87246357068', // Real Hotel OIB (matches certificate)
     TEST_URL: 'cistest.apis-it.hr',    // Still TEST endpoint
     TEST_PORT: 8449,

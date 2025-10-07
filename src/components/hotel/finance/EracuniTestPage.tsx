@@ -458,13 +458,13 @@ const FiscalizationTestPage: React.FC = () => {
             <div>
               <h3 className="font-medium text-orange-900">Croatian Tax Authority TEST Environment</h3>
               <p className="text-sm text-orange-700 mt-1">
-                This system uses the official Croatian Tax Authority TEST endpoint (cistest.apis-it.hr:8449). 
-                All fiscal requests are sent to the TEST environment only. Real FINA certificate FISKAL_3.p12 
-                from Hotel Porec DOS system is used with validated business data (OIB: 87246357068, POSL1, Register 2).
+                This system uses the official Croatian Tax Authority TEST endpoint (cistest.apis-it.hr:8449).
+                All fiscal requests are sent to the TEST environment only. NEW FINA certificate 87246357068.49208351934.A.1.p12
+                is used with validated business data (OIB: 87246357068, POSL1, Register 2).
               </p>
               <div className="mt-2 text-xs text-orange-600">
                 <p><strong>Test Endpoint:</strong> https://cistest.apis-it.hr:8449/FiskalizacijaServiceTest</p>
-                <p><strong>Certificate:</strong> FISKAL_3.p12 (expires Dec 27, 2027)</p>
+                <p><strong>Certificate:</strong> 87246357068.49208351934.A.1.p12 (expires July 31, 2030)</p>
                 <p><strong>Algorithm:</strong> Validated against real Hotel Porec fiscal receipts</p>
               </div>
             </div>

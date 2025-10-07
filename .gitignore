@@ -69,3 +69,8 @@ src/components/hotel/frontdesk/__tests__/BookingCreation.integration.test.tsx
 
 src/components/hotel/frontdesk/__tests__/
 supabase/functions/fiscalize-invoice/certificate.p12
+
+.serena/memories/
+
+# Fiscalization test scripts with passwords
+scripts/production/test-fina-cert.js
