@@ -1,26 +1,23 @@
 // Croatian Fiscalization Service
 // Main service for handling Croatian Tax Authority fiscal communication
 
-import { 
-  FiscalInvoiceData, 
-  FiscalResponse, 
-  FiscalStatus, 
+import {
+  FiscalInvoiceData,
+  FiscalResponse,
+  FiscalStatus,
   ZKIData,
   FiscalRequest,
   StornoRequest
 } from './types';
 import { getCurrentEnvironment, FISCAL_VALIDATION } from './config';
 import { FiscalXMLGenerator } from './xmlGenerator';
-import { CertificateManager } from './certificateManager';
 
 export class FiscalizationService {
   private static instance: FiscalizationService;
   private xmlGenerator: FiscalXMLGenerator;
-  private certificateManager: CertificateManager;
-  
+
   private constructor() {
     this.xmlGenerator = FiscalXMLGenerator.getInstance();
-    this.certificateManager = CertificateManager.getInstance();
   }
   
   public static getInstance(): FiscalizationService {
@@ -95,15 +92,16 @@ export class FiscalizationService {
   }
 
   /**
-   * Fiscalize an invoice with Croatian Tax Authority
+   * Fiscalize an invoice with Croatian Tax Authority via Supabase Edge Function
+   * This is browser-safe and calls the server-side Edge Function
    */
   public async fiscalizeInvoice(invoiceData: FiscalInvoiceData): Promise<FiscalResponse> {
     const environment = getCurrentEnvironment();
-    
+
     try {
       // SAFETY: Log environment being used
       console.warn(`🏛️ FISCAL ${environment.mode}: Fiscalizing invoice ${invoiceData.invoiceNumber}`);
-      
+
       // Validate input data
       const validation = this.xmlGenerator.validateFiscalData(invoiceData);
       if (!validation.valid) {
@@ -114,49 +112,68 @@ export class FiscalizationService {
         };
       }
 
-      // Validate certificate access
-      const certValidation = this.certificateManager.validateCertificateConfig();
-      if (!certValidation.valid) {
-        return {
-          success: false,
-          error: `Certificate validation failed: ${certValidation.errors.join(', ')}`,
-          timestamp: new Date(),
-        };
+      // Get Supabase URL and anon key from environment
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.REACT_APP_SUPABASE_URL;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.REACT_APP_SUPABASE_ANON_KEY;
+
+      if (!supabaseUrl || !supabaseKey) {
+        throw new Error('Supabase configuration missing');
       }
 
-      // Generate ZKI (security code) with proven algorithm
-      // CRITICAL: This configuration validated against real Hotel Porec fiscal data
-      // 
-      // BREAKTHROUGH DISCOVERY: These exact parameters were discovered by analyzing
-      // real Hotel Porec fiscal receipts from their DOS system:
-      // - Business Space: POSL1 (not the internal business process code)
-      // - Cash Register: 2 (operator number from real receipts)
-      // - This combination produces ZKI: 16ac248e21a738625b98d17e51149e87
-      //
-      // STORNO SUPPORT: For storno invoices, ZKI uses negative amount
-      const zkiAmount = invoiceData.isStorno ? 
-        -Math.abs(invoiceData.totalAmount) : 
-        invoiceData.totalAmount;
-      
-      const zkiData: ZKIData = {
-        oib: environment.oib,
+      // Extract numeric part of invoice number (HP-2025-747258 → 747258)
+      // Croatian Tax Authority expects just the number, not the full format
+      const invoiceNumberMatch = invoiceData.invoiceNumber.match(/(\d+)$/);
+      const numericInvoiceNumber = invoiceNumberMatch ? invoiceNumberMatch[1] : invoiceData.invoiceNumber;
+
+      // Prepare request for Edge Function
+      const fiscalRequest = {
+        invoiceNumber: numericInvoiceNumber,
         dateTime: invoiceData.dateTime.toISOString(),
-        invoiceNumber: invoiceData.invoiceNumber,
-        businessSpaceCode: 'POSL1', // Validated: DOS system uses POSL1 for fiscalization
-        cashRegisterCode: '2',       // Validated: Operator number from real data
-        totalAmount: zkiAmount,      // Negative for storno invoices
+        totalAmount: invoiceData.totalAmount,
+        vatAmount: invoiceData.vatAmount,
+        oib: environment.oib,
+        paymentMethod: this.mapPaymentMethod(invoiceData.paymentMethod),
       };
 
-      const zkiDataString = this.xmlGenerator.generateZKIDataString(zkiData);
-      const zki = await this.certificateManager.generateZKI(zkiDataString);
+      console.log('🚀 Calling Supabase Edge Function: fiscalize-invoice');
+      console.log(`📋 OIB being sent: ${fiscalRequest.oib}`);
+      console.log(`📋 Invoice number: ${invoiceData.invoiceNumber} → ${numericInvoiceNumber}`);
 
-      // Generate fiscal XML
-      const fiscalXML = this.xmlGenerator.generateFiscalXML(invoiceData, zki);
+      // Call Edge Function
+      const response = await fetch(
+        `${supabaseUrl}/functions/v1/fiscalize-invoice`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseKey}`,
+          },
+          body: JSON.stringify(fiscalRequest),
+        }
+      );
 
-      // Send to Croatian Tax Authority
-      const response = await this.sendFiscalRequest(fiscalXML);
+      const result = await response.json();
 
-      return response;
+      if (result.success && result.jir && result.zki) {
+        console.log('✅ Fiscalization successful via Edge Function');
+        console.log(`📋 JIR: ${result.jir}`);
+        console.log(`🔒 ZKI: ${result.zki}`);
+
+        return {
+          success: true,
+          jir: result.jir,
+          zki: result.zki,
+          qrCodeData: result.qrCodeData,
+          timestamp: new Date(result.timestamp),
+        };
+      } else {
+        console.error('❌ Fiscalization failed:', result.error);
+        return {
+          success: false,
+          error: result.error || 'Unknown error from Edge Function',
+          timestamp: new Date(result.timestamp || new Date()),
+        };
+      }
 
     } catch (error) {
       console.error('Fiscalization error:', error);
@@ -169,33 +186,110 @@ export class FiscalizationService {
   }
 
   /**
+   * Map payment method codes
+   */
+  private mapPaymentMethod(method: string): 'G' | 'K' | 'T' | 'O' {
+    const mapping: Record<string, 'G' | 'K' | 'T' | 'O'> = {
+      'CASH': 'G',
+      'CARD': 'K',
+      'CHECK': 'T',
+      'OTHER': 'O',
+    };
+    return mapping[method] || 'G';
+  }
+
+  /**
    * Send fiscal request to Croatian Tax Authority
-   * Uses proven SOAP client from scripts/corrected-soap-test.js
+   * Real SOAP implementation based on working production/test-fina-cert.js
    */
   private async sendFiscalRequest(fiscalXML: string): Promise<FiscalResponse> {
     const environment = getCurrentEnvironment();
-    
-    // SAFETY: Extra warning for production
+
+    //SAFETY: Extra warning for production
     if (environment.mode === 'PRODUCTION') {
       console.error('🚨 PRODUCTION FISCAL REQUEST - VERIFY THIS IS INTENTIONAL');
-      // For safety, still simulate in production until fully tested
-      return await this.simulateFiscalRequest(fiscalXML);
     }
 
     try {
       console.log(`🏛️ FISCAL ${environment.mode}: Sending SOAP request to Croatian Tax Authority`);
-      console.log(`📍 Endpoint: https://cistest.apis-it.hr:8449/FiskalizacijaServiceTest`);
-      
-      // Real SOAP implementation would go here
-      // For now, simulate with detailed logging to match our test scripts
-      const response = await this.simulateFiscalRequest(fiscalXML);
-      
-      return response;
+
+      // Use appropriate endpoint based on environment
+      const endpoint = environment.mode === 'TEST'
+        ? { hostname: 'cistest.apis-it.hr', port: 8449, path: '/FiskalizacijaServiceTest' }
+        : { hostname: 'cis.porezna-uprava.hr', port: 443, path: '/FiskalizacijaService' };
+
+      console.log(`📍 Endpoint: https://${endpoint.hostname}:${endpoint.port}${endpoint.path}`);
+
+      // NOTE: This method is deprecated - use Edge Function instead
+      // Direct SOAP calls should only be made server-side via Edge Functions
+      throw new Error('Direct SOAP calls not supported in browser. Use Edge Function instead.');
 
     } catch (error) {
+      console.error('❌ SOAP request failed:', error);
       return {
         success: false,
         error: `Croatian Tax Authority SOAP request failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        timestamp: new Date(),
+      };
+    }
+  }
+
+  /**
+   * Parse SOAP response from Croatian Tax Authority
+   * Based on working production/test-fina-cert.js
+   */
+  private parseSOAPResponse(responseBody: string): FiscalResponse {
+    try {
+      // Check for errors in response
+      const errorMatch = responseBody.match(/<SifraGreske>(.+?)<\/SifraGreske>/) ||
+                        responseBody.match(/<tns:SifraGreske>(.+?)<\/tns:SifraGreske>/);
+      const messageMatch = responseBody.match(/<PorukaGreske>(.+?)<\/PorukaGreske>/) ||
+                          responseBody.match(/<tns:PorukaGreske>(.+?)<\/tns:PorukaGreske>/);
+
+      if (errorMatch) {
+        const errorCode = errorMatch[1];
+        const errorMessage = messageMatch ? messageMatch[1] : 'Unknown error';
+
+        console.log('⚠️ Croatian Tax Authority Error:');
+        console.log(`📟 Error Code: ${errorCode}`);
+        console.log(`📝 Error Message: ${errorMessage}`);
+
+        return {
+          success: false,
+          error: `${errorCode}: ${errorMessage}`,
+          timestamp: new Date(),
+        };
+      }
+
+      // Check for successful response with JIR
+      const jirMatch = responseBody.match(/<Jir>(.+?)<\/Jir>/) ||
+                      responseBody.match(/<tns:Jir>(.+?)<\/tns:Jir>/);
+
+      if (jirMatch) {
+        const jir = jirMatch[1];
+        console.log('🎉 SUCCESS! Croatian Tax Authority Response:');
+        console.log(`📋 JIR (Unique Invoice ID): ${jir}`);
+
+        return {
+          success: true,
+          jir: jir,
+          timestamp: new Date(),
+        };
+      }
+
+      // No JIR or error found
+      console.log('⚠️ Unexpected response format');
+      return {
+        success: false,
+        error: 'Response received but no JIR or error found',
+        timestamp: new Date(),
+      };
+
+    } catch (error) {
+      console.error('❌ Response parsing failed:', error);
+      return {
+        success: false,
+        error: `Parsing error: ${error instanceof Error ? error.message : 'Unknown error'}`,
         timestamp: new Date(),
       };
     }
@@ -292,16 +386,19 @@ export class FiscalizationService {
 
   /**
    * Validate fiscal configuration
+   * Note: Certificate validation now happens in Edge Function
    */
   public validateConfiguration(): { valid: boolean; errors: string[]; warnings: string[] } {
     const errors: string[] = [];
     const warnings: string[] = [];
     const environment = getCurrentEnvironment();
 
-    // Certificate validation
-    const certValidation = this.certificateManager.validateCertificateConfig();
-    if (!certValidation.valid) {
-      errors.push(...certValidation.errors);
+    // Check Supabase configuration (needed for Edge Function)
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.REACT_APP_SUPABASE_URL;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.REACT_APP_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+      errors.push('Supabase configuration missing - fiscalization unavailable');
     }
 
     // Environment validation
@@ -313,8 +410,8 @@ export class FiscalizationService {
       errors.push('Production fiscal environment in development mode is not allowed');
     }
 
-    // Network connectivity (placeholder)
-    warnings.push('Network connectivity to Croatian Tax Authority not verified');
+    // Edge Function info
+    warnings.push('Fiscalization uses Supabase Edge Function - certificate handled server-side');
 
     return {
       valid: errors.length === 0,

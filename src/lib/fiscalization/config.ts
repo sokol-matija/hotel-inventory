@@ -8,7 +8,7 @@ export const FISCAL_ENVIRONMENTS: Record<string, FiscalEnvironment> = {
   TEST: {
     mode: 'TEST',
     url: 'https://cistest.apis-it.hr:8449/FiskalizacijaServiceTest',
-    oib: '37014645007', // Test OIB from DOS system
+    oib: '87246357068', // Hotel Porec OIB (must match certificate)
   },
   PRODUCTION: {
     mode: 'PRODUCTION', 
@@ -61,33 +61,33 @@ export function getCurrentEnvironment(): FiscalEnvironment {
   return FISCAL_ENVIRONMENTS.TEST;
 }
 
-// Certificate extraction instructions
+// Certificate configuration instructions
 export const CERTIFICATE_EXTRACTION_GUIDE = `
-CERTIFICATE EXTRACTION FROM DOS SYSTEM:
+CURRENT FINA CERTIFICATE:
 
-1. **Locate Certificate Files:**
-   - Path: example/DosProg/ffgastro/H Porec/
-   - Files: FISKAL 1.P12, FISKAL 2.p12, FISKAL_3.p12
-   - Use: FISKAL_3.p12 (most recent)
+1. **Active Certificate:**
+   - File: 87246357068.49208351934.A.1.p12
+   - Location: .certificates/
+   - Password: Stored in environment variable REACT_APP_FISCAL_CERT_PASSWORD
+   - Valid Until: July 31, 2030
 
-2. **Certificate Password:**
-   - Password: "Hporec1" 
-   - (From base64 encoded "SHBvcmVjMQ==" in config.xml)
-
-3. **For Development/Testing:**
-   - Copy FISKAL_3.p12 to secure location
-   - Store password in environment variables
+2. **For Development/Testing:**
+   - Certificate stored in .certificates/ folder (gitignored)
+   - Password stored in environment variables
    - Use Croatian Tax Authority TEST environment
 
-4. **Security Considerations:**
-   - Never commit certificates to repository
-   - Store in Supabase secure storage or environment variables
+3. **Security Considerations:**
+   - Never commit certificates to repository (already in .gitignore)
+   - Store passwords in Supabase Secrets for Edge Functions
    - Use certificate validation before fiscal operations
-   
-5. **Testing Approach:**
-   - Always start with TEST OIB: 37014645007
+
+4. **Testing Approach:**
+   - Use correct OIB that matches certificate
    - Use TEST URL: https://cistest.apis-it.hr:8449/FiskalizacijaServiceTest
    - Validate with Croatian Tax Authority test system first
+
+5. **OLD Certificates (DO NOT USE):**
+   - FISKAL_3.p12 - DEPRECATED from old DOS system
 `;
 
 // Fiscal validation rules
