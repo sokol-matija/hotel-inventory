@@ -1,18 +1,20 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { 
-  Reservation, 
-  ReservationStatus, 
-  Guest, 
-  Room, 
-  Invoice, 
-  Payment, 
-  FiscalRecord, 
+import {
+  Reservation,
+  ReservationStatus,
+  Guest,
+  Room,
+  Invoice,
+  Payment,
+  FiscalRecord,
   RevenueAnalytics,
   InvoiceStatus,
   PaymentMethod,
   PaymentStatus,
   Company,
-  PricingTier
+  PricingTier,
+  BookingSource,
+  SeasonalPeriod
 } from '../types';
 import { hotelDataService } from '../services/HotelDataService';
 import { realtimeService } from '../services/RealtimeService';
@@ -198,6 +200,126 @@ export function SupabaseHotelProvider({ children }: { children: React.ReactNode 
     };
   }, []);
 
+  // Load invoices with fiscal records from database
+  const loadInvoices = useCallback(async (): Promise<Invoice[]> => {
+    const { data, error } = await supabase
+      .from('invoices')
+      .select(`
+        *,
+        fiscal_records (
+          jir,
+          zki,
+          qr_code_data
+        ),
+        guests (
+          id,
+          first_name,
+          last_name,
+          email,
+          phone
+        ),
+        reservations (
+          id,
+          room_id,
+          check_in_date,
+          check_out_date,
+          number_of_nights,
+          adults,
+          children_count,
+          subtotal,
+          vat_amount,
+          tourism_tax,
+          total_amount,
+          pet_fee,
+          parking_fee,
+          additional_charges,
+          status,
+          seasonal_period,
+          base_room_rate
+        )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    // Map database rows to Invoice objects
+    return (data || []).map((row: any) => ({
+      id: row.id.toString(),
+      invoiceNumber: row.invoice_number,
+      reservationId: row.reservation_id?.toString() || '',
+      guestId: row.guest_id?.toString() || '',
+      companyId: row.company_id?.toString(),
+      issueDate: new Date(row.issue_date),
+      dueDate: new Date(row.due_date || row.issue_date),
+      status: row.status as InvoiceStatus,
+      currency: 'EUR',
+      items: [],
+      subtotal: parseFloat(row.subtotal || '0'),
+      vatRate: 0.25,
+      vatAmount: parseFloat(row.vat_amount || '0'),
+      tourismTax: parseFloat(row.tourism_tax || '0'),
+      totalAmount: parseFloat(row.total_amount || '0'),
+      paidAmount: 0,
+      remainingAmount: parseFloat(row.total_amount || '0'),
+      fiscalData: row.fiscal_records?.[0] ? {
+        oib: '87246357068',
+        jir: row.fiscal_records[0].jir,
+        zki: row.fiscal_records[0].zki,
+        qrCodeData: row.fiscal_records[0].qr_code_data
+      } : undefined,
+      guest: row.guests ? {
+        id: row.guests.id.toString(),
+        firstName: row.guests.first_name,
+        lastName: row.guests.last_name,
+        fullName: `${row.guests.first_name} ${row.guests.last_name}`,
+        email: row.guests.email,
+        phone: row.guests.phone,
+        nationality: '',
+        preferredLanguage: 'en',
+        dietaryRestrictions: [],
+        hasPets: false,
+        isVip: false,
+        vipLevel: 0,
+        children: [],
+        totalStays: 0,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      } as Guest : undefined,
+      reservation: row.reservations ? {
+        id: row.reservations.id.toString(),
+        roomId: row.reservations.room_id?.toString() || '',
+        guestId: row.guest_id?.toString() || '',
+        checkIn: new Date(row.reservations.check_in_date),
+        checkOut: new Date(row.reservations.check_out_date),
+        numberOfGuests: row.reservations.adults + (row.reservations.children_count || 0),
+        adults: row.reservations.adults,
+        children: [],
+        status: row.reservations.status as ReservationStatus || 'confirmed',
+        bookingSource: 'direct' as BookingSource,
+        specialRequests: '',
+        seasonalPeriod: row.reservations.seasonal_period as SeasonalPeriod || 'standard',
+        baseRoomRate: parseFloat(row.reservations.base_room_rate || '0'),
+        numberOfNights: row.reservations.number_of_nights,
+        subtotal: parseFloat(row.reservations.subtotal || '0'),
+        childrenDiscounts: 0,
+        tourismTax: parseFloat(row.reservations.tourism_tax || '0'),
+        vatAmount: parseFloat(row.reservations.vat_amount || '0'),
+        petFee: parseFloat(row.reservations.pet_fee || '0'),
+        parkingFee: parseFloat(row.reservations.parking_fee || '0'),
+        shortStaySuplement: 0,
+        additionalCharges: parseFloat(row.reservations.additional_charges || '0'),
+        roomServiceItems: [],
+        totalAmount: parseFloat(row.reservations.total_amount || '0'),
+        bookingDate: new Date(),
+        lastModified: new Date(),
+        notes: ''
+      } as Reservation : undefined,
+      notes: '',
+      createdAt: new Date(row.created_at),
+      updatedAt: new Date(row.updated_at || row.created_at)
+    }));
+  }, []);
+
   // Load companies from database
   const loadCompanies = useCallback(async (): Promise<Company[]> => {
     const { data, error } = await supabase
@@ -240,6 +362,7 @@ export function SupabaseHotelProvider({ children }: { children: React.ReactNode 
             performanceMonitor.measureAsync('load_rooms', () => hotelDataService.getRooms()),
             performanceMonitor.measureAsync('load_guests', () => hotelDataService.getGuests()),
             performanceMonitor.measureAsync('load_reservations', () => hotelDataService.getReservations()),
+            performanceMonitor.measureAsync('load_invoices', () => loadInvoices()),
             performanceMonitor.measureAsync('load_companies', () => loadCompanies()),
             performanceMonitor.measureAsync('load_pricing_tiers', () => loadPricingTiers())
           ]);
@@ -281,32 +404,43 @@ export function SupabaseHotelProvider({ children }: { children: React.ReactNode 
         trackError(error instanceof Error ? error : new Error('Failed to load reservations'), { operation: 'load_reservations', critical: false });
       }
       
-      // Process companies data
+      // Process invoices data
       if (results[3].status === 'fulfilled') {
-        setCompanies(results[3].value);
-        logger.info('HotelContext', `Loaded ${results[3].value.length} companies`);
-        performanceMonitor.recordDatabaseOperation('load_companies', 'companies', performance.now() - operationStart, results[3].value.length, 'SELECT');
+        setInvoices(results[3].value);
+        logger.info('HotelContext', `Loaded ${results[3].value.length} invoices`);
+        performanceMonitor.recordDatabaseOperation('load_invoices', 'invoices', performance.now() - operationStart, results[3].value.length, 'SELECT');
       } else {
         const error = results[3].reason;
+        logger.warn('HotelContext', 'Failed to load invoices - continuing with empty array', error);
+        trackError(error instanceof Error ? error : new Error('Failed to load invoices'), { operation: 'load_invoices', critical: false });
+        setInvoices([]);
+      }
+
+      // Process companies data
+      if (results[4].status === 'fulfilled') {
+        setCompanies(results[4].value);
+        logger.info('HotelContext', `Loaded ${results[4].value.length} companies`);
+        performanceMonitor.recordDatabaseOperation('load_companies', 'companies', performance.now() - operationStart, results[4].value.length, 'SELECT');
+      } else {
+        const error = results[4].reason;
         logger.warn('HotelContext', 'Failed to load companies - continuing with empty array', error);
         trackError(error instanceof Error ? error : new Error('Failed to load companies'), { operation: 'load_companies', critical: false });
         setCompanies([]);
       }
-      
+
       // Process pricing tiers data
-      if (results[4].status === 'fulfilled') {
-        setPricingTiers(results[4].value);
-        logger.info('HotelContext', `Loaded ${results[4].value.length} pricing tiers`);
-        performanceMonitor.recordDatabaseOperation('load_pricing_tiers', 'pricing_tiers', performance.now() - operationStart, results[4].value.length, 'SELECT');
+      if (results[5].status === 'fulfilled') {
+        setPricingTiers(results[5].value);
+        logger.info('HotelContext', `Loaded ${results[5].value.length} pricing tiers`);
+        performanceMonitor.recordDatabaseOperation('load_pricing_tiers', 'pricing_tiers', performance.now() - operationStart, results[5].value.length, 'SELECT');
       } else {
-        const error = results[4].reason;
+        const error = results[5].reason;
         logger.warn('HotelContext', 'Failed to load pricing tiers - continuing with empty array', error);
         trackError(error instanceof Error ? error : new Error('Failed to load pricing tiers'), { operation: 'load_pricing_tiers', critical: false });
         setPricingTiers([]);
       }
-      
-      // TODO: Load remaining financial data (invoices, payments, fiscal records)
-      setInvoices([]);
+
+      // TODO: Load remaining financial data (payments, fiscal records)
       setPayments([]);
       setFiscalRecords([]);
       
@@ -316,23 +450,26 @@ export function SupabaseHotelProvider({ children }: { children: React.ReactNode 
       const roomCount = results[0].status === 'fulfilled' ? results[0].value.length : 0;
       const guestCount = results[1].status === 'fulfilled' ? results[1].value.length : 0;
       const reservationCount = results[2].status === 'fulfilled' ? results[2].value.length : 0;
-      const companyCount = results[3].status === 'fulfilled' ? results[3].value.length : 0;
-      const pricingTierCount = results[4].status === 'fulfilled' ? results[4].value.length : 0;
+      const invoiceCount = results[3].status === 'fulfilled' ? results[3].value.length : 0;
+      const companyCount = results[4].status === 'fulfilled' ? results[4].value.length : 0;
+      const pricingTierCount = results[5].status === 'fulfilled' ? results[5].value.length : 0;
       const totalDuration = performance.now() - operationStart;
-      
+
       logger.info('HotelContext', 'Hotel data loading completed', {
         roomCount,
         guestCount,
         reservationCount,
+        invoiceCount,
         companyCount,
         pricingTierCount,
         totalDuration: Math.round(totalDuration)
       });
-      
+
       logUserActivity('data_load_completed', {
         roomCount,
         guestCount,
         reservationCount,
+        invoiceCount,
         companyCount,
         pricingTierCount,
         duration: Math.round(totalDuration)
@@ -347,7 +484,7 @@ export function SupabaseHotelProvider({ children }: { children: React.ReactNode 
       setIsLoading(false);
       performanceMonitor.recordSystemMetrics();
     }
-  }, []);
+  }, [loadInvoices, loadCompanies, loadPricingTiers]);
 
   // Initialize data on mount
   useEffect(() => {

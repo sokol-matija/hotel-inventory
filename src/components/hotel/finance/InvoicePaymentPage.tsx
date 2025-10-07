@@ -4,11 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import { Badge } from '../../ui/badge';
 import { Button } from '../../ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../ui/dialog';
-import { 
-  Calendar, 
-  DollarSign, 
-  FileText, 
-  Search, 
+import {
+  Calendar,
+  DollarSign,
+  FileText,
+  Search,
   Filter,
   Download,
   Eye,
@@ -19,16 +19,19 @@ import {
   Banknote,
   Building2,
   Globe,
-  TrendingUp
+  TrendingUp,
+  Shield
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { QRCodeSVG } from 'qrcode.react';
 import { Invoice, Guest, Room, Reservation } from '../../../lib/hotel/types';
 import { generatePDFInvoice, generateInvoiceNumber } from '../../../lib/pdfInvoiceGenerator';
 import { SAMPLE_RESERVATIONS } from '../../../lib/hotel/sampleData';
 import hotelNotification from '../../../lib/notifications';
 
 export default function InvoicePaymentPage() {
-  const { invoices, payments, guests, rooms, getInvoicesByDateRange, getUnpaidInvoices, getPaymentsByMethod } = useHotel();
+  const { invoices, payments, guests, rooms, reservations, getInvoicesByDateRange, getUnpaidInvoices, getPaymentsByMethod } = useHotel();
+
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
@@ -47,17 +50,17 @@ export default function InvoicePaymentPage() {
   // Filter invoices based on search and status
   const filteredInvoices = invoices.filter(invoice => {
     const guest = guests.find(g => g.id === invoice.guestId);
-    // Get room through reservation since invoice no longer has direct roomId
-    const reservation = SAMPLE_RESERVATIONS.find(r => r.id === invoice.reservationId);
+    // Get room through reservation - use real reservations from context
+    const reservation = reservations.find(r => r.id === invoice.reservationId);
     const room = reservation ? rooms.find(r => r.id === reservation.roomId) : undefined;
-    
-    const matchesSearch = !searchTerm || 
+
+    const matchesSearch = !searchTerm ||
       invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
       guest?.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       room?.number.includes(searchTerm);
-    
+
     const matchesStatus = statusFilter === 'all' || invoice.status === statusFilter;
-    
+
     return matchesSearch && matchesStatus;
   });
 
@@ -84,7 +87,7 @@ export default function InvoicePaymentPage() {
   const getRoomNumber = (invoiceId: string) => {
     const invoice = invoices.find(inv => inv.id === invoiceId);
     if (!invoice) return 'Unknown Room';
-    const reservation = SAMPLE_RESERVATIONS.find(r => r.id === invoice.reservationId);
+    const reservation = reservations.find(r => r.id === invoice.reservationId);
     if (!reservation) return 'Unknown Room';
     return rooms.find(r => r.id === reservation.roomId)?.number || 'Unknown Room';
   };
@@ -100,9 +103,9 @@ export default function InvoicePaymentPage() {
 
   const handleDownloadPDF = (invoice: Invoice) => {
     try {
-      // Find related reservation
-      const reservation = SAMPLE_RESERVATIONS.find(r => r.id === invoice.reservationId);
-      const guest = guests.find(g => g.id === invoice.guestId);
+      // Use reservation data from invoice (loaded via JOIN)
+      const reservation = invoice.reservation;
+      const guest = invoice.guest;
       const room = reservation ? rooms.find(r => r.id === reservation.roomId) : undefined;
 
       if (!reservation || !guest || !room) {
@@ -114,13 +117,16 @@ export default function InvoicePaymentPage() {
         return;
       }
 
-      // Generate PDF using existing generator
+      // Generate PDF with EXISTING fiscal data (never regenerate JIR/ZKI)
       generatePDFInvoice({
         reservation,
         guest,
         room,
         invoiceNumber: invoice.invoiceNumber,
-        invoiceDate: invoice.issueDate
+        invoiceDate: invoice.issueDate,
+        jir: invoice.fiscalData?.jir,
+        zki: invoice.fiscalData?.zki,
+        qrCodeData: invoice.fiscalData?.qrCodeData
       });
 
       hotelNotification.success(
@@ -290,6 +296,7 @@ export default function InvoicePaymentPage() {
                     <th className="text-left py-3 px-4 font-medium text-gray-600">Guest</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-600">Room</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-600">Amount</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-600">JIR</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-600">Status</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-600">Date</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-600">Actions</th>
@@ -302,6 +309,18 @@ export default function InvoicePaymentPage() {
                       <td className="py-3 px-4">{getGuestName(invoice.guestId)}</td>
                       <td className="py-3 px-4">{getRoomNumber(invoice.id)}</td>
                       <td className="py-3 px-4 font-medium">€{invoice.totalAmount.toFixed(2)}</td>
+                      <td className="py-3 px-4 font-mono text-xs">
+                        {invoice.fiscalData?.jir ? (
+                          <span
+                            className="text-green-600 cursor-help"
+                            title={invoice.fiscalData.jir}
+                          >
+                            {invoice.fiscalData.jir.slice(0, 8)}...
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">Not fiscalized</span>
+                        )}
+                      </td>
                       <td className="py-3 px-4">
                         <Badge className={`text-xs ${statusColors[invoice.status as keyof typeof statusColors]}`}>
                           {invoice.status.toUpperCase()}
@@ -401,7 +420,7 @@ export default function InvoicePaymentPage() {
 
       {/* Invoice Details Dialog */}
       <Dialog open={showInvoiceDetails} onOpenChange={setShowInvoiceDetails}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               <span>Invoice Details</span>
@@ -416,7 +435,7 @@ export default function InvoicePaymentPage() {
             </DialogTitle>
           </DialogHeader>
           {selectedInvoice && (
-            <div className="space-y-4">
+            <div className="space-y-4 pb-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium text-gray-600">Invoice Number</label>
@@ -445,7 +464,36 @@ export default function InvoicePaymentPage() {
                   <p>{format(selectedInvoice.dueDate, 'MMM dd, yyyy')}</p>
                 </div>
               </div>
-              
+
+              {/* Fiscal Information Section */}
+              {selectedInvoice.fiscalData && (
+                <div className="border-t pt-4">
+                  <h4 className="font-medium mb-3 flex items-center text-green-700">
+                    <Shield className="w-5 h-5 mr-2" />
+                    Croatian Fiscal Information
+                  </h4>
+                  <div className="space-y-3 bg-green-50 p-4 rounded-lg border border-green-200">
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">JIR (Unique Invoice Identifier)</label>
+                      <p className="font-mono text-sm break-all text-green-800">{selectedInvoice.fiscalData.jir}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">ZKI (Security Code)</label>
+                      <p className="font-mono text-sm break-all text-green-800">{selectedInvoice.fiscalData.zki}</p>
+                    </div>
+                    {selectedInvoice.fiscalData.qrCodeData && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">QR Code</label>
+                        <div className="mt-2 p-3 bg-white rounded border inline-block">
+                          <QRCodeSVG value={selectedInvoice.fiscalData.qrCodeData} size={128} />
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">Scan to verify fiscalization</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div className="border-t pt-4">
                 <h4 className="font-medium mb-2">Financial Breakdown</h4>
                 <div className="space-y-2 text-sm">

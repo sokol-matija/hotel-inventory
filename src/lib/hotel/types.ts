@@ -295,7 +295,8 @@ export interface Invoice {
   companyId?: string; // For corporate billing
   guest?: Guest; // For joined queries
   company?: Company; // For joined queries
-  
+  reservation?: Reservation; // For joined queries with full reservation data
+
   // Invoice dates
   issueDate: Date;
   dueDate: Date;
@@ -324,6 +325,7 @@ export interface Invoice {
     oib: string; // Hotel's OIB tax ID
     jir: string; // Jedinstveni identifikator računa (JIR)
     zki: string; // Zaštitni kod izdavatelja (ZKI)
+    qrCodeData?: string; // QR code data for fiscal receipt
     fiscalReceiptUrl?: string; // URL to fiscal receipt
     operatorOib?: string; // Operator's OIB who issued invoice
   };
