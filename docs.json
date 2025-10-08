@@ -7,58 +7,58 @@
     "light": "#4285F4",
     "dark": "#1E3A8A"
   },
-  "favicon": "/favicon.ico",
+  "favicon": "/docs/favicon.ico",
   "navigation": {
     "groups": [
       {
         "group": "Getting Started",
         "pages": [
-          "introduction",
-          "quickstart",
-          "installation"
+          "docs/introduction",
+          "docs/quickstart",
+          "docs/installation"
         ]
       },
       {
         "group": "Core Features",
         "pages": [
-          "features/hotel-management",
-          "features/front-desk",
-          "features/finance",
-          "features/reservations",
-          "features/channel-manager"
+          "docs/features/hotel-management",
+          "docs/features/front-desk",
+          "docs/features/finance",
+          "docs/features/reservations",
+          "docs/features/channel-manager"
         ]
       },
       {
         "group": "Integration Guides",
         "pages": [
-          "integrations/croatian-fiscalization",
-          "integrations/channel-manager-setup",
-          "integrations/supabase-setup"
+          "docs/integrations/croatian-fiscalization",
+          "docs/integrations/channel-manager-setup",
+          "docs/integrations/supabase-setup"
         ]
       },
       {
         "group": "Technical Documentation",
         "pages": [
-          "technical/architecture",
-          "technical/database-schema",
-          "technical/backend-api",
-          "technical/edge-functions",
-          "technical/api-reference"
+          "docs/technical/architecture",
+          "docs/technical/database-schema",
+          "docs/technical/backend-api",
+          "docs/technical/edge-functions",
+          "docs/technical/api-reference"
         ]
       },
       {
         "group": "Development",
         "pages": [
-          "development/setup",
-          "development/contributing",
-          "development/testing"
+          "docs/development/setup",
+          "docs/development/contributing",
+          "docs/development/testing"
         ]
       }
     ]
   },
   "logo": {
-    "light": "/logo.png",
-    "dark": "/logo.png"
+    "light": "/docs/logo.png",
+    "dark": "/docs/logo.png"
   },
   "navbar": {
     "links": [
