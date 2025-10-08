@@ -1,0 +1,702 @@
+---
+title: 'Finance & Invoicing'
+description: 'Complete invoice management system with Croatian fiscal compliance, PDF generation, and payment tracking'
+icon: 'file-invoice-dollar'
+---
+
+## Overview
+
+The Finance module provides comprehensive invoice management with full Croatian fiscal compliance. Generate professional invoices with JIR/ZKI codes, QR verification, and automated PDF generation.
+
+<Note>
+**Latest Update (January 2025)**: Finance UI completed with full fiscal data display, real-time invoice loading, and PDF generation using stored JIR/ZKI codes.
+</Note>
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Croatian Fiscal Compliance" icon="receipt">
+    Complete integration with Croatian Tax Authority - JIR/ZKI generation, storage, and verification
+  </Card>
+
+  <Card title="Professional PDF Generation" icon="file-pdf">
+    Generate invoices with fiscal data, QR codes, and Hotel Porec branding
+  </Card>
+
+  <Card title="Real-time Invoice Management" icon="sync">
+    Live updates with Supabase real-time subscriptions and optimistic UI
+  </Card>
+
+  <Card title="Payment Tracking" icon="credit-card">
+    Multi-method payment support with cash, card, and bank transfer tracking
+  </Card>
+</CardGroup>
+
+## Invoice Workflow
+
+### 1. Invoice Generation
+
+Create invoices from completed reservations:
+
+<Steps>
+  <Step title="Navigate to Finance Module">
+    Go to **Hotel** > **Finance** in the sidebar
+  </Step>
+
+  <Step title="View All Invoices">
+    The invoice table displays:
+    - Invoice number (Croatian format: HP-YYYY-NNNNNN)
+    - Guest name
+    - Room number
+    - Total amount
+    - JIR code (abbreviated with tooltip)
+    - Status (draft, sent, paid, overdue)
+    - Issue date
+  </Step>
+
+  <Step title="Create New Invoice">
+    Click **Create Invoice** and select a reservation
+    - Invoice number auto-generated
+    - Financial details copied from reservation
+    - Guest and room information populated
+  </Step>
+</Steps>
+
+### 2. Croatian Fiscalization
+
+Generate JIR/ZKI codes for Tax Authority compliance:
+
+<Steps>
+  <Step title="Select Invoice">
+    Choose an invoice that needs fiscalization
+  </Step>
+
+  <Step title="Click Fiscalize">
+    Button triggers Edge Function call to Croatian Tax Authority
+    - Generates JIR (Jedinstveni Identifikator Računa)
+    - Generates ZKI (Zaštitni Kod Izdavatelja)
+    - Creates QR code for verification
+  </Step>
+
+  <Step title="Automatic Storage">
+    Fiscal data saved to database:
+    ```sql
+    -- Stored in invoices table
+    fiscalData: {
+      oib: "87246357068",
+      jir: "4a669de1-8c45-4934-9004-4586a025320b",
+      zki: "88132f1b4cd4a9b388dfbe180438e73c",
+      qrCodeData: "https://porezna-uprava.gov.hr/rn?jir=..."
+    }
+
+    -- Also in fiscal_records table for audit
+    INSERT INTO fiscal_records (invoice_id, jir, zki, qr_code_data)
+    ```
+  </Step>
+
+  <Step title="Verification">
+    JIR code displayed in table (abbreviated)
+    - Green color indicates fiscalized
+    - Gray text shows "Not fiscalized"
+    - Click to view full details
+  </Step>
+</Steps>
+
+<Warning>
+**Important**: Once fiscalized, JIR/ZKI codes are NEVER regenerated. The system always uses stored values from the database.
+</Warning>
+
+### 3. Invoice Details
+
+View complete invoice information:
+
+<Steps>
+  <Step title="Click View Invoice">
+    Opens detailed modal with all invoice data
+  </Step>
+
+  <Step title="Invoice Information">
+    Modal displays:
+    - Invoice number and dates
+    - Guest contact details
+    - Room and reservation info
+    - Financial breakdown
+    - Payment status
+  </Step>
+
+  <Step title="Fiscal Data Section">
+    If fiscalized, shows:
+    ```tsx
+    // Croatian Fiscal Information
+    - JIR (full code): 4a669de1-8c45-4934-9004-4586a025320b
+    - ZKI (security code): 88132f1b4cd4a9b388dfbe180438e73c
+    - Fiscalization Date: January 8, 2025, 10:30 AM
+    - QR Code: Visual code for mobile verification
+    ```
+  </Step>
+
+  <Step title="QR Code Verification">
+    QR code rendered with `qrcode.react`:
+    - 128x128 pixels
+    - Scannable with mobile devices
+    - Links to Croatian Tax Authority verification
+  </Step>
+</Steps>
+
+## PDF Invoice Generation
+
+### Professional Invoice PDFs
+
+Generate invoices with complete fiscal compliance:
+
+<Steps>
+  <Step title="Select Invoice">
+    Choose any invoice from the list
+  </Step>
+
+  <Step title="Click Download PDF">
+    Triggers PDF generation with:
+    - Real reservation data (loaded via JOIN)
+    - Existing fiscal data (JIR, ZKI, QR code)
+    - Hotel Porec branding and information
+  </Step>
+
+  <Step title="PDF Contents">
+    Generated PDF includes:
+    ```
+    HOTEL POREC INVOICE
+
+    Invoice #: HP-2025-722071
+    Date: January 8, 2025
+
+    GUEST INFORMATION
+    - Name, email, phone, nationality
+
+    BOOKING DETAILS
+    - Room, check-in/out, duration, guests
+
+    LINE ITEMS
+    - Room accommodation (seasonal pricing)
+    - Children discounts (age-based)
+    - Short stay supplement (+20% under 3 nights)
+    - Tourism tax (€1.50/person/night)
+    - Pet fee, parking fee
+    - VAT (25%)
+
+    CROATIAN FISCAL RECEIPT (if fiscalized)
+    - JIR: 4a669de1-8c45-4934-9004-4586a025320b
+    - ZKI: 88132f1b4cd4a9b388dfbe180438e73c
+    - QR Code: [visual QR code 40x40mm]
+    - Verification URL
+
+    TOTAL: €625.00
+    ```
+  </Step>
+</Steps>
+
+### PDF Features
+
+<CardGroup cols={2}>
+  <Card title="Fiscal Compliance" icon="check-circle">
+    - JIR/ZKI displayed prominently
+    - QR code meets Croatian standards (2x2cm minimum)
+    - Tax Authority verification link
+    - Fiscalized vs. Pro Forma distinction
+  </Card>
+
+  <Card title="Professional Design" icon="paint-brush">
+    - Hotel Porec logo and branding
+    - Croatian tax compliance notices
+    - Line-item breakdown
+    - VAT and tourism tax details
+  </Card>
+</CardGroup>
+
+## Database Integration
+
+### Invoice Data Structure
+
+```typescript
+// Invoice Type
+interface Invoice {
+  id: string;
+  invoiceNumber: string;          // HP-2025-722071
+  reservationId: string;
+  guestId: string;
+
+  // Dates
+  issueDate: Date;
+  dueDate: Date;
+
+  // Financial
+  subtotal: number;
+  vatRate: number;                 // 0.25 (25%)
+  vatAmount: number;
+  tourismTax: number;              // €1.50/person/night
+  totalAmount: number;
+
+  // Croatian Fiscal Data
+  fiscalData?: {
+    oib: string;                   // 87246357068
+    jir: string;                   // UUID from Tax Authority
+    zki: string;                   // Security code
+    qrCodeData: string;            // Verification URL
+  };
+
+  // Relationships (via JOIN)
+  guest?: Guest;
+  reservation?: Reservation;       // ✅ Added in v2.7
+
+  status: 'draft' | 'sent' | 'paid' | 'overdue';
+}
+```
+
+### Database Queries
+
+```sql
+-- Load invoices with fiscal data and reservations
+SELECT
+  invoices.*,
+  fiscal_records (jir, zki, qr_code_data),
+  guests (id, first_name, last_name, email, phone),
+  reservations (
+    id, room_id, check_in_date, check_out_date,
+    number_of_nights, adults, children_count,
+    subtotal, vat_amount, tourism_tax, total_amount,
+    pet_fee, parking_fee, additional_charges
+  )
+FROM invoices
+ORDER BY created_at DESC;
+```
+
+### Real-time Updates
+
+```typescript
+// Supabase real-time subscription
+const subscription = supabase
+  .channel('invoices-changes')
+  .on('postgres_changes', {
+    event: '*',
+    schema: 'public',
+    table: 'invoices'
+  }, handleInvoiceChange)
+  .subscribe();
+```
+
+## Croatian Fiscalization Integration
+
+### Edge Function Architecture
+
+```typescript
+// supabase/functions/fiscalize-invoice/index.ts
+
+// SSL Certificate Configuration
+const certChain = [
+  rootCACert,
+  intermediateCACert,
+  finaCert
+];
+
+// SOAP XML Generation
+const soapXml = generateFiscalSOAP({
+  oib: "87246357068",
+  invoiceNumber: "747258",      // Numeric only
+  dateTime: new Date(),
+  totalAmount: 625.00,
+  zki: calculatedZKI
+});
+
+// Croatian Tax Authority Request
+const response = await fetch(
+  'https://cistest.apis-it.hr:8449/FiskalizacijaServiceTest',
+  {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/xml' },
+    body: soapXml
+  }
+);
+
+// Return JIR and ZKI
+return { jir, zki, qrCodeData };
+```
+
+### Fiscal Validation
+
+<Steps>
+  <Step title="Invoice Number Format">
+    Croatian Tax Authority requires numeric invoice numbers
+    ```typescript
+    // Extract numeric part
+    "HP-2025-747258" → "747258"
+    ```
+  </Step>
+
+  <Step title="ZKI Generation">
+    RSA-SHA1 signature with MD5 hash
+    ```typescript
+    const zki = generateZKI({
+      oib, dateTime, invoiceNumber,
+      businessPremiseID, deviceID, totalAmount
+    });
+    // Result: 88132f1b4cd4a9b388dfbe180438e73c
+    ```
+  </Step>
+
+  <Step title="Digital Signature">
+    XML signing with exclusive canonicalization
+    ```xml
+    <Signature xmlns="http://www.w3.org/2000/09/xmldsig#">
+      <SignedInfo>
+        <CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
+        <SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/>
+        ...
+      </SignedInfo>
+    </Signature>
+    ```
+  </Step>
+
+  <Step title="Certificate Chain">
+    Complete FINA certificate validation
+    ```typescript
+    const certChain = [
+      fs.readFileSync('certs/RootCA.crt'),
+      fs.readFileSync('certs/IntermediateCA.crt'),
+      fs.readFileSync('certs/FINA_Demo.crt')
+    ];
+    ```
+  </Step>
+</Steps>
+
+## Payment Tracking
+
+### Payment Methods
+
+```typescript
+type PaymentMethod =
+  | 'cash'
+  | 'card'
+  | 'bank_transfer'
+  | 'online'
+  | 'booking-com'
+  | 'other';
+```
+
+### Payment Workflow
+
+<Steps>
+  <Step title="Record Payment">
+    Enter payment details:
+    - Amount
+    - Method
+    - Reference number
+    - Date
+  </Step>
+
+  <Step title="Update Invoice Status">
+    Automatic status updates:
+    ```typescript
+    if (paidAmount >= totalAmount) {
+      status = 'paid';
+      paidDate = new Date();
+    } else if (paidAmount > 0) {
+      status = 'partial';
+    }
+    ```
+  </Step>
+
+  <Step title="Payment History">
+    Track all payments:
+    ```sql
+    SELECT * FROM payments
+    WHERE invoice_id = $1
+    ORDER BY payment_date DESC;
+    ```
+  </Step>
+</Steps>
+
+## UI Components
+
+### Invoice Table
+
+```tsx
+// src/components/hotel/finance/InvoicePaymentPage.tsx
+
+<table>
+  <thead>
+    <tr>
+      <th>Invoice #</th>
+      <th>Guest</th>
+      <th>Room</th>
+      <th>Amount</th>
+      <th>JIR</th>           {/* ✅ New column */}
+      <th>Status</th>
+      <th>Date</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {invoices.map(invoice => (
+      <tr>
+        <td>{invoice.invoiceNumber}</td>
+        <td>{invoice.guest?.fullName}</td>
+        <td>{invoice.reservation?.room?.number}</td>
+        <td>€{invoice.totalAmount}</td>
+        <td>
+          {invoice.fiscalData?.jir ? (
+            <span className="text-green-600" title={invoice.fiscalData.jir}>
+              {invoice.fiscalData.jir.slice(0, 8)}...
+            </span>
+          ) : (
+            <span className="text-gray-400">Not fiscalized</span>
+          )}
+        </td>
+        <td><Badge>{invoice.status}</Badge></td>
+        <td>{format(invoice.issueDate, 'dd.MM.yyyy')}</td>
+        <td>
+          <Button onClick={() => handleDownloadPDF(invoice)}>
+            Download PDF
+          </Button>
+        </td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+```
+
+### Fiscal Details Modal
+
+```tsx
+// Fiscal Information Section
+{selectedInvoice.fiscalData && (
+  <div className="border-t pt-4">
+    <h4 className="font-medium mb-3 flex items-center text-green-700">
+      <Shield className="w-5 h-5 mr-2" />
+      Croatian Fiscal Information
+    </h4>
+    <div className="space-y-3 bg-green-50 p-4 rounded-lg border border-green-200">
+      <div>
+        <label>JIR (Unique Invoice Identifier)</label>
+        <p className="font-mono text-sm break-all text-green-800">
+          {selectedInvoice.fiscalData.jir}
+        </p>
+      </div>
+      <div>
+        <label>ZKI (Security Code)</label>
+        <p className="font-mono text-sm break-all text-green-800">
+          {selectedInvoice.fiscalData.zki}
+        </p>
+      </div>
+      {selectedInvoice.fiscalData.qrCodeData && (
+        <div>
+          <label>QR Code</label>
+          <div className="mt-2 p-3 bg-white rounded border inline-block">
+            <QRCodeSVG
+              value={selectedInvoice.fiscalData.qrCodeData}
+              size={128}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  </div>
+)}
+```
+
+## Implementation Details
+
+### Service Layer
+
+```typescript
+// src/lib/hotel/services/ReservationService.ts
+
+export class ReservationService {
+  /**
+   * Fiscalize invoice with Croatian Tax Authority
+   */
+  async fiscalizeInvoice(invoice: Invoice): Promise<FiscalResponse> {
+    // 1. Extract numeric invoice number
+    const numericInvoiceNumber = invoice.invoiceNumber.match(/(\d+)$/)?.[1];
+
+    // 2. Call Edge Function
+    const { data, error } = await supabase.functions.invoke(
+      'fiscalize-invoice',
+      { body: { invoiceNumber: numericInvoiceNumber, ... } }
+    );
+
+    // 3. Save fiscal data to database
+    await this.saveFiscalDataToDatabase(invoice.id, data);
+
+    return data;
+  }
+
+  /**
+   * Save fiscal data (JIR, ZKI, QR code) to database
+   */
+  private async saveFiscalDataToDatabase(
+    invoiceId: string,
+    fiscalData: FiscalData
+  ): Promise<void> {
+    // Update invoice with fiscal data
+    await supabase
+      .from('invoices')
+      .update({
+        fiscal_data: fiscalData,
+        status: 'sent'
+      })
+      .eq('id', invoiceId);
+
+    // Create fiscal record for audit trail
+    await supabase
+      .from('fiscal_records')
+      .insert({
+        invoice_id: invoiceId,
+        jir: fiscalData.jir,
+        zki: fiscalData.zki,
+        qr_code_data: fiscalData.qrCodeData
+      });
+  }
+}
+```
+
+### PDF Generation
+
+```typescript
+// src/lib/pdfInvoiceGenerator.ts
+
+export async function generatePDFInvoice(data: InvoiceData): Promise<void> {
+  const {
+    reservation,
+    guest,
+    room,
+    invoiceNumber,
+    invoiceDate,
+    jir,          // ✅ From stored fiscal data
+    zki,          // ✅ Never regenerated
+    qrCodeData    // ✅ From database
+  } = data;
+
+  // ... generate PDF with fiscal data
+
+  if (jir && zki && qrCodeData) {
+    // Add fiscal section
+    doc.text(`JIR: ${jir}`, 20, finalY + 25);
+    doc.text(`ZKI: ${zki}`, 20, finalY + 31);
+
+    // Generate QR code image
+    const qrImage = await QRCode.toDataURL(qrCodeData);
+    doc.addImage(qrImage, 'PNG', 140, finalY + 20, 40, 40);
+  }
+}
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Invoices not loading">
+    **Solution**: Check database connection and JOIN query
+    ```typescript
+    // Verify loadInvoices() includes reservations
+    .select(`
+      *,
+      fiscal_records (jir, zki, qr_code_data),
+      guests (id, first_name, last_name, email, phone),
+      reservations (...)  // ✅ Must include this
+    `)
+    ```
+  </Accordion>
+
+  <Accordion title="Fiscalization fails">
+    **Solution**: Check Edge Function and certificate
+    ```bash
+    # View Edge Function logs in Supabase
+    # Verify certificate password in .env.local
+    REACT_APP_FISCAL_CERT_PASSWORD=your_password
+
+    # Test locally
+    node scripts/corrected-croatian-soap.js
+    ```
+  </Accordion>
+
+  <Accordion title="PDF generation error">
+    **Solution**: Verify reservation data is loaded
+    ```typescript
+    // Check invoice has reservation field
+    console.log(invoice.reservation);  // Should not be undefined
+
+    // Verify fiscal data exists
+    console.log(invoice.fiscalData);   // JIR, ZKI, qrCodeData
+    ```
+  </Accordion>
+
+  <Accordion title="QR code not displaying">
+    **Solution**: Verify qrcode.react library
+    ```bash
+    # Install if missing
+    npm install qrcode.react
+
+    # Import in component
+    import { QRCodeSVG } from 'qrcode.react';
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Never Regenerate Fiscal Data" icon="ban">
+    Always use stored JIR/ZKI from database
+    - Fiscal codes are permanent
+    - Regenerating violates Croatian law
+    - Use existing values for PDFs
+  </Card>
+
+  <Card title="Validate Before Fiscalization" icon="check">
+    Ensure data is correct before calling Tax Authority
+    - Invoice number format
+    - Amount calculations
+    - OIB validation
+    - Date format (Croatian timezone)
+  </Card>
+
+  <Card title="Error Handling" icon="shield">
+    Implement comprehensive error recovery
+    - Edge Function timeout handling
+    - Network error retry logic
+    - User-friendly error messages
+    - Audit trail for failures
+  </Card>
+
+  <Card title="Security" icon="lock">
+    Protect sensitive fiscal data
+    - Certificate password in secrets
+    - Edge Function for API calls
+    - Row-level security on tables
+    - Encrypted database storage
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Croatian Fiscalization Guide" icon="receipt" href="/integrations/croatian-fiscalization">
+    Complete guide to fiscal compliance setup
+  </Card>
+
+  <Card title="Database Schema" icon="database" href="/technical/database-schema">
+    Understand invoice and fiscal tables
+  </Card>
+
+  <Card title="API Reference" icon="code" href="/technical/api-reference">
+    Service layer and API documentation
+  </Card>
+
+  <Card title="User Guide" icon="book" href="/guides/generating-invoices">
+    Step-by-step invoice generation workflow
+  </Card>
+</CardGroup>
+
+---
+
+**Module Status**: ✅ Production Ready (v2.7)
+**Last Updated**: January 2025
+**Croatian Compliance**: Full Tax Authority integration

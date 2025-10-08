@@ -1,0 +1,521 @@
+---
+title: 'Front Desk Operations'
+description: 'Professional timeline calendar with drag-to-create bookings, real-time conflict detection, and power-user features'
+icon: 'calendar-days'
+---
+
+## Overview
+
+The Front Desk module provides a professional 14-day timeline calendar interface for managing hotel reservations, check-ins, and daily operations. Built with advanced UX features including drag-to-create bookings, keyboard shortcuts, and real-time conflict detection.
+
+<CardGroup cols={2}>
+  <Card title="14-Day Timeline" icon="calendar">
+    Professional calendar view with room-based layout and date navigation
+  </Card>
+
+  <Card title="Drag-to-Create" icon="hand-pointer">
+    Intuitive booking creation - drag horizontally to set dates, drop on room
+  </Card>
+
+  <Card title="Real-time Conflict Detection" icon="triangle-exclamation">
+    Automatic validation prevents double bookings with alternative suggestions
+  </Card>
+
+  <Card title="20+ Keyboard Shortcuts" icon="keyboard">
+    Power-user features for efficient reservation management
+  </Card>
+</CardGroup>
+
+## Timeline Interface
+
+### Visual Layout
+
+The timeline displays:
+- **14-day view** - Configurable date range (7/14/30 days)
+- **46 rooms** - All Hotel Porec rooms organized by floor
+- **Color-coded status** - Visual indicators for reservation states
+- **Real-time updates** - Live synchronization across all users
+
+### Reservation States
+
+```typescript
+type ReservationStatus =
+  | 'confirmed'          // Blue - Booking confirmed
+  | 'checked-in'         // Green - Guest in room
+  | 'checked-out'        // Gray - Completed stay
+  | 'cancelled'          // Red - Cancelled booking
+  | 'incomplete-payment' // Orange - Payment pending
+```
+
+## Creating Reservations
+
+### Drag-to-Create Workflow
+
+<Steps>
+  <Step title="Click and Drag">
+    Click on any date cell and drag horizontally
+    - Dragging creates date range visual feedback
+    - Drop on target room to set room assignment
+  </Step>
+
+  <Step title="Reservation Modal Opens">
+    Automatically populated with:
+    - Selected check-in and check-out dates
+    - Room assignment
+    - Number of nights calculated
+  </Step>
+
+  <Step title="Enter Guest Details">
+    Fill in reservation form:
+    ```typescript
+    - Guest information (name, email, phone)
+    - Number of adults and children
+    - Special requests
+    - Booking source (direct, booking.com, etc.)
+    ```
+  </Step>
+
+  <Step title="Pricing Calculation">
+    Automatic calculation based on:
+    - Room base rate
+    - Seasonal period (standard/high/peak)
+    - Number of nights
+    - Children discounts (age-based)
+    - Short stay supplement (+20% under 3 nights)
+    - Tourism tax (€1.50/person/night)
+    - VAT (25%)
+  </Step>
+
+  <Step title="Conflict Detection">
+    Real-time validation:
+    ```typescript
+    if (roomAlreadyBooked) {
+      showConflictWarning();
+      suggestAlternativeRooms();
+    }
+    ```
+  </Step>
+
+  <Step title="Create Reservation">
+    Click **Create** to save
+    - Optimistic UI update (instant feedback)
+    - Database save in background
+    - Automatic rollback on error
+  </Step>
+</Steps>
+
+## Advanced Features
+
+### Keyboard Shortcuts
+
+<AccordionGroup>
+  <Accordion title="Navigation (8 shortcuts)">
+    ```bash
+    ← →           Navigate days
+    ↑ ↓           Navigate rooms
+    Home          Jump to today
+    End           Jump to last day
+    PageUp/Down   Navigate weeks
+    ```
+  </Accordion>
+
+  <Accordion title="Actions (7 shortcuts)">
+    ```bash
+    N             New reservation
+    E             Edit selected reservation
+    D             Delete selected reservation
+    C             Check-in
+    O             Check-out
+    F             Toggle filter mode
+    /             Search
+    ```
+  </Accordion>
+
+  <Accordion title="View Controls (5 shortcuts)">
+    ```bash
+    T             Toggle timeline mode
+    M             Month view
+    W             Week view
+    1-4           Switch floors
+    Cmd/Ctrl+Z    Undo last action
+    Cmd/Ctrl+⇧+Z  Redo action
+    ```
+  </Accordion>
+</AccordionGroup>
+
+### Smart Context Menus
+
+Right-click on reservation for quick actions:
+
+```typescript
+<ContextMenu>
+  <MenuItem onClick={handleEdit}>Edit Reservation</MenuItem>
+  <MenuItem onClick={handleCheckIn}>Check In</MenuItem>
+  <MenuItem onClick={handleCheckOut}>Check Out</MenuItem>
+  <MenuItem onClick={handleMove}>Move to Another Room</MenuItem>
+  <MenuItem onClick={handleCancel}>Cancel Reservation</MenuItem>
+  <MenuItem onClick={handleDuplicate}>Duplicate Booking</MenuItem>
+  <Separator />
+  <MenuItem onClick={handleViewGuest}>View Guest Profile</MenuItem>
+  <MenuItem onClick={handleGenerateInvoice}>Generate Invoice</MenuItem>
+</ContextMenu>
+```
+
+### Optimistic Updates
+
+Instant UI feedback with automatic rollback:
+
+```typescript
+// Optimistic update flow
+1. User creates reservation
+2. UI updates immediately (optimistic)
+3. Database save happens in background
+4. If save fails → automatic UI rollback
+5. User sees error notification
+
+// Implementation
+const optimisticUpdate = new OptimisticUpdateService();
+
+await optimisticUpdate.createReservation(reservation, {
+  onSuccess: () => showNotification('Reservation created'),
+  onError: () => {
+    // Automatic rollback to previous state
+    showNotification('Failed to create - please try again');
+  }
+});
+```
+
+## Conflict Detection
+
+### Real-time Validation
+
+The system prevents double bookings:
+
+<Steps>
+  <Step title="Date Range Check">
+    When creating/editing reservation:
+    ```typescript
+    const conflicts = await ConflictDetectionService.checkConflicts({
+      roomId: selectedRoom.id,
+      checkIn: selectedCheckIn,
+      checkOut: selectedCheckOut
+    });
+    ```
+  </Step>
+
+  <Step title="Conflict Detection">
+    Detects overlapping bookings:
+    ```typescript
+    // Conflict exists if:
+    (newCheckIn < existingCheckOut) &&
+    (newCheckOut > existingCheckIn)
+    ```
+  </Step>
+
+  <Step title="Alternative Suggestions">
+    If conflict found, suggest alternatives:
+    ```typescript
+    const alternatives = await findAlternativeRooms({
+      roomType: currentRoom.type,
+      checkIn, checkOut,
+      capacity: numberOfGuests
+    });
+
+    // Returns rooms with:
+    // - Same type/capacity
+    // - Available for requested dates
+    // - Similar or lower price
+    ```
+  </Step>
+
+  <Step title="Visual Feedback">
+    Red overlay on conflicting reservations
+    - Warning modal with details
+    - One-click alternative room selection
+  </Step>
+</Steps>
+
+## Batch Operations
+
+### Bulk Reservation Management
+
+Efficient multi-reservation operations:
+
+<Steps>
+  <Step title="Select Multiple">
+    Hold Cmd/Ctrl and click reservations
+    - Or drag to select range
+    - Selected count displayed
+  </Step>
+
+  <Step title="Batch Actions">
+    Available operations:
+    ```typescript
+    - Move to another room (all selected)
+    - Update status (check-in all)
+    - Cancel reservations
+    - Change dates
+    - Update pricing
+    ```
+  </Step>
+
+  <Step title="Progress Tracking">
+    Real-time progress bar:
+    ```
+    Processing: 3 of 10 reservations...
+    ████████░░ 70%
+
+    Completed: 10 of 10 ✓
+    ```
+  </Step>
+
+  <Step title="Conflict Resolution">
+    If conflicts occur during batch move:
+    ```typescript
+    - Pause operation
+    - Show conflict details
+    - User chooses: Skip / Retry / Cancel all
+    ```
+  </Step>
+</Steps>
+
+## Check-In / Check-Out
+
+### Check-In Workflow
+
+<Steps>
+  <Step title="Select Reservation">
+    Click on confirmed reservation or use shortcut `C`
+  </Step>
+
+  <Step title="Verify Guest Details">
+    Confirm:
+    - Guest identity
+    - Room assignment
+    - Special requests
+    - Payment status
+  </Step>
+
+  <Step title="Room Preparation Check">
+    Verify room is clean and ready
+    - Room service status
+    - Maintenance check
+  </Step>
+
+  <Step title="Complete Check-In">
+    Click **Check In**:
+    - Status changes to 'checked-in' (green)
+    - Timestamp recorded
+    - Welcome email sent (if enabled)
+  </Step>
+</Steps>
+
+### Check-Out Workflow
+
+<Steps>
+  <Step title="Select Active Reservation">
+    Click checked-in reservation or use shortcut `O`
+  </Step>
+
+  <Step title="Billing Review">
+    Review final charges:
+    - Room charges
+    - Room service items
+    - Additional fees
+    - Generate invoice if needed
+  </Step>
+
+  <Step title="Payment Collection">
+    Process payment:
+    - Cash, card, or bank transfer
+    - Update payment records
+    - Generate receipt
+  </Step>
+
+  <Step title="Complete Check-Out">
+    Click **Check Out**:
+    - Status changes to 'checked-out' (gray)
+    - Room flagged for cleaning
+    - Thank you email sent (if enabled)
+  </Step>
+</Steps>
+
+## Undo/Redo System
+
+Complete operation history with rollback:
+
+```typescript
+// Undo/Redo capabilities
+- Create/delete reservations
+- Edit reservation details
+- Status changes (check-in/out)
+- Room moves
+- Batch operations
+
+// Usage
+Cmd/Ctrl + Z       // Undo last action
+Cmd/Ctrl + Shift + Z   // Redo action
+
+// History tracking
+Operations stored in memory:
+- Action type
+- Previous state
+- New state
+- Timestamp
+- User who made change
+```
+
+## Filter & Search
+
+### Advanced Filtering
+
+<Steps>
+  <Step title="Filter Panel">
+    Access with `F` key or filter button:
+    ```typescript
+    Filters:
+    - Status (confirmed, checked-in, etc.)
+    - Booking source (direct, OTA)
+    - Date range
+    - Guest name
+    - Room type
+    - Payment status
+    ```
+  </Step>
+
+  <Step title="Multi-criteria">
+    Combine multiple filters:
+    ```typescript
+    Example: Show all...
+    - Checked-in reservations
+    - From Booking.com
+    - With pending payments
+    - In deluxe rooms
+    ```
+  </Step>
+
+  <Step title="Quick Filters">
+    One-click presets:
+    - Today's check-ins
+    - Today's check-outs
+    - Incomplete payments
+    - VIP guests
+    - Long stays (7+ nights)
+  </Step>
+</Steps>
+
+### Search Functionality
+
+```typescript
+// Search with / key
+- Guest name
+- Reservation ID
+- Room number
+- Email or phone
+- Booking reference
+
+// Real-time results as you type
+// Highlights matching reservations on timeline
+```
+
+## Room Service Integration
+
+Direct access to room service from timeline:
+
+<Steps>
+  <Step title="Select Active Reservation">
+    Click on checked-in guest
+  </Step>
+
+  <Step title="Order Room Service">
+    Click **Room Service** in context menu:
+    - Browse menu items
+    - Add to order
+    - Real-time inventory check
+    - Automatic billing to reservation
+  </Step>
+
+  <Step title="Kitchen Notification">
+    Order sent to kitchen dashboard:
+    - Room number
+    - Items ordered
+    - Special instructions
+    - Estimated delivery time
+  </Step>
+
+  <Step title="Billing Integration">
+    Items automatically added to invoice:
+    - Item name and price
+    - Quantity
+    - Order timestamp
+    - Included in final checkout
+  </Step>
+</Steps>
+
+## Mobile Responsive
+
+Optimized for tablets and phones:
+
+- **Touch-friendly** - Large tap targets
+- **Swipe gestures** - Navigate days/rooms
+- **Responsive layout** - Adapts to screen size
+- **Offline capability** - Works without connection
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Use Keyboard Shortcuts" icon="keyboard">
+    Master shortcuts for 10x faster workflow
+    - `N` for new reservations
+    - Arrow keys for navigation
+    - `C` for check-in
+    - `O` for check-out
+  </Card>
+
+  <Card title="Enable Conflict Detection" icon="shield-check">
+    Always validate before confirming
+    - Check alternative rooms
+    - Verify guest preferences
+    - Consider pricing differences
+  </Card>
+
+  <Card title="Batch Operations for Efficiency" icon="layer-group">
+    Use batch operations for multiple changes
+    - Select multiple reservations
+    - Apply changes once
+    - Track progress
+  </Card>
+
+  <Card title="Leverage Optimistic Updates" icon="bolt">
+    Enjoy instant UI feedback
+    - Changes apply immediately
+    - Background saves
+    - Automatic error recovery
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Reservation Management" icon="book-open" href="/features/reservations">
+    Learn about guest management and booking workflows
+  </Card>
+
+  <Card title="Finance Integration" icon="file-invoice-dollar" href="/features/finance">
+    Generate invoices from reservations
+  </Card>
+
+  <Card title="User Guide" icon="graduation-cap" href="/guides/creating-reservations">
+    Step-by-step reservation creation tutorial
+  </Card>
+
+  <Card title="Technical Details" icon="code" href="/technical/architecture">
+    Understand the front desk architecture
+  </Card>
+</CardGroup>
+
+---
+
+**Module Status**: ✅ Production Ready (v2.7)
+**Last Updated**: January 2025
+**Features**: Drag-to-create, Conflict detection, Keyboard shortcuts, Undo/Redo

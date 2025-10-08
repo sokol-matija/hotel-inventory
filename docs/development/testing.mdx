@@ -1,0 +1,71 @@
+---
+title: 'Testing'
+description: 'Testing strategy and guidelines for the Hotel Inventory Management System'
+icon: 'flask'
+---
+
+## Testing Stack
+
+- **Jest**: Unit and integration tests
+- **React Testing Library**: Component testing
+- **Supabase Local**: Database testing
+
+## Running Tests
+
+```bash
+# Run all tests
+npm test
+
+# Watch mode
+npm test -- --watch
+
+# Coverage report
+npm test -- --coverage
+```
+
+## Writing Tests
+
+### Component Tests
+
+```typescript
+import { render, screen } from '@testing-library/react';
+import { ReservationCard } from './ReservationCard';
+
+test('displays reservation details', () => {
+  const reservation = {
+    id: '1',
+    guestName: 'John Doe',
+    roomNumber: '101'
+  };
+
+  render(<ReservationCard reservation={reservation} />);
+
+  expect(screen.getByText('John Doe')).toBeInTheDocument();
+  expect(screen.getByText('Room 101')).toBeInTheDocument();
+});
+```
+
+### Service Tests
+
+```typescript
+describe('ReservationService', () => {
+  it('creates reservation with valid data', async () => {
+    const service = new ReservationService();
+
+    const reservation = await service.createReservation({
+      roomId: '1',
+      guestId: '1',
+      checkIn: new Date('2025-06-15'),
+      checkOut: new Date('2025-06-20')
+    });
+
+    expect(reservation).toBeDefined();
+    expect(reservation.id).toBeTruthy();
+  });
+});
+```
+
+---
+
+**Coverage Target**: 80%+
+**CI/CD**: Tests run on all PRs

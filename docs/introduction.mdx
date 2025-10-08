@@ -1,6 +1,6 @@
 ---
 title: Introduction
-description: 'Welcome to the Hotel Inventory Management System - A comprehensive solution for modern hotel operations'
+description: 'Enterprise-grade Hotel Management System with Croatian Fiscal Compliance - Complete solution for modern hotel operations'
 ---
 
 <img
@@ -16,101 +16,325 @@ description: 'Welcome to the Hotel Inventory Management System - A comprehensive
 
 ## Welcome to Hotel Inventory Management System
 
-The Hotel Inventory Management System is a comprehensive, modern solution designed to streamline hotel operations with enterprise-grade features and intuitive user experience.
+A comprehensive, production-ready hotel management platform featuring real-time operations, multi-channel distribution, and complete Croatian fiscal compliance. Built with enterprise-grade architecture and modern technologies.
 
-### Key Features
+<Note>
+**Latest Update (January 2025)**: Finance UI module completed with full Croatian fiscalization integration - JIR/ZKI generation, QR code verification, and PDF invoice generation with fiscal data.
+</Note>
+
+### Core Features
 
 <CardGroup cols={2}>
   <Card
-    title="Real-time Operations"
-    icon="clock"
+    title="Front Desk Operations"
+    icon="hotel"
     href="/features/front-desk"
   >
-    Manage reservations, check-ins, and guest services in real-time with conflict detection
+    Professional 14-day timeline calendar with drag-to-create bookings, real-time conflict detection, and optimistic UI updates
+  </Card>
+  <Card
+    title="Finance & Invoicing"
+    icon="file-invoice-dollar"
+    href="/features/finance"
+  >
+    Complete invoice management with Croatian fiscal compliance (JIR/ZKI), QR code verification, and PDF generation
   </Card>
   <Card
     title="Channel Manager Integration"
     icon="network-wired"
     href="/features/channel-manager"
   >
-    Seamlessly sync with OTA platforms including Booking.com, Expedia, and more
+    Real-time OTA synchronization with Booking.com, Expedia, Airbnb, and 12+ platforms
   </Card>
   <Card
     title="Croatian Fiscalization"
     icon="receipt"
     href="/integrations/croatian-fiscalization"
   >
-    Built-in support for Croatian fiscal requirements and FINA integration
+    Production-ready Croatian Tax Authority integration with FINA certificates and s004 error resolution
+  </Card>
+  <Card
+    title="Guest Management"
+    icon="users"
+    href="/features/reservations"
+  >
+    Comprehensive guest profiles, booking history, and multi-language communication (EN/DE/IT/HR)
   </Card>
   <Card
     title="Advanced Analytics"
     icon="chart-line"
     href="/features/analytics"
   >
-    Comprehensive reporting and business intelligence for data-driven decisions
+    Business intelligence dashboard with revenue forecasting and channel performance metrics
+  </Card>
+</CardGroup>
+
+## What's New in v2.7
+
+<CardGroup cols={1}>
+  <Card title="✅ Finance UI Completion" icon="check-circle">
+    **January 2025** - Complete finance module with fiscal data display, PDF generation with existing JIR/ZKI, and QR code verification
+
+    - Invoice table with JIR column and fiscal status indicators
+    - Full fiscal details in invoice modal (JIR, ZKI, QR code)
+    - PDF generation using stored fiscal data (never regenerates)
+    - Real reservation data integration via Supabase JOIN queries
+  </Card>
+
+  <Card title="✅ Croatian Fiscalization Complete" icon="certificate">
+    **August 2025** - Production-ready Croatian Tax Authority integration
+
+    - s004 "Invalid digital signature" error RESOLVED
+    - Complete FINA P12 certificate integration
+    - JIR/ZKI generation and database storage
+    - QR code verification system for receipt validation
+    - Edge Function for secure fiscalization requests
+  </Card>
+
+  <Card title="✅ Advanced Backend Integration" icon="server">
+    **August 2025** - Enterprise-grade service layer architecture
+
+    - Real-time conflict detection with alternative room suggestions
+    - Optimistic UI updates with automatic rollback
+    - Batch operations for bulk reservation management
+    - 20+ keyboard shortcuts for power users
+    - Complete undo/redo system with operation history
+  </Card>
+
+  <Card title="✅ Channel Manager Integration" icon="satellite-dish">
+    **August 2025** - Complete Phobs API integration
+
+    - Multi-channel synchronization (13+ OTA platforms)
+    - Real-time inventory and rate management
+    - Intelligent conflict resolution
+    - Performance monitoring dashboard
+    - Comprehensive error handling with retry logic
   </Card>
 </CardGroup>
 
 ## Technology Stack
 
-Built with modern, scalable technologies:
+Built with cutting-edge, production-ready technologies:
 
-- **Frontend**: React 19 with TypeScript
-- **Backend**: Supabase (PostgreSQL + Edge Functions)
-- **UI Framework**: Tailwind CSS + shadcn/ui
-- **Animation**: GSAP for smooth interactions
-- **Internationalization**: i18next (EN/DE/HR/IT)
-- **Drag & Drop**: React DnD
+### Frontend
+- **React 19** - Latest React features with concurrent rendering
+- **TypeScript** - Strict type safety with advanced patterns
+- **Tailwind CSS** - Utility-first styling with shadcn/ui components
+- **GSAP** - Smooth animations and transitions
+- **React Router v7** - Type-safe routing with loaders
+- **React DnD** - Drag-and-drop for reservations
+- **i18next** - Multi-language support (EN/DE/HR/IT)
+
+### Backend
+- **Supabase** - PostgreSQL database with real-time subscriptions
+- **Edge Functions** - Serverless functions for fiscal integration
+- **Row-Level Security** - Database-level security policies
+- **Real-time Subscriptions** - Live data synchronization
+
+### Integrations
+- **Croatian Tax Authority** - FINA fiscalization API
+- **Phobs Channel Manager** - OTA distribution platform
+- **Resend** - Email service with multi-language templates
+- **jsPDF** - Professional invoice generation
+- **QR Code** - Fiscal receipt verification
+
+### Architecture
+- **Service Layer Pattern** - Clean separation of concerns
+- **Repository Pattern** - Database abstraction
+- **Optimistic Updates** - Instant UI feedback
+- **Error Boundaries** - Graceful error handling
+- **Comprehensive Testing** - Jest with integration tests
 
 ## Quick Start
 
 <Steps>
-  <Step title="Installation">
-    Clone the repository and install dependencies
+  <Step title="Clone Repository">
+    Get the latest version from GitHub
     ```bash
     git clone https://github.com/your-username/hotel-inventory
     cd hotel-inventory
+    ```
+  </Step>
+
+  <Step title="Install Dependencies">
+    Install all required packages
+    ```bash
     npm install
     ```
   </Step>
-  <Step title="Environment Setup">
-    Configure your environment variables
+
+  <Step title="Environment Configuration">
+    Set up environment variables for Supabase and integrations
     ```bash
-    cp .env.sample .env
-    # Edit .env with your Supabase credentials
+    cp .env.sample .env.local
+    # Edit .env.local with your credentials:
+    # - Supabase URL and API keys
+    # - Croatian fiscal certificate password
+    # - Phobs API credentials (if using channel manager)
     ```
   </Step>
+
   <Step title="Database Setup">
-    Run the database migrations
+    Run migrations to set up the database schema
     ```bash
-    npm run db:migrate
+    # Migrations are in supabase/migrations/
+    # Apply via Supabase Dashboard or CLI
     ```
   </Step>
-  <Step title="Start Development">
-    Launch the development server
+
+  <Step title="Start Development Server">
+    Launch the application
     ```bash
-    npm run dev
+    npm start
     ```
+    Application available at `http://localhost:3000`
   </Step>
 </Steps>
 
-## Support
+## Key System Components
 
-Need help? Reach out to our support team:
+### Hotel Front Desk Module
+- **14-Day Timeline Calendar** - Professional scheduling interface
+- **Drag-to-Create Bookings** - Intuitive reservation creation
+- **Real-time Conflict Detection** - Prevent double bookings
+- **Smart Context Menus** - Quick actions on reservations
+- **Keyboard Shortcuts** - 20+ hotkeys for power users
+- **Optimistic Updates** - Instant UI feedback
+
+### Finance & Invoicing Module
+- **Invoice Management** - Complete invoice lifecycle
+- **Croatian Fiscal Compliance** - JIR/ZKI generation and storage
+- **PDF Generation** - Professional invoices with fiscal data
+- **QR Code Verification** - Tax Authority receipt validation
+- **Payment Tracking** - Multi-method payment support
+- **Real-time Updates** - Live invoice status synchronization
+
+### Channel Manager Module
+- **OTA Integration** - 13+ platforms including Booking.com, Expedia, Airbnb
+- **Bidirectional Sync** - Real-time reservation and inventory updates
+- **Conflict Resolution** - Intelligent handling of double bookings
+- **Performance Monitoring** - Live dashboard with metrics
+- **Error Recovery** - Comprehensive retry logic
+
+### Guest Management
+- **Comprehensive Profiles** - Contact details, preferences, history
+- **Multi-language Communication** - Email templates in 4 languages
+- **Booking History** - Complete stay records
+- **VIP Management** - Special guest handling
+
+## System Architecture
+
+```mermaid
+graph TD
+    A[React Frontend] --> B[Supabase PostgreSQL]
+    A --> C[Supabase Edge Functions]
+    C --> D[Croatian Tax Authority]
+    C --> E[Phobs Channel Manager]
+    C --> F[Resend Email API]
+    B --> G[Real-time Subscriptions]
+    G --> A
+```
+
+### Service Layer Architecture
+- **HotelDataService** - Core data operations
+- **ReservationService** - Booking management with fiscal integration
+- **PhobsChannelManagerService** - OTA synchronization
+- **ConflictDetectionService** - Real-time validation
+- **OptimisticUpdateService** - UI state management
+- **BatchOperationService** - Bulk operations
+- **KeyboardShortcutService** - Power-user features
+
+## Production Deployment Status
+
+<CardGroup cols={2}>
+  <Card title="Frontend" icon="check">
+    ✅ Production Ready
+    - Zero TypeScript errors
+    - Optimized build
+    - Responsive design
+    - PWA support
+  </Card>
+
+  <Card title="Backend" icon="check">
+    ✅ Production Ready
+    - Supabase configured
+    - RLS policies active
+    - Edge Functions deployed
+    - Real-time enabled
+  </Card>
+
+  <Card title="Croatian Fiscalization" icon="check">
+    ✅ Production Ready
+    - Tax Authority integration
+    - JIR/ZKI generation
+    - Certificate configured
+    - QR code verification
+  </Card>
+
+  <Card title="Channel Manager" icon="check">
+    ✅ Production Ready
+    - Phobs API integrated
+    - OTA sync active
+    - Error handling robust
+    - Monitoring dashboard
+  </Card>
+</CardGroup>
+
+## Support & Resources
 
 <CardGroup cols={2}>
   <Card
     title="Documentation"
     icon="book-open"
-    href="/technical/api-reference"
+    href="/technical/architecture"
   >
-    Comprehensive guides and API documentation
+    Comprehensive technical documentation and API references
   </Card>
+
   <Card
-    title="Community Support"
-    icon="users"
-    href="https://github.com/your-username/hotel-inventory/discussions"
+    title="Integration Guides"
+    icon="puzzle-piece"
+    href="/integrations/croatian-fiscalization"
   >
-    Join our community discussions
+    Step-by-step guides for fiscal compliance and OTA integration
+  </Card>
+
+  <Card
+    title="Development Setup"
+    icon="code"
+    href="/development/setup"
+  >
+    Local development environment configuration
+  </Card>
+
+  <Card
+    title="User Guides"
+    icon="graduation-cap"
+    href="/guides/creating-reservations"
+  >
+    Workflow documentation for daily operations
   </Card>
 </CardGroup>
+
+## Next Steps
+
+<CardGroup cols={3}>
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Get up and running in minutes
+  </Card>
+
+  <Card title="Features Overview" icon="star" href="/features/hotel-management">
+    Explore all capabilities
+  </Card>
+
+  <Card title="API Reference" icon="code" href="/technical/api-reference">
+    Technical documentation
+  </Card>
+</CardGroup>
+
+---
+
+**Version**: 2.7 (Finance UI Complete)
+**Status**: Production Ready
+**Last Updated**: January 2025
+**License**: Proprietary

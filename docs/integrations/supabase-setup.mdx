@@ -1,0 +1,153 @@
+---
+title: 'Supabase Setup'
+description: 'Configure Supabase PostgreSQL database and authentication for the hotel management system'
+icon: 'database'
+---
+
+## Overview
+
+The Hotel Inventory Management System uses Supabase as its backend database, authentication provider, and serverless function platform.
+
+## Quick Setup
+
+<Steps>
+  <Step title="Create Supabase Project">
+    1. Go to [supabase.com](https://supabase.com)
+    2. Create a new project
+    3. Choose a region close to your location
+    4. Wait for project provisioning (~2 minutes)
+  </Step>
+
+  <Step title="Get API Credentials">
+    From your project dashboard:
+    - **Project URL**: `https://your-project.supabase.co`
+    - **Anon Key**: Public API key for client-side operations
+    - **Service Role Key**: Admin key (keep secret)
+  </Step>
+
+  <Step title="Configure Environment">
+    ```bash
+    # .env.local
+    REACT_APP_SUPABASE_URL=https://your-project.supabase.co
+    REACT_APP_SUPABASE_ANON_KEY=your_anon_key
+    ```
+  </Step>
+
+  <Step title="Run Migrations">
+    Apply database schema:
+    ```bash
+    # Via Supabase Dashboard:
+    # Database > Migrations > Apply all
+
+    # Or via CLI:
+    supabase db push
+    ```
+  </Step>
+</Steps>
+
+## Database Schema
+
+The system uses the following tables:
+
+- `guests` - Guest profiles and contact information
+- `rooms` - Room inventory and configuration
+- `reservations` - Booking records with pricing
+- `invoices` - Financial records with fiscal compliance
+- `fiscal_records` - Croatian fiscalization audit trail
+- `payments` - Payment tracking
+- `companies` - Corporate client management
+- `pricing_tiers` - Contracted rate management
+
+## Authentication Setup
+
+<Steps>
+  <Step title="Enable Auth Providers">
+    In Supabase Dashboard > Authentication > Providers:
+    - ✅ Email/Password
+    - ✅ Google OAuth
+  </Step>
+
+  <Step title="Configure Google OAuth">
+    1. Create OAuth credentials in Google Cloud Console
+    2. Add authorized redirect URI:
+       ```
+       https://your-project.supabase.co/auth/v1/callback
+       ```
+    3. Add Client ID and Secret in Supabase
+  </Step>
+
+  <Step title="Set Email Templates">
+    Customize authentication emails:
+    - Confirmation email
+    - Password reset
+    - Magic link
+  </Step>
+</Steps>
+
+## Edge Functions
+
+Deploy serverless functions for:
+
+- **Fiscalization**: Croatian Tax Authority integration
+- **Email**: Multi-language email sending
+- **Channel Manager**: OTA synchronization
+
+```bash
+# Deploy all functions
+supabase functions deploy fiscalize-invoice
+supabase functions deploy send-email
+
+# Set secrets
+supabase secrets set FISCAL_CERT_PASSWORD=your_password
+```
+
+## Real-time Subscriptions
+
+Enable real-time updates for collaborative features:
+
+```typescript
+// Listen to reservation changes
+const subscription = supabase
+  .channel('reservations-changes')
+  .on('postgres_changes', {
+    event: '*',
+    schema: 'public',
+    table: 'reservations'
+  }, handleChange)
+  .subscribe();
+```
+
+## Security
+
+### Row-Level Security (RLS)
+
+Enable RLS on all tables:
+
+```sql
+-- Enable RLS
+ALTER TABLE reservations ENABLE ROW LEVEL SECURITY;
+
+-- Policy: Users can read all reservations
+CREATE POLICY "Allow authenticated read"
+  ON reservations FOR SELECT
+  TO authenticated
+  USING (true);
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Database Schema" icon="table" href="/technical/database-schema">
+    Complete database documentation
+  </Card>
+
+  <Card title="Authentication" icon="lock" href="/development/setup">
+    Development environment setup
+  </Card>
+</CardGroup>
+
+---
+
+**Provider**: Supabase (PostgreSQL + Auth + Edge Functions)
+**Region**: Choose closest to your location
+**Plan**: Free tier sufficient for development

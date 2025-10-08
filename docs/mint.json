@@ -33,17 +33,10 @@
       "group": "Core Features",
       "pages": [
         "features/hotel-management",
-        "features/reservations",
         "features/front-desk",
+        "features/finance",
+        "features/reservations",
         "features/channel-manager"
-      ]
-    },
-    {
-      "group": "Technical Documentation",
-      "pages": [
-        "technical/architecture",
-        "technical/database-schema",
-        "technical/api-reference"
       ]
     },
     {
@@ -52,6 +45,14 @@
         "integrations/croatian-fiscalization",
         "integrations/channel-manager-setup",
         "integrations/supabase-setup"
+      ]
+    },
+    {
+      "group": "Technical Documentation",
+      "pages": [
+        "technical/architecture",
+        "technical/database-schema",
+        "technical/api-reference"
       ]
     },
     {

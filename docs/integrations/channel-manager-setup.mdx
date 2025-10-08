@@ -1,0 +1,57 @@
+---
+title: 'Channel Manager Setup'
+description: 'Configure Phobs Channel Manager integration for multi-OTA synchronization'
+icon: 'satellite-dish'
+---
+
+## Overview
+
+Set up the Phobs Channel Manager integration to synchronize your hotel inventory across multiple OTA platforms including Booking.com, Expedia, Airbnb, and 10+ additional channels.
+
+<Note>
+This guide covers the complete setup process for the Phobs API integration.
+</Note>
+
+## Prerequisites
+
+- Phobs account and API credentials
+- Active OTA accounts (Booking.com, Expedia, etc.)
+- Hotel property configured in Phobs dashboard
+
+## Configuration Steps
+
+<Steps>
+  <Step title="Obtain API Credentials">
+    Sign up for Phobs and get your API keys from the dashboard
+  </Step>
+
+  <Step title="Configure Environment Variables">
+    ```bash
+    # .env.local
+    REACT_APP_PHOBS_API_KEY=your_api_key
+    REACT_APP_PHOBS_API_SECRET=your_api_secret
+    REACT_APP_PHOBS_HOTEL_ID=your_hotel_id
+    ```
+  </Step>
+
+  <Step title="Connect to Phobs">
+    Navigate to Channel Manager module and click **Connect**
+  </Step>
+
+  <Step title="Enable OTA Channels">
+    Select which platforms to synchronize
+  </Step>
+</Steps>
+
+## Complete Documentation
+
+For detailed channel manager documentation, see:
+
+<Card title="Channel Manager Features" icon="network-wired" href="/features/channel-manager">
+  Complete guide to OTA integration and synchronization
+</Card>
+
+---
+
+**Status**: Available in v2.5+
+**Supported Channels**: 13+ OTA platforms

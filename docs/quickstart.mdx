@@ -1,240 +1,410 @@
 ---
 title: 'Quickstart'
-description: 'Get up and running with Hotel Inventory Management System in minutes'
+description: 'Get up and running with Hotel Inventory Management System in 5 minutes'
 ---
 
 ## Prerequisites
 
-Before you begin, ensure you have the following installed:
+Before you begin, ensure you have:
 
-- **Node.js** (version 18 or higher)
-- **npm** or **yarn**
-- **Git**
-- **Supabase CLI** (optional, for database management)
+- **Node.js** 16+ (18+ recommended)
+- **npm** or **yarn** package manager
+- **Git** for version control
+- **Supabase Account** (free tier available)
 
-## Installation
+<Note>
+For Croatian fiscalization features, you'll need a FINA P12 certificate (demo or production).
+</Note>
 
-### 1. Clone the Repository
+## 5-Minute Setup
+
+### Step 1: Clone and Install
 
 ```bash
+# Clone the repository
 git clone https://github.com/your-username/hotel-inventory.git
 cd hotel-inventory
-```
 
-### 2. Install Dependencies
-
-```bash
+# Install dependencies
 npm install
 ```
 
-### 3. Environment Configuration
+### Step 2: Environment Configuration
 
-Copy the sample environment file and configure your settings:
-
-```bash
-cp .env.sample .env
-```
-
-Edit the `.env` file with your configuration:
+Copy the sample environment file:
 
 ```bash
-# Supabase Configuration
-REACT_APP_SUPABASE_URL=your_supabase_url
-REACT_APP_SUPABASE_ANON_KEY=your_supabase_anon_key
-
-# Optional: Croatian Fiscalization
-REACT_APP_FINA_DEMO_MODE=true
-REACT_APP_FINA_CERT_PATH=./certificates/demo.p12
-REACT_APP_FINA_CERT_PASSWORD=demo_password
+cp .env.sample .env.local
 ```
 
-### 4. Database Setup
-
-Run the database migrations to set up your schema:
+Configure your `.env.local` file:
 
 ```bash
-npm run supabase:migrate
+# Supabase Configuration (Required)
+REACT_APP_SUPABASE_URL=https://your-project.supabase.co
+REACT_APP_SUPABASE_ANON_KEY=your_anon_key_here
+
+# Croatian Fiscalization (Optional - for invoice generation)
+REACT_APP_FISCAL_CERT_PASSWORD=your_certificate_password
+REACT_APP_FISCAL_OIB=87246357068  # Hotel OIB
+
+# Channel Manager (Optional - for OTA integration)
+REACT_APP_PHOBS_API_KEY=your_phobs_api_key
+REACT_APP_PHOBS_API_SECRET=your_phobs_secret
+REACT_APP_PHOBS_HOTEL_ID=your_hotel_id
 ```
 
-### 5. Start Development Server
+<Tip>
+Get your Supabase credentials from your project dashboard at [supabase.com](https://supabase.com)
+</Tip>
+
+### Step 3: Database Setup
+
+The database schema is managed through Supabase migrations:
 
 ```bash
-npm run dev
+# Run migrations via Supabase Dashboard
+# Navigate to: Database > Migrations in your Supabase project
+# Or use Supabase CLI:
+supabase db push
 ```
 
-Your application will be available at `http://localhost:3000`.
+### Step 4: Launch Application
 
-## First Steps
+```bash
+npm start
+```
 
-### 1. Access the Application
+Your application will be available at **http://localhost:3000** 🎉
 
-Navigate to `http://localhost:3000` in your browser. You should see the hotel management dashboard.
+## First Steps After Launch
 
-### 2. Create Your First Hotel
+### 1. Authentication
 
 <Steps>
-  <Step title="Navigate to Hotel Setup">
-    Click on "Add Hotel" in the dashboard
+  <Step title="Navigate to Login">
+    Open `http://localhost:3000` in your browser
   </Step>
-  <Step title="Enter Hotel Details">
-    Fill in your hotel information:
-    - Hotel name
-    - Address
-    - Contact information
-    - Room configuration
+
+  <Step title="Sign In">
+    Use Google OAuth or create an email/password account
   </Step>
-  <Step title="Configure Rooms">
-    Set up your room types and availability
-  </Step>
-  <Step title="Save Configuration">
-    Complete the setup and save your hotel profile
+
+  <Step title="Access Dashboard">
+    You'll be redirected to the hotel management dashboard
   </Step>
 </Steps>
 
-### 3. Make Your First Reservation
+### 2. Create Your First Reservation
 
 <Steps>
-  <Step title="Open Front Desk">
-    Navigate to the Front Desk module
+  <Step title="Open Front Desk Module">
+    Navigate to **Hotel** > **Front Desk** from the sidebar
   </Step>
-  <Step title="Select Date Range">
-    Choose check-in and check-out dates on the timeline
+
+  <Step title="Use Drag-to-Create">
+    Click and drag on the timeline calendar to create a new booking
+    - Drag horizontally to set date range
+    - Drop on a room to assign
   </Step>
-  <Step title="Add Guest Information">
-    Enter guest details in the booking modal
+
+  <Step title="Enter Guest Details">
+    Fill in the reservation modal:
+    - Guest name and contact info
+    - Number of adults/children
+    - Special requests
   </Step>
-  <Step title="Confirm Booking">
-    Review and confirm the reservation
+
+  <Step title="Save Reservation">
+    Click **Create Reservation** to save
   </Step>
 </Steps>
 
-## Key Features Overview
+<Tip>
+**Keyboard Shortcut**: Press `N` anywhere in the front desk to create a new reservation
+</Tip>
 
-### Real-time Timeline
+### 3. Generate Your First Invoice
 
-The front desk timeline provides:
-- **Drag & Drop**: Move reservations between dates and rooms
-- **Conflict Detection**: Automatic validation prevents double bookings
-- **Live Updates**: Real-time synchronization across all users
+<Steps>
+  <Step title="Navigate to Finance">
+    Go to **Hotel** > **Finance** from the sidebar
+  </Step>
 
-### Channel Manager Integration
+  <Step title="Select a Reservation">
+    Find a completed reservation and click **Create Invoice**
+  </Step>
 
-Connect with major OTA platforms:
-- Booking.com
-- Expedia
-- Airbnb
-- And more...
+  <Step title="Fiscalize (Croatian Only)">
+    Click **Fiscalize Invoice** to generate JIR/ZKI codes
+    - Requires FINA certificate configuration
+    - Generates QR code for verification
+  </Step>
 
-### Croatian Fiscalization
+  <Step title="Download PDF">
+    Click **Download PDF** to generate invoice with fiscal data
+  </Step>
+</Steps>
 
-Built-in support for Croatian fiscal requirements:
-- FINA integration
-- Automatic invoice generation
-- Tax compliance reporting
+## Core Features Demo
 
-## Development Commands
+### Front Desk Timeline
 
-Common commands for development:
+Explore the powerful timeline interface:
 
-```bash
-# Start development server
-npm run dev
-
-# Run tests
-npm test
-
-# Build for production
-npm run build
-
-# Database migrations
-npm run supabase:migrate
-
-# Generate TypeScript types
-npm run supabase:types
-
-# Lint code
-npm run lint
-
-# Format code
-npm run format
+```typescript
+// Features available:
+✅ Drag-to-create bookings
+✅ Move reservations between rooms
+✅ Real-time conflict detection
+✅ Keyboard shortcuts (20+ hotkeys)
+✅ Smart context menus
+✅ Optimistic UI updates
 ```
 
-## Project Structure
+**Quick Actions:**
+- `N` - New reservation
+- `F` - Toggle filter mode
+- `Cmd/Ctrl + Z` - Undo last action
+- `Cmd/Ctrl + Shift + Z` - Redo action
+
+### Finance & Invoicing
+
+Test the complete invoice workflow:
+
+1. **View Invoices** - See all generated invoices with fiscal status
+2. **Fiscal Data** - JIR, ZKI, and QR codes displayed in details
+3. **PDF Generation** - Professional invoices with Croatian compliance
+4. **Payment Tracking** - Multi-method payment support
+
+### Channel Manager (OTA Integration)
+
+If configured with Phobs API:
+
+```bash
+# Navigate to: Hotel > Channel Manager
+- View real-time OTA sync status
+- Monitor Booking.com, Expedia, Airbnb
+- Track performance metrics
+- Resolve conflicts automatically
+```
+
+## Development Workflow
+
+### Available Commands
+
+```bash
+# Development
+npm start              # Start dev server (port 3000)
+npm run build          # Production build
+npm test               # Run test suite
+
+# Database
+npm run db:migrate     # Run migrations (if using CLI)
+npm run db:reset       # Reset database
+
+# Code Quality
+npm run lint           # Run ESLint
+npm run format         # Format with Prettier
+npm run type-check     # TypeScript type checking
+
+# Testing Croatian Fiscalization
+node scripts/validate-zki-algorithm.js     # Test ZKI generation
+node scripts/corrected-croatian-soap.js    # Test SOAP XML
+```
+
+### Project Structure Overview
 
 ```
 hotel-inventory/
 ├── src/
-│   ├── components/          # React components
-│   ├── lib/                # Utilities and configurations
-│   ├── pages/              # Page components
-│   └── types/              # TypeScript type definitions
+│   ├── components/
+│   │   ├── hotel/
+│   │   │   ├── frontdesk/      # Front desk module
+│   │   │   ├── finance/        # Finance & invoicing
+│   │   │   └── ChannelManager/ # OTA integration
+│   │   └── ui/                 # Reusable UI components
+│   ├── lib/
+│   │   ├── fiscalization/      # Croatian fiscal system
+│   │   ├── hotel/services/     # Business logic layer
+│   │   └── supabase.ts         # Database client
+│   └── App.tsx
 ├── supabase/
-│   ├── migrations/         # Database migrations
-│   └── functions/          # Edge functions
-├── docs/                   # Documentation
-└── public/                 # Static assets
+│   ├── functions/              # Edge functions
+│   │   └── fiscalize-invoice/  # Fiscal integration
+│   └── migrations/             # Database schema
+└── docs/                       # Documentation (Mintlify)
 ```
+
+## Key Integrations Setup
+
+### Croatian Fiscalization
+
+<Steps>
+  <Step title="Obtain FINA Certificate">
+    Get a P12 certificate from FINA (demo or production)
+  </Step>
+
+  <Step title="Configure Certificate">
+    Place certificate in `p12 cert/` directory
+    ```bash
+    # Set password in .env.local
+    REACT_APP_FISCAL_CERT_PASSWORD=your_password
+    ```
+  </Step>
+
+  <Step title="Deploy Edge Function">
+    Deploy the fiscalization Edge Function to Supabase
+    ```bash
+    supabase functions deploy fiscalize-invoice
+    ```
+  </Step>
+
+  <Step title="Test Fiscalization">
+    Use the Finance module to generate a fiscal invoice
+  </Step>
+</Steps>
+
+### Channel Manager (Phobs)
+
+<Steps>
+  <Step title="Get Phobs API Credentials">
+    Sign up at Phobs and obtain API keys
+  </Step>
+
+  <Step title="Configure Environment">
+    Add credentials to `.env.local`
+    ```bash
+    REACT_APP_PHOBS_API_KEY=your_key
+    REACT_APP_PHOBS_API_SECRET=your_secret
+    REACT_APP_PHOBS_HOTEL_ID=your_hotel_id
+    ```
+  </Step>
+
+  <Step title="Authenticate">
+    Navigate to Channel Manager and click **Connect to Phobs**
+  </Step>
+
+  <Step title="Enable Channels">
+    Select OTA platforms to sync (Booking.com, Expedia, etc.)
+  </Step>
+</Steps>
 
 ## Next Steps
 
 <CardGroup cols={2}>
   <Card
-    title="Explore Features"
-    icon="compass"
-    href="/features/hotel-management"
+    title="Finance Module Guide"
+    icon="file-invoice-dollar"
+    href="/features/finance"
   >
-    Learn about all available features
+    Learn about invoice generation and fiscal compliance
   </Card>
+
   <Card
-    title="Technical Documentation"
-    icon="code"
+    title="Front Desk Operations"
+    icon="calendar-days"
+    href="/features/front-desk"
+  >
+    Master the timeline and reservation management
+  </Card>
+
+  <Card
+    title="Croatian Fiscalization"
+    icon="receipt"
+    href="/integrations/croatian-fiscalization"
+  >
+    Complete guide to fiscal integration
+  </Card>
+
+  <Card
+    title="Technical Architecture"
+    icon="sitemap"
     href="/technical/architecture"
   >
-    Dive into the technical details
-  </Card>
-  <Card
-    title="Integration Guides"
-    icon="plug"
-    href="/integrations/channel-manager-setup"
-  >
-    Set up external integrations
-  </Card>
-  <Card
-    title="Development Guide"
-    icon="wrench"
-    href="/development/setup"
-  >
-    Start contributing to the project
+    Understand the system architecture
   </Card>
 </CardGroup>
 
 ## Troubleshooting
 
-### Common Issues
-
 <AccordionGroup>
   <Accordion title="Application won't start">
-    Check that all environment variables are set correctly and dependencies are installed.
+    **Solution**: Verify dependencies and environment variables
     ```bash
+    # Reinstall dependencies
+    rm -rf node_modules package-lock.json
     npm install
-    npm run dev
+
+    # Check environment file
+    cat .env.local
+
+    # Start with verbose logging
+    npm start
     ```
   </Accordion>
 
-  <Accordion title="Database connection issues">
-    Verify your Supabase URL and keys in the `.env` file.
+  <Accordion title="Supabase connection errors">
+    **Solution**: Verify your Supabase credentials
     ```bash
-    # Check Supabase connection
-    npm run supabase:status
+    # Check Supabase project status
+    # Visit: https://app.supabase.com/project/_/settings/api
+
+    # Ensure REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY are correct
     ```
   </Accordion>
 
-  <Accordion title="TypeScript errors">
-    Regenerate types from your database schema:
+  <Accordion title="Croatian fiscalization not working">
+    **Solution**: Check certificate and Edge Function
     ```bash
-    npm run supabase:types
+    # Verify certificate password
+    # Check Edge Function logs in Supabase Dashboard
+
+    # Test locally
+    node scripts/validate-zki-algorithm.js
+    ```
+  </Accordion>
+
+  <Accordion title="TypeScript compilation errors">
+    **Solution**: Build the project to see errors
+    ```bash
+    npm run build
+
+    # TypeScript should compile with zero errors
+    # Only ESLint warnings expected (unused variables)
+    ```
+  </Accordion>
+
+  <Accordion title="Finance UI shows no invoices">
+    **Solution**: Check database connection and data
+    ```bash
+    # Verify invoices exist in database
+    # Use Supabase Dashboard > Table Editor > invoices
+
+    # Check browser console for errors
+    # Verify loadInvoices() is called in SupabaseHotelContext
     ```
   </Accordion>
 </AccordionGroup>
 
-Need more help? Check our [full documentation](/technical/api-reference) or reach out to [support](mailto:support@hotelinventory.com).
+## Additional Resources
+
+<CardGroup cols={3}>
+  <Card title="Installation Guide" icon="download" href="/installation">
+    Detailed installation instructions
+  </Card>
+
+  <Card title="API Reference" icon="code" href="/technical/api-reference">
+    Complete API documentation
+  </Card>
+
+  <Card title="User Guides" icon="book" href="/guides/creating-reservations">
+    Step-by-step workflows
+  </Card>
+</CardGroup>
+
+---
+
+<Note>
+**Need Help?** Join our community discussions or contact support at [support@hotelinventory.com](mailto:support@hotelinventory.com)
+</Note>

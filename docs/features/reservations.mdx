@@ -1,0 +1,542 @@
+---
+title: 'Reservation Management'
+description: 'Complete guest profile management, booking workflows, and reservation lifecycle'
+icon: 'book-open'
+---
+
+## Overview
+
+The Reservation Management system provides comprehensive tools for managing guest profiles, creating bookings, and tracking the complete reservation lifecycle from initial booking through check-out.
+
+## Guest Management
+
+### Guest Profiles
+
+Complete guest information storage:
+
+```typescript
+interface Guest {
+  // Basic Information
+  id: string;
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  nationality: string;
+
+  // Preferences
+  preferredLanguage: 'en' | 'de' | 'hr' | 'it';
+  dietaryRestrictions: string[];
+  specialRequests: string;
+
+  // Guest Status
+  isVip: boolean;
+  vipLevel: number;        // 0-5 (5 = highest)
+  totalStays: number;
+
+  // Family Information
+  children: GuestChild[];
+  hasPets: boolean;
+}
+```
+
+### VIP Management
+
+```typescript
+// VIP tier benefits
+const VIP_BENEFITS = {
+  level1: {
+    name: 'Bronze',
+    discount: 0.05,      // 5% discount
+    lateCheckout: true,
+    welcomeDrink: true
+  },
+  level2: {
+    name: 'Silver',
+    discount: 0.10,      // 10% discount
+    lateCheckout: true,
+    roomUpgrade: 'available',
+    welcomeGift: true
+  },
+  level3: {
+    name: 'Gold',
+    discount: 0.15,      // 15% discount
+    lateCheckout: true,
+    roomUpgrade: 'guaranteed',
+    welcomeGift: true,
+    prioritySupport: true
+  }
+};
+```
+
+## Booking Workflow
+
+### Standard Reservation
+
+<Steps>
+  <Step title="Search Availability">
+    Check room availability for dates:
+    ```typescript
+    const available = await checkAvailability({
+      checkIn: new Date('2025-06-15'),
+      checkOut: new Date('2025-06-20'),
+      roomType: 'Deluxe Room',
+      guests: { adults: 2, children: 1 }
+    });
+    ```
+  </Step>
+
+  <Step title="Select Room">
+    Choose from available rooms:
+    - Room type and amenities
+    - Price and seasonal rate
+    - Floor and view
+    - Availability status
+  </Step>
+
+  <Step title="Enter Guest Information">
+    Collect guest details:
+    - Search existing guests
+    - Create new profile if needed
+    - Add children information
+    - Capture special requests
+  </Step>
+
+  <Step title="Calculate Pricing">
+    Automatic price calculation:
+    ```typescript
+    const pricing = calculateReservationPrice({
+      baseRate: 150,
+      seasonalPeriod: 'peak',      // +50%
+      numberOfNights: 5,
+      adults: 2,
+      children: [{ age: 6 }],      // 50% discount
+      hasPet: true,                // +€15
+      hasParking: true,            // +€7/night
+      stayLength: 5                // No short stay supplement
+    });
+
+    // Result:
+    // Base: €225 × 5 nights = €1,125
+    // Children: -€112.50 (50% off)
+    // Tourism Tax: €22.50 (€1.50×3 guests×5 nights)
+    // Pet Fee: €15
+    // Parking: €35 (€7×5 nights)
+    // VAT (25%): €271.25
+    // TOTAL: €1,356.25
+    ```
+  </Step>
+
+  <Step title="Confirm Booking">
+    Finalize reservation:
+    - Review all details
+    - Select payment method
+    - Send confirmation email
+    - Update availability across all channels
+  </Step>
+</Steps>
+
+### Corporate Bookings
+
+Special handling for business clients:
+
+```typescript
+interface CorporateReservation {
+  companyId: string;
+  pricingTierId: string;      // Contracted rates
+  billingAddress: Address;
+  purchaseOrder: string;
+  costCenter: string;
+
+  // Special terms
+  paymentTerms: number;        // Days (e.g., Net 30)
+  invoiceDelivery: 'email' | 'mail';
+}
+```
+
+## Reservation Lifecycle
+
+### Status Flow
+
+```typescript
+type ReservationStatus =
+  | 'pending'           // Initial creation
+  | 'confirmed'         // Payment received
+  | 'checked-in'        // Guest arrived
+  | 'checked-out'       // Stay completed
+  | 'cancelled'         // Booking cancelled
+  | 'no-show'          // Guest didn't arrive
+  | 'incomplete-payment'; // Payment issue
+
+// State transitions
+const VALID_TRANSITIONS = {
+  pending: ['confirmed', 'cancelled'],
+  confirmed: ['checked-in', 'cancelled', 'no-show'],
+  'checked-in': ['checked-out'],
+  'checked-out': [],  // Final state
+  cancelled: [],      // Final state
+  'no-show': []       // Final state
+};
+```
+
+### Cancellation Policy
+
+```typescript
+const getCancellationFee = (
+  reservation: Reservation,
+  cancellationDate: Date
+): number => {
+  const daysUntilCheckIn = differenceInDays(
+    reservation.checkIn,
+    cancellationDate
+  );
+
+  if (daysUntilCheckIn > 14) {
+    return 0;                              // Free cancellation
+  } else if (daysUntilCheckIn > 7) {
+    return reservation.totalAmount * 0.25; // 25% fee
+  } else if (daysUntilCheckIn > 3) {
+    return reservation.totalAmount * 0.50; // 50% fee
+  } else {
+    return reservation.totalAmount;        // 100% charge
+  }
+};
+```
+
+## Children & Family Bookings
+
+### Age-Based Pricing
+
+```typescript
+const getChildRate = (age: number): number => {
+  if (age < 3) {
+    return 0;        // Free
+  } else if (age < 7) {
+    return 0.50;     // 50% discount
+  } else if (age < 14) {
+    return 0.20;     // 20% discount
+  } else {
+    return 1.0;      // Adult rate
+  }
+};
+
+// Example: Family of 4
+const family = {
+  adults: 2,
+  children: [
+    { age: 5 },   // 50% discount
+    { age: 12 }   // 20% discount
+  ]
+};
+
+// Base rate: €150/night
+// Adult: €150 × 2 = €300
+// Child 1: €150 × 0.50 = €75
+// Child 2: €150 × 0.80 = €120
+// Total: €495/night
+```
+
+### Family Room Features
+
+```typescript
+const FAMILY_ROOM_CONFIG = {
+  maxOccupancy: 4,           // 2 adults + 2 children
+  bedConfiguration: [
+    '1 double bed',
+    '2 single beds'
+  ],
+  amenities: [
+    'Children welcome pack',
+    'Baby cot available',
+    'High chair',
+    'Children\'s menu',
+    'Board games'
+  ],
+  safety: [
+    'Electrical outlet covers',
+    'Corner protectors',
+    'Window locks',
+    'Balcony safety net'
+  ]
+};
+```
+
+## Special Requests
+
+### Request Categories
+
+```typescript
+enum RequestType {
+  Dietary = 'dietary',           // Food allergies, vegan, etc.
+  Accessibility = 'accessibility', // Wheelchair, ground floor
+  Room = 'room',                  // Quiet room, high floor
+  Service = 'service',            // Early check-in, late checkout
+  Celebration = 'celebration'     // Birthday, anniversary
+}
+
+// Example special requests
+const requests = [
+  {
+    type: RequestType.Dietary,
+    description: 'Vegan breakfast options',
+    priority: 'high'
+  },
+  {
+    type: RequestType.Room,
+    description: 'Quiet room, away from elevator',
+    priority: 'medium'
+  },
+  {
+    type: RequestType.Celebration,
+    description: 'Anniversary - champagne and flowers',
+    priority: 'high'
+  }
+];
+```
+
+## Booking Sources
+
+### Channel Attribution
+
+```typescript
+enum BookingSource {
+  Direct = 'direct',              // Hotel website/phone
+  BookingCom = 'booking-com',
+  Expedia = 'expedia',
+  Airbnb = 'airbnb',
+  Agoda = 'agoda',
+  HotelsCom = 'hotels-com',
+  WalkIn = 'walk-in',
+  Corporate = 'corporate',
+  TravelAgent = 'travel-agent'
+}
+
+// Commission rates by channel
+const COMMISSION_RATES = {
+  direct: 0,                      // 0%
+  'booking-com': 0.15,           // 15%
+  expedia: 0.18,                 // 18%
+  airbnb: 0.14,                  // 14%
+  agoda: 0.16,                   // 16%
+  'hotels-com': 0.18,            // 18%
+  'walk-in': 0,                  // 0%
+  corporate: 0,                  // 0% (contracted)
+  'travel-agent': 0.10           // 10%
+};
+```
+
+## Room Service Integration
+
+### In-Room Dining
+
+```typescript
+interface RoomServiceOrder {
+  reservationId: string;
+  orderDate: Date;
+  items: RoomServiceItem[];
+  deliveryRoom: string;
+  deliveryTime: Date;
+  specialInstructions: string;
+  status: 'pending' | 'preparing' | 'delivering' | 'completed';
+
+  // Billing
+  subtotal: number;
+  serviceCharge: number;        // 10%
+  vatAmount: number;            // 25%
+  totalAmount: number;
+  addedToReservation: boolean;  // Auto-bill to room
+}
+
+// Automatic reservation billing
+const addRoomServiceToReservation = async (
+  order: RoomServiceOrder
+) => {
+  await updateReservation({
+    id: order.reservationId,
+    roomServiceItems: [...existing, {
+      orderId: order.id,
+      itemName: order.items.map(i => i.name).join(', '),
+      quantity: order.items.length,
+      totalPrice: order.totalAmount,
+      orderedAt: order.orderDate
+    }],
+    totalAmount: existing.totalAmount + order.totalAmount
+  });
+};
+```
+
+## Communication
+
+### Automated Emails
+
+```typescript
+// Email triggers
+const EMAIL_TRIGGERS = {
+  bookingConfirmation: {
+    trigger: 'on_reservation_create',
+    languages: ['en', 'de', 'it', 'hr'],
+    includes: [
+      'Booking confirmation number',
+      'Reservation details',
+      'Hotel information',
+      'Cancellation policy'
+    ]
+  },
+
+  preArrival: {
+    trigger: '3_days_before_checkin',
+    languages: ['en', 'de', 'it', 'hr'],
+    includes: [
+      'Check-in instructions',
+      'Arrival information',
+      'Local recommendations',
+      'Weather forecast'
+    ]
+  },
+
+  welcome: {
+    trigger: 'on_checkin',
+    languages: ['en', 'de', 'it', 'hr'],
+    includes: [
+      'Welcome message',
+      'WiFi credentials',
+      'Hotel facilities',
+      'Emergency contacts'
+    ]
+  },
+
+  thankYou: {
+    trigger: 'on_checkout',
+    languages: ['en', 'de', 'it', 'hr'],
+    includes: [
+      'Thank you message',
+      'Return guest discount code',
+      'Feedback request',
+      'Social media links'
+    ]
+  }
+};
+```
+
+## Payment Integration
+
+### Payment Methods
+
+```typescript
+const PAYMENT_METHODS = {
+  cash: {
+    enabled: true,
+    currency: 'EUR',
+    requiresReceipt: true
+  },
+
+  card: {
+    enabled: true,
+    providers: ['Visa', 'Mastercard', 'Amex'],
+    requiresSignature: false,  // Chip & PIN
+    fiscalIntegration: true
+  },
+
+  bankTransfer: {
+    enabled: true,
+    iban: 'HR1234567890',
+    swift: 'ZABAHR2X',
+    reference: 'auto-generated'
+  },
+
+  online: {
+    enabled: true,
+    gateway: 'stripe',
+    currencies: ['EUR', 'USD'],
+    methods: ['card', 'ideal', 'sofort']
+  }
+};
+```
+
+### Deposit & Prepayment
+
+```typescript
+const getDepositRequirement = (
+  reservation: Reservation
+): number => {
+  const { totalAmount, checkIn, bookingSource } = reservation;
+  const daysUntilCheckIn = differenceInDays(checkIn, new Date());
+
+  // OTA bookings - usually prepaid
+  if (bookingSource !== 'direct') {
+    return totalAmount;  // 100% prepaid
+  }
+
+  // Direct bookings
+  if (daysUntilCheckIn > 30) {
+    return totalAmount * 0.30;  // 30% deposit
+  } else if (daysUntilCheckIn > 7) {
+    return totalAmount * 0.50;  // 50% deposit
+  } else {
+    return totalAmount;         // Full payment
+  }
+};
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Accurate Guest Data" icon="user-check">
+    Always verify:
+    - Contact information
+    - Passport/ID details
+    - Emergency contact
+    - Special requirements
+  </Card>
+
+  <Card title="Clear Communication" icon="message">
+    Send timely notifications:
+    - Booking confirmation immediately
+    - Pre-arrival email (3 days before)
+    - Welcome on check-in
+    - Thank you after check-out
+  </Card>
+
+  <Card title="Flexible Policies" icon="arrows-rotate">
+    Balance flexibility with revenue:
+    - Free cancellation (14+ days)
+    - Partial refund (7-14 days)
+    - Consider special circumstances
+    - VIP exceptions
+  </Card>
+
+  <Card title="Data Quality" icon="database">
+    Maintain clean data:
+    - Merge duplicate guest profiles
+    - Update contact information
+    - Track guest preferences
+    - Archive old records
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Front Desk Operations" icon="calendar" href="/features/front-desk">
+    Learn timeline and daily workflows
+  </Card>
+
+  <Card title="Finance & Invoicing" icon="euro-sign" href="/features/finance">
+    Generate invoices and handle payments
+  </Card>
+
+  <Card title="User Guides" icon="book" href="/guides/creating-reservations">
+    Step-by-step reservation tutorials
+  </Card>
+
+  <Card title="Technical Details" icon="code" href="/technical/architecture">
+    Understand the system architecture
+  </Card>
+</CardGroup>
+
+---
+
+**Last Updated**: January 2025
+**Guest Capacity**: Unlimited
+**Languages**: 4 (EN/DE/IT/HR)

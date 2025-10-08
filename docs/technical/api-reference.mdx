@@ -1,0 +1,91 @@
+---
+title: 'API Reference'
+description: 'Service layer and API documentation for the Hotel Inventory Management System'
+icon: 'code'
+---
+
+## Service Layer APIs
+
+The system uses a service-oriented architecture with TypeScript services handling business logic.
+
+## Reservation Service
+
+### ReservationService
+
+Core reservation management operations:
+
+```typescript
+class ReservationService {
+  /**
+   * Create a new reservation
+   */
+  async createReservation(data: ReservationCreate): Promise<Reservation>
+
+  /**
+   * Update existing reservation
+   */
+  async updateReservation(id: string, data: ReservationUpdate): Promise<Reservation>
+
+  /**
+   * Check for booking conflicts
+   */
+  async checkConflicts(params: ConflictCheckParams): Promise<Conflict[]>
+
+  /**
+   * Fiscalize invoice (Croatian)
+   */
+  async fiscalizeInvoice(invoiceId: string): Promise<FiscalResponse>
+}
+```
+
+## Database Queries
+
+### Supabase Client
+
+```typescript
+// Get all reservations with relations
+const { data, error } = await supabase
+  .from('reservations')
+  .select(`
+    *,
+    guests (*),
+    rooms (*),
+    invoices (
+      *,
+      fiscal_records (*)
+    )
+  `)
+  .order('check_in_date', { ascending: true });
+```
+
+## Edge Functions
+
+### Fiscalization Function
+
+```bash
+POST /functions/v1/fiscalize-invoice
+
+# Headers
+Authorization: Bearer YOUR_ANON_KEY
+Content-Type: application/json
+
+# Body
+{
+  "invoiceNumber": "747258",
+  "totalAmount": 625.00,
+  "dateTime": "2025-01-08T10:30:00",
+  "oib": "87246357068"
+}
+
+# Response
+{
+  "jir": "4a669de1-8c45-4934-9004-4586a025320b",
+  "zki": "88132f1b4cd4a9b388dfbe180438e73c",
+  "qrCodeData": "https://porezna-uprava.gov.hr/rn?jir=..."
+}
+```
+
+---
+
+**Type Safety**: Full TypeScript coverage
+**Documentation**: JSDoc comments on all public methods
