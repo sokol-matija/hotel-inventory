@@ -254,30 +254,73 @@ CREATE INDEX idx_pricing_tiers_active ON pricing_tiers(is_active) WHERE is_activ
 
 ```mermaid
 erDiagram
-    GUESTS ||--o{ RESERVATIONS : makes
-    ROOMS ||--o{ RESERVATIONS : has
-    RESERVATIONS ||--o| INVOICES : generates
+    %% Core Hotel Operations
+    GUESTS ||--o{ RESERVATIONS : books
+    GUESTS ||--o{ GUEST_STAYS : has
+    GUESTS ||--o{ RESERVATION_GUESTS : includes
     GUESTS ||--o{ INVOICES : receives
-    COMPANIES ||--o{ INVOICES : receives
-    INVOICES ||--o| FISCAL_RECORDS : has
-    INVOICES ||--o{ PAYMENTS : has
-    COMPANIES ||--o{ PRICING_TIERS : has
 
+    ROOMS ||--o{ RESERVATIONS : assigned_to
+    ROOMS }o--|| ROOM_TYPES : has_type
+    ROOMS ||--o{ ROOM_PRICING : has_pricing
+    ROOMS ||--o{ PHOBS_ROOM_MAPPINGS : mapped_to
+
+    RESERVATIONS ||--o{ RESERVATION_GUESTS : includes
+    RESERVATIONS ||--o{ GUEST_STAYS : creates
+    RESERVATIONS ||--o{ INVOICES : generates
+    RESERVATIONS ||--o{ PAYMENTS : receives
+    RESERVATIONS ||--o{ RESERVATION_DAILY_DETAILS : has_details
+    RESERVATIONS }o--|| RESERVATION_STATUSES : has_status
+    RESERVATIONS }o--|| BOOKING_SOURCES : from_source
+    RESERVATIONS }o--o| COMPANIES : for_company
+    RESERVATIONS }o--o| PRICING_TIERS : uses_tier
+
+    %% Financial
+    INVOICES ||--o| FISCAL_RECORDS : fiscalized_by
+    INVOICES ||--o{ PAYMENTS : paid_by
+    INVOICES }o--o| GUESTS : billed_to
+    INVOICES }o--o| COMPANIES : billed_to
+
+    %% Guest Services
+    GUEST_STAYS ||--o{ DAILY_GUEST_SERVICES : tracks
+
+    %% Corporate & Pricing
+    COMPANIES ||--o{ PRICING_TIERS : has_tier
+    PRICING_SEASONS ||--o{ ROOM_PRICING : defines
+
+    %% Channel Manager (Phobs)
+    PHOBS_ROOM_MAPPINGS ||--o{ PHOBS_AVAILABILITY : has_availability
+    PHOBS_RATE_PLANS ||--o{ PHOBS_AVAILABILITY : has_rates
+
+    %% Key Tables Detail
     GUESTS {
         int id PK
-        text first_name
-        text last_name
-        text email
-        text phone
+        varchar first_name
+        varchar last_name
+        varchar email UK
+        varchar phone
+        varchar nationality
+        date date_of_birth
         boolean is_vip
+        int vip_level
+        varchar phobs_guest_id UK
+        numeric total_spent
+        int total_stays
     }
 
     ROOMS {
         int id PK
-        text number
-        int floor
-        text type
-        numeric base_rate
+        varchar room_number UK
+        int floor_number
+        varchar room_type
+        int max_occupancy
+        boolean is_premium
+        numeric seasonal_rate_a
+        numeric seasonal_rate_b
+        numeric seasonal_rate_c
+        numeric seasonal_rate_d
+        boolean is_clean
+        int room_type_id FK
     }
 
     RESERVATIONS {
@@ -286,26 +329,78 @@ erDiagram
         int guest_id FK
         date check_in_date
         date check_out_date
-        text status
+        int number_of_nights
+        int adults
+        int children_count
+        varchar status
+        varchar booking_source
+        varchar seasonal_period
+        numeric base_room_rate
+        numeric subtotal
+        numeric vat_amount
+        numeric tourism_tax
         numeric total_amount
+        varchar phobs_reservation_id UK
+        varchar ota_channel
+        numeric commission_amount
     }
 
     INVOICES {
         int id PK
-        text invoice_number
+        varchar invoice_number UK
         int reservation_id FK
         int guest_id FK
-        jsonb fiscal_data
-        text status
+        int company_id FK
+        date issue_date
+        date due_date
+        numeric subtotal
+        numeric vat_amount
+        numeric tourism_tax
         numeric total_amount
+        numeric paid_amount
+        numeric balance_due
+        varchar status
     }
 
     FISCAL_RECORDS {
         int id PK
-        int invoice_id FK
-        text jir
-        text zki
+        int invoice_id FK UK
+        varchar jir
+        varchar zki
         text qr_code_data
+        varchar response_status
+        varchar operator_oib
+        timestamptz submitted_at
+    }
+
+    PAYMENTS {
+        int id PK
+        int invoice_id FK
+        int reservation_id FK
+        numeric amount
+        varchar payment_method
+        varchar status
+        timestamptz received_date
+    }
+
+    PHOBS_CHANNELS {
+        int id PK
+        varchar channel_id UK
+        varchar channel_name
+        varchar display_name
+        varchar status
+        numeric commission_rate
+        int total_bookings
+        numeric total_revenue
+    }
+
+    PHOBS_ROOM_MAPPINGS {
+        int id PK
+        int internal_room_id FK
+        varchar phobs_room_id
+        jsonb channel_room_mappings
+        jsonb descriptions
+        boolean is_active
     }
 ```
 

@@ -1,0 +1,855 @@
+---
+title: 'Backend API & Database'
+description: 'Complete backend documentation for Hotel Inventory Management System'
+icon: 'database'
+---
+
+## Backend Architecture
+
+The Hotel Inventory Management System uses **PostgreSQL 17** via **Supabase** with a comprehensive schema optimized for hotel operations, financial management, and OTA channel integration.
+
+### Database Provider
+- **Platform**: Supabase (eu-central-1)
+- **PostgreSQL Version**: 17.4.1
+- **Real-time**: Enabled on all tables
+- **Row-Level Security**: Enabled on core tables
+- **Total Tables**: 36+ tables
+
+---
+
+## Core Domain Tables
+
+### Guests Table
+Primary guest information and VIP management.
+
+```sql
+CREATE TABLE guests (
+  id SERIAL PRIMARY KEY,
+  first_name VARCHAR NOT NULL,
+  last_name VARCHAR NOT NULL,
+  email VARCHAR UNIQUE,
+  phone VARCHAR,
+  nationality VARCHAR,
+  date_of_birth DATE,
+  passport_number VARCHAR,
+  id_card_number VARCHAR,
+
+  -- Preferences
+  preferred_language VARCHAR DEFAULT 'en',
+  dietary_restrictions TEXT[],
+  special_needs TEXT,
+  has_pets BOOLEAN DEFAULT false,
+
+  -- VIP System
+  is_vip BOOLEAN DEFAULT false,
+  vip_level INTEGER DEFAULT 0 CHECK (vip_level BETWEEN 0 AND 5),
+  marketing_consent BOOLEAN DEFAULT false,
+
+  -- Statistics
+  total_stays INTEGER DEFAULT 0,
+  total_spent NUMERIC DEFAULT 0,
+  average_rating NUMERIC CHECK (average_rating IS NULL OR average_rating BETWEEN 1 AND 5),
+  last_stay_date DATE,
+
+  -- Channel Manager Integration
+  phobs_guest_id VARCHAR UNIQUE,
+  country_code VARCHAR,
+  full_name VARCHAR,
+
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_guests_email ON guests(email);
+CREATE INDEX idx_guests_vip ON guests(is_vip) WHERE is_vip = true;
+```
+
+**Key Features**:
+- VIP level system (0-5)
+- Guest statistics tracking
+- Phobs channel manager integration
+- Marketing consent management
+
+---
+
+### Rooms Table
+Room inventory with seasonal pricing and status management.
+
+```sql
+CREATE TABLE rooms (
+  id SERIAL PRIMARY KEY,
+  room_number VARCHAR UNIQUE NOT NULL,
+  floor_number INTEGER NOT NULL,
+  room_type VARCHAR NOT NULL,
+  max_occupancy INTEGER DEFAULT 2,
+  is_premium BOOLEAN DEFAULT false,
+
+  -- Seasonal Rates (A=Low, B=Mid, C=High, D=Peak)
+  seasonal_rate_a NUMERIC,
+  seasonal_rate_b NUMERIC,
+  seasonal_rate_c NUMERIC,
+  seasonal_rate_d NUMERIC,
+
+  -- Operational
+  amenities JSONB DEFAULT '[]'::jsonb,
+  is_active BOOLEAN DEFAULT true,
+  is_clean BOOLEAN DEFAULT false,
+
+  -- Relationships
+  room_type_id INTEGER REFERENCES room_types(id),
+
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_rooms_floor ON rooms(floor_number);
+CREATE INDEX idx_rooms_type ON rooms(room_type);
+CREATE INDEX idx_rooms_status ON rooms(is_active);
+```
+
+**Seasonal Pricing**:
+- **Period A**: Low season rates
+- **Period B**: Mid season rates
+- **Period C**: High season rates
+- **Period D**: Peak season rates
+
+---
+
+### Reservations Table
+Core reservation management with comprehensive pricing breakdown.
+
+```sql
+CREATE TABLE reservations (
+  id SERIAL PRIMARY KEY,
+  guest_id INTEGER REFERENCES guests(id) NOT NULL,
+  room_id INTEGER REFERENCES rooms(id) NOT NULL,
+
+  -- Dates & Duration
+  check_in_date DATE NOT NULL,
+  check_out_date DATE NOT NULL,
+  number_of_nights INTEGER,
+
+  -- Guests
+  adults INTEGER NOT NULL DEFAULT 1,
+  children_count INTEGER DEFAULT 0 CHECK (children_count >= 0),
+
+  -- Status & Source
+  status VARCHAR DEFAULT 'confirmed'
+    CHECK (status IN ('confirmed', 'checked-in', 'checked-out', 'cancelled', 'no-show', 'room-closure', 'unallocated', 'incomplete-payment')),
+  booking_source VARCHAR DEFAULT 'direct'
+    CHECK (booking_source IN ('booking.com', 'airbnb', 'direct', 'phone', 'email', 'walk-in', 'other')),
+
+  -- Pricing Breakdown
+  seasonal_period VARCHAR NOT NULL CHECK (seasonal_period IN ('A', 'B', 'C', 'D')),
+  base_room_rate NUMERIC NOT NULL,
+  subtotal NUMERIC NOT NULL,
+  children_discounts NUMERIC DEFAULT 0,
+  tourism_tax NUMERIC DEFAULT 0,
+  vat_amount NUMERIC NOT NULL,
+  pet_fee NUMERIC DEFAULT 0,
+  parking_fee NUMERIC DEFAULT 0,
+  short_stay_supplement NUMERIC DEFAULT 0,
+  additional_charges NUMERIC DEFAULT 0,
+  total_amount NUMERIC NOT NULL,
+
+  -- Payment
+  payment_status VARCHAR DEFAULT 'pending'
+    CHECK (payment_status IN ('pending', 'partial', 'paid', 'refunded', 'cancelled')),
+  payment_method VARCHAR,
+  deposit_amount NUMERIC DEFAULT 0,
+  balance_due NUMERIC,
+
+  -- Additional Info
+  special_requests TEXT,
+  internal_notes TEXT,
+  booking_date TIMESTAMPTZ DEFAULT NOW(),
+  confirmation_number VARCHAR UNIQUE,
+
+  -- Corporate
+  company_id INTEGER REFERENCES companies(id),
+  pricing_tier_id INTEGER REFERENCES pricing_tiers(id),
+
+  -- Services
+  has_pets BOOLEAN DEFAULT false,
+  parking_required BOOLEAN DEFAULT false,
+
+  -- OTA Integration (Phobs)
+  phobs_reservation_id VARCHAR UNIQUE,
+  booking_reference VARCHAR,
+  ota_channel VARCHAR,
+  commission_rate NUMERIC DEFAULT 0,
+  commission_amount NUMERIC DEFAULT 0,
+  net_amount NUMERIC,
+  sync_status VARCHAR DEFAULT 'pending',
+  sync_errors TEXT[],
+  last_synced_at TIMESTAMPTZ,
+
+  -- References to normalized tables
+  status_id INTEGER REFERENCES reservation_statuses(id),
+  booking_source_id INTEGER REFERENCES booking_sources(id),
+
+  -- Tracking
+  last_modified TIMESTAMPTZ DEFAULT NOW(),
+  checked_in_at TIMESTAMPTZ,
+  checked_out_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_reservations_dates ON reservations(check_in_date, check_out_date);
+CREATE INDEX idx_reservations_room ON reservations(room_id);
+CREATE INDEX idx_reservations_guest ON reservations(guest_id);
+CREATE INDEX idx_reservations_status ON reservations(status);
+CREATE INDEX idx_reservations_phobs ON reservations(phobs_reservation_id);
+```
+
+**Status Workflow**:
+1. `confirmed` → Initial booking
+2. `checked-in` → Guest arrived
+3. `checked-out` → Guest departed
+4. `cancelled` → Booking cancelled
+5. `no-show` → Guest didn't arrive
+
+---
+
+## Financial Tables
+
+### Invoices Table
+Invoice generation and fiscal compliance tracking.
+
+```sql
+CREATE TABLE invoices (
+  id SERIAL PRIMARY KEY,
+  invoice_number VARCHAR UNIQUE NOT NULL,
+
+  -- References
+  reservation_id INTEGER REFERENCES reservations(id) NOT NULL,
+  guest_id INTEGER REFERENCES guests(id),
+  company_id INTEGER REFERENCES companies(id),
+
+  -- Dates
+  issue_date DATE DEFAULT CURRENT_DATE,
+  due_date DATE DEFAULT (CURRENT_DATE + INTERVAL '30 days'),
+  paid_date DATE,
+
+  -- Financial Breakdown
+  subtotal NUMERIC NOT NULL,
+  children_discounts NUMERIC DEFAULT 0,
+  tourism_tax NUMERIC DEFAULT 0,
+  vat_amount NUMERIC NOT NULL,
+  pet_fee NUMERIC DEFAULT 0,
+  parking_fee NUMERIC DEFAULT 0,
+  short_stay_supplement NUMERIC DEFAULT 0,
+  additional_charges NUMERIC DEFAULT 0,
+  total_amount NUMERIC NOT NULL,
+
+  -- Payment Tracking
+  paid_amount NUMERIC DEFAULT 0,
+  balance_due NUMERIC GENERATED ALWAYS AS (total_amount - paid_amount) STORED,
+
+  -- Status
+  status VARCHAR DEFAULT 'draft'
+    CHECK (status IN ('draft', 'sent', 'paid', 'overdue', 'cancelled')),
+
+  -- Files & Communication
+  pdf_path TEXT,
+  email_sent_at TIMESTAMPTZ,
+  notes TEXT,
+
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+
+  CHECK (guest_id IS NOT NULL OR company_id IS NOT NULL)
+);
+
+CREATE INDEX idx_invoices_number ON invoices(invoice_number);
+CREATE INDEX idx_invoices_reservation ON invoices(reservation_id);
+CREATE INDEX idx_invoices_status ON invoices(status);
+```
+
+---
+
+### Fiscal Records Table
+Croatian B2C fiscalization compliance.
+
+```sql
+CREATE TABLE fiscal_records (
+  id SERIAL PRIMARY KEY,
+  invoice_id INTEGER UNIQUE REFERENCES invoices(id) ON DELETE CASCADE,
+
+  -- Croatian Fiscal Codes
+  jir VARCHAR CHECK (jir IS NULL OR jir ~ '^[0-9a-f-]{36}$'),  -- Jedinstveni Identifikator Računa (UUID format)
+  zki VARCHAR NOT NULL CHECK (zki ~ '^[0-9a-f]{32}$'),         -- Zaštitni Kod Izdavatelja (32-char hex)
+
+  -- Verification
+  qr_code_data TEXT,  -- QR verification URL
+
+  -- FINA Response
+  submitted_at TIMESTAMPTZ DEFAULT NOW(),
+  response_status VARCHAR DEFAULT 'pending'
+    CHECK (response_status IN ('pending', 'success', 'error', 'timeout')),
+  response_message TEXT,
+
+  -- Business Location Info
+  operator_oib VARCHAR,           -- Operator's tax ID
+  business_space_code VARCHAR,    -- Business premises code
+  register_number INTEGER,        -- Cash register number
+
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_fiscal_records_invoice ON fiscal_records(invoice_id);
+CREATE INDEX idx_fiscal_records_jir ON fiscal_records(jir);
+```
+
+**Fiscalization Flow**:
+1. Generate ZKI using FINA algorithm (RSA signature)
+2. Send SOAP XML to FINA endpoint
+3. Receive JIR (unique receipt identifier)
+4. Generate QR code for customer verification
+5. Store all data in fiscal_records
+
+---
+
+### Payments Table
+Payment processing and reconciliation.
+
+```sql
+CREATE TABLE payments (
+  id SERIAL PRIMARY KEY,
+  invoice_id INTEGER REFERENCES invoices(id),
+  reservation_id INTEGER REFERENCES reservations(id),
+
+  -- Payment Details
+  amount NUMERIC NOT NULL CHECK (amount > 0),
+  currency VARCHAR DEFAULT 'EUR',
+  payment_method VARCHAR NOT NULL
+    CHECK (payment_method IN ('cash', 'credit_card', 'debit_card', 'bank_transfer', 'other')),
+
+  -- Card Details (if applicable)
+  payment_reference VARCHAR,
+  card_last_four VARCHAR,
+  card_type VARCHAR,
+  authorization_code VARCHAR,
+
+  -- Status
+  status VARCHAR DEFAULT 'pending'
+    CHECK (status IN ('pending', 'completed', 'failed', 'cancelled', 'refunded')),
+
+  -- Dates
+  received_date TIMESTAMPTZ DEFAULT NOW(),
+  processed_date TIMESTAMPTZ,
+
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_payments_invoice ON payments(invoice_id);
+CREATE INDEX idx_payments_date ON payments(received_date);
+```
+
+---
+
+## Channel Manager Tables (Phobs)
+
+### Phobs Channels Table
+OTA channel configuration and metrics.
+
+```sql
+CREATE TABLE phobs_channels (
+  id SERIAL PRIMARY KEY,
+  channel_id VARCHAR UNIQUE NOT NULL,
+  channel_name VARCHAR NOT NULL,
+  display_name VARCHAR NOT NULL,
+
+  -- Configuration
+  status VARCHAR DEFAULT 'active',
+  is_enabled BOOLEAN DEFAULT true,
+  commission_rate NUMERIC DEFAULT 0,
+  allow_instant_booking BOOLEAN DEFAULT true,
+
+  -- Booking Rules
+  minimum_stay INTEGER DEFAULT 1,
+  maximum_stay INTEGER DEFAULT 30,
+  cutoff_hours INTEGER DEFAULT 1,
+  base_rate_adjustment NUMERIC DEFAULT 0,
+  availability_enabled BOOLEAN DEFAULT true,
+
+  -- Performance Metrics
+  total_bookings INTEGER DEFAULT 0,
+  total_revenue NUMERIC DEFAULT 0,
+  average_booking_value NUMERIC DEFAULT 0,
+  conversion_rate NUMERIC DEFAULT 0,
+  last_booking_at TIMESTAMPTZ,
+
+  -- Sync Status
+  last_sync_at TIMESTAMPTZ,
+  sync_status VARCHAR DEFAULT 'pending',
+  sync_errors TEXT[],
+
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+**Supported Channels**:
+- Booking.com
+- Airbnb
+- Expedia
+- Hotels.com
+- And more...
+
+---
+
+### Phobs Room Mappings Table
+Maps internal rooms to channel-specific room IDs.
+
+```sql
+CREATE TABLE phobs_room_mappings (
+  id SERIAL PRIMARY KEY,
+  internal_room_id INTEGER REFERENCES rooms(id),
+  phobs_room_id VARCHAR NOT NULL,
+
+  -- Channel-specific mappings
+  channel_room_mappings JSONB DEFAULT '{}'::jsonb,
+
+  -- Content
+  amenities TEXT[],
+  descriptions JSONB DEFAULT '{}'::jsonb,  -- Multi-language descriptions
+  images TEXT[],
+
+  is_active BOOLEAN DEFAULT true,
+  last_updated TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+**Channel Room Mappings Format**:
+```json
+{
+  "booking.com": "room_12345",
+  "airbnb": "listing_67890",
+  "expedia": "property_room_abc123"
+}
+```
+
+---
+
+### Phobs Availability Table
+Real-time room availability and pricing per channel.
+
+```sql
+CREATE TABLE phobs_availability (
+  id SERIAL PRIMARY KEY,
+  room_mapping_id INTEGER REFERENCES phobs_room_mappings(id),
+  rate_plan_id INTEGER REFERENCES phobs_rate_plans(id),
+
+  -- Date & Availability
+  date DATE NOT NULL,
+  available_rooms INTEGER NOT NULL DEFAULT 0,
+  total_rooms INTEGER NOT NULL DEFAULT 1,
+
+  -- Pricing
+  rate NUMERIC NOT NULL,
+  currency VARCHAR DEFAULT 'EUR',
+
+  -- Restrictions
+  minimum_stay INTEGER DEFAULT 1,
+  maximum_stay INTEGER DEFAULT 30,
+  close_to_arrival BOOLEAN DEFAULT false,
+  close_to_departure BOOLEAN DEFAULT false,
+  stop_sale BOOLEAN DEFAULT false,
+
+  -- Channel-specific availability
+  channel_availability JSONB DEFAULT '{}'::jsonb,
+
+  last_updated TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+---
+
+### Phobs Conflicts Table
+Conflict detection and resolution for OTA sync.
+
+```sql
+CREATE TABLE phobs_conflicts (
+  id SERIAL PRIMARY KEY,
+  conflict_id VARCHAR UNIQUE NOT NULL,
+  conflict_type VARCHAR NOT NULL,  -- 'double_booking', 'rate_mismatch', 'availability_mismatch'
+  severity VARCHAR NOT NULL,        -- 'low', 'medium', 'high', 'critical'
+
+  -- Conflict Data
+  internal_data JSONB,
+  phobs_data JSONB,
+  channel_data JSONB,
+
+  -- Resolution
+  suggested_action VARCHAR,
+  auto_resolvable BOOLEAN DEFAULT false,
+  status VARCHAR DEFAULT 'detected',  -- 'detected', 'resolving', 'resolved', 'escalated'
+  resolved_at TIMESTAMPTZ,
+  resolved_by VARCHAR,
+
+  -- Impact
+  affected_reservations TEXT[],
+  channel VARCHAR,
+
+  detected_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+**Conflict Types**:
+- `double_booking`: Same room booked on multiple channels
+- `rate_mismatch`: Price difference between systems
+- `availability_mismatch`: Availability discrepancy
+
+---
+
+## Corporate & Pricing Tables
+
+### Companies Table
+Corporate client management.
+
+```sql
+CREATE TABLE companies (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR NOT NULL,
+  oib VARCHAR UNIQUE CHECK (oib IS NULL OR oib ~ '^[0-9]{11}$'),  -- Croatian tax ID
+
+  -- Address
+  address TEXT NOT NULL,
+  city VARCHAR NOT NULL,
+  postal_code VARCHAR NOT NULL,
+  country VARCHAR DEFAULT 'HR',
+
+  -- Contact
+  contact_person VARCHAR NOT NULL,
+  email VARCHAR NOT NULL CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'),
+  phone VARCHAR,
+  fax VARCHAR,
+
+  -- Pricing
+  pricing_tier_id INTEGER REFERENCES pricing_tiers(id),
+  room_allocation_guarantee INTEGER DEFAULT 0,
+
+  is_active BOOLEAN DEFAULT true,
+  notes TEXT,
+
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+---
+
+### Pricing Tiers Table
+Corporate pricing and discounts.
+
+```sql
+CREATE TABLE pricing_tiers (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR UNIQUE NOT NULL,
+  description TEXT,
+
+  -- Seasonal Multipliers (1.0 = no change, 0.8 = 20% discount)
+  seasonal_rate_a NUMERIC DEFAULT 1.000,
+  seasonal_rate_b NUMERIC DEFAULT 1.000,
+  seasonal_rate_c NUMERIC DEFAULT 1.000,
+  seasonal_rate_d NUMERIC DEFAULT 1.000,
+
+  is_percentage_discount BOOLEAN DEFAULT true,
+  minimum_stay INTEGER,
+
+  -- Validity
+  valid_from DATE NOT NULL,
+  valid_to DATE,
+  is_active BOOLEAN DEFAULT true,
+  is_default BOOLEAN DEFAULT false,
+
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+---
+
+## Database Functions
+
+### Check Room Availability
+Validates room availability for booking dates.
+
+```sql
+CREATE OR REPLACE FUNCTION check_room_availability(
+  p_room_id INTEGER,
+  p_check_in DATE,
+  p_check_out DATE
+) RETURNS BOOLEAN AS $$
+DECLARE
+  conflict_count INTEGER;
+BEGIN
+  SELECT COUNT(*) INTO conflict_count
+  FROM reservations
+  WHERE room_id = p_room_id
+    AND status NOT IN ('cancelled', 'checked-out')
+    AND (
+      (check_in_date < p_check_out AND check_out_date > p_check_in)
+    );
+
+  RETURN conflict_count = 0;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+**Usage**:
+```sql
+SELECT check_room_availability(101, '2025-08-20', '2025-08-25');
+-- Returns: true (available) or false (conflict)
+```
+
+---
+
+### Generate Invoice Number
+Creates sequential invoice numbers per year.
+
+```sql
+CREATE OR REPLACE FUNCTION generate_invoice_number()
+RETURNS TEXT AS $$
+DECLARE
+  next_number INTEGER;
+  year TEXT;
+BEGIN
+  year := EXTRACT(YEAR FROM CURRENT_DATE)::TEXT;
+
+  SELECT COALESCE(MAX(
+    CAST(SUBSTRING(invoice_number FROM '\\d+$') AS INTEGER)
+  ), 0) + 1
+  INTO next_number
+  FROM invoices
+  WHERE invoice_number LIKE 'HP-' || year || '-%';
+
+  RETURN 'HP-' || year || '-' || LPAD(next_number::TEXT, 6, '0');
+END;
+$$ LANGUAGE plpgsql;
+```
+
+**Output Format**: `HP-2025-000001`, `HP-2025-000002`, etc.
+
+---
+
+## Database Triggers
+
+### Update Timestamps
+Automatically updates `updated_at` on record modification.
+
+```sql
+CREATE OR REPLACE FUNCTION update_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Apply to tables
+CREATE TRIGGER reservations_updated_at
+  BEFORE UPDATE ON reservations
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at();
+
+CREATE TRIGGER guests_updated_at
+  BEFORE UPDATE ON guests
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at();
+
+CREATE TRIGGER invoices_updated_at
+  BEFORE UPDATE ON invoices
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at();
+```
+
+---
+
+## Row-Level Security (RLS)
+
+### Enable RLS on Core Tables
+```sql
+ALTER TABLE reservations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE invoices ENABLE ROW LEVEL SECURITY;
+ALTER TABLE guests ENABLE ROW LEVEL SECURITY;
+```
+
+### Example Policies
+```sql
+-- Authenticated users can read all reservations
+CREATE POLICY "Allow authenticated read on reservations"
+  ON reservations FOR SELECT
+  TO authenticated
+  USING (true);
+
+-- Authenticated users can insert reservations
+CREATE POLICY "Allow authenticated insert on reservations"
+  ON reservations FOR INSERT
+  TO authenticated
+  WITH CHECK (true);
+
+-- Restrict guest data access
+CREATE POLICY "Users can view their own guest data"
+  ON guests FOR SELECT
+  TO authenticated
+  USING (auth.uid() IN (
+    SELECT user_id FROM user_profiles WHERE id = guests.id
+  ));
+```
+
+---
+
+## Edge Functions
+
+### Fiscalize Invoice
+Croatian B2C fiscalization SOAP integration.
+
+**Location**: `supabase/functions/fiscalize-invoice/index.ts`
+
+**Request**:
+```typescript
+POST /functions/v1/fiscalize-invoice
+Content-Type: application/json
+Authorization: Bearer YOUR_ANON_KEY
+
+{
+  "invoiceNumber": "747258",
+  "totalAmount": 625.00,
+  "dateTime": "2025-01-08T10:30:00",
+  "oib": "87246357068"
+}
+```
+
+**Response**:
+```json
+{
+  "jir": "4a669de1-8c45-4934-9004-4586a025320b",
+  "zki": "88132f1b4cd4a9b388dfbe180438e73c",
+  "qrCodeData": "https://porezna-uprava.gov.hr/rn?jir=4a669de1-8c45-4934-9004-4586a025320b&datv=20250108&izn=625.00"
+}
+```
+
+**Implementation**:
+- Generates ZKI using RSA-SHA256 signature
+- Sends SOAP XML to FINA endpoint
+- Parses JIR from response
+- Generates QR code data
+- Stores in fiscal_records table
+
+---
+
+## Database Views
+
+### Active Reservations View
+```sql
+CREATE VIEW active_reservations AS
+SELECT
+  r.*,
+  g.first_name,
+  g.last_name,
+  g.email,
+  rm.room_number,
+  rm.room_type
+FROM reservations r
+JOIN guests g ON r.guest_id = g.id
+JOIN rooms rm ON r.room_id = rm.id
+WHERE r.status IN ('confirmed', 'checked-in')
+  AND r.check_out_date >= CURRENT_DATE
+ORDER BY r.check_in_date;
+```
+
+### Financial Summary View
+```sql
+CREATE VIEW financial_summary AS
+SELECT
+  DATE_TRUNC('month', i.issue_date) as month,
+  COUNT(*) as invoice_count,
+  SUM(i.total_amount) as total_revenue,
+  SUM(i.paid_amount) as total_paid,
+  SUM(i.total_amount - i.paid_amount) as outstanding,
+  COUNT(*) FILTER (WHERE fr.jir IS NOT NULL) as fiscalized_count
+FROM invoices i
+LEFT JOIN fiscal_records fr ON fr.invoice_id = i.id
+GROUP BY month
+ORDER BY month DESC;
+```
+
+---
+
+## Performance Optimization
+
+### Key Indexes
+```sql
+-- Reservation queries
+CREATE INDEX idx_reservations_dates ON reservations(check_in_date, check_out_date);
+CREATE INDEX idx_reservations_status_dates ON reservations(status, check_in_date);
+
+-- Financial queries
+CREATE INDEX idx_invoices_dates ON invoices(issue_date);
+CREATE INDEX idx_invoices_fiscal ON invoices((fiscal_data->>'jir'));
+
+-- Channel manager
+CREATE INDEX idx_phobs_availability_date ON phobs_availability(date);
+CREATE INDEX idx_phobs_conflicts_status ON phobs_conflicts(status) WHERE status != 'resolved';
+```
+
+### Query Optimization
+- Use prepared statements for repeated queries
+- Leverage JSONB indexes for channel_room_mappings
+- Implement connection pooling (PgBouncer)
+- Use materialized views for reporting
+
+---
+
+## Backup & Recovery
+
+### Automated Backups
+- **Frequency**: Daily at 03:00 UTC
+- **Retention**: 7 days point-in-time recovery
+- **Storage**: Supabase managed backups
+
+### Manual Backup
+```bash
+# Export entire database
+pg_dump -h db.gkbpthurkucotikjefra.supabase.co -U postgres -d postgres > backup.sql
+
+# Export specific table
+pg_dump -h db.gkbpthurkucotikjefra.supabase.co -U postgres -d postgres -t reservations > reservations_backup.sql
+```
+
+---
+
+## Monitoring & Observability
+
+### Database Metrics
+- Connection pool utilization
+- Query performance (slow query log)
+- Table size and growth
+- Index usage statistics
+
+### Real-time Subscriptions
+Monitor table changes:
+```typescript
+const subscription = supabase
+  .channel('reservations-changes')
+  .on('postgres_changes', {
+    event: '*',
+    schema: 'public',
+    table: 'reservations'
+  }, (payload) => {
+    console.log('Reservation changed:', payload)
+  })
+  .subscribe()
+```
+
+---
+
+**Database Status**: Production Ready ✅
+**Total Tables**: 36
+**PostgreSQL Version**: 17.4.1
+**Region**: eu-central-1

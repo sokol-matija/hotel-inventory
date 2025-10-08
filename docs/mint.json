@@ -52,6 +52,7 @@
       "pages": [
         "technical/architecture",
         "technical/database-schema",
+        "technical/backend-api",
         "technical/api-reference"
       ]
     },
