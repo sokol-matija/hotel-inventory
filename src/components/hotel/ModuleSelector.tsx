@@ -106,7 +106,7 @@ export default function ModuleSelector() {
       <div 
         className="absolute inset-0 opacity-20"
         style={{
-          backgroundImage: 'url(/zemlja_gp copy.png)',
+          backgroundImage: 'url(/zemlja_gp_copy.png)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat'

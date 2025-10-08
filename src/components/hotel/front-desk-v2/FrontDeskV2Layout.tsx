@@ -205,7 +205,7 @@ export default function FrontDeskV2Layout() {
       {/* Background decorative image */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <img 
-          src="/mozaik_gp1 copy.png" 
+          src="/mozaik_gp1.png" 
           alt="Decorative background" 
           className="absolute bottom-0 right-0 w-full h-64 object-cover opacity-10"
         />

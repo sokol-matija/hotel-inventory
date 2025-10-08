@@ -40,6 +40,7 @@ p12 cert/87246357068.49208351934.A.1.p12
 .env.fiscal
 
 *.png
+!public/*.png
 
 images/Mara Hotel Logo and Mosaic/LOGO1.pdf
 

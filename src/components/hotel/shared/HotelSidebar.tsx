@@ -141,7 +141,7 @@ export default function HotelSidebar() {
       <div 
         className="absolute inset-0 opacity-10 transform rotate-90 scale-150"
         style={{
-          backgroundImage: 'url(/mozaik_gp1 copy.png)',
+          backgroundImage: 'url(/mozaik_gp1.png)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat'

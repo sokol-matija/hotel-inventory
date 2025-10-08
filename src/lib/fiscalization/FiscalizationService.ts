@@ -11,6 +11,7 @@ import {
 } from './types';
 import { getCurrentEnvironment, FISCAL_VALIDATION } from './config';
 import { FiscalXMLGenerator } from './xmlGenerator';
+import { supabaseUrl, supabaseAnonKey } from '../supabase';
 
 export class FiscalizationService {
   private static instance: FiscalizationService;
@@ -112,13 +113,13 @@ export class FiscalizationService {
         };
       }
 
-      // Get Supabase URL and anon key from environment
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.REACT_APP_SUPABASE_URL;
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.REACT_APP_SUPABASE_ANON_KEY;
-
-      if (!supabaseUrl || !supabaseKey) {
+      // Use Supabase constants from lib/supabase.ts
+      // Note: supabaseUrl and supabaseAnonKey are imported at the top
+      if (!supabaseUrl || !supabaseAnonKey) {
         throw new Error('Supabase configuration missing');
       }
+
+      const supabaseKey = supabaseAnonKey;
 
       // Extract numeric part of invoice number (HP-2025-747258 → 747258)
       // Croatian Tax Authority expects just the number, not the full format
@@ -394,10 +395,8 @@ export class FiscalizationService {
     const environment = getCurrentEnvironment();
 
     // Check Supabase configuration (needed for Edge Function)
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.REACT_APP_SUPABASE_URL;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.REACT_APP_SUPABASE_ANON_KEY;
-
-    if (!supabaseUrl || !supabaseKey) {
+    // Note: supabaseUrl and supabaseAnonKey are imported at the top from lib/supabase.ts
+    if (!supabaseUrl || !supabaseAnonKey) {
       errors.push('Supabase configuration missing - fiscalization unavailable');
     }
 
