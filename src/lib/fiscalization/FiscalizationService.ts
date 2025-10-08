@@ -139,6 +139,9 @@ export class FiscalizationService {
       console.log('🚀 Calling Supabase Edge Function: fiscalize-invoice');
       console.log(`📋 OIB being sent: ${fiscalRequest.oib}`);
       console.log(`📋 Invoice number: ${invoiceData.invoiceNumber} → ${numericInvoiceNumber}`);
+      console.log(`🔍 Debug - supabaseUrl: ${supabaseUrl}`);
+      console.log(`🔍 Debug - supabaseKey length: ${supabaseKey?.length || 'undefined'}`);
+      console.log(`🔍 Debug - Full URL: ${supabaseUrl}/functions/v1/fiscalize-invoice`);
 
       // Call Edge Function
       const response = await fetch(
