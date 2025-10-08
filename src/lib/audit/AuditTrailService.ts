@@ -186,10 +186,10 @@ class AuditTrailService {
         query = query.eq('user_id', filter.userId);
       }
       if (filter.entityType) {
-        query = query.eq('entity_type', filter.entityType);
+        query = query.eq('table_name', filter.entityType);
       }
       if (filter.entityId) {
-        query = query.eq('entity_id', filter.entityId);
+        query = query.eq('record_id', filter.entityId);
       }
       if (filter.action) {
         query = query.eq('action', filter.action);
@@ -347,62 +347,23 @@ class AuditTrailService {
       const logsToSync = [...this.localAuditBuffer];
       this.localAuditBuffer = [];
 
-      // First try with the full schema including changed_fields
-      const dbLogsWithChangedFields = logsToSync.map(event => ({
-        id: event.id,
-        timestamp: event.timestamp.toISOString(),
-        user_id: event.userId,
-        session_id: event.sessionId,
+      // Map to actual database schema (columns: id, user_id, action, table_name, record_id, old_values, new_values, description, created_at)
+      const dbLogs = logsToSync.map(event => ({
+        user_id: event.userId || null,
         action: event.action,
-        entity_type: event.entityType,
-        entity_id: event.entityId,
-        old_values: event.oldValues ? JSON.stringify(event.oldValues) : null,
-        new_values: event.newValues ? JSON.stringify(event.newValues) : null,
-        changed_fields: event.changedFields,
-        ip_address: event.ipAddress,
-        user_agent: event.userAgent,
-        result: event.result,
-        error_message: event.errorMessage,
-        metadata: event.metadata ? JSON.stringify(event.metadata) : null
+        table_name: event.entityType,
+        record_id: event.entityId,
+        old_values: event.oldValues || null,
+        new_values: event.newValues || null,
+        description: event.metadata ? JSON.stringify(event.metadata) : null,
+        created_at: event.timestamp.toISOString()
       }));
 
-      let { error } = await supabase
+      const { error } = await supabase
         .from('audit_logs')
-        .insert(dbLogsWithChangedFields);
+        .insert(dbLogs);
 
-      // If that fails due to schema mismatch, try without changed_fields
-      if (error && error.message.includes('changed_fields')) {
-        logger.debug('AuditTrail', 'Retrying audit log sync without changed_fields column');
-        
-        const dbLogsWithoutChangedFields = logsToSync.map(event => ({
-          id: event.id,
-          timestamp: event.timestamp.toISOString(),
-          user_id: event.userId,
-          session_id: event.sessionId,
-          action: event.action,
-          entity_type: event.entityType,
-          entity_id: event.entityId,
-          old_values: event.oldValues ? JSON.stringify(event.oldValues) : null,
-          new_values: event.newValues ? JSON.stringify(event.newValues) : null,
-          ip_address: event.ipAddress,
-          user_agent: event.userAgent,
-          result: event.result,
-          error_message: event.errorMessage,
-          metadata: event.metadata ? JSON.stringify(event.metadata) : null
-        }));
-
-        const { error: retryError } = await supabase
-          .from('audit_logs')
-          .insert(dbLogsWithoutChangedFields);
-
-        if (retryError) {
-          // Restore logs to buffer if sync failed
-          this.localAuditBuffer.unshift(...logsToSync);
-          logger.error('AuditTrail', 'Failed to sync audit logs to database (retry)', retryError);
-        } else {
-          logger.debug('AuditTrail', `Synced ${logsToSync.length} audit logs to database (without changed_fields)`);
-        }
-      } else if (error) {
+      if (error) {
         // Restore logs to buffer if sync failed
         this.localAuditBuffer.unshift(...logsToSync);
         logger.error('AuditTrail', 'Failed to sync audit logs to database', error);
@@ -457,20 +418,20 @@ class AuditTrailService {
   private mapAuditEventFromDB(dbEvent: any): AuditEvent {
     return {
       id: dbEvent.id,
-      timestamp: new Date(dbEvent.timestamp),
+      timestamp: new Date(dbEvent.created_at),
       userId: dbEvent.user_id,
-      sessionId: dbEvent.session_id,
+      sessionId: undefined,
       action: dbEvent.action,
-      entityType: dbEvent.entity_type,
-      entityId: dbEvent.entity_id,
-      oldValues: dbEvent.old_values ? JSON.parse(dbEvent.old_values) : undefined,
-      newValues: dbEvent.new_values ? JSON.parse(dbEvent.new_values) : undefined,
-      changedFields: dbEvent.changed_fields,
-      ipAddress: dbEvent.ip_address,
-      userAgent: dbEvent.user_agent,
-      result: dbEvent.result,
-      errorMessage: dbEvent.error_message,
-      metadata: dbEvent.metadata ? JSON.parse(dbEvent.metadata) : undefined
+      entityType: dbEvent.table_name,
+      entityId: dbEvent.record_id,
+      oldValues: dbEvent.old_values,
+      newValues: dbEvent.new_values,
+      changedFields: undefined,
+      ipAddress: undefined,
+      userAgent: undefined,
+      result: 'success',
+      errorMessage: undefined,
+      metadata: dbEvent.description ? JSON.parse(dbEvent.description) : undefined
     };
   }
 
