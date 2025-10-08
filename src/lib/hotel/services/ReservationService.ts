@@ -201,12 +201,13 @@ export class ReservationService {
             fiscalData.jir!,
             fiscalData.zki!,
             fiscalData.qrCodeData!,
-            reservation.totalAmount
+            reservation.totalAmount,
+            typeof guest.id === 'string' ? parseInt(guest.id) : guest.id  // Add guest_id to satisfy database constraint
           );
           console.log('✅ Fiscal data saved to database');
         } catch (dbError) {
           console.error('❌ Failed to save fiscal data to database:', dbError);
-          // Continue anyway - PDF generation and notification still happen
+          throw dbError; // Don't silently fail - we need to know about this!
         }
 
         // Generate PDF invoice
@@ -424,7 +425,8 @@ export class ReservationService {
     jir: string,
     zki: string,
     qrCodeData: string,
-    totalAmount: number
+    totalAmount: number,
+    guestId: number  // Added to satisfy billing_target constraint
   ): Promise<void> {
     const { supabase } = await import('../../supabase');
     const reservationIdNum = typeof reservationId === 'string' ? parseInt(reservationId) : reservationId;
@@ -449,6 +451,7 @@ export class ReservationService {
         .insert({
           invoice_number: invoiceNumber,
           reservation_id: reservationIdNum,
+          guest_id: guestId,  // FIX: Add guest_id to satisfy billing_target constraint
           issue_date: new Date().toISOString().split('T')[0],
           subtotal: totalAmount / 1.25, // Remove VAT
           vat_amount: totalAmount - (totalAmount / 1.25),

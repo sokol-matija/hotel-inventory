@@ -71,9 +71,9 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
       {/* Full-screen background image */}
       <div className="absolute inset-0 pointer-events-none">
-        <img 
-          src="/mozaik_gp1 copy.png" 
-          alt="Hotel Porec Background" 
+        <img
+          src="/mozaik_gp1.png"
+          alt="Hotel Porec Background"
           className="absolute inset-0 w-full h-full object-cover opacity-40"
         />
         {/* Overlay for better readability */}
