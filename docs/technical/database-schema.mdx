@@ -252,6 +252,12 @@ CREATE INDEX idx_pricing_tiers_active ON pricing_tiers(is_active) WHERE is_activ
 
 ## Relationships
 
+<Accordion title="📊 Database Relationships Diagram (Click to Expand)" icon="diagram-project" defaultOpen={true}>
+
+<Note>
+  **💡 View Full-Screen:** [Click here to open this diagram in Mermaid Live Editor](https://mermaid.live/edit#pako:eJy9WFtvozgU_isIaVa70vQP9I2mtI3aXBTSSpVGsg7GTTwFmzEmanr573vMLYaYJvuyeZgpPhefy3cu8OFTmTD_0mfqmsNGQfZLePj78cObSMW8O6lZ6i1ypkBzKYqaevsYRuvI-_y8uJAf3iqMwtVTsJ4u5pF36cVSvjr5qicSrYNnw7aFU8pIQ7n0uKBpmTCnwHT-tJhOQsOmGGV8Z9hqxtViMRuzEoqCbwRLiJY285e8uPj8rB7I-nkZNpYSvc-ZS6nhW66mk-n8tuHMFadcbBzMy7vFVUQqkVmwXKKI0Z5BnjdmNDK2oedHxSXWjzhVDPR37FYoN0yYlH_HvQyeZ-F83Q_8OQ5cB9OHZ3IdrvH_Nr4J08BTl4I2I5YCdGj9GHW5KTTo8hvRq8XiHoNNosXjqvbuRcmMFLJUlI2LTRazZTCf1gJSESqzHMR-XKDBAVlPw5URKguGwOFMtZnForrhAgTlkNYnXcRNmFDFzTSaBA9kFU4Wq-vqYl5QSPk7IiTeO2T6eciBO_ga8zrcxDxNLeAP-Wy_LdbOhduSFdqLmNpx2ivJBmiNWXWWGwLGqgGWVkBfC0sdtplcGqh5f3lLu3YOdrSODuJb1WUVXsPeUqMwiGzg9Ss0YS9csN79WxACe9wMBGyY8v5ebmVc_NModZRsr5qDJ3QzuJo-TNfPjUmwQyQDRo7rfU9LsA7J8iGYn1bRVF5n4z3be2uIU1Z411Wh9BrhR_1kflxojyfe8v5wtANFt6AQSarQREDGjmkpjJJYhtd5jw6F-VYKh4CoBgUcvDe_xOTX_EPkC4m50tsDDedFykB4vCA7nvd9wQOSsh1LndfHBdkYMBJ02bZQlBlDJHlaakhJkTOh-2obgoZ9g9-v_sg4L6JKYhfBu2JEjX29EXlJJbaMmjgieRgprVAGb0RSWmKboXtngHLFMl5mx64WDAoT9Qo6BE4xxKcY6CmGxGkfNX_0nep8NVm6uR_G2-6j34e9U2bpac87GNiECnR0y-gr4YKYJydNlnpANBrr1Bm4Cr7Z6qJPhaRMh2d0y9NEMYGDorQB1ybdHlP2udmXsOn15lFPro07LmFcJseJiaFgpIqM6rnRJa6MK8AfU3agCWR9cw_FUypeYOrgbayyhqL90lSswBlRdYNhgbaMqIXQuv8e34HzNuO4paG4fVEHnW5unVetXOwkDqyxgh1YexbAqqzXW4ETe2h9yVzAS46O__dctdRqZRgjxpBiK0JbSxcuLTx3SRksMKcruk1LFT_vl18K_gdv84_v-80dnfT9lR8ONXvT3h-zqSVVfOGYH9Oc42sMI2PVKKtXHezdkltNUvMM8w9Zrt9NijKuNa5FMIRkt4r9R7_PhmKbmNHKg32G045kTG_tVjHWg2y_miU-sZB5cKzaVCZ3wXwePpxbcU1ljxV_S3bvHQkv8hT2I9ShH46eoY5ael0ITbt1CNd0heuGKN0B6C-C5yRZM1WNTMfcGnTLmuNA_o1NP-6CVJHNq2Lf9JoJ3wGp4rn1gm5-1lgGqjGznUv-Tx89xsUu8S8_fL1lmfkCgKsx4FTzv376UGoZ7QX1L7Uq2U-_zA0mmg8E7SFLONbJrP58UH1F-PoXGCUUWQ) — pan, zoom, and interact with the full diagram
+</Note>
+
 ```mermaid
 erDiagram
     %% Core Hotel Operations
@@ -272,14 +278,14 @@ erDiagram
     RESERVATIONS ||--o{ RESERVATION_DAILY_DETAILS : has_details
     RESERVATIONS }o--|| RESERVATION_STATUSES : has_status
     RESERVATIONS }o--|| BOOKING_SOURCES : from_source
-    RESERVATIONS }o--o| COMPANIES : for_company
-    RESERVATIONS }o--o| PRICING_TIERS : uses_tier
+    RESERVATIONS }o--|| COMPANIES : for_company
+    RESERVATIONS }o--|| PRICING_TIERS : uses_tier
 
     %% Financial
-    INVOICES ||--o| FISCAL_RECORDS : fiscalized_by
+    INVOICES ||--|| FISCAL_RECORDS : fiscalized_by
     INVOICES ||--o{ PAYMENTS : paid_by
-    INVOICES }o--o| GUESTS : billed_to
-    INVOICES }o--o| COMPANIES : billed_to
+    INVOICES }o--|| GUESTS : billed_to
+    INVOICES }o--|| COMPANIES : billed_to
 
     %% Guest Services
     GUEST_STAYS ||--o{ DAILY_GUEST_SERVICES : tracks
@@ -364,7 +370,7 @@ erDiagram
 
     FISCAL_RECORDS {
         int id PK
-        int invoice_id FK UK
+        int invoice_id FK "unique"
         varchar jir
         varchar zki
         text qr_code_data
@@ -403,6 +409,8 @@ erDiagram
         boolean is_active
     }
 ```
+
+</Accordion>
 
 ## Views
 
