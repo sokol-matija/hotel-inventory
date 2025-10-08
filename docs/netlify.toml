@@ -1,0 +1,12 @@
+# Netlify configuration for Mintlify documentation
+[build]
+  command = "npm install -g mintlify && mintlify build"
+  publish = ".mintlify"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

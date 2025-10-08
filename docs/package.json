@@ -1,0 +1,21 @@
+{
+  "name": "hotel-inventory-docs",
+  "version": "1.0.0",
+  "description": "Hotel Inventory Management System Documentation",
+  "scripts": {
+    "dev": "mintlify dev",
+    "build": "mintlify build",
+    "preview": "mintlify dev",
+    "deploy:vercel": "vercel --prod",
+    "deploy:netlify": "netlify deploy --prod",
+    "install-cli": "npm install -g mintlify vercel netlify-cli"
+  },
+  "keywords": [
+    "hotel",
+    "inventory",
+    "documentation",
+    "mintlify"
+  ],
+  "author": "Hotel Inventory Team",
+  "license": "PRIVATE"
+}

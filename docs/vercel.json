@@ -1,0 +1,12 @@
+{
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "public"
+      }
+    }
+  ],
+  "installCommand": "npm install -g mintlify && mkdir -p public && echo 'Mintlify docs require Mintlify hosting' > public/index.html"
+}
