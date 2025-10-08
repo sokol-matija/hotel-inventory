@@ -1,10 +1,5 @@
 {
   "name": "Hotel Inventory Management System",
-  "logo": {
-    "dark": "/logo/dark.svg",
-    "light": "/logo/light.svg"
-  },
-  "favicon": "/favicon.svg",
   "colors": {
     "primary": "#0066CC",
     "light": "#4285F4",
