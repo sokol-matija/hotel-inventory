@@ -1,0 +1,81 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "Hotel Inventory Management System",
+  "colors": {
+    "primary": "#0066CC",
+    "light": "#4285F4",
+    "dark": "#1E3A8A"
+  },
+  "favicon": "/favicon.ico",
+  "navigation": {
+    "groups": [
+      {
+        "group": "Getting Started",
+        "pages": [
+          "introduction",
+          "quickstart",
+          "installation"
+        ]
+      },
+      {
+        "group": "Core Features",
+        "pages": [
+          "features/hotel-management",
+          "features/front-desk",
+          "features/finance",
+          "features/reservations",
+          "features/channel-manager"
+        ]
+      },
+      {
+        "group": "Integration Guides",
+        "pages": [
+          "integrations/croatian-fiscalization",
+          "integrations/channel-manager-setup",
+          "integrations/supabase-setup"
+        ]
+      },
+      {
+        "group": "Technical Documentation",
+        "pages": [
+          "technical/architecture",
+          "technical/database-schema",
+          "technical/backend-api",
+          "technical/edge-functions",
+          "technical/api-reference"
+        ]
+      },
+      {
+        "group": "Development",
+        "pages": [
+          "development/setup",
+          "development/contributing",
+          "development/testing"
+        ]
+      }
+    ]
+  },
+  "logo": {
+    "light": "/logo.png",
+    "dark": "/logo.png"
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "Support",
+        "href": "mailto:support@hotelinventory.com"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Dashboard",
+      "href": "https://app.hotelinventory.com"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/your-username/hotel-inventory"
+    }
+  }
+}
