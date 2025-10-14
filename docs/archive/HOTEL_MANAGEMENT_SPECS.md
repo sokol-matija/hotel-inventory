@@ -530,7 +530,7 @@ src/components/hotel/
 - **Contextual Intelligence**: Smart shortcuts and predictive actions based on user patterns
 - **Instant Feedback**: Sub-200ms response times with elegant loading states
 - **Graceful Error Recovery**: Clear recovery paths with helpful suggestions (not just error messages)
-- **Staff Confidence Metrics**: Built-in onboarding progress tracking to achieve <1 month competency
+- **Staff Confidence Metrics**: Built-in onboarding progress tracking to achieve `<1` month competency
 - **Accessibility Excellence**: WCAG AAA compliant with keyboard shortcuts for power users
 
 ### **🎪 Advanced Visual Polish**

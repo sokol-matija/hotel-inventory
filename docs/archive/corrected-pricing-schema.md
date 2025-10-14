@@ -255,7 +255,7 @@ CREATE TABLE reservations (
     tourism_tax DECIMAL(10,2) DEFAULT 0,
     pet_fee DECIMAL(10,2) DEFAULT 0,
     parking_fee DECIMAL(10,2) DEFAULT 0,
-    short_stay_supplement DECIMAL(10,2) DEFAULT 0, -- +20% for <3 nights
+    short_stay_supplement DECIMAL(10,2) DEFAULT 0, -- +20% for `<3` nights
     additional_services_fee DECIMAL(10,2) DEFAULT 0,
     
     -- Final amounts
@@ -318,7 +318,7 @@ CREATE TABLE reservations (
 ### **4. Flexible Fee System**
 - **Tourism tax by month**: 1,10€ (Jan-Mar, Oct-Dec), 1,60€ (Apr-Sep)
 - **Children age brackets**: 0-3 free, 3-7 (-50%), 7-14 (-20%)  
-- **Short stay supplement**: +20% for stays <3 days
+- **Short stay supplement**: +20% for stays `<3` days
 - **Configurable business rules** without code changes
 
 ### **5. Professional Operations**

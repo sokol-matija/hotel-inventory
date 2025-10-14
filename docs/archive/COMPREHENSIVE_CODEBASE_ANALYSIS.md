@@ -206,7 +206,7 @@ export class HotelDataService {
 - **Singleton pattern** for global state management
 - **Database abstraction** through adapter pattern
 - **Strong TypeScript integration**
-- **Error handling** with Result<T, E> pattern
+- **Error handling** with `Result&lt;T, E&gt;` pattern
 
 **DatabaseAdapter** (`src/lib/hotel/databaseAdapter.ts`)
 ```typescript
@@ -1446,7 +1446,7 @@ src/__tests__/legacy-tests/ (if exists)
 3. Consolidate similar utility functions
 
 #### **Phase 2: Service Layer Consolidation (2-3 weeks)**
-1. Create `BaseService<T>` generic class
+1. Create `BaseService&lt;T&gt;` generic class
 2. Migrate existing services to extend BaseService
 3. Remove duplicate CRUD implementations
 
@@ -1687,7 +1687,7 @@ CMD ["npm", "start"]
 - [ ] Create shared component library structure
 
 #### **Week 4: Service Layer Consolidation**
-- [ ] Create BaseService<T> generic class
+- [ ] Create `BaseService&lt;T&gt;` generic class
 - [ ] Migrate existing services to extend BaseService
 - [ ] Implement unified error handling system
 - [ ] Add comprehensive logging and monitoring

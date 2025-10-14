@@ -268,7 +268,7 @@ This represents the core business domain with sophisticated hotel management fun
   - Real-time pricing calculations
 - **Pricing Logic**:
   - Base room rates with seasonal periods
-  - Children discounts (Free <3, 30% off 3-12, Full price 13+)
+  - Children discounts (Free `<3`, 30% off 3-12, Full price 13+)
   - Pet fee: €20
   - Parking fee: €7/night
   - Tourism tax: €1.5 per person per night

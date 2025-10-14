@@ -255,7 +255,7 @@ This document details the new requirements for extending the existing Hotel Pore
 - **Children 12-18**: 50% rate
 
 ### Additional Rules
-- **Short Stay Supplement**: +20% on accommodation price for stays < 3 days
+- **Short Stay Supplement**: +20% on accommodation price for stays `< 3` days
 - **Parking**: €7 per night (25% VAT)
 - **Pet Fee**: €20 per stay (25% VAT)  
 - **Room 401 Special**: 1-day cleaning gap, 4-day minimum, 3 parking spaces included
