@@ -1,9 +1,12 @@
 // PhobsChannelManagerService - Channel Manager Integration Service
-// Handles Phobs API communication, OTA channel synchronization, and reservation management
+// Handles Phobs SOAP/XML API communication, OTA channel synchronization, and reservation management
+// UPDATED: Now uses SOAP/XML instead of REST/JSON
 
 import hotelNotification from '../../notifications';
 import { PhobsErrorHandlingService } from './PhobsErrorHandlingService';
-import { 
+import { PhobsSoapClient, createPhobsSoapClient } from './PhobsSoapClient';
+import { PhobsDataTransformer } from './PhobsDataTransformer';
+import {
   PhobsConfig,
   PhobsReservation,
   OTAChannel,
@@ -15,7 +18,9 @@ import {
   AvailabilitySyncRequest,
   RatesSyncRequest,
   ReservationSyncRequest,
-  PhobsWebhookEvent
+  PhobsWebhookEvent,
+  PhobsRoomId,
+  createPhobsRoomId
 } from './phobsTypes';
 import { Reservation, BookingSource } from '../types';
 
@@ -51,6 +56,7 @@ export interface ConnectionTestResult {
 export class PhobsChannelManagerService {
   private static instance: PhobsChannelManagerService;
   private config: PhobsConfig | null = null;
+  private soapClient: PhobsSoapClient | null = null;
   private authToken: string | null = null;
   private tokenExpiresAt: Date | null = null;
   private retryQueue: Array<{ operation: SyncOperation; data: any; retryCount: number }> = [];
@@ -80,7 +86,10 @@ export class PhobsChannelManagerService {
   async initialize(config: PhobsConfig): Promise<{ success: boolean; error?: string }> {
     try {
       this.config = config;
-      
+
+      // Create SOAP client
+      this.soapClient = createPhobsSoapClient(config);
+
       // Test connection and authenticate
       const authResult = await this.authenticate();
       if (!authResult.success) {
@@ -96,7 +105,7 @@ export class PhobsChannelManagerService {
       this.isConnected = true;
       hotelNotification.success(
         'Phobs Channel Manager Connected!',
-        `Successfully connected to ${config.environment} environment`,
+        `Successfully connected to ${config.environment} environment (SOAP/XML)`,
         4
       );
 
@@ -104,7 +113,7 @@ export class PhobsChannelManagerService {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       console.error('Phobs initialization failed:', error);
-      
+
       hotelNotification.error(
         'Channel Manager Connection Failed',
         errorMessage,
@@ -116,40 +125,37 @@ export class PhobsChannelManagerService {
   }
 
   /**
-   * Authenticate with Phobs API
+   * Authenticate with Phobs API using OAuth2
    */
   private async authenticate(): Promise<AuthenticationResult> {
-    if (!this.config) {
-      return { success: false, error: 'Configuration not provided' };
+    if (!this.config || !this.soapClient) {
+      return { success: false, error: 'Configuration or SOAP client not initialized' };
     }
 
     const result = await this.errorHandler.withRetry(
       async () => {
-        const response = await this.makeApiRequest('/auth/token', {
-          method: 'POST',
-          body: JSON.stringify({
-            apiKey: this.config!.apiKey,
-            secretKey: this.config!.secretKey,
-            hotelId: this.config!.hotelId
-          })
-        });
+        const authResponse = await this.soapClient!.authenticate(
+          this.config!.apiKey,
+          this.config!.secretKey,
+          this.config!.hotelId
+        );
 
-        if (response.success && response.data?.token) {
-          this.authToken = response.data.token;
-          this.tokenExpiresAt = new Date(Date.now() + (24 * 60 * 60 * 1000)); // 24 hours
-          
-          return { 
-            success: true, 
-            token: this.authToken, 
-            expiresAt: this.tokenExpiresAt 
+        if (authResponse.success && authResponse.token) {
+          this.authToken = authResponse.token;
+          this.tokenExpiresAt = authResponse.expiresAt || new Date(Date.now() + 3600 * 1000);
+
+          return {
+            success: true,
+            token: this.authToken,
+            expiresAt: this.tokenExpiresAt
           };
         } else {
-          throw new Error(response.error || 'Authentication failed');
+          throw new Error(authResponse.error || 'Authentication failed');
         }
       },
       {
         operation: 'authenticate',
-        endpoint: '/auth/token',
+        endpoint: '/token',
         hotelId: this.config.hotelId
       },
       {
@@ -162,31 +168,36 @@ export class PhobsChannelManagerService {
       return result.data as AuthenticationResult;
     } else {
       this.errorHandler.logError(result.error!);
-      return { 
-        success: false, 
-        error: result.error?.message || 'Authentication failed' 
+      return {
+        success: false,
+        error: result.error?.message || 'Authentication failed'
       };
     }
   }
 
   /**
-   * Test connection to Phobs API
+   * Test connection to Phobs SOAP API
    */
   async testConnection(): Promise<ConnectionTestResult> {
-    try {
-      const startTime = Date.now();
-      const response = await this.makeApiRequest('/health', { method: 'GET' });
-      const latency = Date.now() - startTime;
+    if (!this.soapClient) {
+      return {
+        success: false,
+        error: 'SOAP client not initialized'
+      };
+    }
 
-      if (response.success) {
+    try {
+      const connectionResult = await this.soapClient.testConnection();
+
+      if (connectionResult.success) {
         return {
           success: true,
-          latency,
-          apiVersion: response.data?.version,
-          supportedFeatures: response.data?.features || []
+          latency: connectionResult.latency,
+          apiVersion: '1.006', // OTA version
+          supportedFeatures: ['SOAP/XML', 'OTA', 'OAuth2']
         };
       } else {
-        throw new Error(response.error || 'Health check failed');
+        throw new Error(connectionResult.error || 'Connection test failed');
       }
     } catch (error) {
       console.error('Connection test failed:', error);
@@ -202,11 +213,23 @@ export class PhobsChannelManagerService {
   // ===========================
 
   /**
-   * Sync room availability to all OTA channels
+   * Sync room availability to all OTA channels via SOAP/XML
    */
   async syncRoomAvailability(request: AvailabilitySyncRequest): Promise<SyncResult> {
     const operation: SyncOperation = 'availability';
-    
+
+    if (!this.soapClient || !this.config) {
+      return {
+        success: false,
+        operation,
+        recordsProcessed: 0,
+        recordsSuccessful: 0,
+        recordsFailed: 0,
+        errors: ['SOAP client or configuration not initialized'],
+        duration: 0
+      };
+    }
+
     if (this.syncInProgress.has(operation)) {
       return {
         success: false,
@@ -229,35 +252,38 @@ export class PhobsChannelManagerService {
     try {
       hotelNotification.info(
         'Syncing Availability',
-        `Updating availability for ${request.roomIds.length} rooms across all channels...`
+        `Updating availability for ${request.roomIds.length} rooms via SOAP/XML...`
       );
 
       for (const availability of request.availability) {
         recordsProcessed++;
-        
+
         try {
-          const response = await this.makeApiRequest('/inventory/availability', {
-            method: 'PUT',
-            body: JSON.stringify({
-              roomId: availability.roomId,
-              date: availability.date.toISOString(),
-              available: availability.available,
-              rate: availability.rate,
-              restrictions: {
-                minimumStay: availability.minimumStay,
-                stopSale: availability.stopSale,
-                closeToArrival: availability.closeToArrival,
-                closeToDeparture: availability.closeToDeparture
-              },
-              forceUpdate: request.forceUpdate
-            })
+          // Transform availability data to OTA format
+          const otaParams = PhobsDataTransformer.availabilityToOta({
+            hotelCode: this.config.hotelId,
+            roomId: availability.roomId,
+            roomTypeCode: PhobsDataTransformer.mapRoomTypeToOtaCode(availability.roomId),
+            ratePlanCode: availability.rateId ? PhobsDataTransformer.mapRatePlanToOtaCode(availability.rateId) : undefined,
+            startDate: availability.date,
+            endDate: availability.date, // Single day update
+            available: availability.available,
+            status: availability.stopSale ? 'Close' : 'Open',
+            minStay: availability.minimumStay,
+            maxStay: availability.maximumStay,
+            closeToArrival: availability.closeToArrival,
+            closeToDeparture: availability.closeToDeparture
           });
 
-          if (response.success) {
+          // Send SOAP request
+          const soapResponse = await this.soapClient.sendAvailabilityNotification(otaParams);
+
+          if (soapResponse.success) {
             recordsSuccessful++;
           } else {
             recordsFailed++;
-            errors.push(`Room ${availability.roomId}: ${response.error}`);
+            const errorMsg = soapResponse.errors?.map(e => `${e.code}: ${e.message}`).join(', ') || 'Unknown error';
+            errors.push(`Room ${availability.roomId}: ${errorMsg}`);
           }
         } catch (error) {
           recordsFailed++;
@@ -281,7 +307,7 @@ export class PhobsChannelManagerService {
       if (result.success) {
         hotelNotification.success(
           'Availability Sync Complete!',
-          `Updated ${recordsSuccessful} availability records across all channels`,
+          `Updated ${recordsSuccessful} availability records via SOAP/XML`,
           4
         );
       } else {
@@ -296,7 +322,7 @@ export class PhobsChannelManagerService {
     } catch (error) {
       const duration = Date.now() - startTime;
       console.error('Availability sync error:', error);
-      
+
       return {
         success: false,
         operation,
@@ -312,11 +338,23 @@ export class PhobsChannelManagerService {
   }
 
   /**
-   * Sync room rates to all OTA channels
+   * Sync room rates to all OTA channels via SOAP/XML
    */
   async syncRates(request: RatesSyncRequest): Promise<SyncResult> {
     const operation: SyncOperation = 'rates';
-    
+
+    if (!this.soapClient || !this.config) {
+      return {
+        success: false,
+        operation,
+        recordsProcessed: 0,
+        recordsSuccessful: 0,
+        recordsFailed: 0,
+        errors: ['SOAP client or configuration not initialized'],
+        duration: 0
+      };
+    }
+
     if (this.syncInProgress.has(operation)) {
       return {
         success: false,
@@ -339,34 +377,33 @@ export class PhobsChannelManagerService {
     try {
       hotelNotification.info(
         'Syncing Rates',
-        `Updating rates for ${request.rates.length} rate plans across all channels...`
+        `Updating rates for ${request.rates.length} rate plans via SOAP/XML...`
       );
 
       for (const ratePlan of request.rates) {
         recordsProcessed++;
-        
+
         try {
-          const response = await this.makeApiRequest('/inventory/rates', {
-            method: 'PUT',
-            body: JSON.stringify({
-              rateId: ratePlan.rateId,
-              baseRate: ratePlan.baseRate,
-              seasonalAdjustments: ratePlan.seasonalAdjustments,
-              channelRates: ratePlan.channelRates,
-              restrictions: {
-                minimumStay: ratePlan.minimumStay,
-                maximumStay: ratePlan.maximumStay,
-                advanceBookingDays: ratePlan.advanceBookingDays
-              },
-              forceUpdate: request.forceUpdate
-            })
+          // Transform rate data to OTA format
+          const otaParams = PhobsDataTransformer.rateToOta({
+            hotelCode: this.config.hotelId,
+            roomTypeCode: PhobsDataTransformer.mapRoomTypeToOtaCode(ratePlan.name || 'standard'),
+            ratePlanCode: PhobsDataTransformer.mapRatePlanToOtaCode(ratePlan.name),
+            startDate: request.dateRange.startDate,
+            endDate: request.dateRange.endDate,
+            baseRate: ratePlan.baseRate,
+            currencyCode: ratePlan.currency
           });
 
-          if (response.success) {
+          // Send SOAP request
+          const soapResponse = await this.soapClient.sendRateNotification(otaParams);
+
+          if (soapResponse.success) {
             recordsSuccessful++;
           } else {
             recordsFailed++;
-            errors.push(`Rate ${ratePlan.rateId}: ${response.error}`);
+            const errorMsg = soapResponse.errors?.map(e => `${e.code}: ${e.message}`).join(', ') || 'Unknown error';
+            errors.push(`Rate ${ratePlan.rateId}: ${errorMsg}`);
           }
         } catch (error) {
           recordsFailed++;
@@ -390,7 +427,7 @@ export class PhobsChannelManagerService {
       if (result.success) {
         hotelNotification.success(
           'Rate Sync Complete!',
-          `Updated ${recordsSuccessful} rate plans across all channels`,
+          `Updated ${recordsSuccessful} rate plans via SOAP/XML`,
           4
         );
       } else {
@@ -405,7 +442,7 @@ export class PhobsChannelManagerService {
     } catch (error) {
       const duration = Date.now() - startTime;
       console.error('Rate sync error:', error);
-      
+
       return {
         success: false,
         operation,
@@ -420,16 +457,109 @@ export class PhobsChannelManagerService {
     }
   }
 
+  /**
+   * Fetch hotel rate plan from Phobs (OTA_HotelRatePlanRQ)
+   * Retrieves rate and room mapping data for hotel onboarding
+   */
+  async fetchHotelRatePlan(destinationSystemCode: string = 'PHOBS'): Promise<{
+    success: boolean;
+    ratePlans?: Array<{
+      ratePlanCode: string;
+      ratePlanName?: string;
+      ratePlanType?: string;
+      roomTypeCode?: string;
+      roomTypeName?: string;
+      description?: string;
+      minOccupancy?: number;
+      maxOccupancy?: number;
+    }>;
+    error?: string;
+  }> {
+    if (!this.soapClient || !this.config) {
+      return {
+        success: false,
+        error: 'SOAP client or configuration not initialized'
+      };
+    }
+
+    try {
+      hotelNotification.info(
+        'Fetching Rate Plans',
+        `Retrieving hotel rate plan mappings from Phobs...`
+      );
+
+      // Send SOAP request to fetch rate plan
+      const soapResponse = await this.soapClient.sendRatePlanRequest({
+        hotelCode: this.config.hotelId,
+        destinationSystemCode
+      });
+
+      if (soapResponse.success && soapResponse.data) {
+        const ratePlans = soapResponse.data.ratePlans || [];
+
+        hotelNotification.success(
+          'Rate Plans Retrieved!',
+          `Successfully fetched ${ratePlans.length} rate plan(s) from Phobs`,
+          4
+        );
+
+        return {
+          success: true,
+          ratePlans
+        };
+      } else {
+        const errorMsg = soapResponse.errors?.map(e => `${e.code}: ${e.message}`).join(', ') || 'Unknown error';
+
+        hotelNotification.error(
+          'Rate Plan Fetch Failed',
+          errorMsg,
+          5
+        );
+
+        return {
+          success: false,
+          error: errorMsg
+        };
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch rate plan';
+      console.error('Error fetching hotel rate plan:', error);
+
+      hotelNotification.error(
+        'Rate Plan Fetch Error',
+        errorMessage,
+        6
+      );
+
+      return {
+        success: false,
+        error: errorMessage
+      };
+    }
+  }
+
   // ===========================
   // RESERVATION SYNCHRONIZATION
   // ===========================
 
   /**
-   * Sync reservations with OTA channels (bidirectional)
+   * Sync reservations with OTA channels via SOAP/XML (bidirectional)
    */
   async syncReservations(request: ReservationSyncRequest): Promise<SyncResult> {
     const operation: SyncOperation = 'reservation';
-    
+
+    if (!this.soapClient || !this.config) {
+      return {
+        success: false,
+        operation,
+        recordsProcessed: 0,
+        recordsSuccessful: 0,
+        recordsFailed: 0,
+        errors: ['SOAP client or configuration not initialized'],
+        duration: 0
+      };
+    }
+
     if (this.syncInProgress.has(operation)) {
       return {
         success: false,
@@ -450,38 +580,35 @@ export class PhobsChannelManagerService {
     const errors: string[] = [];
 
     try {
-      const operationText = request.operation === 'create' ? 'Creating' : 
+      const operationText = request.operation === 'create' ? 'Creating' :
                            request.operation === 'update' ? 'Updating' : 'Cancelling';
-      
+
       hotelNotification.info(
         'Syncing Reservations',
-        `${operationText} ${request.reservations.length} reservations across all channels...`
+        `${operationText} ${request.reservations.length} reservations via SOAP/XML...`
       );
 
       for (const reservation of request.reservations) {
         recordsProcessed++;
-        
-        try {
-          const endpoint = request.operation === 'cancel' 
-            ? `/reservations/${reservation.phobsReservationId}/cancel`
-            : '/reservations';
-          
-          const method = request.operation === 'create' ? 'POST' : 'PUT';
-          
-          const response = await this.makeApiRequest(endpoint, {
-            method,
-            body: JSON.stringify({
-              reservation: this.mapReservationToPhobsFormat(reservation),
-              operation: request.operation,
-              forceUpdate: request.forceUpdate
-            })
-          });
 
-          if (response.success) {
+        try {
+          // Map operation to OTA resStatus
+          const resStatus: 'Commit' | 'Cancel' | 'Modify' =
+            request.operation === 'create' ? 'Commit' :
+            request.operation === 'cancel' ? 'Cancel' : 'Modify';
+
+          // Transform reservation to SOAP parameters
+          const soapParams = this.mapReservationToSoapParams(reservation, resStatus);
+
+          // Send SOAP request
+          const soapResponse = await this.soapClient.sendReservationNotification(soapParams);
+
+          if (soapResponse.success) {
             recordsSuccessful++;
           } else {
             recordsFailed++;
-            errors.push(`Reservation ${reservation.phobsReservationId}: ${response.error}`);
+            const errorMsg = soapResponse.errors?.map(e => `${e.code}: ${e.message}`).join(', ') || 'Unknown error';
+            errors.push(`Reservation ${reservation.phobsReservationId}: ${errorMsg}`);
           }
         } catch (error) {
           recordsFailed++;
@@ -505,7 +632,7 @@ export class PhobsChannelManagerService {
       if (result.success) {
         hotelNotification.success(
           'Reservation Sync Complete!',
-          `${operationText.replace('ing', 'ed')} ${recordsSuccessful} reservations across all channels`,
+          `${operationText.replace('ing', 'ed')} ${recordsSuccessful} reservations via SOAP/XML`,
           4
         );
       } else {
@@ -520,7 +647,7 @@ export class PhobsChannelManagerService {
     } catch (error) {
       const duration = Date.now() - startTime;
       console.error('Reservation sync error:', error);
-      
+
       return {
         success: false,
         operation,
@@ -532,6 +659,156 @@ export class PhobsChannelManagerService {
       };
     } finally {
       this.syncInProgress.delete(operation);
+    }
+  }
+
+  /**
+   * Pull reservations from Phobs (3-step pull process)
+   * Step 1: Send pull request (OTA_HotelResNotifRS)
+   * Step 2: Receive reservations (OTA_HotelResNotifRQ)
+   * Step 3: Send confirmation with reservation IDs
+   */
+  async pullReservationsFromPhobs(): Promise<{
+    success: boolean;
+    reservationsReceived: number;
+    reservationsConfirmed: number;
+    reservations?: Array<{
+      reservationId: string;
+      hotelCode: string;
+      roomTypeCode: string;
+      ratePlanCode: string;
+      checkIn: string;
+      checkOut: string;
+      numberOfUnits: number;
+      guestCounts: Array<{ ageQualifyingCode: number; count: number }>;
+      guest?: {
+        givenName: string;
+        surname: string;
+        email?: string;
+        phone?: string;
+      };
+      totalAmount?: number;
+      currencyCode?: string;
+      resStatus?: string;
+    }>;
+    error?: string;
+  }> {
+    if (!this.soapClient || !this.config) {
+      return {
+        success: false,
+        reservationsReceived: 0,
+        reservationsConfirmed: 0,
+        error: 'SOAP client or configuration not initialized'
+      };
+    }
+
+    try {
+      hotelNotification.info(
+        'Pulling Reservations',
+        'Retrieving new reservations from Phobs...'
+      );
+
+      // Step 1 & 2: Pull reservations
+      const pullResult = await this.soapClient.pullReservations({
+        hotelCode: this.config.hotelId,
+        username: this.config.apiKey,
+        password: this.config.secretKey
+      });
+
+      if (!pullResult.success || !pullResult.reservations) {
+        const errorMsg = pullResult.errors?.map(e => `${e.code}: ${e.message}`).join(', ') || 'Unknown error';
+        
+        hotelNotification.error(
+          'Reservation Pull Failed',
+          errorMsg,
+          5
+        );
+
+        return {
+          success: false,
+          reservationsReceived: 0,
+          reservationsConfirmed: 0,
+          error: errorMsg
+        };
+      }
+
+      const reservations = pullResult.reservations;
+      const reservationsReceived = reservations.length;
+
+      if (reservationsReceived === 0) {
+        hotelNotification.info(
+          'No New Reservations',
+          'No new reservations to process from Phobs'
+        );
+
+        return {
+          success: true,
+          reservationsReceived: 0,
+          reservationsConfirmed: 0,
+          reservations: []
+        };
+      }
+
+      // Step 3: Confirm received reservations
+      const confirmationCodes = reservations.map(r => ({
+        reservationCode: r.reservationId,
+        pmsConfirmationId: r.reservationId,
+        yourConfirmationCode: r.reservationId
+      }));
+
+      const confirmResult = await this.soapClient.confirmReservations({
+        hotelCode: this.config.hotelId,
+        username: this.config.apiKey,
+        password: this.config.secretKey,
+        confirmationCodes
+      });
+
+      if (!confirmResult.success) {
+        const errorMsg = confirmResult.errors?.map(e => `${e.code}: ${e.message}`).join(', ') || 'Confirmation failed';
+        
+        hotelNotification.warning(
+          'Confirmation Issues',
+          `Received ${reservationsReceived} reservations but confirmation had issues: ${errorMsg}`,
+          5
+        );
+
+        return {
+          success: true, // Received reservations successfully
+          reservationsReceived,
+          reservationsConfirmed: 0,
+          reservations,
+          error: `Confirmation failed: ${errorMsg}`
+        };
+      }
+
+      hotelNotification.success(
+        'Reservations Retrieved!',
+        `Successfully pulled and confirmed ${reservationsReceived} reservations from Phobs`,
+        4
+      );
+
+      return {
+        success: true,
+        reservationsReceived,
+        reservationsConfirmed: confirmationCodes.length,
+        reservations
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to pull reservations';
+      console.error('Error in pullReservationsFromPhobs:', error);
+
+      hotelNotification.error(
+        'Reservation Pull Error',
+        errorMessage,
+        6
+      );
+
+      return {
+        success: false,
+        reservationsReceived: 0,
+        reservationsConfirmed: 0,
+        error: errorMessage
+      };
     }
   }
 
@@ -647,29 +924,16 @@ export class PhobsChannelManagerService {
 
   /**
    * Get channel performance metrics
+   * TODO: Implement using SOAP/XML analytics endpoint when available
    */
   async getChannelMetrics(
-    channel: OTAChannel, 
-    startDate: Date, 
+    channel: OTAChannel,
+    startDate: Date,
     endDate: Date
   ): Promise<ChannelPerformanceMetrics | null> {
-    try {
-      const response = await this.makeApiRequest(`/analytics/channels/${channel}`, {
-        method: 'GET',
-        headers: {
-          'X-Date-Range': `${startDate.toISOString()},${endDate.toISOString()}`
-        }
-      });
-
-      if (response.success) {
-        return response.data as ChannelPerformanceMetrics;
-      } else {
-        throw new Error(response.error || 'Failed to fetch metrics');
-      }
-    } catch (error) {
-      console.error('Error fetching channel metrics:', error);
-      return null;
-    }
+    // TODO: This method needs to be implemented using SOAP/XML when analytics endpoint is available
+    console.warn('getChannelMetrics: Analytics endpoint not yet implemented in SOAP/XML');
+    return null;
   }
 
   // ===========================
@@ -677,93 +941,39 @@ export class PhobsChannelManagerService {
   // ===========================
 
   /**
-   * Make authenticated API request to Phobs
+   * Map Phobs reservation to SOAP parameters
    */
-  private async makeApiRequest(
-    endpoint: string, 
-    options: RequestInit & ApiRequestOptions = {}
-  ): Promise<ApiResponse> {
-    if (!this.config) {
-      throw new Error('Service not initialized');
-    }
-
-    // Check if token needs refresh
-    if (this.tokenExpiresAt && this.tokenExpiresAt < new Date()) {
-      await this.authenticate();
-    }
-
-    const url = `${this.config.baseUrl}${endpoint}`;
-    const timeout = options.timeout || this.config.timeout;
-    
-    const requestOptions: RequestInit = {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.authToken}`,
-        'X-Hotel-ID': this.config.hotelId,
-        ...options.headers
-      }
-    };
-
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeout);
-      
-      const response = await fetch(url, {
-        ...requestOptions,
-        signal: controller.signal
-      });
-      
-      clearTimeout(timeoutId);
-      
-      const data = await response.json();
-      
-      if (response.ok) {
-        return {
-          success: true,
-          data,
-          statusCode: response.status,
-          requestId: response.headers.get('X-Request-ID') || undefined
-        };
-      } else {
-        return {
-          success: false,
-          error: data.message || `HTTP ${response.status}`,
-          statusCode: response.status,
-          requestId: response.headers.get('X-Request-ID') || undefined
-        };
-      }
-    } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        throw new Error(`Request timeout after ${timeout}ms`);
-      }
-      throw error;
-    }
-  }
-
-  /**
-   * Map internal reservation to Phobs format
-   */
-  private mapReservationToPhobsFormat(reservation: PhobsReservation): any {
+  private mapReservationToSoapParams(
+    reservation: PhobsReservation,
+    operation: 'Commit' | 'Cancel' | 'Modify'
+  ): any {
     return {
-      roomId: reservation.roomId,
-      checkIn: reservation.checkIn.toISOString(),
-      checkOut: reservation.checkOut.toISOString(),
+      hotelCode: this.config!.hotelId,
+      resStatus: operation,
+      reservationId: reservation.phobsReservationId,
+      roomTypeCode: PhobsDataTransformer.mapRoomTypeToOtaCode(reservation.roomId || 'standard'),
+      ratePlanCode: 'BAR', // TODO: Map from rate plan
+      checkIn: reservation.checkIn.toISOString().split('T')[0],
+      checkOut: reservation.checkOut.toISOString().split('T')[0],
+      numberOfUnits: 1,
+      guestCounts: [
+        {
+          ageQualifyingCode: 10, // Adult
+          count: reservation.adults
+        },
+        ...(reservation.children > 0 ? [{
+          ageQualifyingCode: 8, // Child
+          count: reservation.children
+        }] : [])
+      ],
       guest: {
-        firstName: reservation.guest.firstName,
-        lastName: reservation.guest.lastName,
+        givenName: reservation.guest.firstName,
+        surname: reservation.guest.lastName,
         email: reservation.guest.email,
-        phone: reservation.guest.phone,
-        country: reservation.guest.country
+        phone: reservation.guest.phone
       },
-      pricing: {
-        totalAmount: reservation.totalAmount,
-        currency: reservation.currency,
-        roomRate: reservation.roomRate,
-        taxes: reservation.taxes,
-        fees: reservation.fees
-      },
-      specialRequests: reservation.specialRequests
+      totalAmount: reservation.totalAmount,
+      currencyCode: reservation.currency
     };
   }
 
