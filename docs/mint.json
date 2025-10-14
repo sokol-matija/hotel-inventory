@@ -40,11 +40,30 @@
       ]
     },
     {
+      "group": "Video Tutorials",
+      "pages": [
+        "tutorials/video-demos",
+        "tutorials/getting-started-videos",
+        "tutorials/front-desk-videos",
+        "tutorials/finance-videos",
+        "tutorials/channel-manager-videos",
+        "tutorials/advanced-videos"
+      ]
+    },
+    {
       "group": "Integration Guides",
       "pages": [
         "integrations/croatian-fiscalization",
         "integrations/channel-manager-setup",
         "integrations/supabase-setup"
+      ]
+    },
+    {
+      "group": "Phobs Channel Manager",
+      "pages": [
+        "integrations/phobs-integration-readiness",
+        "PHOBS_IMPLEMENTATION_STATUS",
+        "phobs-soap-implementation"
       ]
     },
     {

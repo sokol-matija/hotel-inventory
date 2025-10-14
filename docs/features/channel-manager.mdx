@@ -5,7 +5,48 @@ description: 'Comprehensive OTA channel management with real-time synchronizatio
 
 ## Overview
 
-The Hotel Inventory Management System includes a powerful channel manager that seamlessly integrates with major Online Travel Agencies (OTAs) and booking platforms. Built with enterprise-grade architecture, it ensures reliable, real-time synchronization of inventory, rates, and reservations.
+The Hotel Inventory Management System includes a powerful channel manager that seamlessly integrates with major Online Travel Agencies (OTAs) and booking platforms using **SOAP/XML** and the **OTA 1.006 standard**. Built with enterprise-grade architecture, it ensures reliable, real-time synchronization of inventory, rates, and reservations.
+
+<Note>
+**Technical Implementation:** This integration uses SOAP/XML (not REST/JSON) following the Open Travel Alliance (OTA) specification for hotel distribution systems.
+</Note>
+
+## Technical Architecture
+
+<CardGroup cols={3}>
+  <Card title="Protocol" icon="code">
+    **SOAP 1.1** with XML envelopes
+  </Card>
+  <Card title="Standard" icon="file-contract">
+    **OTA 1.006** specification
+  </Card>
+  <Card title="Authentication" icon="shield-halved">
+    **OAuth2** Bearer tokens
+  </Card>
+</CardGroup>
+
+### Core Services
+
+The channel manager is built on 4 specialized services:
+
+```
+┌─────────────────────────────────────┐
+│  PhobsChannelManagerService         │
+│  (Orchestration & Business Logic)   │
+└──────────────┬──────────────────────┘
+               │
+    ┌──────────┼──────────┬──────────┐
+    │          │          │          │
+┌───▼────┐ ┌──▼────┐ ┌───▼────┐ ┌───▼──────┐
+│ SOAP   │ │ XML   │ │ XML    │ │ Data     │
+│ Client │ │Builder│ │ Parser │ │Transform │
+└────────┘ └───────┘ └────────┘ └──────────┘
+```
+
+- **PhobsSoapClient**: HTTP/SOAP transport, OAuth2 management
+- **PhobsXmlBuilder**: OTA-compliant XML message construction
+- **PhobsXmlParser**: SOAP response parsing and error extraction
+- **PhobsDataTransformer**: Bidirectional data transformation
 
 ## Supported Channels
 
@@ -148,23 +189,132 @@ The Hotel Inventory Management System includes a powerful channel manager that s
 ### Environment Variables
 
 ```bash
-# Channel Manager Configuration
+# Phobs Channel Manager Configuration (SOAP/XML)
 REACT_APP_CHANNEL_MANAGER_ENABLED=true
-
-# Booking.com Integration
-REACT_APP_BOOKING_COM_API_KEY=your_api_key
-REACT_APP_BOOKING_COM_HOTEL_ID=your_hotel_id
-
-# Expedia Integration
-REACT_APP_EXPEDIA_EQC_ID=your_eqc_id
-REACT_APP_EXPEDIA_USERNAME=your_username
-REACT_APP_EXPEDIA_PASSWORD=your_password
-
-# Phobs Channel Manager (if using)
 REACT_APP_PHOBS_API_KEY=your_phobs_api_key
 REACT_APP_PHOBS_SECRET_KEY=your_phobs_secret
 REACT_APP_PHOBS_HOTEL_ID=your_hotel_id
+REACT_APP_PHOBS_BASE_URL=https://api.phobs.com
+REACT_APP_PHOBS_ENVIRONMENT=production
 ```
+
+<Warning>
+**Security**: Never commit API credentials to version control. Use environment variables or a secure secrets manager.
+</Warning>
+
+## OTA Message Protocol
+
+The system communicates with Phobs using three types of OTA XML messages:
+
+### 1. Availability Updates (OTA_HotelAvailNotifRQ)
+
+Updates room availability, restrictions, and inventory status:
+
+```xml
+<OTA_HotelAvailNotifRQ Version="1.006" TimeStamp="2025-01-09T10:30:00Z">
+  <AvailStatusMessages HotelCode="HOTEL123">
+    <AvailStatusMessage>
+      <StatusApplicationControl Start="2025-01-15" End="2025-01-31"
+                               InvTypeCode="DBL" RatePlanCode="BAR"/>
+      <RestrictionStatus Status="Open"/>
+      <LengthsOfStay>
+        <LengthOfStay MinMaxMessageType="SetMinLOS" Time="2"/>
+        <LengthOfStay MinMaxMessageType="SetMaxLOS" Time="7"/>
+      </LengthsOfStay>
+    </AvailStatusMessage>
+  </AvailStatusMessages>
+</OTA_HotelAvailNotifRQ>
+```
+
+**Features**:
+- Open/Close room status
+- Minimum/Maximum stay restrictions
+- Close to arrival/departure controls
+- Stop sale functionality
+
+### 2. Rate Updates (OTA_HotelRateAmountNotifRQ)
+
+Synchronizes room rates across all channels:
+
+```xml
+<OTA_HotelRateAmountNotifRQ Version="1.006" TimeStamp="2025-01-09T10:30:00Z">
+  <RateAmountMessages HotelCode="HOTEL123">
+    <RateAmountMessage>
+      <StatusApplicationControl Start="2025-01-15" End="2025-01-31"
+                               InvTypeCode="DBL" RatePlanCode="BAR"/>
+      <Rates>
+        <Rate CurrencyCode="EUR">
+          <BaseByGuestAmts>
+            <BaseByGuestAmt NumberOfGuests="1" AgeQualifyingCode="10"
+                           AmountAfterTax="89.00"/>
+            <BaseByGuestAmt NumberOfGuests="2" AgeQualifyingCode="10"
+                           AmountAfterTax="120.00"/>
+          </BaseByGuestAmts>
+        </Rate>
+      </Rates>
+    </RateAmountMessage>
+  </RateAmountMessages>
+</OTA_HotelRateAmountNotifRQ>
+```
+
+**Features**:
+- Per-guest pricing (adults, children, seniors)
+- Currency specification
+- Tax-inclusive rates
+- Seasonal adjustments
+
+### 3. Reservation Management (OTA_HotelResNotifRQ)
+
+Creates, modifies, or cancels reservations:
+
+```xml
+<OTA_HotelResNotifRQ Version="1.006" ResStatus="Commit" TimeStamp="2025-01-09T10:30:00Z">
+  <HotelReservations>
+    <HotelReservation>
+      <UniqueID Type="14" ID="RES123456"/>
+      <RoomStays>
+        <RoomStay>
+          <RoomTypes>
+            <RoomType RoomTypeCode="DBL" NumberOfUnits="1"/>
+          </RoomTypes>
+          <RatePlans>
+            <RatePlan RatePlanCode="BAR"/>
+          </RatePlans>
+          <TimeSpan Start="2025-01-15" End="2025-01-17"/>
+          <GuestCounts>
+            <GuestCount AgeQualifyingCode="10" Count="2"/>
+          </GuestCounts>
+          <BasicPropertyInfo HotelCode="HOTEL123"/>
+          <Total AmountAfterTax="240.00" CurrencyCode="EUR"/>
+        </RoomStay>
+      </RoomStays>
+      <ResGuests>
+        <ResGuest>
+          <Profiles>
+            <ProfileInfo>
+              <Profile>
+                <Customer>
+                  <PersonName>
+                    <GivenName>John</GivenName>
+                    <Surname>Doe</Surname>
+                  </PersonName>
+                  <Email>john.doe@example.com</Email>
+                  <Telephone PhoneNumber="+385911234567"/>
+                </Customer>
+              </Profile>
+            </ProfileInfo>
+          </Profiles>
+        </ResGuest>
+      </ResGuests>
+    </HotelReservation>
+  </HotelReservations>
+</OTA_HotelResNotifRQ>
+```
+
+**ResStatus Options**:
+- `Commit`: Create new reservation
+- `Modify`: Update existing reservation
+- `Cancel`: Cancel reservation
 
 ## Usage
 

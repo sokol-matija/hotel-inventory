@@ -1,15 +1,15 @@
 ---
 title: 'Channel Manager Setup'
-description: 'Configure Phobs Channel Manager integration for multi-OTA synchronization'
+description: 'Configure Phobs Channel Manager SOAP/XML integration for multi-OTA synchronization'
 icon: 'satellite-dish'
 ---
 
 ## Overview
 
-Set up the Phobs Channel Manager integration to synchronize your hotel inventory across multiple OTA platforms including Booking.com, Expedia, Airbnb, and 10+ additional channels.
+Set up the Phobs Channel Manager integration to synchronize your hotel inventory across multiple OTA platforms including Booking.com, Expedia, Airbnb, and 10+ additional channels using **SOAP/XML** and the **OTA 1.006 standard**.
 
 <Note>
-This guide covers the complete setup process for the Phobs API integration.
+This integration uses **SOAP/XML** (not REST/JSON) and implements the Open Travel Alliance (OTA) standard for hotel distribution systems.
 </Note>
 
 ## Prerequisites
@@ -17,31 +17,279 @@ This guide covers the complete setup process for the Phobs API integration.
 - Phobs account and API credentials
 - Active OTA accounts (Booking.com, Expedia, etc.)
 - Hotel property configured in Phobs dashboard
+- Understanding of SOAP/XML protocols (optional)
+
+## Technical Stack
+
+<CardGroup cols={2}>
+  <Card title="Protocol" icon="code">
+    **SOAP 1.1** with XML messaging
+  </Card>
+  <Card title="Standard" icon="file-contract">
+    **OTA 1.006** specification
+  </Card>
+  <Card title="Authentication" icon="key">
+    **OAuth2** Bearer tokens (1-hour expiry)
+  </Card>
+  <Card title="Transport" icon="network-wired">
+    **HTTPS** with retry logic
+  </Card>
+</CardGroup>
 
 ## Configuration Steps
 
 <Steps>
   <Step title="Obtain API Credentials">
-    Sign up for Phobs and get your API keys from the dashboard
+    Sign up for Phobs and get your API credentials from the dashboard:
+    - **API Key**: Used for OAuth2 authentication
+    - **Secret Key**: Used for OAuth2 authentication
+    - **Hotel ID**: Your unique property identifier
+
+    <Warning>
+    Keep your Secret Key secure! Never commit it to version control.
+    </Warning>
   </Step>
 
   <Step title="Configure Environment Variables">
+    Add Phobs credentials to your environment configuration:
+
     ```bash
     # .env.local
-    REACT_APP_PHOBS_API_KEY=your_api_key
-    REACT_APP_PHOBS_API_SECRET=your_api_secret
-    REACT_APP_PHOBS_HOTEL_ID=your_hotel_id
+    REACT_APP_PHOBS_API_KEY=your_api_key_here
+    REACT_APP_PHOBS_SECRET_KEY=your_secret_key_here
+    REACT_APP_PHOBS_HOTEL_ID=your_hotel_id_here
+    REACT_APP_PHOBS_BASE_URL=https://api.phobs.com
+    REACT_APP_PHOBS_ENVIRONMENT=production  # or 'staging'
+    ```
+
+    <Info>
+    For testing, use the Phobs **staging environment** URL provided in your account dashboard.
+    </Info>
+  </Step>
+
+  <Step title="Initialize Channel Manager">
+    The system will automatically initialize on first use:
+
+    ```typescript
+    const config: PhobsConfig = {
+      baseUrl: process.env.REACT_APP_PHOBS_BASE_URL,
+      apiKey: process.env.REACT_APP_PHOBS_API_KEY,
+      secretKey: process.env.REACT_APP_PHOBS_SECRET_KEY,
+      hotelId: process.env.REACT_APP_PHOBS_HOTEL_ID,
+      environment: 'production',
+      webhookUrl: 'https://yourhotel.com/api/webhooks/phobs',
+      webhookSecret: 'your_webhook_secret',
+      timeout: 30000,
+      retryCount: 3,
+      rateLimitPerMinute: 60
+    };
+
+    await channelManager.initialize(config);
     ```
   </Step>
 
-  <Step title="Connect to Phobs">
-    Navigate to Channel Manager module and click **Connect**
+  <Step title="Map Room Types">
+    Configure room type mappings between your internal codes and OTA codes:
+
+    | Internal Type | OTA Code | Description |
+    |--------------|----------|-------------|
+    | standard_double | DBL | Standard Double Room |
+    | deluxe_suite | STE | Deluxe Suite |
+    | family_room | FAM | Family Room |
+
+    ```typescript
+    // Example mapping in PhobsDataTransformer
+    mapRoomTypeToOtaCode('standard_double') // Returns 'DBL'
+    ```
+  </Step>
+
+  <Step title="Configure Rate Plans">
+    Map your internal rate plans to OTA rate plan codes:
+
+    | Internal Rate Plan | OTA Code | Description |
+    |-------------------|----------|-------------|
+    | Best Available Rate | BAR | Standard rack rate |
+    | Non-Refundable | NRF | Non-refundable rate |
+    | Early Bird Discount | EBD | Advance purchase rate |
+
+    ```typescript
+    // Example mapping
+    mapRatePlanToOtaCode('Best Available Rate') // Returns 'BAR'
+    ```
+  </Step>
+
+  <Step title="Test Connection">
+    Verify your integration is working:
+
+    ```typescript
+    const testResult = await channelManager.testConnection();
+
+    if (testResult.success) {
+      console.log('✅ Connected to Phobs SOAP API');
+      console.log(`Latency: ${testResult.latency}ms`);
+      console.log(`API Version: ${testResult.apiVersion}`);
+    }
+    ```
   </Step>
 
   <Step title="Enable OTA Channels">
-    Select which platforms to synchronize
+    Navigate to Channel Manager module and enable your connected OTA platforms:
+    - Booking.com
+    - Expedia Group
+    - Airbnb
+    - Agoda
+    - Hotels.com
+    - And 8+ more channels
   </Step>
 </Steps>
+
+## SOAP/XML Implementation Details
+
+### Authentication Flow
+
+The system uses **OAuth2** for authentication:
+
+```typescript
+1. Request Access Token:
+   POST /token
+   Authorization: Basic base64(apiKey:secretKey)
+   X-Client-ID: ads
+
+2. Receive Token (valid for 1 hour):
+   {
+     "access_token": "eyJhbGc...",
+     "token_type": "Bearer",
+     "exp": 1704801600,
+     "scope": "reservations:upload"
+   }
+
+3. Use Token for API Requests:
+   Authorization: Bearer eyJhbGc...
+```
+
+### OTA Message Types
+
+The integration sends three types of OTA XML messages:
+
+<Tabs>
+  <Tab title="Availability">
+    **OTA_HotelAvailNotifRQ** - Updates room availability
+
+    ```xml
+    <OTA_HotelAvailNotifRQ Version="1.006">
+      <AvailStatusMessages HotelCode="HOTEL123">
+        <AvailStatusMessage>
+          <StatusApplicationControl Start="2025-01-15"
+                                   End="2025-01-31"
+                                   InvTypeCode="DBL"/>
+          <RestrictionStatus Status="Open"/>
+        </AvailStatusMessage>
+      </AvailStatusMessages>
+    </OTA_HotelAvailNotifRQ>
+    ```
+  </Tab>
+
+  <Tab title="Rates">
+    **OTA_HotelRateAmountNotifRQ** - Updates room rates
+
+    ```xml
+    <OTA_HotelRateAmountNotifRQ Version="1.006">
+      <RateAmountMessages HotelCode="HOTEL123">
+        <RateAmountMessage>
+          <Rates>
+            <Rate CurrencyCode="EUR">
+              <BaseByGuestAmts>
+                <BaseByGuestAmt NumberOfGuests="2"
+                               AmountAfterTax="120.00"/>
+              </BaseByGuestAmts>
+            </Rate>
+          </Rates>
+        </RateAmountMessage>
+      </RateAmountMessages>
+    </OTA_HotelRateAmountNotifRQ>
+    ```
+  </Tab>
+
+  <Tab title="Reservations">
+    **OTA_HotelResNotifRQ** - Creates/modifies/cancels reservations
+
+    ```xml
+    <OTA_HotelResNotifRQ Version="1.006" ResStatus="Commit">
+      <HotelReservations>
+        <HotelReservation>
+          <UniqueID Type="14" ID="RES123456"/>
+          <RoomStays>
+            <RoomStay>
+              <TimeSpan Start="2025-01-15" End="2025-01-17"/>
+              <Total AmountAfterTax="240.00" CurrencyCode="EUR"/>
+            </RoomStay>
+          </RoomStays>
+        </HotelReservation>
+      </HotelReservations>
+    </OTA_HotelResNotifRQ>
+    ```
+  </Tab>
+</Tabs>
+
+## Architecture
+
+The Phobs integration consists of 4 core services:
+
+```
+PhobsChannelManagerService
+  ├── PhobsSoapClient (HTTP/SOAP transport)
+  ├── PhobsXmlBuilder (OTA message construction)
+  ├── PhobsXmlParser (Response parsing)
+  └── PhobsDataTransformer (Data mapping)
+```
+
+<CardGroup cols={2}>
+  <Card title="PhobsXmlBuilder" icon="code">
+    Builds OTA-compliant XML messages with proper SOAP envelopes
+  </Card>
+  <Card title="PhobsXmlParser" icon="file-code">
+    Parses SOAP responses and extracts OTA data/errors
+  </Card>
+  <Card title="PhobsSoapClient" icon="server">
+    Handles HTTP transport, OAuth2, and connection management
+  </Card>
+  <Card title="PhobsDataTransformer" icon="arrows-rotate">
+    Transforms between internal and OTA data formats
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Authentication Failed">
+    **Error**: `401 Unauthorized` or `Authentication failed`
+
+    **Solutions**:
+    - Verify API Key and Secret Key are correct
+    - Check Hotel ID matches your Phobs account
+    - Ensure credentials haven't expired
+    - Try regenerating API keys in Phobs dashboard
+  </Accordion>
+
+  <Accordion title="SOAP Parsing Errors">
+    **Error**: `XML_PARSE_ERROR` or `INVALID_SOAP`
+
+    **Solutions**:
+    - Check Phobs API endpoint URL is correct
+    - Verify you're using the correct environment (staging vs production)
+    - Review request/response XML in error logs
+    - Contact Phobs support with request ID
+  </Accordion>
+
+  <Accordion title="Room Type Mapping Issues">
+    **Error**: `Unknown room type code`
+
+    **Solutions**:
+    - Configure room type mappings in `PhobsDataTransformer`
+    - Verify OTA codes match Phobs channel configuration
+    - Check room types are enabled in Phobs dashboard
+  </Accordion>
+</AccordionGroup>
 
 ## Complete Documentation
 
@@ -51,7 +299,13 @@ For detailed channel manager documentation, see:
   Complete guide to OTA integration and synchronization
 </Card>
 
+<Card title="SOAP Implementation Guide" icon="book">
+  See `/docs/phobs-soap-implementation.md` for technical details
+</Card>
+
 ---
 
-**Status**: Available in v2.5+
+**Status**: ✅ Production Ready (v2.0+)
+**Protocol**: SOAP/XML with OTA 1.006 Standard
+**Authentication**: OAuth2 Bearer Tokens
 **Supported Channels**: 13+ OTA platforms
