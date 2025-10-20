@@ -5,8 +5,9 @@ import { Input } from '../ui/input'
 import { Label } from '../ui/label'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from './AuthProvider'
-import { User, ChefHat, UserCheck, Sparkles, Calculator, ShieldCheck, Lock } from 'lucide-react'
+import { User, ChefHat, UserCheck, Sparkles, Calculator, ShieldCheck, Lock, Eye, EyeOff } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { useToast } from '@/hooks/use-toast'
 
 interface Role {
   id: number
@@ -22,6 +23,7 @@ interface RoleSelectionProps {
 export default function RoleSelection({ user, onRoleSelected }: RoleSelectionProps) {
   const { user: authUser } = useAuth()
   const { t } = useTranslation()
+  const { toast } = useToast()
   const [roles, setRoles] = useState<Role[]>([])
   const [selectedRole, setSelectedRole] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -29,6 +31,7 @@ export default function RoleSelection({ user, onRoleSelected }: RoleSelectionPro
   const [showAdminPassword, setShowAdminPassword] = useState(false)
   const [adminPassword, setAdminPassword] = useState('')
   const [adminRole, setAdminRole] = useState<Role | null>(null)
+  const [showPasswordText, setShowPasswordText] = useState(false)
 
   const roleIcons = {
     'admin': ShieldCheck,
@@ -91,7 +94,11 @@ export default function RoleSelection({ user, onRoleSelected }: RoleSelectionPro
     // Check if admin role is selected and password is required
     if (adminRole && selectedRole === adminRole.id) {
       if (adminPassword !== 'Hp247@$&') {
-        alert(t('auth.incorrectAdminPassword'))
+        toast({
+          title: t('auth.adminPasswordRequired'),
+          description: t('auth.incorrectAdminPassword'),
+          variant: 'destructive'
+        })
         return
       }
     }
@@ -108,12 +115,16 @@ export default function RoleSelection({ user, onRoleSelected }: RoleSelectionPro
         ])
 
       if (error) throw error
-      
+
       // Call the callback to trigger re-render
       onRoleSelected()
     } catch (error) {
       console.error('Error creating user profile:', error)
-      alert(t('auth.errorCreatingProfile'))
+      toast({
+        title: t('auth.settingUpAccount'),
+        description: t('auth.errorCreatingProfile'),
+        variant: 'destructive'
+      })
     } finally {
       setIsSubmitting(false)
     }
@@ -128,123 +139,168 @@ export default function RoleSelection({ user, onRoleSelected }: RoleSelectionPro
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <div className="w-full max-w-2xl">
-        <Card className="shadow-2xl border-0 bg-white/80 backdrop-blur-sm">
-          <CardHeader className="text-center space-y-4">
-            <div className="mx-auto w-20 h-20 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center text-white text-2xl font-bold">
-              <User className="w-10 h-10" />
-            </div>
-            <CardTitle className="text-3xl font-bold text-gray-900">
-              {t('auth.welcome', { name: user.user_metadata?.full_name || 'User' })}
-            </CardTitle>
-            <CardDescription className="text-gray-600 text-lg">
-              {t('auth.selectRoleDescription')}
-            </CardDescription>
-          </CardHeader>
-          
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {roles.map((role) => {
-                const IconComponent = roleIcons[role.name as keyof typeof roleIcons] || User
-                const colorClass = roleColors[role.name as keyof typeof roleColors] || 'from-gray-500 to-gray-600'
-                
-                return (
-                  <button
-                    key={role.id}
-                    onClick={() => handleRoleSelect(role.id, role.name)}
-                    className={`p-6 rounded-xl border-2 transition-all duration-200 text-left ${
-                      selectedRole === role.id
-                        ? 'border-blue-500 bg-blue-50 shadow-lg'
-                        : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-4">
-                      <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${colorClass} flex items-center justify-center text-white`}>
-                        <IconComponent className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-gray-900">
-                          {t(`roles.${role.name}`)}
-                        </h3>
-                        <p className="text-sm text-gray-600">
-                          {t(`roleDescriptions.${role.name}`)}
-                        </p>
-                      </div>
-                    </div>
-                  </button>
-                )
-              })}
-              
-              {/* Admin Role with Password Protection */}
-              {adminRole && (
-                <button
-                  onClick={() => handleRoleSelect(adminRole.id, adminRole.name)}
-                  className={`p-6 rounded-xl border-2 transition-all duration-200 text-left ${
-                    selectedRole === adminRole.id
-                      ? 'border-red-500 bg-red-50 shadow-lg'
-                      : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
-                  }`}
-                >
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 relative overflow-hidden">
+      {/* Background image - same as module selector */}
+      <div
+        className="absolute inset-0 opacity-20"
+        style={{
+          backgroundImage: 'url(/zemlja_gp_copy.png)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat'
+        }}
+      />
+
+      {/* Content */}
+      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-6">
+        {/* Hotel Logo and Welcome */}
+        <div className="text-center mb-12">
+          <div className="mb-6">
+            <img
+              src="/LOGO1-hires.png"
+              alt="Hotel Porec Logo"
+              className="w-32 h-20 mx-auto object-contain"
+            />
+          </div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+            Welcome to Hotel Porec!
+          </h1>
+          <p className="text-xl text-gray-600">
+            Select your role to continue
+          </p>
+        </div>
+
+
+        {/* Role Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl w-full">
+          {roles.map((role) => {
+            const IconComponent = roleIcons[role.name as keyof typeof roleIcons] || User
+            const colorClass = roleColors[role.name as keyof typeof roleColors] || 'from-gray-500 to-gray-600'
+
+            return (
+              <Card
+                key={role.id}
+                onClick={() => handleRoleSelect(role.id, role.name)}
+                className={`relative transition-all duration-300 cursor-pointer ${
+                  selectedRole === role.id
+                    ? 'shadow-lg scale-105 border-blue-500 bg-blue-50'
+                    : 'hover:shadow-lg hover:-translate-y-1 border-gray-200 hover:border-blue-300 bg-white'
+                }`}
+              >
+                <CardHeader className="pb-4">
                   <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white">
-                      <ShieldCheck className="w-6 h-6" />
+                    <div className={`p-3 rounded-lg bg-gradient-to-br ${colorClass} flex items-center justify-center text-white`}>
+                      <IconComponent className="w-6 h-6" />
                     </div>
-                                          <div className="flex-1">
-                        <div className="flex items-center space-x-2">
-                          <h3 className="font-semibold text-gray-900">
-                            {t(`roles.${adminRole.name}`)}
-                          </h3>
-                          <Lock className="w-4 h-4 text-red-600" />
-                        </div>
-                        <p className="text-sm text-gray-600">
-                          {t(`roleDescriptions.${adminRole.name}`)} ({t('auth.adminPasswordRequired')})
-                        </p>
-                      </div>
+                    <div>
+                      <CardTitle className="text-lg">{t(`roles.${role.name}`)}</CardTitle>
+                    </div>
                   </div>
-                </button>
-              )}
-            </div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-600 text-sm">
+                    {t(`roleDescriptions.${role.name}`)}
+                  </p>
+                </CardContent>
+              </Card>
+            )
+          })}
 
-            {/* Admin Password Input */}
-            {showAdminPassword && (
-              <div className="mt-6 p-4 bg-red-50 rounded-lg border border-red-200">
-                <Label htmlFor="admin-password" className="text-red-800 font-medium">
-                  {t('auth.adminPasswordRequired')}
-                </Label>
-                <div className="mt-2 relative">
-                  <Lock className="absolute left-3 top-3 h-4 w-4 text-red-500" />
-                  <Input
-                    id="admin-password"
-                    type="password"
-                    placeholder={t('auth.adminPasswordPlaceholder')}
-                    value={adminPassword}
-                    onChange={(e) => setAdminPassword(e.target.value)}
-                    className="pl-10 border-red-300 focus:border-red-500 focus:ring-red-500"
-                  />
-                </div>
-                <p className="mt-2 text-sm text-red-600">
-                  {t('auth.contactAdminForPassword')}
-                </p>
-              </div>
-            )}
-
-            <Button
-              onClick={handleSubmit}
-              disabled={!selectedRole || isSubmitting || (showAdminPassword && !adminPassword)}
-              className="w-full h-12 text-lg font-medium bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+          {/* Admin Role with Password Protection */}
+          {adminRole && (
+            <Card
+              onClick={() => handleRoleSelect(adminRole.id, adminRole.name)}
+              className={`relative transition-all duration-300 cursor-pointer ${
+                selectedRole === adminRole.id
+                  ? 'shadow-lg scale-105 border-red-500 bg-red-50'
+                  : 'hover:shadow-lg hover:-translate-y-1 border-gray-200 hover:border-red-300 bg-white'
+              }`}
             >
-              {isSubmitting ? (
-                <div className="flex items-center space-x-2">
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>{t('auth.settingUpAccount')}</span>
+              <div className="absolute top-3 right-3">
+                <Lock className="w-5 h-5 text-red-600" />
+              </div>
+              <CardHeader className="pb-4">
+                <div className="flex items-center space-x-4">
+                  <div className="p-3 rounded-lg bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white">
+                    <ShieldCheck className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">{t(`roles.${adminRole.name}`)}</CardTitle>
+                  </div>
                 </div>
-              ) : (
-                t('auth.continueToDashboard')
-              )}
-            </Button>
-          </CardContent>
-        </Card>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600 text-sm">
+                  {t(`roleDescriptions.${adminRole.name}`)}
+                </p>
+                <p className="text-red-600 text-xs mt-2 font-medium">
+                  {t('auth.adminPasswordRequired')}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Admin Password Input */}
+        {showAdminPassword && (
+          <Card className="mt-6 max-w-md w-full shadow-lg border-red-200 bg-red-50">
+            <CardContent className="pt-6">
+              <Label htmlFor="admin-password" className="text-red-800 font-medium text-base">
+                {t('auth.adminPasswordRequired')}
+              </Label>
+              <div className="mt-3 relative">
+                <Lock className="absolute left-3 top-3.5 h-5 w-5 text-red-500" />
+                <Input
+                  id="admin-password"
+                  type={showPasswordText ? "text" : "password"}
+                  placeholder={t('auth.adminPasswordPlaceholder')}
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                  className="pl-11 pr-12 h-12 border-red-300 focus:border-red-500 focus:ring-red-500 bg-white"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPasswordText(!showPasswordText)}
+                  className="absolute right-3 top-3.5 text-red-500 hover:text-red-700 transition-colors"
+                  aria-label={showPasswordText ? "Hide password" : "Show password"}
+                >
+                  {showPasswordText ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
+              <p className="mt-3 text-sm text-red-600">
+                {t('auth.contactAdminForPassword')}
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Submit Button */}
+        <div className="mt-8 max-w-md w-full">
+          <Button
+            onClick={handleSubmit}
+            disabled={!selectedRole || isSubmitting || (showAdminPassword && !adminPassword)}
+            className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200"
+          >
+            {isSubmitting ? (
+              <div className="flex items-center space-x-2">
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>{t('auth.settingUpAccount')}</span>
+              </div>
+            ) : (
+              t('auth.continueToDashboard')
+            )}
+          </Button>
+        </div>
+
+        {/* Hotel Info Footer */}
+        <div className="mt-12 text-center text-gray-500 text-sm">
+          <p>Hotel Porec • 52440 Poreč, Croatia • +385(0)52/451 611</p>
+          <p>hotelporec@pu.t-com.hr • www.hotelporec.com</p>
+        </div>
       </div>
     </div>
   )

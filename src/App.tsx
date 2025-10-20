@@ -2,6 +2,9 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './components/auth/AuthProvider';
 import LoginPage from './components/auth/LoginPage';
+import RoleSelection from './components/auth/RoleSelection';
+import TermsOfService from './components/legal/TermsOfService';
+import PrivacyPolicy from './components/legal/PrivacyPolicy';
 import Layout from './components/layout/Layout';
 import Dashboard from './components/dashboard/Dashboard';
 import LocationsPage from './components/locations/LocationsPage';
@@ -36,37 +39,102 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function RequiresProfile({ children }: { children: React.ReactNode }) {
+  const { user, loading, hasProfile, profileLoading } = useAuth();
+
+  console.log('RequiresProfile:', { loading, profileLoading, hasProfile, userEmail: user?.email })
+
+  if (loading || profileLoading) {
+    console.log('RequiresProfile: Showing loading spinner')
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    console.log('RequiresProfile: No user, redirecting to login')
+    return <Navigate to="/login" replace />;
+  }
+
+  // If user exists but no profile, redirect to onboarding
+  if (!hasProfile) {
+    console.log('RequiresProfile: No profile, redirecting to onboarding')
+    return <Navigate to="/onboarding" replace />;
+  }
+
+  console.log('RequiresProfile: All checks passed, rendering children')
+  return <>{children}</>;
+}
+
+function RoleSelectionWrapper() {
+  const { user, hasProfile, profileLoading, refreshProfile } = useAuth();
+
+  console.log('RoleSelectionWrapper:', { profileLoading, hasProfile, userEmail: user?.email })
+
+  if (profileLoading) {
+    console.log('RoleSelectionWrapper: Showing loading spinner')
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // If user has a profile, redirect to module selector
+  if (hasProfile) {
+    console.log('RoleSelectionWrapper: Has profile, redirecting to module selector')
+    return <Navigate to="/hotel/module-selector" replace />;
+  }
+
+  // If no profile, show role selection
+  console.log('RoleSelectionWrapper: No profile, showing role selection')
+  return <RoleSelection user={user} onRoleSelected={refreshProfile} />;
+}
+
 function AppRoutes() {
   const { user } = useAuth();
-  
+
   return (
     <Routes>
       <Route path="/login" element={
-        user ? <Navigate to="/hotel/module-selector" replace /> : <LoginPage />
+        user ? <Navigate to="/onboarding" replace /> : <LoginPage />
       } />
-      
+
+      {/* Legal Pages - No authentication required */}
+      <Route path="/terms-of-service" element={<TermsOfService />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+
+      {/* Role Selection / Onboarding Route */}
+      <Route path="/onboarding" element={
+        <ProtectedRoute>
+          <RoleSelectionWrapper />
+        </ProtectedRoute>
+      } />
+
       {/* Hotel Management Routes */}
       <Route path="/hotel/module-selector" element={
-        <ProtectedRoute>
+        <RequiresProfile>
           <ModuleSelector />
-        </ProtectedRoute>
+        </RequiresProfile>
       } />
       <Route path="/hotel/front-desk/*" element={
-        <ProtectedRoute>
+        <RequiresProfile>
           <FrontDeskLayout />
-        </ProtectedRoute>
+        </RequiresProfile>
       } />
       <Route path="/hotel/finance/*" element={
-        <ProtectedRoute>
+        <RequiresProfile>
           <FinanceLayout />
-        </ProtectedRoute>
+        </RequiresProfile>
       } />
-      
+
       {/* Existing Inventory System Routes */}
       <Route path="/" element={
-        <ProtectedRoute>
+        <RequiresProfile>
           <Layout />
-        </ProtectedRoute>
+        </RequiresProfile>
       }>
         <Route index element={<Navigate to="/hotel/module-selector" replace />} />
         <Route path="dashboard" element={<Dashboard />} />

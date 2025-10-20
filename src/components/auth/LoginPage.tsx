@@ -4,51 +4,103 @@ import { Card, CardContent, CardHeader } from '../ui/card'
 import { Input } from '../ui/input'
 import { Label } from '../ui/label'
 import { supabase } from '@/lib/supabase'
-import { Chrome, Mail, Lock } from 'lucide-react'
+import { Chrome, Mail, Lock, CheckCircle2, X } from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
+import { useTranslation } from 'react-i18next'
 
 export default function LoginPage() {
+  const { toast } = useToast()
+  const { t } = useTranslation()
   const [isLoading, setIsLoading] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [isSignUp, setIsSignUp] = useState(false)
+  const [showConfirmation, setShowConfirmation] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
+  const [showError, setShowError] = useState(false)
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
 
   const handleGoogleLogin = async () => {
     setIsLoading(true)
+    setShowError(false)
     try {
       // Use the current origin for redirect, which will be correct for both development and production
-      const redirectUrl = `${window.location.origin}/dashboard`
-      
+      const redirectUrl = `${window.location.origin}/onboarding`
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: redirectUrl
         }
       })
-      
+
       if (error) {
         console.error('Error signing in:', error)
-        alert('Google OAuth is not configured yet. Please use email/password login.')
+        setErrorMessage('Google OAuth is not configured yet. Please use email/password login.')
+        setShowError(true)
       }
     } catch (error) {
       console.error('Error:', error)
-      alert('Google OAuth is not configured yet. Please use email/password login.')
+      setErrorMessage('Google OAuth is not configured yet. Please use email/password login.')
+      setShowError(true)
     } finally {
       setIsLoading(false)
     }
   }
 
+  const checkEmailExists = async (emailToCheck: string): Promise<boolean> => {
+    try {
+      // Try to sign in with a dummy password to check if the email exists
+      // Supabase will return a specific error if the email doesn't exist
+      const { error } = await supabase.auth.signInWithPassword({
+        email: emailToCheck,
+        password: 'dummy-check-password'
+      })
+
+      // If we get an "Invalid login credentials" error, it means the email exists
+      // If we get an "Email not confirmed" error, the email also exists
+      if (error && (error.message.includes('Invalid') || error.message.includes('not confirmed'))) {
+        return true
+      }
+
+      return false
+    } catch (error) {
+      return false
+    }
+  }
+
   const handleEmailAuth = async () => {
     setIsLoading(true)
+    setShowError(false)
     try {
       if (isSignUp) {
+        // Check if email already exists
+        const emailExists = await checkEmailExists(email)
+        if (emailExists) {
+          toast({
+            title: 'Email Already Registered',
+            description: 'This email is already associated with an account. Please use a different email or sign in with your existing account.',
+            variant: 'destructive'
+          })
+          setIsLoading(false)
+          return
+        }
+
+        const redirectUrl = `${window.location.origin}/onboarding`
+
         const { error } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            emailRedirectTo: redirectUrl
+          }
         })
         if (error) {
-          alert(error.message)
+          setErrorMessage(error.message)
+          setShowError(true)
         } else {
-          alert('Check your email for the confirmation link!')
+          setShowConfirmation(true)
         }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
@@ -56,12 +108,14 @@ export default function LoginPage() {
           password,
         })
         if (error) {
-          alert(error.message)
+          setErrorMessage(error.message)
+          setShowError(true)
         }
       }
     } catch (error) {
       console.error('Error:', error)
-      alert('An error occurred during authentication')
+      setErrorMessage('An error occurred during authentication')
+      setShowError(true)
     } finally {
       setIsLoading(false)
     }
@@ -125,9 +179,40 @@ export default function LoginPage() {
                 </div>
               </div>
 
+              {/* Terms of Service - Only show during signup */}
+              {isSignUp && (
+                <div className="flex items-start space-x-2 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <input
+                    type="checkbox"
+                    id="terms"
+                    checked={acceptedTerms}
+                    onChange={(e) => setAcceptedTerms(e.target.checked)}
+                    className="mt-1 h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                  />
+                  <label htmlFor="terms" className="text-sm text-gray-700">
+                    I agree to the{' '}
+                    <a
+                      href="/terms-of-service"
+                      target="_blank"
+                      className="text-blue-600 hover:text-blue-700 underline font-medium"
+                    >
+                      Terms of Service
+                    </a>{' '}
+                    and{' '}
+                    <a
+                      href="/privacy-policy"
+                      target="_blank"
+                      className="text-blue-600 hover:text-blue-700 underline font-medium"
+                    >
+                      Privacy Policy
+                    </a>
+                  </label>
+                </div>
+              )}
+
               <Button
                 onClick={handleEmailAuth}
-                disabled={isLoading || !email || !password}
+                disabled={isLoading || !email || !password || (isSignUp && !acceptedTerms)}
                 className="w-full h-12 text-lg font-medium"
               >
                 {isLoading ? (
@@ -142,7 +227,10 @@ export default function LoginPage() {
 
               <div className="text-center">
                 <button
-                  onClick={() => setIsSignUp(!isSignUp)}
+                  onClick={() => {
+                    setIsSignUp(!isSignUp)
+                    setAcceptedTerms(false)
+                  }}
                   className="text-sm text-blue-600 hover:text-blue-700 underline"
                 >
                   {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
@@ -185,6 +273,68 @@ export default function LoginPage() {
           </p>
         </div>
       </div>
+
+      {/* Email Confirmation Modal */}
+      {showConfirmation && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <Card className="w-full max-w-md shadow-2xl border-0 bg-white">
+            <CardHeader className="text-center space-y-4 pb-4">
+              <div className="mx-auto w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center">
+                <CheckCircle2 className="w-10 h-10 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900">Check Your Email</h2>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-center text-gray-600">
+                We've sent a confirmation link to:
+              </p>
+              <p className="text-center font-semibold text-blue-600 break-all">
+                {email}
+              </p>
+              <p className="text-center text-sm text-gray-500">
+                Please check your inbox and click the confirmation link to complete your registration.
+              </p>
+              <Button
+                onClick={() => {
+                  setShowConfirmation(false)
+                  setEmail('')
+                  setPassword('')
+                  setIsSignUp(false)
+                  setAcceptedTerms(false)
+                }}
+                className="w-full h-12 text-lg font-medium bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+              >
+                OK
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Error Modal */}
+      {showError && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <Card className="w-full max-w-md shadow-2xl border-0 bg-white">
+            <CardHeader className="text-center space-y-4 pb-4">
+              <div className="mx-auto w-16 h-16 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center">
+                <X className="w-10 h-10 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900">Authentication Error</h2>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-center text-gray-600">
+                {errorMessage}
+              </p>
+              <Button
+                onClick={() => setShowError(false)}
+                className="w-full h-12 text-lg font-medium bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+              >
+                OK
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   )
 }
