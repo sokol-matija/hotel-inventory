@@ -6,6 +6,7 @@ import { format, addDays } from 'date-fns';
 import { SAMPLE_GUESTS } from './hotel/sampleData';
 import { HOTEL_POREC_ROOMS } from './hotel/hotelData';
 import { formatRoomNumber } from './hotel/calendarUtils';
+import { supabaseUrl, supabaseAnonKey } from './supabase';
 
 interface EmailTemplate {
   subject: string;
@@ -679,10 +680,7 @@ ${this.getEmailStyles()}
     guestName: string
   ): Promise<{ success: boolean; message: string }> {
     try {
-      const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
-      const supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
-      
-      if (!supabaseUrl || !supabaseKey) {
+      if (!supabaseUrl || !supabaseAnonKey) {
         console.warn('⚠️ Supabase not configured, falling back to simulation');
         // Fallback to simulation if no Supabase config
         await new Promise(resolve => setTimeout(resolve, 1500));
@@ -700,11 +698,11 @@ ${this.getEmailStyles()}
 
       // Send email via Supabase Edge Function
       const edgeFunctionUrl = `${supabaseUrl}/functions/v1/send-email`;
-      
+
       const response = await fetch(edgeFunctionUrl, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${supabaseKey}`,
+          'Authorization': `Bearer ${supabaseAnonKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
