@@ -49,38 +49,16 @@ export default function LoginPage() {
     }
   }
 
-  const checkEmailExists = async (emailToCheck: string): Promise<boolean> => {
-    try {
-      // Try to sign in with a dummy password to check if the email exists
-      // Supabase will return a specific error if the email doesn't exist
-      const { error } = await supabase.auth.signInWithPassword({
-        email: emailToCheck,
-        password: 'dummy-check-password'
-      })
-
-      // If we get an "Invalid login credentials" error, it means the email exists
-      // If we get an "Email not confirmed" error, the email also exists
-      if (error && (error.message.includes('Invalid') || error.message.includes('not confirmed'))) {
-        return true
-      }
-
-      return false
-    } catch (error) {
-      return false
-    }
-  }
-
   const handleEmailAuth = async () => {
     setIsLoading(true)
     setShowError(false)
     try {
       if (isSignUp) {
-        // Check if email already exists
-        const emailExists = await checkEmailExists(email)
-        if (emailExists) {
+        // Check if passwords match
+        if (password !== confirmPassword) {
           toast({
-            title: 'Email Already Registered',
-            description: 'This email is already associated with an account. Please use a different email or sign in with your existing account.',
+            title: 'Passwords Do Not Match',
+            description: 'Please make sure both password fields match.',
             variant: 'destructive'
           })
           setIsLoading(false)
@@ -97,8 +75,17 @@ export default function LoginPage() {
           }
         })
         if (error) {
-          setErrorMessage(error.message)
-          setShowError(true)
+          // Check if the error is about email already existing
+          if (error.message.includes('already registered') || error.message.includes('User already exists')) {
+            toast({
+              title: 'Email Already Registered',
+              description: 'This email is already associated with an account. Please use a different email or sign in with your existing account.',
+              variant: 'destructive'
+            })
+          } else {
+            setErrorMessage(error.message)
+            setShowError(true)
+          }
         } else {
           setShowConfirmation(true)
         }
@@ -177,6 +164,34 @@ export default function LoginPage() {
                     />
                   </div>
                 </div>
+
+                {/* Confirm Password - Only show during signup */}
+                {isSignUp && (
+                  <div>
+                    <Label htmlFor="confirm-password">Confirm Password</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="confirm-password"
+                        type="password"
+                        placeholder="Confirm your password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        className={`pl-10 ${
+                          confirmPassword && password !== confirmPassword
+                            ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+                            : ''
+                        }`}
+                      />
+                    </div>
+                    {confirmPassword && password !== confirmPassword && (
+                      <p className="mt-1 text-sm text-red-600">Passwords do not match</p>
+                    )}
+                    {confirmPassword && password === confirmPassword && (
+                      <p className="mt-1 text-sm text-green-600">Passwords match</p>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Terms of Service - Only show during signup */}
@@ -212,7 +227,7 @@ export default function LoginPage() {
 
               <Button
                 onClick={handleEmailAuth}
-                disabled={isLoading || !email || !password || (isSignUp && !acceptedTerms)}
+                disabled={isLoading || !email || !password || (isSignUp && (!acceptedTerms || !confirmPassword || password !== confirmPassword))}
                 className="w-full h-12 text-lg font-medium"
               >
                 {isLoading ? (
@@ -230,6 +245,9 @@ export default function LoginPage() {
                   onClick={() => {
                     setIsSignUp(!isSignUp)
                     setAcceptedTerms(false)
+                    setPassword('')
+                    setConfirmPassword('')
+                    setErrorMessage('')
                   }}
                   className="text-sm text-blue-600 hover:text-blue-700 underline"
                 >
@@ -299,6 +317,7 @@ export default function LoginPage() {
                   setShowConfirmation(false)
                   setEmail('')
                   setPassword('')
+                  setConfirmPassword('')
                   setIsSignUp(false)
                   setAcceptedTerms(false)
                 }}

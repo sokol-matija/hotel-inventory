@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { Button } from '../ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { Input } from '../ui/input'
@@ -20,6 +20,30 @@ interface RoleSelectionProps {
   onRoleSelected: () => void
 }
 
+// Move icon and color mappings outside component to prevent recreation
+const ROLE_ICONS = {
+  'admin': ShieldCheck,
+  'reception': UserCheck,
+  'kitchen': ChefHat,
+  'housekeeping': Sparkles,
+  'bookkeeping': Calculator
+} as const
+
+const ROLE_COLORS = {
+  'admin': 'from-red-500 to-red-600',
+  'reception': 'from-blue-500 to-blue-600',
+  'kitchen': 'from-green-500 to-green-600',
+  'housekeeping': 'from-purple-500 to-purple-600',
+  'bookkeeping': 'from-yellow-500 to-yellow-600'
+} as const
+
+const BACKGROUND_STYLE = {
+  backgroundImage: 'url(/zemlja_gp_copy.png)',
+  backgroundSize: 'cover',
+  backgroundPosition: 'center',
+  backgroundRepeat: 'no-repeat'
+} as const
+
 export default function RoleSelection({ user, onRoleSelected }: RoleSelectionProps) {
   const { user: authUser } = useAuth()
   const { t } = useTranslation()
@@ -32,22 +56,6 @@ export default function RoleSelection({ user, onRoleSelected }: RoleSelectionPro
   const [adminPassword, setAdminPassword] = useState('')
   const [adminRole, setAdminRole] = useState<Role | null>(null)
   const [showPasswordText, setShowPasswordText] = useState(false)
-
-  const roleIcons = {
-    'admin': ShieldCheck,
-    'reception': UserCheck,
-    'kitchen': ChefHat,
-    'housekeeping': Sparkles,
-    'bookkeeping': Calculator
-  }
-
-  const roleColors = {
-    'admin': 'from-red-500 to-red-600',
-    'reception': 'from-blue-500 to-blue-600',
-    'kitchen': 'from-green-500 to-green-600',
-    'housekeeping': 'from-purple-500 to-purple-600',
-    'bookkeeping': 'from-yellow-500 to-yellow-600'
-  }
 
   useEffect(() => {
     fetchRoles()
@@ -77,7 +85,7 @@ export default function RoleSelection({ user, onRoleSelected }: RoleSelectionPro
     }
   }
 
-  const handleRoleSelect = (roleId: number, roleName: string) => {
+  const handleRoleSelect = useCallback((roleId: number, roleName: string) => {
     if (roleName === 'admin') {
       setShowAdminPassword(true)
       setSelectedRole(roleId)
@@ -86,9 +94,17 @@ export default function RoleSelection({ user, onRoleSelected }: RoleSelectionPro
       setShowAdminPassword(false)
       setAdminPassword('')
     }
-  }
+  }, [])
 
-  const handleSubmit = async () => {
+  const handleTogglePasswordVisibility = useCallback(() => {
+    setShowPasswordText(prev => !prev)
+  }, [])
+
+  const handlePasswordChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setAdminPassword(e.target.value)
+  }, [])
+
+  const handleSubmit = useCallback(async () => {
     if (!selectedRole) return
 
     // Check if admin role is selected and password is required
@@ -128,7 +144,7 @@ export default function RoleSelection({ user, onRoleSelected }: RoleSelectionPro
     } finally {
       setIsSubmitting(false)
     }
-  }
+  }, [selectedRole, adminRole, adminPassword, user.id, onRoleSelected, t, toast])
 
   if (isLoading) {
     return (
@@ -143,12 +159,7 @@ export default function RoleSelection({ user, onRoleSelected }: RoleSelectionPro
       {/* Background image - same as module selector */}
       <div
         className="absolute inset-0 opacity-20"
-        style={{
-          backgroundImage: 'url(/zemlja_gp_copy.png)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat'
-        }}
+        style={BACKGROUND_STYLE}
       />
 
       {/* Content */}
@@ -174,8 +185,8 @@ export default function RoleSelection({ user, onRoleSelected }: RoleSelectionPro
         {/* Role Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl w-full">
           {roles.map((role) => {
-            const IconComponent = roleIcons[role.name as keyof typeof roleIcons] || User
-            const colorClass = roleColors[role.name as keyof typeof roleColors] || 'from-gray-500 to-gray-600'
+            const IconComponent = ROLE_ICONS[role.name as keyof typeof ROLE_ICONS] || User
+            const colorClass = ROLE_COLORS[role.name as keyof typeof ROLE_COLORS] || 'from-gray-500 to-gray-600'
 
             return (
               <Card
@@ -255,12 +266,12 @@ export default function RoleSelection({ user, onRoleSelected }: RoleSelectionPro
                   type={showPasswordText ? "text" : "password"}
                   placeholder={t('auth.adminPasswordPlaceholder')}
                   value={adminPassword}
-                  onChange={(e) => setAdminPassword(e.target.value)}
+                  onChange={handlePasswordChange}
                   className="pl-11 pr-12 h-12 border-red-300 focus:border-red-500 focus:ring-red-500 bg-white"
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPasswordText(!showPasswordText)}
+                  onClick={handleTogglePasswordVisibility}
                   className="absolute right-3 top-3.5 text-red-500 hover:text-red-700 transition-colors"
                   aria-label={showPasswordText ? "Hide password" : "Show password"}
                 >
