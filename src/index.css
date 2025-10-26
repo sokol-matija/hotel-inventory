@@ -2,6 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom animations */
+@layer utilities {
+  @keyframes shrink-right {
+    from {
+      width: 100%;
+    }
+    to {
+      width: 0%;
+    }
+  }
+
+  .animate-shrink-right {
+    animation: shrink-right 5s linear forwards;
+  }
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
