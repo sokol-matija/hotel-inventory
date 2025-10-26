@@ -186,6 +186,41 @@ export class DatabaseAdapter {
   }
 
   /**
+   * Update room (e.g., mark as clean/dirty)
+   */
+  async updateRoom(roomId: string, updates: Partial<Room>): Promise<Room> {
+    try {
+      const updateData: Record<string, any> = {};
+
+      // Map Room interface fields to database column names
+      if (updates.is_clean !== undefined) {
+        updateData.is_clean = updates.is_clean;
+      }
+      if (updates.number !== undefined) {
+        updateData.room_number = updates.number;
+      }
+      if (updates.floor !== undefined) {
+        updateData.floor_number = updates.floor;
+      }
+      // Add more mappings as needed
+
+      const { data, error } = await supabase
+        .from('rooms')
+        .update(updateData)
+        .eq('id', parseInt(roomId))
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return this.mapRoomFromCurrentDB(data as CurrentDBRoom);
+    } catch (error) {
+      console.error('Error updating room:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get reservations by room and date range
    */
   async getReservationsByRoomAndDateRange(roomId: string, startDate: Date, endDate: Date): Promise<Reservation[]> {
@@ -416,14 +451,17 @@ export class DatabaseAdapter {
   }
 
   // Private mapping methods
-  private mapRoomFromCurrentDB(room: CurrentDBRoom): Room {
+  public mapRoomFromCurrentDB(room: CurrentDBRoom): Room {
+    // Handle missing room_type gracefully (can happen with partial real-time updates)
+    const roomType = room.room_type || 'D'; // Default to 'D' (double) if missing
+
     return {
       id: room.id.toString(),
       number: room.room_number,
       floor: room.floor_number,
-      type: this.mapRoomTypeCode(room.room_type),
-      nameCroatian: this.getRoomTypeCroatianName(room.room_type),
-      nameEnglish: this.getRoomTypeEnglishName(room.room_type),
+      type: this.mapRoomTypeCode(roomType),
+      nameCroatian: this.getRoomTypeCroatianName(roomType),
+      nameEnglish: this.getRoomTypeEnglishName(roomType),
       seasonalRates: {
         A: room.seasonal_rate_a || 50,
         B: room.seasonal_rate_b || 60,
@@ -432,7 +470,8 @@ export class DatabaseAdapter {
       },
       maxOccupancy: room.max_occupancy || 2,
       isPremium: room.is_premium || false,
-      amenities: room.amenities || []
+      amenities: room.amenities || [],
+      is_clean: room.is_clean ?? false
     };
   }
 
@@ -465,9 +504,6 @@ export class DatabaseAdapter {
     guestLookup: Map<number, CurrentDBGuest>,
     roomLookup: Map<number, CurrentDBRoom>
   ): Reservation {
-    const guest = guestLookup.get(reservation.guest_id);
-    const room = roomLookup.get(reservation.room_id);
-
     return {
       id: reservation.id.toString(),
       roomId: reservation.room_id.toString(),
@@ -493,6 +529,7 @@ export class DatabaseAdapter {
       additionalCharges: reservation.additional_charges || 0,
       roomServiceItems: [],
       totalAmount: reservation.total_amount,
+      hasPets: reservation.has_pets || false,
       bookingDate: new Date(reservation.booking_date || reservation.created_at),
       lastModified: new Date(reservation.last_modified || reservation.updated_at),
       notes: reservation.internal_notes || ''
