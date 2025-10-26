@@ -211,21 +211,21 @@ export class HotelTimelineService {
   ): OccupancyData {
     const targetDate = startOfDay(date);
     const occupancy: OccupancyData = {};
-    
+
     // Initialize all rooms as available
     rooms.forEach(room => {
       occupancy[room.id] = { status: 'available' };
     });
-    
+
     // Process reservations for the target date
     reservations.forEach(reservation => {
       const checkInDate = startOfDay(reservation.checkIn);
       const checkOutDate = startOfDay(reservation.checkOut);
-      
+
       // Check if reservation covers the target date
       if (checkInDate <= targetDate && checkOutDate > targetDate) {
         const guest = SAMPLE_GUESTS.find(g => g.id === reservation.guestId);
-        
+
         occupancy[reservation.roomId] = {
           status: reservation.status, // Use the actual reservation status for color coding
           guest,
@@ -235,7 +235,66 @@ export class HotelTimelineService {
         };
       }
     });
-    
+
+    return occupancy;
+  }
+
+  /**
+   * Calculate occupancy data filtered by AM/PM period
+   *
+   * AM: Show reservations checking OUT today OR middle-day stays
+   * PM: Show reservations checking IN today OR middle-day stays
+   */
+  calculateOccupancyDataByPeriod(
+    reservations: Reservation[],
+    date: Date,
+    rooms: Room[],
+    period: 'AM' | 'PM'
+  ): OccupancyData {
+    const targetDate = startOfDay(date);
+    const occupancy: OccupancyData = {};
+
+    // Initialize all rooms as available
+    rooms.forEach(room => {
+      occupancy[room.id] = { status: 'available' };
+    });
+
+    // Process each reservation
+    reservations.forEach(reservation => {
+      const checkInDate = startOfDay(reservation.checkIn);
+      const checkOutDate = startOfDay(reservation.checkOut);
+
+      // Must occupy this date (>= because room is occupied until 11 AM on checkout day)
+      if (!(checkInDate <= targetDate && checkOutDate >= targetDate)) {
+        return;
+      }
+
+      const isCheckingOutToday = isSameDay(checkOutDate, targetDate);
+      const isCheckingInToday = isSameDay(checkInDate, targetDate);
+      const isMiddleDay = !isCheckingOutToday && !isCheckingInToday;
+
+      const guest = SAMPLE_GUESTS.find(g => g.id === reservation.guestId);
+      let shouldInclude = false;
+
+      if (period === 'AM') {
+        // Show: checking out today OR middle day
+        shouldInclude = isCheckingOutToday || isMiddleDay;
+      } else if (period === 'PM') {
+        // Show: checking in today OR middle day
+        shouldInclude = isCheckingInToday || isMiddleDay;
+      }
+
+      if (shouldInclude) {
+        occupancy[reservation.roomId] = {
+          status: reservation.status,
+          guest,
+          reservation,
+          checkInTime: isCheckingInToday ? '15:00' : undefined,
+          checkOutTime: isCheckingOutToday ? '11:00' : undefined
+        };
+      }
+    });
+
     return occupancy;
   }
 

@@ -10,11 +10,11 @@ export interface HotelTimelineState {
   // Date management
   currentDate: Date;
   overviewDate: Date;
-  
+
   // Floor expansion states
   expandedFloors: Record<number, boolean>;
   expandedOverviewFloors: Record<number, boolean>;
-  
+
   // Modal and popup states
   selectedReservation: Reservation | null;
   showReservationPopup: boolean;
@@ -22,7 +22,7 @@ export interface HotelTimelineState {
   showCreateBooking: boolean;
   roomChangeDialog: RoomChangeDialog;
   drinkModal: DrinkModalState;
-  
+
   // Drag create mode states
   isDragCreateMode: boolean;
   isDragCreating: boolean;
@@ -30,11 +30,14 @@ export interface HotelTimelineState {
   dragCreateEnd: DragCreateState | null;
   dragCreatePreview: DragCreatePreview | null;
   dragCreateDates: { checkIn: Date; checkOut: Date } | null;
-  
+
   // Timeline mode states
   isExpansionMode: boolean;
   isMoveMode: boolean;
-  
+
+  // Overview filter state
+  overviewPeriod: 'AM' | 'PM';
+
   // Computed states
   roomsByFloor: Record<number, Room[]>;
   calendarEvents: CalendarEvent[];
@@ -52,10 +55,13 @@ export interface HotelTimelineActions {
   // Date navigation
   handleNavigate: (action: 'PREV' | 'NEXT' | 'TODAY') => void;
   handleOverviewNavigate: (action: 'PREV' | 'NEXT' | 'TODAY') => void;
-  
+
   // Floor expansion
   toggleFloor: (floor: number) => void;
   toggleOverviewFloor: (floor: number) => void;
+
+  // Overview period toggle
+  toggleOverviewPeriod: (period: 'AM' | 'PM') => void;
   
   // Modal and popup actions
   handleReservationClick: (reservation: Reservation) => void;
@@ -136,7 +142,10 @@ export function useHotelTimelineState(): HotelTimelineState & HotelTimelineActio
   // Timeline mode states
   const [isExpansionMode, setIsExpansionMode] = useState(false);
   const [isMoveMode, setIsMoveMode] = useState(false);
-  
+
+  // Overview filter state
+  const [overviewPeriod, setOverviewPeriod] = useState<'AM' | 'PM'>('AM');
+
   // Computed states
   const roomsByFloor = useMemo(() => timelineService.getRoomsByFloor(rooms), [rooms]);
   
@@ -146,8 +155,8 @@ export function useHotelTimelineState(): HotelTimelineState & HotelTimelineActio
   );
   
   const currentOccupancy = useMemo(() =>
-    timelineService.calculateOccupancyData(reservations, overviewDate, rooms),
-    [reservations, overviewDate, rooms]
+    timelineService.calculateOccupancyDataByPeriod(reservations, overviewDate, rooms, overviewPeriod),
+    [reservations, overviewDate, rooms, overviewPeriod]
   );
   
   const timelineStats = useMemo(() =>
@@ -180,7 +189,11 @@ export function useHotelTimelineState(): HotelTimelineState & HotelTimelineActio
       [floor]: !prev[floor]
     }));
   }, []);
-  
+
+  const toggleOverviewPeriod = useCallback((period: 'AM' | 'PM') => {
+    setOverviewPeriod(period);
+  }, []);
+
   // Modal and popup actions
   const handleReservationClick = useCallback((reservation: Reservation) => {
     setSelectedReservation(reservation);
@@ -368,16 +381,18 @@ export function useHotelTimelineState(): HotelTimelineState & HotelTimelineActio
     dragCreateDates,
     isExpansionMode,
     isMoveMode,
+    overviewPeriod,
     roomsByFloor,
     calendarEvents,
     currentOccupancy,
     timelineStats,
-    
+
     // Actions
     handleNavigate,
     handleOverviewNavigate,
     toggleFloor,
     toggleOverviewFloor,
+    toggleOverviewPeriod,
     handleReservationClick,
     handleRoomClick,
     closeReservationPopup,

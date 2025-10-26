@@ -2410,14 +2410,16 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
     dragCreateDates, // Keep for fallback compatibility
     isExpansionMode,
     isMoveMode,
+    overviewPeriod,
     roomsByFloor,
     currentOccupancy,
-    
+
     // Actions
     handleNavigate,
     handleOverviewNavigate,
     toggleFloor,
     toggleOverviewFloor,
+    toggleOverviewPeriod,
     handleReservationClick,
     handleRoomClick,
     closeReservationPopup,
@@ -3210,27 +3212,48 @@ Room Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item
                 <CalendarIcon className="h-5 w-5" />
                 <span>Room Status Overview - {format(overviewDate, 'MMMM dd, yyyy')}</span>
               </h3>
-              
+
               <div className="flex items-center space-x-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <div className="flex items-center space-x-1 bg-white rounded-lg border border-gray-300 p-1">
+                  <Button
+                    variant={overviewPeriod === 'AM' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => toggleOverviewPeriod('AM')}
+                    title="Show rooms with checkout today"
+                    className="text-xs"
+                  >
+                    AM
+                  </Button>
+                  <Button
+                    variant={overviewPeriod === 'PM' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => toggleOverviewPeriod('PM')}
+                    title="Show rooms with check-in today"
+                    className="text-xs"
+                  >
+                    PM
+                  </Button>
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => handleOverviewNavigate('PREV')}
                   title="Previous day"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => handleOverviewNavigate('TODAY')}
                   title="Today"
                 >
                   Today
                 </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => handleOverviewNavigate('NEXT')}
                   title="Next day"
                 >
