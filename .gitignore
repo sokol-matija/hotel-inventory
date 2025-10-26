@@ -75,3 +75,6 @@ supabase/functions/fiscalize-invoice/certificate.p12
 
 # Fiscalization test scripts with passwords
 scripts/production/test-fina-cert.js
+
+# Supabase CLI temporary files
+supabase/.temp/
