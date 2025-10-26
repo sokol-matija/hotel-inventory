@@ -1,3 +1,387 @@
+# ✅ COMPLETED: Ntfy.sh Notification Integration for Room 401 - October 26, 2025
+
+## Completion Summary
+**Status**: ✅ FULLY IMPLEMENTED
+**Date**: October 26, 2025
+
+### What Was Delivered ✅
+1. **NtfyNotificationService**: New service class for sending push notifications to ntfy.sh
+2. **Room 401 Integration**: Automatic notifications when new reservations are created for room 401
+3. **Fail-safe Design**: Notification failures don't break reservation creation
+4. **Rich Notification Data**: Includes guest name, check-in/out dates, number of nights and guests
+
+### Files Created/Modified (2 files, +120 lines)
+- `NtfyNotificationService.ts` (NEW) - Notification service with singleton pattern
+- `DatabaseAdapter.ts` (MODIFIED) - Integrated notification for room 401 reservations
+
+### Implementation Details
+**Notification Endpoint**: `ntfy.sh/hotel-porec-room-401`
+
+**Data Included**:
+- Guest name (first + last)
+- Check-in date (formatted)
+- Check-out date (formatted)
+- Number of nights
+- Number of guests
+- Reservation status
+
+**Technical Features**:
+- ✅ Singleton pattern for service instance
+- ✅ TypeScript type safety
+- ✅ Non-blocking notifications (errors logged, don't throw)
+- ✅ Priority-based notifications (priority: 4 for new reservations)
+- ✅ Tagged notifications (tags: 'hotel', 'booking', '401')
+
+### Success Criteria Met ✅
+- ✅ Notifications sent only for room 401
+- ✅ Contains all important reservation data
+- ✅ Reservation creation succeeds even if notification fails
+- ✅ Zero TypeScript errors
+- ✅ Follows existing service patterns
+- ✅ No breaking changes
+
+### Code Structure
+```typescript
+// Service singleton
+const ntfyNotificationService = NtfyNotificationService.getInstance()
+
+// Integration in DatabaseAdapter
+await ntfyNotificationService.notifyRoom401Reservation(
+  newReservation,
+  room,
+  guest
+)
+```
+
+### Review Section
+**Architecture**: Clean service layer following existing patterns (HotelDataService, DatabaseAdapter)
+**Type Safety**: Proper TypeScript interfaces and type definitions
+**Error Handling**: Try-catch blocks with console logging, non-throwing errors
+**Extensibility**: Easy to add notifications for other rooms or events
+**Performance**: Async notifications don't block reservation creation
+
+---
+
+# ✅ COMPLETED: Welcome & Thank-You Email Integration - October 26, 2025
+
+## Completion Summary
+**Status**: ✅ FULLY IMPLEMENTED AND TESTED
+**Commit**: `cd19d61` - "feat: integrate automatic welcome and thank-you email sending on check-in/check-out"
+**Date**: October 26, 2025
+
+### What Was Delivered ✅
+1. **Welcome emails** automatically sent when guests check in (3 methods):
+   - ✅ CheckInWorkflow button (with UI feedback banner)
+   - ✅ Fast check-in via right-click context menu (with toast notification)
+   - ✅ "Send Welcome Email" button in reservation popup
+
+2. **Thank-you emails** automatically sent on check-out:
+   - ✅ Fast check-out via right-click context menu (with toast notification)
+
+3. **Multilingual support**:
+   - ✅ Automatically uses guest's preferred language (English, German, Italian)
+
+4. **Real Supabase data integration**:
+   - ✅ All email methods work with actual guest and room data from database
+   - ✅ Fallback to sample data for backward compatibility
+
+5. **User feedback**:
+   - ✅ Toast notifications for fast operations
+   - ✅ UI feedback banner in CheckInWorkflow
+   - ✅ Console logging for debugging
+
+### Files Modified (5 files, +225/-40 lines)
+- `emailService.ts` - Enhanced with optional guest/room parameters
+- `CheckInWorkflow.tsx` - Integrated email sending with UI feedback
+- `HotelTimeline.tsx` - Added email to fast check-in/check-out
+- `ReservationService.ts` - Smart room data handling
+- `useReservationState.ts` - Pass complete reservation data
+
+### Success Criteria Met ✅
+- ✅ Welcome email sent automatically on check-in (all methods)
+- ✅ Thank-you email sent automatically on check-out
+- ✅ Uses guest's preferred language
+- ✅ Toast notifications displayed
+- ✅ UI feedback shown to staff
+- ✅ Works with real Supabase data
+- ✅ No breaking changes to existing functionality
+- ✅ Build compiles successfully with zero errors
+
+---
+
+# Welcome Email Integration - Implementation Plan
+
+## Task Overview
+Integrate automatic welcome email sending when a guest checks in, using the existing email service that has been tested in the `/email-test` route.
+
+## Current Implementation Analysis
+
+### Email Service (`/src/lib/emailService.ts`)
+- ✅ `HotelEmailService.sendWelcomeEmail(reservation)` method exists (line 749)
+- ✅ Supports 3 languages: English, German, Italian
+- ✅ Automatically looks up guest and room data from reservation
+- ✅ Sends via Supabase Edge Function (with fallback simulation)
+- ✅ Returns `{ success: boolean, message: string }`
+- **Note**: Currently defaults to English language, doesn't use guest's `preferredLanguage`
+
+### Check-in Implementations
+
+#### 1. CheckInWorkflow Component (`CheckInOut/CheckInWorkflow.tsx`)
+- **Location**: Line 154-177 (`handleCompleteCheckIn` function)
+- **Status Update**: Line 161 - `await updateReservationStatus(reservation.id, 'checked-in')`
+- **Current behavior**: Updates status → logs completion → closes modal
+- **Integration point**: After successful status update, before closing modal
+
+#### 2. Fast Check-in in HotelTimeline (`HotelTimeline.tsx`)
+- **Location**: Lines 849-872 (context menu "Fast Check-in" button)
+- **Status Update**: Line 858 - `await onUpdateReservationStatus(reservationId, 'checked-in')`
+- **Current behavior**: Optimistic update → status change → cleanup
+- **Integration point**: After successful status update, before cleanup
+
+## Implementation Plan
+
+### Step 1: Enhance Email Service to Support Guest Language
+**File**: `/src/lib/emailService.ts`
+
+**Changes**:
+```typescript
+// Update sendWelcomeEmail method (line 749)
+static async sendWelcomeEmail(
+  reservation: Reservation,
+  language?: EmailLanguage
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const guest = SAMPLE_GUESTS.find(g => g.id === reservation.guestId);
+    const room = HOTEL_POREC_ROOMS.find(r => r.id === reservation.roomId);
+
+    if (!guest || !room) {
+      throw new Error('Guest or room not found');
+    }
+
+    // Use provided language, or guest's preferred language, or default to 'en'
+    const emailLanguage = language ||
+      (guest.preferredLanguage as EmailLanguage) ||
+      'en';
+
+    const template = this.generateWelcomeEmail(
+      { guest, reservation, room },
+      emailLanguage
+    );
+
+    return await this.sendEmail(guest.email || '', template, guest.fullName);
+
+  } catch (error) {
+    console.error('Error sending welcome email:', error);
+    return {
+      success: false,
+      message: 'Failed to send welcome email. Missing guest or room information.'
+    };
+  }
+}
+```
+
+### Step 2: Integrate into CheckInWorkflow Component
+**File**: `/src/components/hotel/frontdesk/CheckInOut/CheckInWorkflow.tsx`
+
+**Changes**:
+1. Import the email service (line 1-32):
+```typescript
+import { HotelEmailService } from '../../../../lib/emailService';
+```
+
+2. Add state for email sending feedback (line 56-60):
+```typescript
+const [emailSendResult, setEmailSendResult] = useState<{
+  success: boolean;
+  message: string;
+} | null>(null);
+```
+
+3. Update `handleCompleteCheckIn` function (line 154-177):
+```typescript
+const handleCompleteCheckIn = async () => {
+  if (!reservation || !canCompleteCheckIn()) return;
+
+  try {
+    setIsProcessing(true);
+
+    // Update reservation status to checked-in
+    await updateReservationStatus(reservation.id, 'checked-in');
+
+    // Send welcome email
+    console.log(`Sending welcome email to ${guest?.email}...`);
+    const emailResult = await HotelEmailService.sendWelcomeEmail(reservation);
+    setEmailSendResult(emailResult);
+
+    if (emailResult.success) {
+      console.log(`✅ Welcome email sent successfully to ${guest?.email}`);
+    } else {
+      console.warn(`⚠️ Failed to send welcome email: ${emailResult.message}`);
+    }
+
+    // Log check-in completion
+    console.log(`Check-in completed for ${guest?.fullName} in Room ${room?.number}`);
+
+    // Close workflow after showing feedback
+    setTimeout(() => {
+      onClose();
+    }, emailResult.success ? 2000 : 3000); // Longer delay if email failed
+
+  } catch (error) {
+    console.error('Failed to complete check-in:', error);
+    alert('Failed to complete check-in. Please try again.');
+    setEmailSendResult(null);
+  } finally {
+    setIsProcessing(false);
+  }
+};
+```
+
+4. Add email feedback UI (after the action buttons, ~line 400):
+```typescript
+{/* Email Send Feedback */}
+{emailSendResult && (
+  <div className={`mt-4 p-4 rounded-lg ${
+    emailSendResult.success
+      ? 'bg-green-50 border border-green-200'
+      : 'bg-yellow-50 border border-yellow-200'
+  }`}>
+    <div className="flex items-center space-x-2">
+      {emailSendResult.success ? (
+        <CheckCircle className="h-5 w-5 text-green-600" />
+      ) : (
+        <AlertCircle className="h-5 w-5 text-yellow-600" />
+      )}
+      <p className={`text-sm font-medium ${
+        emailSendResult.success ? 'text-green-800' : 'text-yellow-800'
+      }`}>
+        {emailSendResult.message}
+      </p>
+    </div>
+  </div>
+)}
+```
+
+### Step 3: Integrate into HotelTimeline Fast Check-in
+**File**: `/src/components/hotel/frontdesk/HotelTimeline.tsx`
+
+**Changes**:
+1. Import the email service (at the top of the file):
+```typescript
+import { HotelEmailService } from '../../../lib/emailService';
+```
+
+2. Update the "Fast Check-in" button handler (lines 849-872):
+```typescript
+onClick={async () => {
+  console.log('Fast Check-in clicked for:', contextMenu.reservation?.id);
+  if (contextMenu.reservation && onUpdateReservationStatus) {
+    const reservationId = contextMenu.reservation.id;
+    const reservation = contextMenu.reservation;
+
+    // Add to optimistic updates
+    setOptimisticStatusUpdates(prev => new Set(prev.add(reservationId)));
+
+    try {
+      await onUpdateReservationStatus(reservationId, 'checked-in');
+      console.log('✅ Guest checked in successfully');
+
+      // Send welcome email
+      console.log('📧 Sending welcome email...');
+      const emailResult = await HotelEmailService.sendWelcomeEmail(reservation);
+
+      if (emailResult.success) {
+        console.log('✅ Welcome email sent successfully');
+      } else {
+        console.warn('⚠️ Failed to send welcome email:', emailResult.message);
+      }
+
+    } catch (error) {
+      console.error('❌ Failed to check in guest:', error);
+    } finally {
+      // Remove from optimistic updates
+      setOptimisticStatusUpdates(prev => {
+        const next = new Set(prev);
+        next.delete(reservationId);
+        return next;
+      });
+    }
+  }
+  setContextMenu({ show: false, x: 0, y: 0, reservation: null });
+}}
+```
+
+## Testing Plan
+
+### 1. CheckInWorkflow Testing
+- [ ] Open reservation details view
+- [ ] Click "Check-In Workflow" button
+- [ ] Complete all required steps
+- [ ] Click "Complete Check-In"
+- [ ] Verify status changes to "checked-in"
+- [ ] Verify welcome email is sent
+- [ ] Check console for email send result
+- [ ] Check guest's email inbox for welcome email
+
+### 2. Fast Check-in Testing
+- [ ] Right-click on a reservation in the timeline
+- [ ] Click "Fast Check-in"
+- [ ] Verify status changes to "checked-in"
+- [ ] Verify welcome email is sent (check console)
+- [ ] Check guest's email inbox for welcome email
+
+### 3. Language Testing
+- [ ] Test with guest who has `preferredLanguage: 'de'`
+- [ ] Verify email is sent in German
+- [ ] Test with guest who has `preferredLanguage: 'it'`
+- [ ] Verify email is sent in Italian
+- [ ] Test with guest who has `preferredLanguage: 'en'`
+- [ ] Verify email is sent in English
+
+### 4. Error Handling Testing
+- [ ] Test with invalid guest email
+- [ ] Verify graceful error handling
+- [ ] Verify UI shows appropriate error message
+- [ ] Verify check-in still completes even if email fails
+
+## Success Criteria
+
+✅ Welcome email is automatically sent on check-in via both methods
+✅ Email uses guest's preferred language
+✅ Check-in process completes successfully even if email fails
+✅ User receives appropriate feedback about email sending
+✅ Console logs show email send status
+✅ No TypeScript errors
+✅ No breaking changes to existing functionality
+
+## Rollback Plan
+
+If issues occur:
+1. Remove email service imports
+2. Remove email sending code from both components
+3. Revert to original check-in logic
+
+## Notes
+
+- Email sending is **non-blocking** - check-in completes regardless of email success/failure
+- Email service has built-in fallback simulation if Supabase is not configured
+- Guest language preference is respected for email content
+- Console logs provide debugging information for email sending
+- UI feedback in CheckInWorkflow shows email send result
+
+## Questions for User
+
+1. Should we show a notification/toast when email fails in fast check-in? (Currently only logs to console)
+2. Do you want to track email send history in the database?
+3. Should there be a retry mechanism if email sending fails?
+4. Do you want to add email sending to check-out as well (thank you email)?
+
+---
+
+**Ready for implementation?** Please review and confirm before I proceed with the changes.
+
+---
+
 # COMPLETED: Profile Onboarding & Infinite Loading Bug Fix - October 20, 2025 ✅
 
 ## Bug Fix Summary: Infinite Loading on Login/Onboarding
