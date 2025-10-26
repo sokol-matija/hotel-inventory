@@ -45,7 +45,6 @@ import { ExpandedDailyViewModal } from './modals/ExpandedDailyViewModal';
 import { EnhancedDailyViewModal } from './modals/EnhancedDailyViewModal';
 import DragCreateOverlay from './DragCreateOverlay';
 import { HotelEmailService } from '../../../lib/emailService';
-import { toast } from '../../../hooks/use-toast';
 
 interface HotelTimelineProps {
   isFullscreen?: boolean;
@@ -436,9 +435,9 @@ const ItemTypes = {
 };
 
 // Reservation block component with resize handles
-function ReservationBlock({ 
-  reservation, 
-  guest, 
+function ReservationBlock({
+  reservation,
+  guest,
   room,
   startDate,
   onReservationClick,
@@ -710,8 +709,8 @@ function ReservationBlock({
             {(() => {
               const daysLeft = Math.ceil((reservation.checkOut.getTime() - new Date().getTime()) / (24 * 60 * 60 * 1000));
               return (
-                <span className="text-xs text-blue-600 font-medium">
-                  {daysLeft > 0 ? `${daysLeft} days left` : daysLeft === 0 ? 'Checking out today' : 'Checked out'}
+                <span className="text-xs text-white font-medium">
+                  {daysLeft > 0 ? <><span className="font-bold">{daysLeft}</span> days left</> : daysLeft === 0 ? 'Checking out today' : 'Checked out'}
                 </span>
               );
             })()}
@@ -732,9 +731,9 @@ function ReservationBlock({
                 <span className="ml-0.5 text-xs">{reservation.children.length}</span>
               </div>
             )}
-            
-            {guest?.hasPets && (
-              <Dog className="h-3 w-3 text-amber-600" />
+
+            {(reservation.hasPets || guest?.hasPets) && (
+              <Dog className="h-3 w-3 text-white" />
             )}
           </div>
         </div>
@@ -867,18 +866,8 @@ function ReservationBlock({
 
                       if (emailResult.success) {
                         console.log('✅ Welcome email sent successfully');
-                        toast({
-                          title: "Welcome email sent",
-                          description: emailResult.message,
-                          variant: "default",
-                        });
                       } else {
                         console.warn('⚠️ Failed to send welcome email:', emailResult.message);
-                        toast({
-                          title: "Email sending failed",
-                          description: emailResult.message,
-                          variant: "destructive",
-                        });
                       }
 
                     } catch (error) {
@@ -945,18 +934,8 @@ function ReservationBlock({
 
                       if (emailResult.success) {
                         console.log('✅ Thank you email sent successfully');
-                        toast({
-                          title: "Thank you email sent",
-                          description: emailResult.message,
-                          variant: "default",
-                        });
                       } else {
                         console.warn('⚠️ Failed to send thank you email:', emailResult.message);
-                        toast({
-                          title: "Email sending failed",
-                          description: emailResult.message,
-                          variant: "destructive",
-                        });
                       }
 
                     } catch (error) {
@@ -1095,18 +1074,8 @@ function ReservationBlock({
 
                       if (emailResult.success) {
                         console.log('✅ Welcome email sent successfully');
-                        toast({
-                          title: "Welcome email sent",
-                          description: emailResult.message,
-                          variant: "default",
-                        });
                       } else {
                         console.warn('⚠️ Failed to send welcome email:', emailResult.message);
-                        toast({
-                          title: "Email sending failed",
-                          description: emailResult.message,
-                          variant: "destructive",
-                        });
                       }
 
                     } catch (error) {
@@ -1173,18 +1142,8 @@ function ReservationBlock({
 
                       if (emailResult.success) {
                         console.log('✅ Thank you email sent successfully');
-                        toast({
-                          title: "Thank you email sent",
-                          description: emailResult.message,
-                          variant: "default",
-                        });
                       } else {
                         console.warn('⚠️ Failed to send thank you email:', emailResult.message);
-                        toast({
-                          title: "Email sending failed",
-                          description: emailResult.message,
-                          variant: "destructive",
-                        });
                       }
 
                     } catch (error) {
@@ -2197,8 +2156,19 @@ function RoomOverviewFloorSection({
                   )}
                   
                   <div className="flex flex-col space-y-1">
-                    <div className="font-semibold text-sm pr-16">
-                      {formatRoomNumber(room)}
+                    <div className="flex items-center gap-2">
+                      <div className="font-semibold text-sm">
+                        {formatRoomNumber(room)}
+                      </div>
+                      {/* Status Light Indicator */}
+                      <div
+                        className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+                          room.is_clean
+                            ? 'bg-blue-500'
+                            : 'bg-red-500'
+                        }`}
+                        title={room.is_clean ? 'Room clean' : 'Room dirty'}
+                      />
                     </div>
                     <div className="text-xs text-gray-500">
                       {getRoomTypeDisplay(room)}
@@ -2222,8 +2192,8 @@ function RoomOverviewFloorSection({
                               <span>{reservation.children.length}</span>
                             </div>
                           )}
-                          {guest.hasPets && (
-                            <Heart className="h-3 w-3 text-red-500" />
+                          {(reservation.hasPets || guest.hasPets) && (
+                            <Dog className="h-3 w-3 text-gray-500" />
                           )}
                         </div>
                         
@@ -2239,11 +2209,11 @@ function RoomOverviewFloorSection({
                     )}
                     
                     {isOccupied && statusColors && (
-                      <Badge 
+                      <Badge
                         className="mt-1 text-xs"
-                        style={{ 
+                        style={{
                           backgroundColor: statusColors.backgroundColor,
-                          color: statusColors.textColor 
+                          color: statusColors.textColor
                         }}
                       >
                         {statusColors.label}
@@ -2296,7 +2266,7 @@ function RoomOverviewFloorSection({
               <span>Fast Check-in</span>
             </button>
             
-            <button 
+            <button
               className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3"
               onClick={async () => {
                 if (contextMenu.reservation && onUpdateReservationStatus) {
@@ -2311,6 +2281,25 @@ function RoomOverviewFloorSection({
             >
               <span className="text-blue-600">↗</span>
               <span>Fast Check-out</span>
+            </button>
+
+            <div className="border-t border-gray-100 my-1"></div>
+
+            <button
+              className="w-full text-left px-4 py-2 text-sm hover:bg-blue-50 flex items-center space-x-3"
+              onClick={() => {
+                if (contextMenu.reservation) {
+                  // Get the room number from the reservation
+                  const room = rooms.find(r => r.id === contextMenu.reservation?.roomId);
+                  if (room) {
+                    window.location.href = `/nfc/clean?roomId=${room.number}`;
+                  }
+                }
+                setContextMenu({ show: false, x: 0, y: 0, reservation: null });
+              }}
+            >
+              <span className="text-blue-600">📍</span>
+              <span>Mark Clean (NFC)</span>
             </button>
 
             <div className="border-t border-gray-100 my-1"></div>
@@ -2380,7 +2369,7 @@ function RoomOverviewFloorSection({
 // Main timeline component
 export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen }: HotelTimelineProps) {
   const { reservations, rooms, guests, isUpdating, createReservation, createGuest, updateReservation, updateReservationStatus, deleteReservation } = useHotel();
-  
+
   // Simple drag-create functionality
   const dragCreate = useSimpleDragCreate();
   
@@ -2544,7 +2533,7 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
 
     initKeyboardShortcuts();
   }, [dragCreate.state.isEnabled, isExpansionMode, isMoveMode, showReservationPopup, showCreateBooking, roomChangeDialog.show, currentDate]);
-  
+
   // Group rooms by floor
   // roomsByFloor and currentOccupancy now provided by useHotelTimelineState hook
   
