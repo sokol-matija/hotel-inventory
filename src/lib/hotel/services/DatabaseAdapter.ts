@@ -330,10 +330,12 @@ export class DatabaseAdapter {
       // Fetch complete reservation with related data
       const reservations = await this.getReservations();
       const newReservation = reservations.find(r => r.id === data.id.toString());
-      
+
       if (!newReservation) {
         throw new Error('Failed to fetch created reservation');
       }
+
+      // Notification removed - now handled in ModernCreateBookingModal
 
       return newReservation;
     } catch (error) {

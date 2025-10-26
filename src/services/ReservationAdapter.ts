@@ -5,6 +5,8 @@
 
 import { supabase } from '@/lib/supabase'
 
+console.log('[RESERVATION ADAPTER] Module loaded')
+
 export interface LegacyReservation {
   id: string
   guest_id: string
@@ -190,6 +192,7 @@ export class ReservationAdapter {
     }>
     status?: string
   }): Promise<{ reservationId: string; success: boolean }> {
+
     if (this.useNewSchema) {
       return this.createReservationNewSchema(reservationData)
     }
@@ -257,6 +260,8 @@ export class ReservationAdapter {
         })
     }
 
+    // Notification removed - now handled in ModernCreateBookingModal
+
     return { reservationId: reservation.id, success: true }
   }
 
@@ -320,6 +325,8 @@ export class ReservationAdapter {
       .single()
 
     if (reservationError) throw reservationError
+
+    // Notification removed - now handled in ModernCreateBookingModal
 
     return { reservationId: reservation.id, success: true }
   }

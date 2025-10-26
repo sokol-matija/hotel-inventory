@@ -5,7 +5,6 @@ import { startOfDay } from 'date-fns';
 import { HotelPricingEngine, PricingCalculationInput } from '../pricingEngine';
 import { Room, Guest, GuestChild, ReservationStatus, Reservation, Company } from '../types';
 import { SAMPLE_GUESTS } from '../sampleData';
-import { ntfyService, BookingNotificationData } from '../../ntfyService';
 import { formatRoomNumber } from '../calendarUtils';
 
 export interface BookingData {
@@ -203,35 +202,7 @@ export class BookingService {
     return errors;
   }
 
-  /**
-   * Send notification for Room 401 bookings
-   */
-  public async sendBookingNotification(bookingData: BookingData, pricing: any): Promise<void> {
-    if (bookingData.room.id !== '401') return;
-
-    try {
-      const guestName = bookingData.isNewGuest 
-        ? (bookingData.guest as NewGuestData).fullName
-        : (bookingData.guest as Guest).fullName;
-
-      const notificationData: BookingNotificationData = {
-        roomNumber: bookingData.room.number,
-        guestName,
-        checkIn: bookingData.checkIn.toLocaleDateString('en-GB'),
-        checkOut: bookingData.checkOut.toLocaleDateString('en-GB'),
-        nights: pricing.nights,
-        adults: bookingData.adults,
-        children: bookingData.children.length,
-        bookingSource: bookingData.bookingSource,
-        totalAmount: parseFloat(pricing.grandTotal.toFixed(2))
-      };
-
-      await ntfyService.sendRoom401BookingNotification(notificationData);
-    } catch (error) {
-      console.error('Failed to send booking notification:', error);
-      // Don't throw - notification failure shouldn't block booking
-    }
-  }
+  // Notification function removed - now handled directly in ModernCreateBookingModal
 
   /**
    * Transform booking data for reservation creation

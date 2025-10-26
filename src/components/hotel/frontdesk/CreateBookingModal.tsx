@@ -85,10 +85,7 @@ export default function CreateBookingModal({
       // Create reservation
       await createReservation(reservationData);
 
-      // Send notification for Room 401
-      if (room.id === '401') {
-        await bookingService.sendBookingNotification(bookingData as BookingData, pricing);
-      }
+      // Notification removed - this modal is deprecated, use ModernCreateBookingModal instead
 
       // Success notification
       const guestName = formState.isNewGuest 

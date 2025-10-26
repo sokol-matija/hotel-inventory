@@ -29,6 +29,7 @@ import { useHotel } from '../../../lib/hotel/state/SupabaseHotelContext';
 import GuestAutocomplete from './Guests/GuestAutocomplete';
 import { getSeasonalPeriod } from '../../../lib/hotel/pricingCalculator';
 import { HotelPricingEngine } from '../../../lib/hotel/pricingEngine';
+import { ntfyService, BookingNotificationData } from '../../../lib/ntfyService';
 
 interface ModernCreateBookingModalProps {
   isOpen: boolean;
@@ -46,6 +47,9 @@ export default function ModernCreateBookingModal({
   currentDate,
   preSelectedDates
 }: ModernCreateBookingModalProps) {
+  // Console log to confirm this is the active modal
+  console.log('🎯 MODERN CREATE BOOKING MODAL - Component mounted/rendered');
+  
   const { guests, createReservation, refreshData } = useHotel();
   
   // Basic booking info
@@ -338,6 +342,16 @@ export default function ModernCreateBookingModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('🎯🎯🎯 MODERN CREATE BOOKING MODAL - CREATE BOOKING BUTTON CLICKED! 🎯🎯🎯');
+    console.log('📋 Modal Info:', {
+      modalName: 'ModernCreateBookingModal',
+      roomNumber: room.number,
+      roomType: room.type,
+      checkIn: checkInDate,
+      checkOut: checkOutDate,
+      guestsCount: bookingGuests.length
+    });
+    
     if (isSubmitting) return;
     
     const errors = validateForm();
@@ -515,6 +529,40 @@ export default function ModernCreateBookingModal({
         `in Room ${room.number} has been created.`
       );
 
+      // Send ntfy.sh notification for Room 401 bookings
+      console.log('📲 Checking if notification should be sent for room:', room.number);
+      if (room.number === '401') {
+        console.log('🔔 Room 401 detected! Preparing ntfy notification...');
+        
+        try {
+          const notificationData: BookingNotificationData = {
+            roomNumber: room.number,
+            guestName: `${primaryGuest.firstName} ${primaryGuest.lastName}`,
+            checkIn: checkInDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+            checkOut: checkOutDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+            nights: pricing.nights,
+            adults: adults,
+            children: children,
+            bookingSource: 'Front Desk - Modern Modal',
+            totalAmount: pricing.total
+          };
+
+          console.log('📤 Sending notification to ntfy.sh/hotel-porec-room-401:', notificationData);
+          
+          const notificationSent = await ntfyService.sendRoom401BookingNotification(notificationData);
+          
+          if (notificationSent) {
+            console.log('✅ Ntfy notification sent successfully to ntfy.sh/hotel-porec-room-401');
+          } else {
+            console.log('❌ Failed to send ntfy notification');
+          }
+        } catch (notificationError) {
+          console.error('❌ Error sending ntfy notification:', notificationError);
+        }
+      } else {
+        console.log(`ℹ️ Skipping notification - not room 401 (room: ${room.number})`);
+      }
+
       // Refresh the hotel data to show the new booking in the UI
       await refreshData();
 
@@ -537,6 +585,9 @@ export default function ModernCreateBookingModal({
   };
 
   if (!isOpen) return null;
+
+  // Log when modal is displayed
+  console.log('🎯 MODERN CREATE BOOKING MODAL - Modal is now VISIBLE on screen');
 
   const adultsCount = bookingGuests.filter(g => g.type === 'adult').length;
   const childrenCount = bookingGuests.filter(g => g.type === 'child').length;
