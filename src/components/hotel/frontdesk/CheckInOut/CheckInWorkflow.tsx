@@ -28,6 +28,7 @@ import {
 import { Reservation, Guest, Room } from '../../../../lib/hotel/types';
 import { useHotel } from '../../../../lib/hotel/state/SupabaseHotelContext';
 import { SAMPLE_GUESTS } from '../../../../lib/hotel/sampleData';
+import { HotelEmailService } from '../../../../lib/emailService';
 // Removed static HOTEL_POREC_ROOMS import - now using dynamic rooms from context
 
 interface CheckInWorkflowProps {
@@ -58,6 +59,10 @@ export default function CheckInWorkflow({
   const [roomKeyIssued, setRoomKeyIssued] = useState(false);
   const [wifiInfoProvided, setWifiInfoProvided] = useState(false);
   const [parkingAssigned, setParkingAssigned] = useState(false);
+  const [emailSendResult, setEmailSendResult] = useState<{
+    success: boolean;
+    message: string;
+  } | null>(null);
 
   // Find associated guest and room data
   const guest = reservation ? SAMPLE_GUESTS.find(g => g.id === reservation.guestId) : null;
@@ -156,21 +161,33 @@ export default function CheckInWorkflow({
 
     try {
       setIsProcessing(true);
-      
+
       // Update reservation status to checked-in
       await updateReservationStatus(reservation.id, 'checked-in');
-      
+
+      // Send welcome email
+      console.log(`📧 Sending welcome email to ${guest?.email}...`);
+      const emailResult = await HotelEmailService.sendWelcomeEmail(reservation, guest ?? undefined, room ?? undefined);
+      setEmailSendResult(emailResult);
+
+      if (emailResult.success) {
+        console.log(`✅ Welcome email sent successfully to ${guest?.email}`);
+      } else {
+        console.warn(`⚠️ Failed to send welcome email: ${emailResult.message}`);
+      }
+
       // Log check-in completion
       console.log(`Check-in completed for ${guest?.fullName} in Room ${room?.number}`);
-      
-      // Close workflow
+
+      // Close workflow after showing feedback
       setTimeout(() => {
         onClose();
-      }, 1500);
-      
+      }, emailResult.success ? 2000 : 3000); // Longer delay if email failed
+
     } catch (error) {
       console.error('Failed to complete check-in:', error);
       alert('Failed to complete check-in. Please try again.');
+      setEmailSendResult(null);
     } finally {
       setIsProcessing(false);
     }
@@ -376,14 +393,14 @@ export default function CheckInWorkflow({
             <Button variant="outline" onClick={onClose} disabled={isProcessing}>
               Cancel
             </Button>
-            
+
             <div className="flex items-center space-x-3">
               {!canCompleteCheckIn() && (
                 <span className="text-sm text-red-600">
                   Complete all required steps to proceed
                 </span>
               )}
-              
+
               <Button
                 onClick={handleCompleteCheckIn}
                 disabled={!canCompleteCheckIn() || isProcessing || isUpdating}
@@ -398,6 +415,28 @@ export default function CheckInWorkflow({
               </Button>
             </div>
           </div>
+
+          {/* Email Send Feedback */}
+          {emailSendResult && (
+            <div className={`mt-4 p-4 rounded-lg ${
+              emailSendResult.success
+                ? 'bg-green-50 border border-green-200'
+                : 'bg-yellow-50 border border-yellow-200'
+            }`}>
+              <div className="flex items-center space-x-2">
+                {emailSendResult.success ? (
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                ) : (
+                  <AlertCircle className="h-5 w-5 text-yellow-600" />
+                )}
+                <p className={`text-sm font-medium ${
+                  emailSendResult.success ? 'text-green-800' : 'text-yellow-800'
+                }`}>
+                  {emailSendResult.message}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

@@ -746,18 +746,32 @@ ${this.getEmailStyles()}
   /**
    * Convenient method to send welcome email for a reservation
    */
-  static async sendWelcomeEmail(reservation: Reservation): Promise<{ success: boolean; message: string }> {
+  static async sendWelcomeEmail(
+    reservation: Reservation,
+    guest?: Guest,
+    room?: Room,
+    language?: EmailLanguage
+  ): Promise<{ success: boolean; message: string }> {
     try {
-      const guest = SAMPLE_GUESTS.find(g => g.id === reservation.guestId);
-      const room = HOTEL_POREC_ROOMS.find(r => r.id === reservation.roomId);
-      
-      if (!guest || !room) {
+      // Try to get guest and room from parameters, fallback to sample data
+      const guestData = guest || SAMPLE_GUESTS.find(g => g.id === reservation.guestId);
+      const roomData = room || HOTEL_POREC_ROOMS.find(r => r.id === reservation.roomId);
+
+      if (!guestData || !roomData) {
         throw new Error('Guest or room not found');
       }
 
-      const template = this.generateWelcomeEmail({ guest, reservation, room });
-      return await this.sendEmail(guest.email || '', template, guest.fullName);
-      
+      // Use provided language, or guest's preferred language, or default to 'en'
+      const emailLanguage = language ||
+        (guestData.preferredLanguage as EmailLanguage) ||
+        'en';
+
+      const template = this.generateWelcomeEmail(
+        { guest: guestData, reservation, room: roomData },
+        emailLanguage
+      );
+      return await this.sendEmail(guestData.email || '', template, guestData.fullName);
+
     } catch (error) {
       console.error('Error sending welcome email:', error);
       return {
@@ -770,23 +784,57 @@ ${this.getEmailStyles()}
   /**
    * Convenient method to send reminder email for a reservation
    */
-  static async sendReminderEmail(reservation: Reservation): Promise<{ success: boolean; message: string }> {
+  static async sendReminderEmail(
+    reservation: Reservation,
+    guest?: Guest,
+    room?: Room
+  ): Promise<{ success: boolean; message: string }> {
     try {
-      const guest = SAMPLE_GUESTS.find(g => g.id === reservation.guestId);
-      const room = HOTEL_POREC_ROOMS.find(r => r.id === reservation.roomId);
-      
-      if (!guest || !room) {
+      // Try to get guest and room from parameters, fallback to sample data
+      const guestData = guest || SAMPLE_GUESTS.find(g => g.id === reservation.guestId);
+      const roomData = room || HOTEL_POREC_ROOMS.find(r => r.id === reservation.roomId);
+
+      if (!guestData || !roomData) {
         throw new Error('Guest or room not found');
       }
 
-      const template = this.generateReminderEmail({ guest, reservation, room });
-      return await this.sendEmail(guest.email || '', template, guest.fullName);
-      
+      const template = this.generateReminderEmail({ guest: guestData, reservation, room: roomData });
+      return await this.sendEmail(guestData.email || '', template, guestData.fullName);
+
     } catch (error) {
       console.error('Error sending reminder email:', error);
       return {
         success: false,
         message: 'Failed to send reminder email. Missing guest or room information.'
+      };
+    }
+  }
+
+  /**
+   * Convenient method to send thank you email for a reservation (on check-out)
+   */
+  static async sendThankYouEmail(
+    reservation: Reservation,
+    guest?: Guest,
+    room?: Room
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      // Try to get guest and room from parameters, fallback to sample data
+      const guestData = guest || SAMPLE_GUESTS.find(g => g.id === reservation.guestId);
+      const roomData = room || HOTEL_POREC_ROOMS.find(r => r.id === reservation.roomId);
+
+      if (!guestData || !roomData) {
+        throw new Error('Guest or room not found');
+      }
+
+      const template = this.generateThankYouEmail({ guest: guestData, reservation, room: roomData });
+      return await this.sendEmail(guestData.email || '', template, guestData.fullName);
+
+    } catch (error) {
+      console.error('Error sending thank you email:', error);
+      return {
+        success: false,
+        message: 'Failed to send thank you email. Missing guest or room information.'
       };
     }
   }

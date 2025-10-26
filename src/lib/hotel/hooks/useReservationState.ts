@@ -130,7 +130,8 @@ export function useReservationState(
       updateState({ isSendingEmail: true });
       await reservationService.sendWelcomeEmail(
         reservationData.reservation,
-        reservationData.guest
+        reservationData.guest,
+        reservationData.room
       );
     } catch (error) {
       console.error('Error sending welcome email:', error);
@@ -146,7 +147,8 @@ export function useReservationState(
       updateState({ isSendingEmail: true });
       await reservationService.sendReminderEmail(
         reservationData.reservation,
-        reservationData.guest
+        reservationData.guest,
+        reservationData.room
       );
     } catch (error) {
       console.error('Error sending reminder email:', error);

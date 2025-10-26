@@ -44,6 +44,8 @@ import SimpleDragCreateButton from './SimpleDragCreateButton';
 import { ExpandedDailyViewModal } from './modals/ExpandedDailyViewModal';
 import { EnhancedDailyViewModal } from './modals/EnhancedDailyViewModal';
 import DragCreateOverlay from './DragCreateOverlay';
+import { HotelEmailService } from '../../../lib/emailService';
+import { toast } from '../../../hooks/use-toast';
 
 interface HotelTimelineProps {
   isFullscreen?: boolean;
@@ -850,13 +852,35 @@ function ReservationBlock({
                   console.log('Fast Check-in clicked for:', contextMenu.reservation?.id);
                   if (contextMenu.reservation && onUpdateReservationStatus) {
                     const reservationId = contextMenu.reservation.id;
-                    
+                    const reservation = contextMenu.reservation;
+
                     // Add to optimistic updates
                     setOptimisticStatusUpdates(prev => new Set(prev.add(reservationId)));
-                    
+
                     try {
                       await onUpdateReservationStatus(reservationId, 'checked-in');
                       console.log('✅ Guest checked in successfully');
+
+                      // Send welcome email
+                      console.log('📧 Sending welcome email...');
+                      const emailResult = await HotelEmailService.sendWelcomeEmail(reservation, guest, room);
+
+                      if (emailResult.success) {
+                        console.log('✅ Welcome email sent successfully');
+                        toast({
+                          title: "Welcome email sent",
+                          description: emailResult.message,
+                          variant: "default",
+                        });
+                      } else {
+                        console.warn('⚠️ Failed to send welcome email:', emailResult.message);
+                        toast({
+                          title: "Email sending failed",
+                          description: emailResult.message,
+                          variant: "destructive",
+                        });
+                      }
+
                     } catch (error) {
                       console.error('❌ Failed to check in guest:', error);
                     } finally {
@@ -906,13 +930,35 @@ function ReservationBlock({
                   console.log('Fast Check-out clicked for:', contextMenu.reservation?.id);
                   if (contextMenu.reservation && onUpdateReservationStatus) {
                     const reservationId = contextMenu.reservation.id;
-                    
+                    const reservation = contextMenu.reservation;
+
                     // Add to optimistic updates
                     setOptimisticStatusUpdates(prev => new Set(prev.add(reservationId)));
-                    
+
                     try {
                       await onUpdateReservationStatus(reservationId, 'checked-out');
                       console.log('✅ Guest checked out successfully');
+
+                      // Send thank you email
+                      console.log('📧 Sending thank you email...');
+                      const emailResult = await HotelEmailService.sendThankYouEmail(reservation, guest, room);
+
+                      if (emailResult.success) {
+                        console.log('✅ Thank you email sent successfully');
+                        toast({
+                          title: "Thank you email sent",
+                          description: emailResult.message,
+                          variant: "default",
+                        });
+                      } else {
+                        console.warn('⚠️ Failed to send thank you email:', emailResult.message);
+                        toast({
+                          title: "Email sending failed",
+                          description: emailResult.message,
+                          variant: "destructive",
+                        });
+                      }
+
                     } catch (error) {
                       console.error('❌ Failed to check out guest:', error);
                     } finally {
@@ -1034,13 +1080,35 @@ function ReservationBlock({
                   console.log('Fast Check-in clicked for:', contextMenu.reservation?.id);
                   if (contextMenu.reservation && onUpdateReservationStatus) {
                     const reservationId = contextMenu.reservation.id;
-                    
+                    const reservation = contextMenu.reservation;
+
                     // Add to optimistic updates
                     setOptimisticStatusUpdates(prev => new Set(prev.add(reservationId)));
-                    
+
                     try {
                       await onUpdateReservationStatus(reservationId, 'checked-in');
                       console.log('✅ Guest checked in successfully');
+
+                      // Send welcome email
+                      console.log('📧 Sending welcome email...');
+                      const emailResult = await HotelEmailService.sendWelcomeEmail(reservation, guest, room);
+
+                      if (emailResult.success) {
+                        console.log('✅ Welcome email sent successfully');
+                        toast({
+                          title: "Welcome email sent",
+                          description: emailResult.message,
+                          variant: "default",
+                        });
+                      } else {
+                        console.warn('⚠️ Failed to send welcome email:', emailResult.message);
+                        toast({
+                          title: "Email sending failed",
+                          description: emailResult.message,
+                          variant: "destructive",
+                        });
+                      }
+
                     } catch (error) {
                       console.error('❌ Failed to check in guest:', error);
                     } finally {
@@ -1090,13 +1158,35 @@ function ReservationBlock({
                   console.log('Fast Check-out clicked for:', contextMenu.reservation?.id);
                   if (contextMenu.reservation && onUpdateReservationStatus) {
                     const reservationId = contextMenu.reservation.id;
-                    
+                    const reservation = contextMenu.reservation;
+
                     // Add to optimistic updates
                     setOptimisticStatusUpdates(prev => new Set(prev.add(reservationId)));
-                    
+
                     try {
                       await onUpdateReservationStatus(reservationId, 'checked-out');
                       console.log('✅ Guest checked out successfully');
+
+                      // Send thank you email
+                      console.log('📧 Sending thank you email...');
+                      const emailResult = await HotelEmailService.sendThankYouEmail(reservation, guest, room);
+
+                      if (emailResult.success) {
+                        console.log('✅ Thank you email sent successfully');
+                        toast({
+                          title: "Thank you email sent",
+                          description: emailResult.message,
+                          variant: "default",
+                        });
+                      } else {
+                        console.warn('⚠️ Failed to send thank you email:', emailResult.message);
+                        toast({
+                          title: "Email sending failed",
+                          description: emailResult.message,
+                          variant: "destructive",
+                        });
+                      }
+
                     } catch (error) {
                       console.error('❌ Failed to check out guest:', error);
                     } finally {

@@ -88,11 +88,14 @@ export class ReservationService {
    */
   async sendWelcomeEmail(
     reservation: Reservation,
-    guest: Guest
+    guest: Guest,
+    room?: Room
   ): Promise<EmailResult> {
     try {
-      const result = await HotelEmailService.sendWelcomeEmail(reservation);
-      
+      // Use provided room or fetch from database
+      const roomData = room || await hotelDataService.getRoomById(reservation.roomId);
+      const result = await HotelEmailService.sendWelcomeEmail(reservation, guest, roomData ?? undefined);
+
       if (result.success) {
         hotelNotification.success(
           'Welcome Email Sent!',
@@ -124,11 +127,14 @@ export class ReservationService {
    */
   async sendReminderEmail(
     reservation: Reservation,
-    guest: Guest
+    guest: Guest,
+    room?: Room
   ): Promise<EmailResult> {
     try {
-      const result = await HotelEmailService.sendReminderEmail(reservation);
-      
+      // Use provided room or fetch from database
+      const roomData = room || await hotelDataService.getRoomById(reservation.roomId);
+      const result = await HotelEmailService.sendReminderEmail(reservation, guest, roomData ?? undefined);
+
       if (result.success) {
         hotelNotification.success(
           'Reminder Email Sent!',
