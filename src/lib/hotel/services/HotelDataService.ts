@@ -104,6 +104,13 @@ export class HotelDataService {
   }
 
   /**
+   * Update room (e.g., mark as clean/dirty)
+   */
+  async updateRoom(roomId: string, updates: Partial<Room>): Promise<Room> {
+    return await databaseAdapter.updateRoom(roomId, updates);
+  }
+
+  /**
    * Get all guests
    */
   async getGuests(): Promise<Guest[]> {
