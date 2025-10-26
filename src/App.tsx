@@ -18,6 +18,7 @@ import SettingsPage from './components/settings/SettingsPage';
 import ModuleSelector from './components/hotel/ModuleSelector';
 import FrontDeskLayout from './components/hotel/frontdesk/FrontDeskLayout';
 import FinanceLayout from './components/hotel/finance/FinanceLayout';
+import { NFCCleanRoomPage } from './components/testing/NFCCleanRoomPage';
 import { ToastProvider } from './components/ui/toast';
 import { Toaster } from './components/Toaster';
 
@@ -112,6 +113,9 @@ function AppRoutes() {
           <RoleSelectionWrapper />
         </ProtectedRoute>
       } />
+
+      {/* NFC Room Cleaning Route - Public (no auth required for NFC tags) */}
+      <Route path="/nfc/clean" element={<NFCCleanRoomPage />} />
 
       {/* Hotel Management Routes */}
       <Route path="/hotel/module-selector" element={
