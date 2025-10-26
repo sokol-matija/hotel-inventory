@@ -50,6 +50,7 @@ export interface Room {
   maxOccupancy: number;
   isPremium: boolean;
   amenities: string[];
+  is_clean?: boolean;
 }
 
 export interface GuestChild {
@@ -141,7 +142,10 @@ export interface Reservation {
   
   // Payment status
   paymentStatus?: string;
-  
+
+  // Guest preferences
+  hasPets?: boolean;
+
   // Timestamps
   checkedInAt?: Date;
   checkedOutAt?: Date;
