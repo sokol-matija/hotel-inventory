@@ -69,9 +69,9 @@ export class RealtimeService {
           event: '*',
           schema: 'public',
           table: 'reservations',
-          filter: roomId 
+          filter: roomId
             ? `room_id=eq.${roomId}`
-            : `hotel_id=eq.${RealtimeService.HOTEL_POREC_ID}`
+            : undefined
         },
         (payload) => {
           console.log('Reservation change:', payload);
@@ -118,9 +118,9 @@ export class RealtimeService {
           event: '*',
           schema: 'public',
           table: 'rooms',
-          filter: floor 
-            ? `floor=eq.${floor}`
-            : `hotel_id=eq.${RealtimeService.HOTEL_POREC_ID}`
+          filter: floor
+            ? `floor_number=eq.${floor}`
+            : undefined
         },
         (payload) => {
           console.log('Room change:', payload);
