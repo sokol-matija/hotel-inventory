@@ -19,11 +19,13 @@ import {
 import { hotelDataService } from '../services/HotelDataService';
 import { realtimeService } from '../services/RealtimeService';
 import { databasePricingService } from '../services/DatabasePricingService';
+import { databaseAdapter } from '../services/DatabaseAdapter';
 import { supabase, Database } from '../../supabase';
 import { logger, logUserActivity, logBusinessOperation, trackError } from '../../logging/LoggingService';
 import { performanceMonitor } from '../../monitoring/PerformanceMonitoringService';
 import { auditTrail } from '../../audit/AuditTrailService';
 import { OptimisticUpdateService } from '../services/OptimisticUpdateService';
+import { useToast } from '../../../hooks/use-toast';
 
 interface HotelContextType {
   // Data state
@@ -113,6 +115,9 @@ interface HotelContextType {
 const HotelContext = createContext<HotelContextType | undefined>(undefined);
 
 export function SupabaseHotelProvider({ children }: { children: React.ReactNode }) {
+  // Toast hook for notifications
+  const { toast } = useToast();
+
   // State management
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [guests, setGuests] = useState<Guest[]>([]);
@@ -122,7 +127,7 @@ export function SupabaseHotelProvider({ children }: { children: React.ReactNode 
   const [fiscalRecords, setFiscalRecords] = useState<FiscalRecord[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [pricingTiers, setPricingTiers] = useState<PricingTier[]>([]);
-  
+
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(new Date());
@@ -527,13 +532,34 @@ export function SupabaseHotelProvider({ children }: { children: React.ReactNode 
           roomId: payload.new?.id || payload.old?.id,
           eventType: payload.eventType
         });
-        
+
         if (payload.eventType === 'UPDATE' && payload.new) {
-          setRooms(prev => 
-            prev.map(r => r.id === payload.new!.id ? payload.new as Room : r)
+          // Map the raw database row to Room object using DatabaseAdapter
+          const newRoom = databaseAdapter.mapRoomFromCurrentDB(payload.new as any);
+          const oldRoom = payload.old ? databaseAdapter.mapRoomFromCurrentDB(payload.old as any) : undefined;
+
+          // Check if is_clean status changed
+          if (oldRoom && newRoom.is_clean !== oldRoom.is_clean) {
+            if (newRoom.is_clean) {
+              // Room was marked as clean
+              const toastResult = toast({
+                title: '✅ Room Cleaned',
+                description: `Room ${newRoom.number} is now clean and ready for the next guest!`,
+                variant: 'default',
+              });
+
+              // Auto-dismiss after 5 seconds for better UX
+              setTimeout(() => {
+                toastResult.dismiss();
+              }, 5000);
+            }
+          }
+
+          setRooms(prev =>
+            prev.map(r => r.id === newRoom.id ? newRoom : r)
           );
         }
-        
+
         setLastUpdated(new Date());
         performanceMonitor.recordUserInteraction('realtime_room_update', 'HotelContext', 0, true);
       },
@@ -622,28 +648,45 @@ export function SupabaseHotelProvider({ children }: { children: React.ReactNode 
               () => hotelDataService.updateReservation(id, { status: newStatus }),
               'database_operation'
             );
-            
+
+            // If guest checked out, mark room as dirty for housekeeping
+            if (newStatus === 'checked-out' && currentReservation.roomId) {
+              try {
+                await hotelDataService.updateRoom(currentReservation.roomId, { is_clean: false });
+                logger.info('HotelContext', 'Room marked as dirty on checkout', {
+                  roomId: currentReservation.roomId,
+                  reservationId: id
+                });
+              } catch (err) {
+                logger.warn('HotelContext', 'Failed to mark room as dirty on checkout', {
+                  roomId: currentReservation.roomId,
+                  error: err instanceof Error ? err.message : 'Unknown error'
+                });
+                // Don't throw - checkout should succeed even if room update fails
+              }
+            }
+
             // Log successful operation
-            logBusinessOperation('update', 'reservation', id, { 
-              oldStatus: currentReservation.status, 
-              newStatus 
+            logBusinessOperation('update', 'reservation', id, {
+              oldStatus: currentReservation.status,
+              newStatus
             });
-            
-            auditTrail.logAuditEvent('update', 'reservation', id, 
-              { status: currentReservation.status }, 
-              { status: newStatus }, 
+
+            auditTrail.logAuditEvent('update', 'reservation', id,
+              { status: currentReservation.status },
+              { status: newStatus },
               'success'
             );
-            
+
             const duration = performance.now() - operationStart;
             performanceMonitor.recordDatabaseOperation(
-              'update_reservation_status', 
-              'reservations', 
-              duration, 
-              1, 
+              'update_reservation_status',
+              'reservations',
+              duration,
+              1,
               'UPDATE'
             );
-            
+
             console.log(`✅ Server confirmed status update for reservation ${id}`);
             
           } catch (err) {
