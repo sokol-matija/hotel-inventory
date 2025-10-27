@@ -23,7 +23,7 @@ export class RoomCleaningService {
       const { error } = await supabase
         .from('rooms')
         .update({
-          is_cleaned: true,
+          is_clean: true,
           updated_at: new Date().toISOString(),
         })
         .eq('id', roomId)
@@ -48,7 +48,7 @@ export class RoomCleaningService {
       const { error } = await supabase
         .from('rooms')
         .update({
-          is_cleaned: false,
+          is_clean: false,
           updated_at: new Date().toISOString(),
         })
         .eq('id', roomId)
@@ -75,7 +75,7 @@ export class RoomCleaningService {
     try {
       const { data, error } = await supabase
         .from('rooms')
-        .select('is_cleaned, updated_at')
+        .select('is_clean, updated_at')
         .eq('id', roomId)
         .single()
 
@@ -84,7 +84,7 @@ export class RoomCleaningService {
       }
 
       return {
-        isClean: data.is_cleaned || false,
+        isClean: data.is_clean || false,
         lastUpdated: data.updated_at,
       }
     } catch (error) {
@@ -95,7 +95,7 @@ export class RoomCleaningService {
 
   /**
    * Subscribe to room cleaning status changes
-   * Fires callback whenever room is_cleaned is updated
+   * Fires callback whenever room is_clean is updated
    */
   subscribeToRoomStatus(
     roomId: string,
@@ -114,7 +114,7 @@ export class RoomCleaningService {
           filter: `id=eq.${roomId}`,
         },
         (payload) => {
-          const isClean = (payload.new as Room).is_cleaned || false
+          const isClean = (payload.new as Room).is_clean || false
           callback(isClean)
         }
       )
@@ -138,7 +138,7 @@ export class RoomCleaningService {
     }>
   > {
     try {
-      const { data, error } = await supabase.from('rooms').select('id, number, is_cleaned')
+      const { data, error } = await supabase.from('rooms').select('id, number, is_clean')
 
       if (error) {
         console.error('Failed to fetch rooms:', error)
@@ -148,7 +148,7 @@ export class RoomCleaningService {
       return (data || []).map((room) => ({
         id: room.id,
         number: room.number,
-        isClean: room.is_cleaned || false,
+        isClean: room.is_clean || false,
       }))
     } catch (error) {
       console.error('Failed to get all rooms status:', error)
@@ -167,7 +167,7 @@ export class RoomCleaningService {
       const { error } = await supabase
         .from('rooms')
         .update({
-          is_cleaned: isClean,
+          is_clean: isClean,
           updated_at: new Date().toISOString(),
         })
         .in('id', roomIds)

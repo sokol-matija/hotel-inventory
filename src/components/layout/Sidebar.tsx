@@ -4,16 +4,17 @@ import { Button } from '../ui/button'
 import { useAuth } from '../auth/AuthProvider'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from '../ui/LanguageSwitcher'
-import { 
-  Home, 
-  Package, 
-  MapPin, 
+import {
+  Home,
+  Package,
+  MapPin,
   LogOut,
   UserCheck,
   Globe,
   Settings,
   Building2,
-  ShoppingCart
+  ShoppingCart,
+  TestTube
 } from 'lucide-react'
 
 const sidebarItems = [
@@ -42,14 +43,19 @@ const sidebarItems = [
     path: '/global', 
     icon: Globe
   },
-  { 
-    key: 'settings', 
-    path: '/settings', 
+  {
+    key: 'settings',
+    path: '/settings',
     icon: Settings
   },
-  { 
-    key: 'moduleSelector', 
-    path: '/hotel/module-selector', 
+  {
+    key: 'adminTesting',
+    path: '/admin/testing',
+    icon: TestTube
+  },
+  {
+    key: 'moduleSelector',
+    path: '/hotel/module-selector',
     icon: Building2
   }
 ]

@@ -70,7 +70,7 @@ export type Database = {
           hotel_id: string
           id: string
           is_active: boolean | null
-          is_cleaned: boolean | null
+          is_clean: boolean | null
           is_out_of_order: boolean | null
           is_premium: boolean | null
           maintenance_notes: string | null
@@ -90,7 +90,7 @@ export type Database = {
           hotel_id: string
           id?: string
           is_active?: boolean | null
-          is_cleaned?: boolean | null
+          is_clean?: boolean | null
           is_out_of_order?: boolean | null
           is_premium?: boolean | null
           maintenance_notes?: string | null
@@ -110,7 +110,7 @@ export type Database = {
           hotel_id?: string
           id?: string
           is_active?: boolean | null
-          is_cleaned?: boolean | null
+          is_clean?: boolean | null
           is_out_of_order?: boolean | null
           is_premium?: boolean | null
           maintenance_notes?: string | null

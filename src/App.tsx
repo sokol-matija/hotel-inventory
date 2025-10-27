@@ -19,6 +19,7 @@ import ModuleSelector from './components/hotel/ModuleSelector';
 import FrontDeskLayout from './components/hotel/frontdesk/FrontDeskLayout';
 import FinanceLayout from './components/hotel/finance/FinanceLayout';
 import { NFCCleanRoomPage } from './components/testing/NFCCleanRoomPage';
+import { AdminTestingPage } from './components/testing/AdminTestingPage';
 import { ToastProvider } from './components/ui/toast';
 import { Toaster } from './components/Toaster';
 
@@ -150,6 +151,7 @@ function AppRoutes() {
         <Route path="settings" element={<SettingsPage />} />
         <Route path="admin/locations" element={<LocationManagement />} />
         <Route path="admin/audit" element={<AuditLogPage />} />
+        <Route path="admin/testing" element={<AdminTestingPage />} />
       </Route>
       
       <Route path="*" element={<Navigate to="/hotel/module-selector" replace />} />
