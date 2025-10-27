@@ -833,13 +833,16 @@ function ReservationBlock({
             />
             
             {/* Context Menu */}
-            <div 
+            <div
               className="fixed bg-white rounded-lg shadow-xl border border-gray-200 py-2 min-w-[180px] z-[9999]"
-              style={{ 
-                left: contextMenu.x, 
+              style={{
+                left: contextMenu.x,
                 top: contextMenu.y
               }}
-              onClick={() => console.log('[CONTEXT MENU] Menu clicked')}
+              onClick={(e) => {
+                e.stopPropagation();
+                console.log('[CONTEXT MENU] Menu clicked');
+              }}
             >
               <button 
                 className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3 transition-all duration-200 ${
@@ -1041,13 +1044,16 @@ function ReservationBlock({
             />
             
             {/* Context Menu */}
-            <div 
+            <div
               className="fixed bg-white rounded-lg shadow-xl border border-gray-200 py-2 min-w-[180px] z-[9999]"
-              style={{ 
-                left: contextMenu.x, 
+              style={{
+                left: contextMenu.x,
                 top: contextMenu.y
               }}
-              onClick={() => console.log('[CONTEXT MENU] Menu clicked')}
+              onClick={(e) => {
+                e.stopPropagation();
+                console.log('[CONTEXT MENU] Menu clicked');
+              }}
             >
               <button 
                 className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3 transition-all duration-200 ${
