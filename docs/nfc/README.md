@@ -34,13 +34,13 @@ Start with one of these based on your need:
 
 | Document | Purpose | Read If... |
 |----------|---------|-----------|
-| **[NFC_QUICK_START.md](./NFC_QUICK_START.md)** | 5-min overview | You want quick understanding |
-| **[NFC_SETUP_CHECKLIST.md](./docs/NFC_SETUP_CHECKLIST.md)** | Step-by-step setup | You're ready to implement |
-| **[NFC_TESTING_GUIDE.md](./docs/NFC_TESTING_GUIDE.md)** | Complete testing | You want to test thoroughly |
-| **[NFC_IMPLEMENTATION_SUMMARY.md](./docs/NFC_IMPLEMENTATION_SUMMARY.md)** | Technical details | You're integrating to UI |
-| **[NFC_SYSTEM_OVERVIEW.md](./docs/NFC_SYSTEM_OVERVIEW.md)** | Architecture & design | You want deep understanding |
-| **[NFC_VISUAL_GUIDE.md](./NFC_VISUAL_GUIDE.md)** | Visual diagrams | You prefer pictures |
-| **[NFC_IMPLEMENTATION_COMPLETE.md](./NFC_IMPLEMENTATION_COMPLETE.md)** | Complete summary | You want the full picture |
+| **[quick-start.md](./quick-start.md)** | 5-min overview | You want quick understanding |
+| **[setup-checklist.md](./setup-checklist.md)** | Step-by-step setup | You're ready to implement |
+| **[testing-guide.md](./testing-guide.md)** | Complete testing | You want to test thoroughly |
+| **[implementation-summary.md](./implementation-summary.md)** | Technical details | You're integrating to UI |
+| **[system-overview.md](./system-overview.md)** | Architecture & design | You want deep understanding |
+| **[visual-guide.md](./visual-guide.md)** | Visual diagrams | You prefer pictures |
+| **[curl-and-frontend-guide.md](./curl-and-frontend-guide.md)** | cURL & Frontend testing | You want to test with cURL |
 
 ---
 
@@ -207,7 +207,7 @@ Room 103: https://your-api/nfc-clean-room?roomId=room-103
 **A:** Not in this version. Could add staff ID later if needed.
 
 ### Q: How do I set up physical tags?
-**A:** See [NFC_TESTING_GUIDE.md](./docs/NFC_TESTING_GUIDE.md) for step-by-step.
+**A:** See [testing-guide.md](./testing-guide.md) for step-by-step.
 
 ### Q: Will guests see this?
 **A:** No! Only staff use it.
@@ -234,10 +234,10 @@ Room 103: https://your-api/nfc-clean-room?roomId=room-103
 
 Choose one:
 
-1. **Read Quick Start** → [NFC_QUICK_START.md](./NFC_QUICK_START.md)
+1. **Read Quick Start** → [quick-start.md](./quick-start.md)
 2. **Test in Browser** → Open `/test/nfc` (after adding route)
-3. **Follow Setup Steps** → [NFC_SETUP_CHECKLIST.md](./docs/NFC_SETUP_CHECKLIST.md)
-4. **Understand System** → [NFC_SYSTEM_OVERVIEW.md](./docs/NFC_SYSTEM_OVERVIEW.md)
+3. **Follow Setup Steps** → [setup-checklist.md](./setup-checklist.md)
+4. **Understand System** → [system-overview.md](./system-overview.md)
 
 ---
 
@@ -266,17 +266,15 @@ SELECT * FROM rooms WHERE id = 'room-101';
 ## 📚 Documentation Map
 
 ```
-NFC_README.md (You are here)
-    ├─ NFC_QUICK_START.md (5-min overview)
-    │
-    ├─ docs/
-    │   ├─ NFC_SETUP_CHECKLIST.md (Step-by-step)
-    │   ├─ NFC_TESTING_GUIDE.md (Complete testing)
-    │   ├─ NFC_IMPLEMENTATION_SUMMARY.md (Technical)
-    │   └─ NFC_SYSTEM_OVERVIEW.md (Architecture)
-    │
-    ├─ NFC_IMPLEMENTATION_COMPLETE.md (Full overview)
-    └─ NFC_VISUAL_GUIDE.md (Diagrams)
+docs/nfc/
+    ├─ README.md (You are here)
+    ├─ quick-start.md (5-min overview)
+    ├─ setup-checklist.md (Step-by-step)
+    ├─ testing-guide.md (Complete testing)
+    ├─ implementation-summary.md (Technical details)
+    ├─ system-overview.md (Architecture)
+    ├─ visual-guide.md (Diagrams)
+    └─ curl-and-frontend-guide.md (cURL & Frontend)
 ```
 
 ---
