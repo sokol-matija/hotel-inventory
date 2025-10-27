@@ -45,6 +45,7 @@ import { ExpandedDailyViewModal } from './modals/ExpandedDailyViewModal';
 import { EnhancedDailyViewModal } from './modals/EnhancedDailyViewModal';
 import DragCreateOverlay from './DragCreateOverlay';
 import { HotelEmailService } from '../../../lib/emailService';
+import { TimelineCleaningIndicator } from './TimelineCleaningIndicator';
 
 interface HotelTimelineProps {
   isFullscreen?: boolean;
@@ -1657,7 +1658,7 @@ function DroppableDateCell({
       <div className={`absolute bottom-0 left-0 right-0 h-0.5 ${
         isSecondHalf ? 'bg-green-400' : 'bg-red-400'
       } opacity-60`}></div>
-      
+
       {/* Small time indicator in corner */}
       <div className={`absolute top-0 right-0 text-xs px-1 text-gray-500 ${
         isSecondHalf ? 'text-green-600' : 'text-red-600'
@@ -1753,11 +1754,15 @@ function RoomRow({
               {getRoomTypeDisplay(room)}
             </div>
           </div>
-          {room.isPremium && (
-            <Badge variant="secondary" className="text-xs">
-              Premium
-            </Badge>
-          )}
+          <div className="flex items-center gap-2">
+            {/* Room cleaning status indicator */}
+            <TimelineCleaningIndicator roomId={room.id} />
+            {room.isPremium && (
+              <Badge variant="secondary" className="text-xs">
+                Premium
+              </Badge>
+            )}
+          </div>
         </div>
         
         {/* Date cells - Updated for half-day system */}
