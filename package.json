@@ -72,6 +72,8 @@
   },
   "scripts": {
     "start": "craco start",
+    "local": "cross-env REACT_APP_SUPABASE_URL=http://127.0.0.1:54321 REACT_APP_SUPABASE_ANON_KEY=sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH REACT_APP_ENVIRONMENT=local craco start",
+    "production": "cross-env REACT_APP_SUPABASE_URL=https://gkbpthurkucotikjefra.supabase.co REACT_APP_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdrYnB0aHVya3Vjb3Rpa2plZnJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3MzMxNTksImV4cCI6MjA2ODMwOTE1OX0.pXbrXBCeJHgXzHGTB4WatYfWsaFFkrlr8ChUkVIV6SY REACT_APP_ENVIRONMENT=production craco start",
     "build": "craco build",
     "test": "craco test",
     "test:unit": "craco test --testPathPattern='(unit|spec)\\.test\\.(ts|tsx)$' --watchAll=false",
@@ -107,6 +109,7 @@
     "@types/qrcode": "^1.5.5",
     "@types/react-big-calendar": "^1.16.2",
     "craco-alias": "^3.0.1",
+    "cross-env": "^10.1.0",
     "jest-environment-jsdom": "^30.0.5",
     "ts-jest": "^29.4.1"
   }
