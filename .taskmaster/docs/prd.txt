@@ -1,0 +1,79 @@
+# Product Requirements Document - Hotel Inventory Management System
+
+## Project Overview
+A comprehensive hotel management system built with React 19, TypeScript, Supabase, and modern web technologies.
+
+## Current Status
+- ✅ Advanced Backend Integration (v2.7)
+- ✅ Enterprise User Experience Features
+- ✅ Phobs Channel Manager Integration
+- ✅ Real-time Conflict Detection
+- ✅ Optimistic UI Updates
+- ✅ Batch Operations Support
+- ✅ Keyboard Shortcuts (20+ hotkeys)
+
+## Core Modules
+
+### 1. Front Desk Module
+- Hotel Timeline with drag-and-drop reservations
+- Real-time booking conflict detection
+- Room cleaning status tracking
+- Automated daily status reset
+- Guest check-in/check-out management
+- Context menu operations
+
+### 2. Finance Module
+- Invoice generation and management
+- Payment tracking
+- Revenue reporting
+- Integration with external systems
+
+### 3. Channel Manager Integration (Phobs)
+- Real-time OTA synchronization
+- Bidirectional reservation sync
+- Conflict resolution (double bookings, rate mismatches)
+- Performance monitoring
+- Error handling with retry logic
+- Multi-channel support (Booking.com, Expedia, etc.)
+
+## Technical Architecture
+
+### Frontend Stack
+- React 19 (with Server Components patterns)
+- TypeScript (strict mode)
+- Tailwind CSS + shadcn/ui components
+- React Router v7
+- React DnD (drag and drop)
+- GSAP (animations)
+- i18next (internationalization: EN, DE, HR, IT)
+
+### Backend Stack
+- Supabase (PostgreSQL database)
+- Supabase Edge Functions
+- Real-time subscriptions
+- Row Level Security (RLS)
+
+### Service Layer Architecture
+1. **ConflictDetectionService**: Real-time booking validation
+2. **OptimisticUpdateService**: Instant UI feedback with rollback
+3. **BatchOperationService**: Bulk operations management
+4. **KeyboardShortcutService**: Context-aware hotkeys
+5. **PhobsChannelManagerService**: OTA integration
+6. **PhobsErrorHandlingService**: Error handling with retry logic
+7. **PhobsReservationSyncService**: Bidirectional sync
+
+## Development Guidelines
+- Zero TypeScript errors maintained
+- Service layer abstraction for business logic
+- Optimistic updates for all user actions
+- Comprehensive error handling and rollback
+- Senior-level code quality standards
+- Test-driven development approach
+
+## Future Enhancements
+[Add future features and improvements here as needed]
+
+## Notes
+- This PRD can be used with TaskMaster's `parse-prd` command to auto-generate tasks
+- Update this document as the project evolves
+- Reference CLAUDE.md for detailed tech stack best practices

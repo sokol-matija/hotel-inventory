@@ -1,0 +1,26 @@
+{
+  "version": "1.0.0",
+  "projectName": "hotel-inventory",
+  "projectRoot": "/Users/msokol/Dev/Repos/2-Personal/hotel-inventory",
+  "tasksFile": ".taskmaster/tasks/tasks.json",
+  "defaultTasksPerGeneration": 15,
+  "features": {
+    "research": true,
+    "complexity": true,
+    "dependencies": true,
+    "subtasks": true
+  },
+  "git": {
+    "enabled": true,
+    "autoBranch": false,
+    "branchPrefix": "task/"
+  },
+  "tags": {
+    "enabled": true,
+    "defaultTags": ["frontend", "backend", "feature", "bug", "refactor", "docs"]
+  },
+  "ai": {
+    "perplexityEnabled": false,
+    "autoExpand": false
+  }
+}

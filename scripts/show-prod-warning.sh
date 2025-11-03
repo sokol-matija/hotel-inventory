@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# Show production warning and update MCP
+
+echo "SUPABASE_ENV=production" > .env.local
+
+echo ""
+echo "╔════════════════════════════════════════════╗"
+echo "║  ⚠️  SWITCHED TO PRODUCTION SUPABASE       ║"
+echo "║                                            ║"
+echo "║  URL:     gkbpthurkucotikjefra.supabase.co║"
+echo "║  Key:     eyJhbGciOiJIUzI1NiIsInR5cCI6...  ║"
+echo "║                                            ║"
+echo "║  🚨 BE CAREFUL - YOU'RE ON PRODUCTION!     ║"
+echo "║                                            ║"
+echo "║  💡 Reload Claude Code:                    ║"
+echo "║     ⌘+Shift+P > reload                     ║"
+echo "╚════════════════════════════════════════════╝"
+echo ""

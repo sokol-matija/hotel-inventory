@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# Switch Hotel Inventory MCP to LOCAL Supabase
+
+echo "SUPABASE_ENV=local" > .env.local
+
+echo ""
+echo "╔════════════════════════════════════════════╗"
+echo "║  ✅  SWITCHED TO LOCAL SUPABASE            ║"
+echo "║                                            ║"
+echo "║  URL:     127.0.0.1:54321                  ║"
+echo "║  Key:     sb_publishable_ACJWlzQHlZjBrEgu ║"
+echo "║                                            ║"
+echo "║  💡 Reload Claude Code:                    ║"
+echo "║     ⌘+Shift+P > reload                     ║"
+echo "╚════════════════════════════════════════════╝"
+echo ""
