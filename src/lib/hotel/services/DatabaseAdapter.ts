@@ -504,10 +504,13 @@ export class DatabaseAdapter {
     guestLookup: Map<number, CurrentDBGuest>,
     roomLookup: Map<number, CurrentDBRoom>
   ): Reservation {
+    const guestData = guestLookup.get(reservation.guest_id);
+
     return {
       id: reservation.id.toString(),
       roomId: reservation.room_id.toString(),
       guestId: reservation.guest_id.toString(),
+      guest: guestData ? this.mapGuestFromCurrentDB(guestData) : undefined,
       checkIn: new Date(reservation.check_in_date),
       checkOut: new Date(reservation.check_out_date),
       numberOfGuests: reservation.number_of_guests,
@@ -529,6 +532,7 @@ export class DatabaseAdapter {
       additionalCharges: reservation.additional_charges || 0,
       roomServiceItems: [],
       totalAmount: reservation.total_amount,
+      paymentStatus: reservation.payment_status,
       hasPets: reservation.has_pets || false,
       bookingDate: new Date(reservation.booking_date || reservation.created_at),
       lastModified: new Date(reservation.last_modified || reservation.updated_at),
@@ -591,6 +595,254 @@ export class DatabaseAdapter {
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
     return `HP${year}${month}${random}`;
+  }
+
+  // ============================================
+  // ADVANCED FILTERING & PAGINATION METHODS
+  // ============================================
+
+  /**
+   * Get reservations with advanced filtering, pagination, and sorting
+   */
+  async getReservationsWithFilters(options: {
+    // Search
+    searchQuery?: string;
+
+    // Filters
+    statuses?: string[];
+    bookingSources?: string[];
+    paymentStatuses?: string[];
+    roomTypes?: string[];
+    nationalities?: string[];
+    vipOnly?: boolean;
+    hasSpecialRequests?: boolean;
+
+    // Date filters
+    checkInFrom?: Date;
+    checkInTo?: Date;
+    checkOutFrom?: Date;
+    checkOutTo?: Date;
+    bookingDateFrom?: Date;
+    bookingDateTo?: Date;
+
+    // Pagination
+    page?: number;
+    pageSize?: number;
+
+    // Sorting
+    sortBy?: 'check_in_date' | 'check_out_date' | 'booking_date' | 'total_amount' | 'guest_name';
+    sortOrder?: 'asc' | 'desc';
+  } = {}): Promise<{
+    reservations: Reservation[];
+    totalCount: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+  }> {
+    try {
+      const {
+        searchQuery,
+        statuses,
+        bookingSources,
+        paymentStatuses,
+        roomTypes,
+        nationalities,
+        vipOnly,
+        hasSpecialRequests,
+        checkInFrom,
+        checkInTo,
+        checkOutFrom,
+        checkOutTo,
+        bookingDateFrom,
+        bookingDateTo,
+        page = 1,
+        pageSize = 25,
+        sortBy = 'check_in_date',
+        sortOrder = 'desc'
+      } = options;
+
+      // Build base query
+      let query = supabase
+        .from('reservations')
+        .select('*, guests(*), rooms(*)', { count: 'exact' });
+
+      // Apply filters
+      if (statuses && statuses.length > 0) {
+        query = query.in('status', statuses);
+      }
+
+      if (bookingSources && bookingSources.length > 0) {
+        query = query.in('booking_source', bookingSources);
+      }
+
+      if (paymentStatuses && paymentStatuses.length > 0) {
+        query = query.in('payment_status', paymentStatuses);
+      }
+
+      // Date range filters
+      if (checkInFrom) {
+        query = query.gte('check_in_date', checkInFrom.toISOString().split('T')[0]);
+      }
+      if (checkInTo) {
+        query = query.lte('check_in_date', checkInTo.toISOString().split('T')[0]);
+      }
+      if (checkOutFrom) {
+        query = query.gte('check_out_date', checkOutFrom.toISOString().split('T')[0]);
+      }
+      if (checkOutTo) {
+        query = query.lte('check_out_date', checkOutTo.toISOString().split('T')[0]);
+      }
+      if (bookingDateFrom) {
+        query = query.gte('booking_date', bookingDateFrom.toISOString());
+      }
+      if (bookingDateTo) {
+        query = query.lte('booking_date', bookingDateTo.toISOString());
+      }
+
+      if (hasSpecialRequests) {
+        query = query.not('special_requests', 'is', null);
+        query = query.neq('special_requests', '');
+      }
+
+      // Sorting
+      const orderColumn = sortBy === 'guest_name' ? 'guests(last_name)' : sortBy;
+      query = query.order(orderColumn, { ascending: sortOrder === 'asc' });
+
+      // Pagination
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
+      query = query.range(from, to);
+
+      // Execute query
+      const { data: reservationsData, error: reservationsError, count } = await query;
+
+      if (reservationsError) throw reservationsError;
+
+      // The query uses joins, so guests and rooms are embedded in the response
+      // Build lookup maps from all data for consistent mapping
+      const { data: allGuestsData } = await supabase.from('guests').select('*');
+      const { data: allRoomsData } = await supabase.from('rooms').select('*');
+
+      const guestLookup = new Map((allGuestsData as CurrentDBGuest[] || []).map(g => [g.id, g]));
+      const roomLookup = new Map((allRoomsData as CurrentDBRoom[] || []).map(r => [r.id, r]));
+
+      // Map reservations - the data includes joined guest/room data but we use lookup for consistency
+      let mappedReservations = (reservationsData as any[] || []).map((reservation: any) => {
+        // Use the joined guest data if available, otherwise fall back to lookup
+        const guestData = reservation.guests || guestLookup.get(reservation.guest_id);
+        const roomData = reservation.rooms || roomLookup.get(reservation.room_id);
+
+        return this.mapReservationFromCurrentDB(
+          reservation as CurrentDBReservation,
+          guestData ? new Map([[reservation.guest_id, guestData]]) : guestLookup,
+          roomData ? new Map([[reservation.room_id, roomData]]) : roomLookup
+        );
+      });
+
+      // Apply client-side filters that can't be done in SQL
+      if (searchQuery) {
+        const searchLower = searchQuery.toLowerCase();
+        mappedReservations = mappedReservations.filter(res => {
+          const guest = res.guest;
+          const room = roomLookup.get(Number(res.roomId));
+
+          return (
+            guest?.firstName?.toLowerCase().includes(searchLower) ||
+            guest?.lastName?.toLowerCase().includes(searchLower) ||
+            guest?.fullName?.toLowerCase().includes(searchLower) ||
+            res.id?.toString().includes(searchLower) ||
+            room?.room_number?.toLowerCase().includes(searchLower)
+          );
+        });
+      }
+
+      if (roomTypes && roomTypes.length > 0) {
+        mappedReservations = mappedReservations.filter(res => {
+          const room = roomLookup.get(Number(res.roomId));
+          return room && roomTypes.includes(room.room_type);
+        });
+      }
+
+      if (nationalities && nationalities.length > 0) {
+        mappedReservations = mappedReservations.filter(res => {
+          const guest = res.guest;
+          return guest && guest.nationality && nationalities.includes(guest.nationality);
+        });
+      }
+
+      if (vipOnly) {
+        mappedReservations = mappedReservations.filter(res => {
+          const guest = res.guest;
+          return guest && guest.isVip;
+        });
+      }
+
+      const totalCount = count || 0;
+      const totalPages = Math.ceil(totalCount / pageSize);
+
+      return {
+        reservations: mappedReservations,
+        totalCount,
+        page,
+        pageSize,
+        totalPages
+      };
+    } catch (error) {
+      console.error('Error fetching filtered reservations:', error);
+      return {
+        reservations: [],
+        totalCount: 0,
+        page: options.page || 1,
+        pageSize: options.pageSize || 25,
+        totalPages: 0
+      };
+    }
+  }
+
+  /**
+   * Get total count of reservations matching filters
+   */
+  async getReservationsCount(filters?: {
+    statuses?: string[];
+    bookingSources?: string[];
+    paymentStatuses?: string[];
+    checkInFrom?: Date;
+    checkInTo?: Date;
+  }): Promise<number> {
+    try {
+      let query = supabase
+        .from('reservations')
+        .select('*', { count: 'exact', head: true });
+
+      if (filters?.statuses && filters.statuses.length > 0) {
+        query = query.in('status', filters.statuses);
+      }
+
+      if (filters?.bookingSources && filters.bookingSources.length > 0) {
+        query = query.in('booking_source', filters.bookingSources);
+      }
+
+      if (filters?.paymentStatuses && filters.paymentStatuses.length > 0) {
+        query = query.in('payment_status', filters.paymentStatuses);
+      }
+
+      if (filters?.checkInFrom) {
+        query = query.gte('check_in_date', filters.checkInFrom.toISOString().split('T')[0]);
+      }
+
+      if (filters?.checkInTo) {
+        query = query.lte('check_in_date', filters.checkInTo.toISOString().split('T')[0]);
+      }
+
+      const { count, error } = await query;
+
+      if (error) throw error;
+
+      return count || 0;
+    } catch (error) {
+      console.error('Error counting reservations:', error);
+      return 0;
+    }
   }
 }
 

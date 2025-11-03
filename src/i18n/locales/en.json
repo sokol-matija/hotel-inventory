@@ -170,6 +170,7 @@
     "search": "Search",
     "filter": "Filter",
     "refresh": "Refresh",
+    "export": "Export",
     "name": "Name",
     "description": "Description",
     "type": "Type",
@@ -184,6 +185,93 @@
     "totalStock": "Total Stock",
     "locations": "Locations",
     "minStock": "Min Stock"
+  },
+  "reservationsList": {
+    "title": "Reservations List",
+    "subtitle": "Comprehensive view of all hotel reservations",
+    "searchPlaceholder": "Search by guest name, confirmation #, or room number...",
+    "filters": "Filters",
+    "allReservations": "All Reservations",
+    "loading": "Loading reservations...",
+    "comingSoon": "Reservations Table Coming Soon",
+    "tableWillAppearHere": "The full table with filters, search, and pagination will appear here",
+    "noReservationsFound": "No reservations found matching your criteria",
+    "noReservationsYet": "No reservations in the system yet",
+    "totalReservations": "{{count}} total reservations",
+    "showingResults": "Showing {{start}}-{{end}} of {{total}} results",
+    "columns": {
+      "guest": "Guest",
+      "room": "Room",
+      "checkIn": "Check-In",
+      "checkOut": "Check-Out",
+      "status": "Status",
+      "bookingSource": "Source",
+      "totalAmount": "Amount",
+      "paymentStatus": "Payment",
+      "guests": "Guests",
+      "specialRequests": "Notes",
+      "bookingDate": "Booked"
+    },
+    "actions": {
+      "view": "View Details",
+      "edit": "Edit",
+      "delete": "Delete",
+      "checkIn": "Check In",
+      "checkOut": "Check Out",
+      "sendEmail": "Send Email",
+      "printInvoice": "Print Invoice",
+      "changeStatus": "Change Status"
+    },
+    "filters": {
+      "status": "Status",
+      "allStatuses": "All Statuses",
+      "dateRange": "Date Range",
+      "checkInDate": "Check-In Date",
+      "checkOutDate": "Check-Out Date",
+      "bookingSource": "Booking Source",
+      "allSources": "All Sources",
+      "roomType": "Room Type",
+      "allRoomTypes": "All Room Types",
+      "paymentStatus": "Payment Status",
+      "allPaymentStatuses": "All Payment Statuses",
+      "nationality": "Nationality",
+      "allNationalities": "All Nationalities",
+      "vipStatus": "VIP Status",
+      "vipOnly": "VIP Only",
+      "specialRequests": "Special Requests",
+      "clearAll": "Clear All Filters",
+      "apply": "Apply Filters"
+    },
+    "pagination": {
+      "page": "Page",
+      "of": "of",
+      "rowsPerPage": "Rows per page:",
+      "previous": "Previous",
+      "next": "Next",
+      "first": "First",
+      "last": "Last",
+      "jumpToPage": "Jump to page"
+    },
+    "bulk": {
+      "selected": "{{count}} selected",
+      "selectAll": "Select All",
+      "deselectAll": "Deselect All",
+      "bulkActions": "Bulk Actions",
+      "changeStatus": "Change Status",
+      "delete": "Delete Selected",
+      "export": "Export Selected",
+      "sendEmail": "Send Email to Selected"
+    },
+    "export": {
+      "csv": "Export as CSV",
+      "excel": "Export as Excel",
+      "pdf": "Export as PDF"
+    },
+    "sort": {
+      "sortBy": "Sort by",
+      "ascending": "Ascending",
+      "descending": "Descending"
+    }
   },
   "roles": {
     "admin": "Admin",

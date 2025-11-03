@@ -16,6 +16,7 @@ import CompanyManagement from '../companies/CompanyManagement';
 import PricingManagement from '../pricing/PricingManagement';
 import ChannelManagerDashboard from './ChannelManager/ChannelManagerDashboard';
 import ChannelManagerSettings from './ChannelManager/ChannelManagerSettings';
+import ReservationsListPage from './ReservationsListPage';
 
 function FrontDeskContent() {
   const { rooms } = useHotel();
@@ -67,6 +68,7 @@ function FrontDeskContent() {
         <div className="flex-1 overflow-auto">
           <Routes>
             <Route index element={<CalendarView />} />
+            <Route path="reservations-list" element={<ReservationsListPage />} />
             <Route path="guests" element={<GuestsPage />} />
             <Route path="payments" element={<PaymentsPage />} />
             <Route path="room-service" element={<RoomServiceOrders rooms={rooms} />} />

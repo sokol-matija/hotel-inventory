@@ -4,10 +4,10 @@ import { Button } from '../../ui/button'
 import { useAuth } from '../../auth/AuthProvider'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from '../../ui/LanguageSwitcher'
-import { 
-  CalendarDays, 
-  Users, 
-  CreditCard, 
+import {
+  CalendarDays,
+  Users,
+  CreditCard,
   FileText,
   Mail,
   LogOut,
@@ -21,20 +21,27 @@ import {
   Building2,
   Coffee,
   Printer,
-  Sparkles
+  Sparkles,
+  List
 } from 'lucide-react'
 
 // Hotel Front Desk specific navigation items
 const frontDeskSidebarItems = [
-  { 
-    key: 'reservations', 
-    path: '/hotel/front-desk', 
+  {
+    key: 'reservations',
+    path: '/hotel/front-desk',
     icon: CalendarDays,
     label: 'Reservations'
   },
-  { 
-    key: 'guests', 
-    path: '/hotel/front-desk/guests', 
+  {
+    key: 'reservationsList',
+    path: '/hotel/front-desk/reservations-list',
+    icon: List,
+    label: 'Reservations List'
+  },
+  {
+    key: 'guests',
+    path: '/hotel/front-desk/guests',
     icon: Users,
     label: 'Guests (Legacy)'
   },

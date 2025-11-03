@@ -390,5 +390,100 @@
     "coffee": "Kava",
     "tea": "Čaj",
     "water": "Voda"
+  },
+  "reservationsList": {
+    "title": "Popis Rezervacija",
+    "subtitle": "Sveobuhvatan pregled svih hotelskih rezervacija",
+    "searchPlaceholder": "Pretraži po imenu gosta, broju potvrde ili broju sobe...",
+    "filters": "Filteri",
+    "allReservations": "Sve Rezervacije",
+    "totalReservations": "{{count}} rezervacija",
+    "noReservationsFound": "Nema pronađenih rezervacija",
+    "noReservationsYet": "Trenutno nema aktivnih rezervacija",
+    "showingResults": "Prikazuje se {{start}}-{{end}} od {{total}} rezultata",
+    "columns": {
+      "guest": "Gost",
+      "room": "Soba",
+      "checkIn": "Prijava",
+      "checkOut": "Odjava",
+      "status": "Status",
+      "bookingSource": "Izvor",
+      "totalAmount": "Iznos",
+      "paymentStatus": "Plaćanje",
+      "guests": "Gosti",
+      "specialRequests": "Napomene",
+      "bookingDate": "Rezervirano"
+    },
+    "actions": {
+      "view": "Pregled",
+      "edit": "Uredi",
+      "delete": "Obriši",
+      "sendEmail": "Pošalji Email",
+      "generateInvoice": "Generiraj Račun"
+    },
+    "filters": {
+      "apply": "Primijeni Filtere",
+      "clearAll": "Ukloni Sve",
+      "status": "Status",
+      "bookingSource": "Izvor Rezervacije",
+      "paymentStatus": "Status Plaćanja",
+      "roomType": "Tip Sobe",
+      "nationality": "Nacionalnost",
+      "vipOnly": "Samo VIP Gosti",
+      "specialRequests": "Ima Posebne Zahtjeve",
+      "dateRange": "Raspon Datuma"
+    },
+    "search": {
+      "placeholder": "Pretraži po imenu gosta, broju potvrde ili broju sobe...",
+      "noResults": "Nema rezultata za '{{query}}'",
+      "searching": "Pretraživanje...",
+      "ctrlKHint": "Pritisnite Ctrl+K za pretraživanje"
+    },
+    "pagination": {
+      "page": "Stranica",
+      "of": "od",
+      "first": "Prva",
+      "previous": "Prethodna",
+      "next": "Sljedeća",
+      "last": "Zadnja",
+      "rowsPerPage": "Redova po stranici",
+      "jumpToPage": "Idi na stranicu"
+    },
+    "bulkActions": {
+      "title": "Skupne Akcije",
+      "selectedCount": "{{count}} odabrano",
+      "selectAll": "Odaberi Sve",
+      "deselectAll": "Poništi Odabir",
+      "changeStatus": "Promijeni Status",
+      "sendBulkEmail": "Pošalji Email Grupama",
+      "exportSelected": "Izvezi Odabrano",
+      "deleteSelected": "Obriši Odabrano"
+    },
+    "export": {
+      "title": "Izvezi Rezervacije",
+      "csv": "Izvezi kao CSV",
+      "pdf": "Izvezi kao PDF",
+      "excel": "Izvezi kao Excel",
+      "exporting": "Izvoz...",
+      "success": "Rezervacije uspješno izvezene",
+      "error": "Greška pri izvozu rezervacija"
+    },
+    "presets": {
+      "title": "Brzi Filteri",
+      "todayCheckIns": "Današnje Prijave",
+      "todayCheckOuts": "Današnje Odjave",
+      "currentGuests": "Trenutni Gosti",
+      "upcoming": "Nadolazeće Rezervacije",
+      "pastWeek": "Prošli Tjedan",
+      "thisMonth": "Ovaj Mjesec",
+      "vipGuests": "VIP Gosti",
+      "unconfirmed": "Nepotvrđene",
+      "cancelled": "Otkazane"
+    },
+    "columnVisibility": {
+      "title": "Prikaži Kolone",
+      "showHide": "Prikaži/Sakrij Kolone",
+      "selectColumns": "Odaberi kolone za prikaz"
+    }
   }
 }
