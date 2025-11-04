@@ -21,7 +21,8 @@ import {
   Search,
   Trash2,
   Receipt,
-  Home
+  Home,
+  Building2
 } from 'lucide-react';
 import { Room, Guest, GuestChild, RoomType } from '../../../lib/hotel/types';
 import hotelNotification from '../../../lib/notifications';
@@ -56,7 +57,7 @@ export default function ModernCreateBookingModal({
   // Console log to confirm this is the active modal
   console.log('🎯 MODERN CREATE BOOKING MODAL - Component mounted/rendered');
 
-  const { guests, createReservation, refreshData, rooms } = useHotel();
+  const { guests, createReservation, refreshData, rooms, companies } = useHotel();
 
   // Room selection state for unallocated mode
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(room);
@@ -110,7 +111,11 @@ export default function ModernCreateBookingModal({
     petCount: 0,
     specialRequests: ''
   });
-  
+
+  // Company billing (R1) state
+  const [isCompanyBilling, setIsCompanyBilling] = useState(false);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
+
   // Pricing calculation
   const [pricing, setPricing] = useState({
     nights: 1,
@@ -371,7 +376,12 @@ export default function ModernCreateBookingModal({
     if (bookingServices.hasPets && bookingServices.petCount <= 0) {
       errors.push('Please specify number of pets');
     }
-    
+
+    // Company billing validation
+    if (isCompanyBilling && !selectedCompanyId) {
+      errors.push('Please select a company for R1 billing');
+    }
+
     return errors;
   };
 
@@ -489,7 +499,9 @@ export default function ModernCreateBookingModal({
         total_amount: pricing.total,
         special_requests: bookingServices.specialRequests || null,
         has_pets: bookingServices.hasPets,
-        parking_required: bookingServices.needsParking
+        parking_required: bookingServices.needsParking,
+        is_r1: isCompanyBilling, // Company billing flag
+        company_id: isCompanyBilling ? selectedCompanyId : null // Company ID for R1 billing
       };
 
       // console.log('📊 BOOKING MODAL DEBUG - Reservation Data:', {
@@ -1076,6 +1088,67 @@ export default function ModernCreateBookingModal({
                     />
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Company Billing (R1) Section */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center">
+                  <Building2 className="h-4 w-4 mr-2" />
+                  Company Billing (R1)
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Checkbox for company billing */}
+                <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-md border">
+                  <input
+                    type="checkbox"
+                    id="companyBilling"
+                    checked={isCompanyBilling}
+                    onChange={(e) => {
+                      setIsCompanyBilling(e.target.checked);
+                      if (!e.target.checked) {
+                        setSelectedCompanyId(null);
+                      }
+                    }}
+                    className="h-4 w-4 text-blue-600 rounded"
+                  />
+                  <div className="flex-1">
+                    <Label htmlFor="companyBilling" className="font-medium cursor-pointer">
+                      Bill to Company (R1 Billing)
+                    </Label>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Invoice will be issued to the selected company instead of individual guest
+                    </p>
+                  </div>
+                </div>
+
+                {/* Company selection dropdown */}
+                {isCompanyBilling && (
+                  <div>
+                    <Label>Select Company *</Label>
+                    <select
+                      value={selectedCompanyId || ''}
+                      onChange={(e) => setSelectedCompanyId(e.target.value)}
+                      className="w-full p-2 border rounded-md bg-white"
+                      required={isCompanyBilling}
+                    >
+                      <option value="">-- Select a company --</option>
+                      {companies
+                        .filter(c => c.isActive)
+                        .sort((a, b) => a.name.localeCompare(b.name))
+                        .map(company => (
+                          <option key={company.id} value={company.id}>
+                            {company.name} (OIB: {company.oib})
+                          </option>
+                        ))}
+                    </select>
+                    <p className="text-xs text-gray-500 mt-2">
+                      {companies.filter(c => c.isActive).length} active compan{companies.filter(c => c.isActive).length === 1 ? 'y' : 'ies'} available
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
