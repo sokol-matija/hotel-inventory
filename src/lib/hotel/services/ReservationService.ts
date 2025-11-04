@@ -1,13 +1,14 @@
 // ReservationService - Business logic for reservation management
 // Handles email operations, fiscal invoice generation, and reservation state management
 
-import { CalendarEvent, Reservation, Guest, Room } from '../types';
+import { CalendarEvent, Reservation, Guest, Room, Company } from '../types';
 import { RESERVATION_STATUS_COLORS } from '../calendarUtils';
 import { HotelEmailService } from '../../emailService';
 import hotelNotification from '../../notifications';
 import { generatePDFInvoice, generateThermalReceipt, generateInvoiceNumber } from '../../pdfInvoiceGenerator';
 import { FiscalizationService } from '../../fiscalization/FiscalizationService';
 import { hotelDataService } from './HotelDataService';
+import { supabase } from '../../supabase';
 
 export interface ReservationData {
   reservation: Reservation;
@@ -172,7 +173,42 @@ export class ReservationService {
     try {
       const fiscalizationService = FiscalizationService.getInstance();
       const invoiceNumber = generateInvoiceNumber(reservation);
-      
+
+      // Fetch company data if this is an R1 reservation
+      let company: Company | undefined;
+      if ((reservation as any).is_r1 && (reservation as any).company_id) {
+        const { data: companyData, error: companyError } = await supabase
+          .from('companies')
+          .select('*')
+          .eq('id', (reservation as any).company_id)
+          .single();
+
+        if (companyData && !companyError) {
+          // Transform database format to Company type
+          company = {
+            id: companyData.id,
+            name: companyData.name,
+            oib: companyData.oib,
+            address: {
+              street: companyData.address,
+              city: companyData.city,
+              postalCode: companyData.postal_code,
+              country: companyData.country
+            },
+            contactPerson: companyData.contact_person,
+            email: companyData.email,
+            phone: companyData.phone,
+            fax: companyData.fax,
+            pricingTierId: companyData.pricing_tier_id,
+            roomAllocationGuarantee: companyData.room_allocation_guarantee,
+            isActive: companyData.is_active,
+            notes: companyData.notes,
+            createdAt: companyData.created_at,
+            updatedAt: companyData.updated_at
+          };
+        }
+      }
+
       // Prepare fiscal invoice data
       const fiscalInvoiceData = {
         invoiceNumber,
@@ -216,7 +252,7 @@ export class ReservationService {
           throw dbError; // Don't silently fail - we need to know about this!
         }
 
-        // Generate PDF invoice
+        // Generate PDF invoice with company data for R1 billing
         await generatePDFInvoice({
           reservation,
           guest,
@@ -225,7 +261,8 @@ export class ReservationService {
           invoiceDate: new Date(),
           jir: fiscalData.jir,
           zki: fiscalData.zki,
-          qrCodeData: fiscalData.qrCodeData
+          qrCodeData: fiscalData.qrCodeData,
+          company // Pass company data for R1 billing
         });
 
         hotelNotification.success(

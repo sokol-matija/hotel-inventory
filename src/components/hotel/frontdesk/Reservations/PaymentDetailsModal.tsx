@@ -18,11 +18,12 @@ import {
   Calendar,
   CheckCircle
 } from 'lucide-react';
-import { Reservation, Guest, Room } from '../../../../lib/hotel/types';
+import { Reservation, Guest, Room, Company } from '../../../../lib/hotel/types';
 // Note: Legacy pricing calculator removed - using stored reservation pricing data
 import { generatePDFInvoice, generateInvoiceNumber } from '../../../../lib/pdfInvoiceGenerator';
 import { useHotel } from '../../../../lib/hotel/state/SupabaseHotelContext';
 import hotelNotification from '../../../../lib/notifications';
+import { supabase } from '../../../../lib/supabase';
 
 interface PaymentDetailsModalProps {
   isOpen: boolean;
@@ -68,26 +69,70 @@ export default function PaymentDetailsModal({
     grandTotal: reservation.totalAmount
   };
 
-  const handlePrintInvoice = () => {
+  const handlePrintInvoice = async () => {
     try {
+      setIsProcessing(true);
+
       // Generate unique invoice number
       const invoiceNumber = generateInvoiceNumber(reservation);
       const invoiceDate = new Date();
-      
+
+      // Fetch company data if this is an R1 reservation
+      let company: Company | undefined;
+      if ((reservation as any).is_r1 && (reservation as any).company_id) {
+        const { data: companyData, error: companyError } = await supabase
+          .from('companies')
+          .select('*')
+          .eq('id', (reservation as any).company_id)
+          .single();
+
+        if (companyError) {
+          console.error('Error fetching company data:', companyError);
+          hotelNotification.error('Company Data Error', 'Could not fetch company information for R1 invoice.');
+        } else if (companyData) {
+          // Transform database format to Company type
+          company = {
+            id: companyData.id,
+            name: companyData.name,
+            oib: companyData.oib,
+            address: {
+              street: companyData.address,
+              city: companyData.city,
+              postalCode: companyData.postal_code,
+              country: companyData.country
+            },
+            contactPerson: companyData.contact_person,
+            email: companyData.email,
+            phone: companyData.phone,
+            fax: companyData.fax,
+            pricingTierId: companyData.pricing_tier_id,
+            roomAllocationGuarantee: companyData.room_allocation_guarantee,
+            isActive: companyData.is_active,
+            notes: companyData.notes,
+            createdAt: companyData.created_at,
+            updatedAt: companyData.updated_at
+          };
+        }
+      }
+
       // Generate PDF invoice
       generatePDFInvoice({
         reservation,
         guest,
         room,
         invoiceNumber,
-        invoiceDate
+        invoiceDate,
+        company // Pass company data for R1 billing
       });
-      
+
       // Show success notification
-      hotelNotification.success('Invoice Generated', `PDF invoice saved as Hotel_Porec_Invoice_${invoiceNumber}_${guest.fullName.replace(/\s+/g, '_')}.pdf`);
+      const invoiceType = company ? 'R1 Company Invoice' : 'Invoice';
+      hotelNotification.success(`${invoiceType} Generated`, `PDF invoice saved as Hotel_Porec_Invoice_${invoiceNumber}_${guest.fullName.replace(/\s+/g, '_')}.pdf`);
     } catch (error) {
       console.error('Error generating PDF invoice:', error);
       hotelNotification.error('PDF Generation Failed', 'There was an error generating the PDF invoice. Please try again.');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
