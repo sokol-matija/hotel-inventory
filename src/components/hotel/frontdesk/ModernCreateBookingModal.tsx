@@ -22,12 +22,14 @@ import {
   Trash2,
   Receipt,
   Home,
-  Building2
+  Building2,
+  Tag
 } from 'lucide-react';
 import { Room, Guest, GuestChild, RoomType } from '../../../lib/hotel/types';
 import hotelNotification from '../../../lib/notifications';
 import { supabase } from '../../../lib/supabase';
 import { useHotel } from '../../../lib/hotel/state/SupabaseHotelContext';
+import LabelAutocomplete from '../shared/LabelAutocomplete';
 import GuestAutocomplete from './Guests/GuestAutocomplete';
 import { getSeasonalPeriod } from '../../../lib/hotel/pricingCalculator';
 import { HotelPricingEngine } from '../../../lib/hotel/pricingEngine';
@@ -58,6 +60,23 @@ export default function ModernCreateBookingModal({
   console.log('🎯 MODERN CREATE BOOKING MODAL - Component mounted/rendered');
 
   const { guests, createReservation, refreshData, rooms, companies } = useHotel();
+
+  // Get hotel ID (for single-hotel setup)
+  const [hotelId, setHotelId] = useState<string>('');
+
+  useEffect(() => {
+    const fetchHotelId = async () => {
+      const { data } = await supabase
+        .from('user_profiles')
+        .select('hotel_id')
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+      if (data?.hotel_id) {
+        setHotelId(data.hotel_id);
+      }
+    };
+    fetchHotelId();
+  }, []);
 
   // Room selection state for unallocated mode
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(room);
@@ -115,6 +134,9 @@ export default function ModernCreateBookingModal({
   // Company billing (R1) state
   const [isCompanyBilling, setIsCompanyBilling] = useState(false);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
+
+  // Label/Group state
+  const [selectedLabelId, setSelectedLabelId] = useState<string | null>(null);
 
   // Pricing calculation
   const [pricing, setPricing] = useState({
@@ -501,7 +523,8 @@ export default function ModernCreateBookingModal({
         has_pets: bookingServices.hasPets,
         parking_required: bookingServices.needsParking,
         is_r1: isCompanyBilling, // Company billing flag
-        company_id: isCompanyBilling ? selectedCompanyId : null // Company ID for R1 billing
+        company_id: isCompanyBilling ? selectedCompanyId : null, // Company ID for R1 billing
+        label_id: selectedLabelId // Label/Group for tracking related reservations
       };
 
       // console.log('📊 BOOKING MODAL DEBUG - Reservation Data:', {
@@ -1149,6 +1172,34 @@ export default function ModernCreateBookingModal({
                     </p>
                   </div>
                 )}
+              </CardContent>
+            </Card>
+
+            {/* Label/Group Section */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center">
+                  <Tag className="h-4 w-4 mr-2" />
+                  Reservation Label/Group
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div>
+                  <Label>Label (Optional)</Label>
+                  <p className="text-xs text-gray-500 mb-2">
+                    Group related reservations together (e.g., "german-bikers" for a tour group)
+                  </p>
+                  {hotelId ? (
+                    <LabelAutocomplete
+                      hotelId={hotelId}
+                      value={selectedLabelId}
+                      onChange={setSelectedLabelId}
+                      placeholder="Search or create label..."
+                    />
+                  ) : (
+                    <div className="text-sm text-gray-400">Loading...</div>
+                  )}
+                </div>
               </CardContent>
             </Card>
 

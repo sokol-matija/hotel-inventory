@@ -154,7 +154,27 @@ export interface Reservation {
   bookingDate: Date;
   lastModified: Date;
   notes: string;
+
+  // Label/Group (for tracking related reservations)
+  labelId?: string;
+  label?: Label; // For joined queries
 }
+
+// Label/Group for organizing related reservations
+// (e.g., "german-bikers" for a tour group across multiple rooms)
+export interface Label {
+  id: string;
+  hotelId: string;
+  name: string;
+  color: string; // Text color (default: #000000)
+  bgColor: string; // Background color (default: #FFFFFF)
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Utility types for Label operations
+export type LabelCreate = Omit<Label, 'id' | 'createdAt' | 'updatedAt'>;
+export type LabelUpdate = Partial<Pick<Label, 'name' | 'color' | 'bgColor'>>;
 
 export interface PricingCalculation {
   // Base pricing
