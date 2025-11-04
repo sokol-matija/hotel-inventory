@@ -22,6 +22,7 @@ import { NFCCleanRoomPage } from './components/testing/NFCCleanRoomPage';
 import { AdminTestingPage } from './components/testing/AdminTestingPage';
 import { ToastProvider } from './components/ui/toast';
 import { Toaster } from './components/Toaster';
+import { Analytics } from "@vercel/analytics/react"
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
