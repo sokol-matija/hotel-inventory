@@ -20,7 +20,8 @@ import {
   User,
   Search,
   Trash2,
-  Receipt
+  Receipt,
+  Home
 } from 'lucide-react';
 import { Room, Guest, GuestChild, RoomType } from '../../../lib/hotel/types';
 import hotelNotification from '../../../lib/notifications';
@@ -30,13 +31,16 @@ import GuestAutocomplete from './Guests/GuestAutocomplete';
 import { getSeasonalPeriod } from '../../../lib/hotel/pricingCalculator';
 import { HotelPricingEngine } from '../../../lib/hotel/pricingEngine';
 import { ntfyService, BookingNotificationData } from '../../../lib/ntfyService';
+import { virtualRoomService } from '../../../lib/hotel/services/VirtualRoomService';
 
 interface ModernCreateBookingModalProps {
   isOpen: boolean;
   onClose: () => void;
-  room: Room;
+  room: Room | null; // Now optional - null for unallocated mode
   currentDate?: Date;
   preSelectedDates?: {checkIn: Date, checkOut: Date} | null;
+  allowRoomSelection?: boolean; // Enable room dropdown
+  unallocatedMode?: boolean; // Create unallocated reservation
 }
 
 
@@ -45,12 +49,18 @@ export default function ModernCreateBookingModal({
   onClose,
   room,
   currentDate,
-  preSelectedDates
+  preSelectedDates,
+  allowRoomSelection = false,
+  unallocatedMode = false
 }: ModernCreateBookingModalProps) {
   // Console log to confirm this is the active modal
   console.log('🎯 MODERN CREATE BOOKING MODAL - Component mounted/rendered');
-  
-  const { guests, createReservation, refreshData } = useHotel();
+
+  const { guests, createReservation, refreshData, rooms } = useHotel();
+
+  // Room selection state for unallocated mode
+  const [selectedRoom, setSelectedRoom] = useState<Room | null>(room);
+  const [isUnallocated, setIsUnallocated] = useState(unallocatedMode);
   
   // Basic booking info
   const [checkInDate, setCheckInDate] = useState(
@@ -143,6 +153,26 @@ export default function ModernCreateBookingModal({
 
   // Calculate pricing whenever dependencies change using HotelPricingEngine
   useEffect(() => {
+    // Skip pricing if unallocated or no room selected
+    if (isUnallocated || !selectedRoom) {
+      const nights = Math.ceil(
+        (checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
+      setPricing({
+        nights,
+        baseRate: 0,
+        roomTotal: 0,
+        childrenDiscount: 0,
+        shortStaySupplement: 0,
+        petFee: 0,
+        parkingFee: 0,
+        tourismTax: 0,
+        vatAmount: 0,
+        total: 0
+      });
+      return;
+    }
+
     const pricingEngine = HotelPricingEngine.getInstance();
 
     // Prepare guest children data for the pricing engine
@@ -169,8 +199,8 @@ export default function ModernCreateBookingModal({
 
     // Calculate detailed pricing using the engine
     const calculation = pricingEngine.calculatePricing({
-      roomType: room.type as RoomType,
-      roomId: room.id,
+      roomType: selectedRoom.type as RoomType,
+      roomId: selectedRoom.id,
       checkIn: checkInDate,
       checkOut: checkOutDate,
       adults: Math.max(1, adults), // At least 1 adult
@@ -178,7 +208,7 @@ export default function ModernCreateBookingModal({
       hasPets: bookingServices.hasPets,
       needsParking: bookingServices.needsParking,
       pricingTierId: '2026-standard', // Use default 2026 pricing
-      isRoom401: room.number === '401'
+      isRoom401: selectedRoom.number === '401'
     });
 
     // Map the detailed calculation to the simpler pricing state format for the UI
@@ -194,17 +224,19 @@ export default function ModernCreateBookingModal({
       vatAmount: calculation.vat.totalVAT,
       total: calculation.grandTotal
     });
-  }, [checkInDate, checkOutDate, bookingGuests, bookingServices, room]);
+  }, [checkInDate, checkOutDate, bookingGuests, bookingServices, selectedRoom, isUnallocated]);
 
   // Guest management functions
   const addAdult = () => {
-    if (bookingGuests.length < room.maxOccupancy) {
+    const maxOccupancy = selectedRoom?.maxOccupancy || 99; // High number for unallocated
+    if (bookingGuests.length < maxOccupancy) {
       setBookingGuests([...bookingGuests, createEmptyGuest('adult')]);
     }
   };
 
   const addChild = () => {
-    if (bookingGuests.length < room.maxOccupancy) {
+    const maxOccupancy = selectedRoom?.maxOccupancy || 99; // High number for unallocated
+    if (bookingGuests.length < maxOccupancy) {
       setBookingGuests([...bookingGuests, createEmptyGuest('child')]);
     }
   };
@@ -322,9 +354,14 @@ export default function ModernCreateBookingModal({
       }
     });
     
-    // Occupancy validation
-    if (bookingGuests.length > room.maxOccupancy) {
-      errors.push(`Total guests (${bookingGuests.length}) exceeds room capacity (${room.maxOccupancy})`);
+    // Occupancy validation (skip for unallocated)
+    if (selectedRoom && !isUnallocated && bookingGuests.length > selectedRoom.maxOccupancy) {
+      errors.push(`Total guests (${bookingGuests.length}) exceeds room capacity (${selectedRoom.maxOccupancy})`);
+    }
+
+    // Room selection validation
+    if (!isUnallocated && !selectedRoom) {
+      errors.push('Please select a room');
     }
     
     // Service validation
@@ -345,8 +382,8 @@ export default function ModernCreateBookingModal({
     console.log('🎯🎯🎯 MODERN CREATE BOOKING MODAL - CREATE BOOKING BUTTON CLICKED! 🎯🎯🎯');
     console.log('📋 Modal Info:', {
       modalName: 'ModernCreateBookingModal',
-      roomNumber: room.number,
-      roomType: room.type,
+      roomNumber: selectedRoom?.number || 'Unallocated',
+      roomType: selectedRoom?.type || 'UNALLOC',
       checkIn: checkInDate,
       checkOut: checkOutDate,
       guestsCount: bookingGuests.length
@@ -359,10 +396,46 @@ export default function ModernCreateBookingModal({
       hotelNotification.error('Validation Failed', errors.join(', '));
       return;
     }
-    
+
+    // Handle unallocated reservation creation
+    if (isUnallocated) {
+      try {
+        setIsSubmitting(true);
+
+        const primaryGuest = bookingGuests[0];
+        const temporaryName = `${primaryGuest.firstName} ${primaryGuest.lastName}`.trim() || 'Guest';
+
+        const result = await virtualRoomService.createUnallocatedReservation({
+          temporaryGuestName: temporaryName,
+          checkIn: checkInDate,
+          checkOut: checkOutDate,
+          numberOfPeople: bookingGuests.length,
+          notes: bookingServices.specialRequests
+        });
+
+        if (result.success) {
+          hotelNotification.success(
+            'Unallocated Reservation Created',
+            `Reservation for ${temporaryName} has been created and placed in unallocated queue.`
+          );
+          await refreshData();
+          onClose();
+        } else {
+          hotelNotification.error('Creation Failed', result.error || 'Unknown error');
+        }
+      } catch (error: any) {
+        console.error('Unallocated reservation creation failed:', error);
+        hotelNotification.error('Creation Failed', 'Unable to create unallocated reservation');
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
+
+    // Regular room booking flow continues below
     try {
       setIsSubmitting(true);
-      
+
       const primaryGuest = bookingGuests[0];
       let primaryGuestId: number;
       
@@ -396,7 +469,7 @@ export default function ModernCreateBookingModal({
       const childrenCount = bookingGuests.filter(g => g.type === 'child').length;
       const reservationData = {
         guest_id: primaryGuestId,
-        room_id: room.id,
+        room_id: selectedRoom!.id,
         check_in_date: checkInDate.toISOString().split('T')[0],
         check_out_date: checkOutDate.toISOString().split('T')[0],
         adults: adultsCount,
@@ -526,17 +599,17 @@ export default function ModernCreateBookingModal({
         `Reservation for ${primaryGuest.firstName} ${primaryGuest.lastName} ` +
         `and ${totalGuests - 1} other guest${totalGuests > 2 ? 's' : ''} ` +
         `(${adults} adult${adults !== 1 ? 's' : ''}, ${children} child${children !== 1 ? 'ren' : ''}) ` +
-        `in Room ${room.number} has been created.`
+        `in Room ${selectedRoom!.number} has been created.`
       );
 
       // Send ntfy.sh notification for Room 401 bookings
-      console.log('📲 Checking if notification should be sent for room:', room.number);
-      if (room.number === '401') {
+      console.log('📲 Checking if notification should be sent for room:', selectedRoom!.number);
+      if (selectedRoom!.number === '401') {
         console.log('🔔 Room 401 detected! Preparing ntfy notification...');
-        
+
         try {
           const notificationData: BookingNotificationData = {
-            roomNumber: room.number,
+            roomNumber: selectedRoom!.number,
             guestName: `${primaryGuest.firstName} ${primaryGuest.lastName}`,
             checkIn: checkInDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
             checkOut: checkOutDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
@@ -560,7 +633,7 @@ export default function ModernCreateBookingModal({
           console.error('❌ Error sending ntfy notification:', notificationError);
         }
       } else {
-        console.log(`ℹ️ Skipping notification - not room 401 (room: ${room.number})`);
+        console.log(`ℹ️ Skipping notification - not room 401 (room: ${selectedRoom!.number})`);
       }
 
       // Refresh the hotel data to show the new booking in the UI
@@ -592,6 +665,9 @@ export default function ModernCreateBookingModal({
   const adultsCount = bookingGuests.filter(g => g.type === 'adult').length;
   const childrenCount = bookingGuests.filter(g => g.type === 'child').length;
 
+  // Filter out virtual rooms from selection
+  const availableRooms = rooms.filter(r => r.floor !== 5);
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <Card className="w-full max-w-5xl max-h-[95vh] overflow-y-auto" data-testid="create-booking-modal">
@@ -599,21 +675,87 @@ export default function ModernCreateBookingModal({
           <div className="flex justify-between items-center">
             <CardTitle className="flex items-center space-x-2">
               <CalendarIcon className="h-5 w-5" />
-              <span>Create Booking - Room {room.number}</span>
-              <Badge variant="outline">{room.type}</Badge>
+              <span>
+                {isUnallocated ? 'Create Unallocated Reservation' : selectedRoom ? `Create Booking - Room ${selectedRoom.number}` : 'Create Booking'}
+              </span>
+              {selectedRoom && <Badge variant="outline">{selectedRoom.type}</Badge>}
+              {isUnallocated && <Badge variant="secondary" className="bg-blue-100 text-blue-800">Unallocated</Badge>}
             </CardTitle>
             <Button variant="ghost" size="sm" onClick={onClose}>
               <X className="h-4 w-4" />
             </Button>
           </div>
           <p className="text-gray-600 text-sm">
-            {adultsCount} adult{adultsCount !== 1 ? 's' : ''}, {childrenCount} child{childrenCount !== 1 ? 'ren' : ''} • Max occupancy: {room.maxOccupancy}
+            {adultsCount} adult{adultsCount !== 1 ? 's' : ''}, {childrenCount} child{childrenCount !== 1 ? 'ren' : ''}
+            {selectedRoom && !isUnallocated && ` • Max occupancy: ${selectedRoom.maxOccupancy}`}
           </p>
         </CardHeader>
         
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            
+
+            {/* Room Selection & Unallocated Option */}
+            {allowRoomSelection && (
+              <Card className="border-blue-200 bg-blue-50/50">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center">
+                    <Home className="h-4 w-4 mr-2" />
+                    Room Assignment
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Unallocated Checkbox */}
+                  <div className="flex items-center space-x-3 p-3 bg-white rounded-md border">
+                    <input
+                      type="checkbox"
+                      id="unallocated"
+                      checked={isUnallocated}
+                      onChange={(e) => {
+                        setIsUnallocated(e.target.checked);
+                        if (e.target.checked) {
+                          setSelectedRoom(null);
+                        }
+                      }}
+                      className="h-4 w-4 text-blue-600 rounded"
+                    />
+                    <div className="flex-1">
+                      <Label htmlFor="unallocated" className="font-medium cursor-pointer">
+                        Create as Unallocated Reservation
+                      </Label>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Place in virtual queue - assign room later
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Room Selection Dropdown */}
+                  {!isUnallocated && (
+                    <div>
+                      <Label>Select Room</Label>
+                      <select
+                        value={selectedRoom?.id || ''}
+                        onChange={(e) => {
+                          const room = availableRooms.find(r => r.id === e.target.value);
+                          setSelectedRoom(room || null);
+                        }}
+                        className="w-full p-2 border rounded-md"
+                        required={!isUnallocated}
+                      >
+                        <option value="">-- Select a room --</option>
+                        {availableRooms
+                          .sort((a, b) => a.number.localeCompare(b.number))
+                          .map(room => (
+                            <option key={room.id} value={room.id}>
+                              Room {room.number} - {room.type} (Floor {room.floor}, Max: {room.maxOccupancy})
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             {/* Dates Section */}
             <Card>
               <CardHeader className="pb-3">
@@ -655,7 +797,7 @@ export default function ModernCreateBookingModal({
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg flex items-center">
                     <Users className="h-4 w-4 mr-2" />
-                    Guests ({bookingGuests.length}/{room.maxOccupancy})
+                    Guests ({bookingGuests.length}/{selectedRoom?.maxOccupancy || 10})
                   </CardTitle>
                   <div className="flex space-x-2">
                     <Button
@@ -663,7 +805,7 @@ export default function ModernCreateBookingModal({
                       variant="outline"
                       size="sm"
                       onClick={addAdult}
-                      disabled={bookingGuests.length >= room.maxOccupancy}
+                      disabled={bookingGuests.length >= (selectedRoom?.maxOccupancy || 10)}
                       className="flex items-center"
                     >
                       <UserPlus className="h-4 w-4 mr-1" />
@@ -674,7 +816,7 @@ export default function ModernCreateBookingModal({
                       variant="outline"
                       size="sm"
                       onClick={addChild}
-                      disabled={bookingGuests.length >= room.maxOccupancy}
+                      disabled={bookingGuests.length >= (selectedRoom?.maxOccupancy || 10)}
                       className="flex items-center"
                     >
                       <Baby className="h-4 w-4 mr-1" />

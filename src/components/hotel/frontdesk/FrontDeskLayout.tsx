@@ -17,6 +17,7 @@ import PricingManagement from '../pricing/PricingManagement';
 import ChannelManagerDashboard from './ChannelManager/ChannelManagerDashboard';
 import ChannelManagerSettings from './ChannelManager/ChannelManagerSettings';
 import ReservationsListPage from './ReservationsListPage';
+import FloatingCreateButton from './FloatingCreateButton';
 
 function FrontDeskContent() {
   const { rooms } = useHotel();
@@ -83,6 +84,9 @@ function FrontDeskContent() {
           </Routes>
         </div>
       </main>
+
+      {/* Floating Action Button for creating unallocated reservations */}
+      <FloatingCreateButton />
     </div>
   );
 }

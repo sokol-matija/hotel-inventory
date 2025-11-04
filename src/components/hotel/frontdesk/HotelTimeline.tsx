@@ -46,6 +46,7 @@ import { EnhancedDailyViewModal } from './modals/EnhancedDailyViewModal';
 import DragCreateOverlay from './DragCreateOverlay';
 import { HotelEmailService } from '../../../lib/emailService';
 import { TimelineCleaningIndicator } from './TimelineCleaningIndicator';
+import { virtualRoomService } from '../../../lib/hotel/services/VirtualRoomService';
 
 interface HotelTimelineProps {
   isFullscreen?: boolean;
@@ -2457,7 +2458,20 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
   const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
   const [selectedAvailabilityDate, setSelectedAvailabilityDate] = useState<Date | null>(null);
   const [selectedAvailabilityData, setSelectedAvailabilityData] = useState<DayAvailability | null>(null);
-  
+
+  // Virtual rooms (unallocated) state
+  const [virtualRoomsWithReservations, setVirtualRoomsWithReservations] = useState<Room[]>([]);
+
+  // Fetch virtual rooms with active reservations
+  useEffect(() => {
+    const fetchVirtualRooms = async () => {
+      const virtualRooms = await virtualRoomService.getVirtualRoomsWithReservations(currentDate);
+      setVirtualRoomsWithReservations(virtualRooms);
+    };
+
+    fetchVirtualRooms();
+  }, [currentDate, localReservations]); // Re-fetch when date or reservations change
+
   // Note: Removed global mouse event listener since we're using two-click system instead of drag
 
   // Smart context menu positioning (now using service)
@@ -3274,21 +3288,41 @@ Room Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item
             </div>
             
             <div className="space-y-4">
-              {Object.entries(roomsByFloor).map(([floor, rooms]) => (
+              {/* Regular floors (exclude floor 5 - virtual rooms) */}
+              {Object.entries(roomsByFloor)
+                .filter(([floor]) => parseInt(floor) !== 5)
+                .map(([floor, rooms]) => (
+                  <RoomOverviewFloorSection
+                    key={`overview-${floor}`}
+                    floor={parseInt(floor)}
+                    rooms={rooms}
+                    guests={guests}
+                    isExpanded={expandedOverviewFloors[parseInt(floor)]}
+                    onToggle={() => toggleOverviewFloor(parseInt(floor))}
+                    occupancyData={currentOccupancy}
+                    onRoomClick={handleRoomClickWrapper}
+                    onUpdateReservationStatus={updateReservationStatus}
+                    onDeleteReservation={deleteReservation}
+                    onShowDrinksModal={handleShowDrinksModalWrapper}
+                  />
+                ))}
+
+              {/* Unallocated Rooms Section (only show if there are active reservations) */}
+              {virtualRoomsWithReservations.length > 0 && (
                 <RoomOverviewFloorSection
-                  key={`overview-${floor}`}
-                  floor={parseInt(floor)}
-                  rooms={rooms}
+                  key="overview-unallocated"
+                  floor={5}
+                  rooms={virtualRoomsWithReservations}
                   guests={guests}
-                  isExpanded={expandedOverviewFloors[parseInt(floor)]}
-                  onToggle={() => toggleOverviewFloor(parseInt(floor))}
+                  isExpanded={expandedOverviewFloors[5]}
+                  onToggle={() => toggleOverviewFloor(5)}
                   occupancyData={currentOccupancy}
                   onRoomClick={handleRoomClickWrapper}
                   onUpdateReservationStatus={updateReservationStatus}
                   onDeleteReservation={deleteReservation}
                   onShowDrinksModal={handleShowDrinksModalWrapper}
                 />
-              ))}
+              )}
             </div>
           </div>
         )}
@@ -3306,16 +3340,50 @@ Room Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item
           
           {/* Floor sections */}
           <div>
-            {Object.entries(roomsByFloor).map(([floor, rooms]) => (
+            {/* Regular floors (exclude floor 5 - virtual rooms) */}
+            {Object.entries(roomsByFloor)
+              .filter(([floor]) => parseInt(floor) !== 5)
+              .map(([floor, rooms]) => (
+                <FloorSection
+                  key={floor}
+                  floor={parseInt(floor)}
+                  rooms={rooms}
+                  reservations={localReservations}
+                  guests={guests}
+                  startDate={currentDate}
+                  isExpanded={expandedFloors[parseInt(floor)]}
+                  onToggle={() => toggleFloor(parseInt(floor))}
+                  onReservationClick={handleReservationClick}
+                  onMoveReservation={handleMoveReservation}
+                  isFullscreen={isFullscreen}
+                  onUpdateReservationStatus={updateReservationStatus}
+                  onDeleteReservation={deleteReservation}
+                  isDragCreateMode={dragCreate.state.isEnabled}
+                  isDragCreating={dragCreate.state.isSelecting}
+                  isExpansionMode={isExpansionMode}
+                  isMoveMode={isMoveMode}
+                  onResizeReservation={handleResizeReservation}
+                  onShowDrinksModal={handleShowDrinksModalWrapper}
+                  calculateContextMenuPosition={calculateContextMenuPosition}
+                  onCellClick={handleDragCreateCellClick}
+                  shouldHighlightCell={dragCreate.shouldHighlightCell}
+                  dragCreate={dragCreate}
+                  onShowExpandedDailyView={handleShowExpandedDailyView}
+                  cellRefs={cellRefs.current}
+                />
+              ))}
+
+            {/* Unallocated Rooms Section (only show if there are active reservations) */}
+            {virtualRoomsWithReservations.length > 0 && (
               <FloorSection
-                key={floor}
-                floor={parseInt(floor)}
-                rooms={rooms}
+                key="timeline-unallocated"
+                floor={5}
+                rooms={virtualRoomsWithReservations}
                 reservations={localReservations}
                 guests={guests}
                 startDate={currentDate}
-                isExpanded={expandedFloors[parseInt(floor)]}
-                onToggle={() => toggleFloor(parseInt(floor))}
+                isExpanded={expandedFloors[5]}
+                onToggle={() => toggleFloor(5)}
                 onReservationClick={handleReservationClick}
                 onMoveReservation={handleMoveReservation}
                 isFullscreen={isFullscreen}
@@ -3334,7 +3402,7 @@ Room Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item
                 onShowExpandedDailyView={handleShowExpandedDailyView}
                 cellRefs={cellRefs.current}
               />
-            ))}
+            )}
           </div>
           
           {/* Drag Create Overlay */}
