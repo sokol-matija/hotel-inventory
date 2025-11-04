@@ -262,9 +262,71 @@ export class VirtualRoomService {
     guestData?: Partial<Guest>
   ): Promise<AllocationResult> {
     try {
+      // First, get the existing reservation to fetch dates and guest info
+      const { data: existingReservation, error: fetchError } = await supabase
+        .from('reservations')
+        .select('*')
+        .eq('id', parseInt(reservationId))
+        .single();
+
+      if (fetchError || !existingReservation) {
+        console.error('Error fetching reservation:', fetchError);
+        return {
+          success: false,
+          error: 'Failed to fetch reservation: ' + (fetchError?.message || 'Not found')
+        };
+      }
+
+      // Get target room for pricing calculation
+      const { data: targetRoom, error: roomError } = await supabase
+        .from('rooms')
+        .select('*')
+        .eq('id', parseInt(targetRoomId))
+        .single();
+
+      if (roomError || !targetRoom) {
+        console.error('Error fetching target room:', roomError);
+        return {
+          success: false,
+          error: 'Failed to fetch target room: ' + (roomError?.message || 'Not found')
+        };
+      }
+
+      // Calculate new pricing based on target room
+      const { calculatePricing } = await import('../pricingCalculator');
+      const checkInDate = new Date(existingReservation.check_in_date);
+      const checkOutDate = new Date(existingReservation.check_out_date);
+
+      // Transform target room to Room type for pricing calculation
+      const transformedRoom = this.transformDatabaseRoomToRoom(targetRoom);
+
+      const pricing = calculatePricing(
+        targetRoomId,
+        checkInDate,
+        checkOutDate,
+        existingReservation.adults || 1,
+        [], // children - will use children_count from reservation
+        {
+          hasPets: existingReservation.has_pets || false,
+          needsParking: existingReservation.parking_required || false,
+          additionalCharges: existingReservation.additional_charges || 0
+        },
+        [transformedRoom] // Pass the target room so pricing calculator can find it
+      );
+
       const updates: any = {
         room_id: parseInt(targetRoomId),
-        status: 'confirmed'
+        status: 'confirmed',
+        // Update all pricing fields
+        base_room_rate: pricing.baseRate,
+        subtotal: pricing.subtotal,
+        children_discounts: pricing.totalDiscounts,
+        tourism_tax: pricing.fees.tourism,
+        vat_amount: pricing.fees.vat,
+        pet_fee: pricing.fees.pets,
+        parking_fee: pricing.fees.parking,
+        short_stay_supplement: pricing.fees.shortStay,
+        total_amount: pricing.total
       };
 
       // If guest data provided, create/update guest
@@ -294,7 +356,7 @@ export class VirtualRoomService {
         updates.guest_id = newGuest.id;
       }
 
-      // Update reservation
+      // Update reservation with new room and pricing
       const { error: updateError } = await supabase
         .from('reservations')
         .update(updates)
