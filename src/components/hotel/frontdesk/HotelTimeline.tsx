@@ -35,6 +35,7 @@ import { getCountryFlag } from '../../../lib/hotel/countryFlags';
 import { CalendarEvent, ReservationStatus, Reservation, Room, Guest } from '../../../lib/hotel/types';
 import ReservationPopup from './Reservations/ReservationPopup';
 import ModernCreateBookingModal from './ModernCreateBookingModal';
+import LabelBadge from '../shared/LabelBadge';
 import RoomChangeConfirmDialog from './RoomChangeConfirmDialog';
 import HotelOrdersModal from './RoomService/HotelOrdersModal';
 import hotelNotification from '../../../lib/notifications';
@@ -695,9 +696,16 @@ function ReservationBlock({
       }}
       title={`${guest?.fullName || 'Guest'} - ${reservation.numberOfGuests} guests ${isDragging ? '(Dragging...)' : '(Click for details)'}`}
     >
+      {/* Label Badge - Top Center */}
+      {reservation.label && (
+        <div className="absolute top-1 left-1/2 transform -translate-x-1/2 z-10">
+          <LabelBadge label={reservation.label} size="sm" />
+        </div>
+      )}
+
       {/* Main content with proper spacing for drag handle */}
       <div className={`flex items-center space-x-2 min-w-0 flex-1 ${
-        isShortReservation ? 'pt-2' : ''
+        isShortReservation ? 'pt-4' : ''
       }`}>
         {/* Country flag */}
         <span className="text-xs flex-shrink-0">{flag}</span>

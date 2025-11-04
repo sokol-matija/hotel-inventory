@@ -209,6 +209,12 @@ export class HotelDataService {
               name_croatian,
               name_english
             )
+          ),
+          label:labels (
+            id,
+            name,
+            color,
+            bg_color
           )
         `)
         .eq('hotel_id', HOTEL_POREC_ID)
@@ -284,6 +290,12 @@ export class HotelDataService {
               name_croatian,
               name_english
             )
+          ),
+          label:labels (
+            id,
+            name,
+            color,
+            bg_color
           )
         `)
         .eq('id', id)
