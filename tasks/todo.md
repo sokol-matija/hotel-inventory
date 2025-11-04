@@ -1,897 +1,510 @@
-# ✅ COMPLETED: Ntfy.sh Notification Integration for Room 401 - October 26, 2025
+# Reservation Label/Group Feature Implementation Plan
 
-## Completion Summary
-**Status**: ✅ FULLY IMPLEMENTED
-**Date**: October 26, 2025
+**Date**: November 4, 2025
+**Feature**: Add label/group feature for tracking related reservations
+**Status**: Planning Complete ✅ → Ready for Implementation
 
-### What Was Delivered ✅
-1. **NtfyNotificationService**: New service class for sending push notifications to ntfy.sh
-2. **Room 401 Integration**: Automatic notifications when new reservations are created for room 401
-3. **Fail-safe Design**: Notification failures don't break reservation creation
-4. **Rich Notification Data**: Includes guest name, check-in/out dates, number of nights and guests
+---
 
-### Files Created/Modified (2 files, +120 lines)
-- `NtfyNotificationService.ts` (NEW) - Notification service with singleton pattern
-- `DatabaseAdapter.ts` (MODIFIED) - Integrated notification for room 401 reservations
+## 📋 Feature Requirements
 
-### Implementation Details
-**Notification Endpoint**: `ntfy.sh/hotel-porec-room-401`
+### Business Context
+- Track groups of guests together (e.g., "german-bikers" - 10 bikers across multiple rooms)
+- Visual indicator in timeline to show which reservations belong to same group
+- Autocomplete search when creating/editing reservations
+- Reusable labels across multiple reservations
 
-**Data Included**:
-- Guest name (first + last)
-- Check-in date (formatted)
-- Check-out date (formatted)
-- Number of nights
-- Number of guests
-- Reservation status
+### UI Requirements
+1. **Timeline View**: Small white label badge at top of reservation card showing group name
+2. **Room Status Overview**: Label displayed at top of status cards
+3. **Create Booking Modal**: Autocomplete input with search-as-you-type functionality
+4. **Label Format**: Lowercase with hyphens (e.g., "german-bikers", "bikers-germany")
 
-**Technical Features**:
-- ✅ Singleton pattern for service instance
-- ✅ TypeScript type safety
-- ✅ Non-blocking notifications (errors logged, don't throw)
-- ✅ Priority-based notifications (priority: 4 for new reservations)
-- ✅ Tagged notifications (tags: 'hotel', 'booking', '401')
+---
 
-### Success Criteria Met ✅
-- ✅ Notifications sent only for room 401
-- ✅ Contains all important reservation data
-- ✅ Reservation creation succeeds even if notification fails
-- ✅ Zero TypeScript errors
-- ✅ Follows existing service patterns
-- ✅ No breaking changes
+## 🗄️ Database Schema Design
 
-### Code Structure
-```typescript
-// Service singleton
-const ntfyNotificationService = NtfyNotificationService.getInstance()
+### New Table: `labels`
+```sql
+CREATE TABLE labels (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  hotel_id UUID NOT NULL REFERENCES hotels(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  color TEXT DEFAULT '#3b82f6', -- Default blue color
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
 
-// Integration in DatabaseAdapter
-await ntfyNotificationService.notifyRoom401Reservation(
-  newReservation,
-  room,
-  guest
-)
+  -- Ensure unique label names per hotel
+  CONSTRAINT labels_hotel_name_unique UNIQUE (hotel_id, name),
+
+  -- Lowercase validation
+  CONSTRAINT labels_name_lowercase CHECK (name = LOWER(name))
+);
+
+-- Index for fast search
+CREATE INDEX idx_labels_hotel_name ON labels(hotel_id, name);
+CREATE INDEX idx_labels_name_search ON labels USING gin(name gin_trgm_ops);
 ```
 
-### Review Section
-**Architecture**: Clean service layer following existing patterns (HotelDataService, DatabaseAdapter)
-**Type Safety**: Proper TypeScript interfaces and type definitions
-**Error Handling**: Try-catch blocks with console logging, non-throwing errors
-**Extensibility**: Easy to add notifications for other rooms or events
-**Performance**: Async notifications don't block reservation creation
+### Update: `reservations` Table
+```sql
+ALTER TABLE reservations
+ADD COLUMN label_id UUID REFERENCES labels(id) ON DELETE SET NULL;
+
+-- Index for fast label lookups
+CREATE INDEX idx_reservations_label_id ON reservations(label_id);
+```
+
+### Enable RLS
+```sql
+-- Labels table RLS
+ALTER TABLE labels ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view labels for their hotel"
+  ON labels FOR SELECT
+  TO authenticated
+  USING (hotel_id IN (
+    SELECT hotel_id FROM user_profiles WHERE user_id = auth.uid()
+  ));
+
+CREATE POLICY "Users can create labels for their hotel"
+  ON labels FOR INSERT
+  TO authenticated
+  WITH CHECK (hotel_id IN (
+    SELECT hotel_id FROM user_profiles WHERE user_id = auth.uid()
+  ));
+```
 
 ---
 
-# ✅ COMPLETED: Welcome & Thank-You Email Integration - October 26, 2025
+## 📁 TypeScript Type Definitions
 
-## Completion Summary
-**Status**: ✅ FULLY IMPLEMENTED AND TESTED
-**Commit**: `cd19d61` - "feat: integrate automatic welcome and thank-you email sending on check-in/check-out"
-**Date**: October 26, 2025
-
-### What Was Delivered ✅
-1. **Welcome emails** automatically sent when guests check in (3 methods):
-   - ✅ CheckInWorkflow button (with UI feedback banner)
-   - ✅ Fast check-in via right-click context menu (with toast notification)
-   - ✅ "Send Welcome Email" button in reservation popup
-
-2. **Thank-you emails** automatically sent on check-out:
-   - ✅ Fast check-out via right-click context menu (with toast notification)
-
-3. **Multilingual support**:
-   - ✅ Automatically uses guest's preferred language (English, German, Italian)
-
-4. **Real Supabase data integration**:
-   - ✅ All email methods work with actual guest and room data from database
-   - ✅ Fallback to sample data for backward compatibility
-
-5. **User feedback**:
-   - ✅ Toast notifications for fast operations
-   - ✅ UI feedback banner in CheckInWorkflow
-   - ✅ Console logging for debugging
-
-### Files Modified (5 files, +225/-40 lines)
-- `emailService.ts` - Enhanced with optional guest/room parameters
-- `CheckInWorkflow.tsx` - Integrated email sending with UI feedback
-- `HotelTimeline.tsx` - Added email to fast check-in/check-out
-- `ReservationService.ts` - Smart room data handling
-- `useReservationState.ts` - Pass complete reservation data
-
-### Success Criteria Met ✅
-- ✅ Welcome email sent automatically on check-in (all methods)
-- ✅ Thank-you email sent automatically on check-out
-- ✅ Uses guest's preferred language
-- ✅ Toast notifications displayed
-- ✅ UI feedback shown to staff
-- ✅ Works with real Supabase data
-- ✅ No breaking changes to existing functionality
-- ✅ Build compiles successfully with zero errors
-
----
-
-# Welcome Email Integration - Implementation Plan
-
-## Task Overview
-Integrate automatic welcome email sending when a guest checks in, using the existing email service that has been tested in the `/email-test` route.
-
-## Current Implementation Analysis
-
-### Email Service (`/src/lib/emailService.ts`)
-- ✅ `HotelEmailService.sendWelcomeEmail(reservation)` method exists (line 749)
-- ✅ Supports 3 languages: English, German, Italian
-- ✅ Automatically looks up guest and room data from reservation
-- ✅ Sends via Supabase Edge Function (with fallback simulation)
-- ✅ Returns `{ success: boolean, message: string }`
-- **Note**: Currently defaults to English language, doesn't use guest's `preferredLanguage`
-
-### Check-in Implementations
-
-#### 1. CheckInWorkflow Component (`CheckInOut/CheckInWorkflow.tsx`)
-- **Location**: Line 154-177 (`handleCompleteCheckIn` function)
-- **Status Update**: Line 161 - `await updateReservationStatus(reservation.id, 'checked-in')`
-- **Current behavior**: Updates status → logs completion → closes modal
-- **Integration point**: After successful status update, before closing modal
-
-#### 2. Fast Check-in in HotelTimeline (`HotelTimeline.tsx`)
-- **Location**: Lines 849-872 (context menu "Fast Check-in" button)
-- **Status Update**: Line 858 - `await onUpdateReservationStatus(reservationId, 'checked-in')`
-- **Current behavior**: Optimistic update → status change → cleanup
-- **Integration point**: After successful status update, before cleanup
-
-## Implementation Plan
-
-### Step 1: Enhance Email Service to Support Guest Language
-**File**: `/src/lib/emailService.ts`
-
-**Changes**:
+### New Interface: `Label`
 ```typescript
-// Update sendWelcomeEmail method (line 749)
-static async sendWelcomeEmail(
-  reservation: Reservation,
-  language?: EmailLanguage
-): Promise<{ success: boolean; message: string }> {
-  try {
-    const guest = SAMPLE_GUESTS.find(g => g.id === reservation.guestId);
-    const room = HOTEL_POREC_ROOMS.find(r => r.id === reservation.roomId);
+// src/lib/hotel/types.ts
 
-    if (!guest || !room) {
-      throw new Error('Guest or room not found');
+export interface Label {
+  id: string;
+  hotelId: string;
+  name: string;
+  color?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export type LabelCreate = Omit<Label, 'id' | 'createdAt' | 'updatedAt'>;
+export type LabelUpdate = Partial<Pick<Label, 'name' | 'color'>>;
+```
+
+### Update: `Reservation` Interface
+```typescript
+export interface Reservation {
+  // ... existing fields
+  labelId?: string;
+  label?: Label; // For joined queries
+  // ... rest of fields
+}
+```
+
+---
+
+## 🛠️ Service Layer Implementation
+
+### New Service: `LabelService`
+**Location**: `src/lib/hotel/services/LabelService.ts`
+
+```typescript
+export class LabelService {
+  private static instance: LabelService;
+
+  static getInstance(): LabelService {
+    if (!LabelService.instance) {
+      LabelService.instance = new LabelService();
     }
+    return LabelService.instance;
+  }
 
-    // Use provided language, or guest's preferred language, or default to 'en'
-    const emailLanguage = language ||
-      (guest.preferredLanguage as EmailLanguage) ||
-      'en';
+  // Search labels by partial name (autocomplete)
+  async searchLabels(hotelId: string, query: string): Promise<Label[]> {
+    const { data, error } = await supabase
+      .from('labels')
+      .select('*')
+      .eq('hotel_id', hotelId)
+      .ilike('name', `%${query.toLowerCase()}%`)
+      .order('name')
+      .limit(10);
 
-    const template = this.generateWelcomeEmail(
-      { guest, reservation, room },
-      emailLanguage
-    );
+    if (error) throw error;
+    return this.mapLabels(data);
+  }
 
-    return await this.sendEmail(guest.email || '', template, guest.fullName);
+  // Create new label
+  async createLabel(labelData: LabelCreate): Promise<Label> {
+    const { data, error } = await supabase
+      .from('labels')
+      .insert({
+        hotel_id: labelData.hotelId,
+        name: labelData.name.toLowerCase().replace(/\s+/g, '-'),
+        color: labelData.color || '#3b82f6'
+      })
+      .select()
+      .single();
 
-  } catch (error) {
-    console.error('Error sending welcome email:', error);
+    if (error) throw error;
+    return this.mapLabel(data);
+  }
+
+  // Get label by ID
+  async getLabelById(labelId: string): Promise<Label | null> {
+    const { data, error } = await supabase
+      .from('labels')
+      .select('*')
+      .eq('id', labelId)
+      .single();
+
+    if (error) return null;
+    return this.mapLabel(data);
+  }
+
+  // List all labels for a hotel
+  async listLabels(hotelId: string): Promise<Label[]> {
+    const { data, error } = await supabase
+      .from('labels')
+      .select('*')
+      .eq('hotel_id', hotelId)
+      .order('name');
+
+    if (error) throw error;
+    return this.mapLabels(data);
+  }
+
+  private mapLabel(data: any): Label {
     return {
-      success: false,
-      message: 'Failed to send welcome email. Missing guest or room information.'
+      id: data.id,
+      hotelId: data.hotel_id,
+      name: data.name,
+      color: data.color,
+      createdAt: new Date(data.created_at),
+      updatedAt: new Date(data.updated_at)
     };
+  }
+
+  private mapLabels(data: any[]): Label[] {
+    return data.map(this.mapLabel);
   }
 }
 ```
 
-### Step 2: Integrate into CheckInWorkflow Component
-**File**: `/src/components/hotel/frontdesk/CheckInOut/CheckInWorkflow.tsx`
+---
 
-**Changes**:
-1. Import the email service (line 1-32):
+## 🎨 UI Component Implementation
+
+### Component 1: `LabelBadge`
+**Location**: `src/components/hotel/shared/LabelBadge.tsx`
+
 ```typescript
-import { HotelEmailService } from '../../../../lib/emailService';
-```
+interface LabelBadgeProps {
+  label: Label;
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
 
-2. Add state for email sending feedback (line 56-60):
-```typescript
-const [emailSendResult, setEmailSendResult] = useState<{
-  success: boolean;
-  message: string;
-} | null>(null);
-```
+export const LabelBadge: React.FC<LabelBadgeProps> = ({
+  label,
+  size = 'sm',
+  className
+}) => {
+  const sizeClasses = {
+    sm: 'text-xs px-2 py-0.5',
+    md: 'text-sm px-2.5 py-1',
+    lg: 'text-base px-3 py-1.5'
+  };
 
-3. Update `handleCompleteCheckIn` function (line 154-177):
-```typescript
-const handleCompleteCheckIn = async () => {
-  if (!reservation || !canCompleteCheckIn()) return;
-
-  try {
-    setIsProcessing(true);
-
-    // Update reservation status to checked-in
-    await updateReservationStatus(reservation.id, 'checked-in');
-
-    // Send welcome email
-    console.log(`Sending welcome email to ${guest?.email}...`);
-    const emailResult = await HotelEmailService.sendWelcomeEmail(reservation);
-    setEmailSendResult(emailResult);
-
-    if (emailResult.success) {
-      console.log(`✅ Welcome email sent successfully to ${guest?.email}`);
-    } else {
-      console.warn(`⚠️ Failed to send welcome email: ${emailResult.message}`);
-    }
-
-    // Log check-in completion
-    console.log(`Check-in completed for ${guest?.fullName} in Room ${room?.number}`);
-
-    // Close workflow after showing feedback
-    setTimeout(() => {
-      onClose();
-    }, emailResult.success ? 2000 : 3000); // Longer delay if email failed
-
-  } catch (error) {
-    console.error('Failed to complete check-in:', error);
-    alert('Failed to complete check-in. Please try again.');
-    setEmailSendResult(null);
-  } finally {
-    setIsProcessing(false);
-  }
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-md font-medium",
+        "bg-white border shadow-sm",
+        sizeClasses[size],
+        className
+      )}
+      style={{
+        borderColor: label.color,
+        color: label.color
+      }}
+    >
+      {label.name}
+    </span>
+  );
 };
 ```
 
-4. Add email feedback UI (after the action buttons, ~line 400):
+### Component 2: `LabelAutocomplete`
+**Location**: `src/components/hotel/shared/LabelAutocomplete.tsx`
+
 ```typescript
-{/* Email Send Feedback */}
-{emailSendResult && (
-  <div className={`mt-4 p-4 rounded-lg ${
-    emailSendResult.success
-      ? 'bg-green-50 border border-green-200'
-      : 'bg-yellow-50 border border-yellow-200'
-  }`}>
-    <div className="flex items-center space-x-2">
-      {emailSendResult.success ? (
-        <CheckCircle className="h-5 w-5 text-green-600" />
-      ) : (
-        <AlertCircle className="h-5 w-5 text-yellow-600" />
-      )}
-      <p className={`text-sm font-medium ${
-        emailSendResult.success ? 'text-green-800' : 'text-yellow-800'
-      }`}>
-        {emailSendResult.message}
-      </p>
-    </div>
-  </div>
-)}
+interface LabelAutocompleteProps {
+  hotelId: string;
+  value: string | null;
+  onChange: (labelId: string | null) => void;
+  placeholder?: string;
+}
+
+export const LabelAutocomplete: React.FC<LabelAutocompleteProps> = ({
+  hotelId,
+  value,
+  onChange,
+  placeholder = "Search or create label..."
+}) => {
+  const [open, setOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [labels, setLabels] = useState<Label[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const labelService = LabelService.getInstance();
+
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      if (searchQuery.trim()) {
+        setIsLoading(true);
+        try {
+          const results = await labelService.searchLabels(hotelId, searchQuery);
+          setLabels(results);
+        } catch (error) {
+          console.error('Error searching labels:', error);
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
+        setLabels([]);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, hotelId]);
+
+  const handleCreateLabel = async () => {
+    try {
+      const newLabel = await labelService.createLabel({
+        hotelId,
+        name: searchQuery,
+        color: '#3b82f6'
+      });
+      onChange(newLabel.id);
+      setOpen(false);
+      setSearchQuery("");
+    } catch (error) {
+      console.error('Error creating label:', error);
+    }
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" role="combobox" className="justify-between">
+          {value ? labels.find(l => l.id === value)?.name : placeholder}
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[300px] p-0">
+        <Command>
+          <CommandInput
+            placeholder="Type to search..."
+            value={searchQuery}
+            onValueChange={setSearchQuery}
+          />
+          <CommandList>
+            {isLoading && (
+              <CommandEmpty>Loading...</CommandEmpty>
+            )}
+            {!isLoading && labels.length === 0 && searchQuery && (
+              <CommandItem onSelect={handleCreateLabel}>
+                <Plus className="mr-2 h-4 w-4" />
+                Create "{searchQuery}"
+              </CommandItem>
+            )}
+            {!isLoading && labels.length > 0 && (
+              <CommandGroup>
+                {labels.map((label) => (
+                  <CommandItem
+                    key={label.id}
+                    value={label.id}
+                    onSelect={() => {
+                      onChange(label.id);
+                      setOpen(false);
+                    }}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        value === label.id ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    <LabelBadge label={label} size="sm" />
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+};
 ```
 
-### Step 3: Integrate into HotelTimeline Fast Check-in
-**File**: `/src/components/hotel/frontdesk/HotelTimeline.tsx`
+---
+
+## 🔄 Component Updates
+
+### Update 1: `ModernCreateBookingModal`
+**Location**: `src/components/hotel/frontdesk/ModernCreateBookingModal.tsx`
 
 **Changes**:
-1. Import the email service (at the top of the file):
+1. Add state for `selectedLabelId`
+2. Add `LabelAutocomplete` component to form
+3. Pass `labelId` to reservation creation service
+
 ```typescript
-import { HotelEmailService } from '../../../lib/emailService';
+// Add to modal state
+const [selectedLabelId, setSelectedLabelId] = useState<string | null>(null);
+
+// Add to form UI (after company selection)
+<div className="space-y-2">
+  <Label>Group Label (Optional)</Label>
+  <LabelAutocomplete
+    hotelId={hotelId}
+    value={selectedLabelId}
+    onChange={setSelectedLabelId}
+    placeholder="Search or create label..."
+  />
+</div>
+
+// Update submission to include labelId
+const reservationData = {
+  // ... existing fields
+  labelId: selectedLabelId,
+  // ... rest of fields
+};
 ```
 
-2. Update the "Fast Check-in" button handler (lines 849-872):
+### Update 2: `HotelTimeline` Reservation Cards
+**Location**: `src/components/hotel/frontdesk/HotelTimeline.tsx`
+
+**Changes**:
+1. Fetch reservations with label join
+2. Display `LabelBadge` at top of reservation cards
+
 ```typescript
-onClick={async () => {
-  console.log('Fast Check-in clicked for:', contextMenu.reservation?.id);
-  if (contextMenu.reservation && onUpdateReservationStatus) {
-    const reservationId = contextMenu.reservation.id;
-    const reservation = contextMenu.reservation;
+// Update query to include label
+const { data: reservations } = await supabase
+  .from('reservations')
+  .select(`
+    *,
+    guest:guests(*),
+    label:labels(*)
+  `)
+  // ... rest of query
 
-    // Add to optimistic updates
-    setOptimisticStatusUpdates(prev => new Set(prev.add(reservationId)));
-
-    try {
-      await onUpdateReservationStatus(reservationId, 'checked-in');
-      console.log('✅ Guest checked in successfully');
-
-      // Send welcome email
-      console.log('📧 Sending welcome email...');
-      const emailResult = await HotelEmailService.sendWelcomeEmail(reservation);
-
-      if (emailResult.success) {
-        console.log('✅ Welcome email sent successfully');
-      } else {
-        console.warn('⚠️ Failed to send welcome email:', emailResult.message);
-      }
-
-    } catch (error) {
-      console.error('❌ Failed to check in guest:', error);
-    } finally {
-      // Remove from optimistic updates
-      setOptimisticStatusUpdates(prev => {
-        const next = new Set(prev);
-        next.delete(reservationId);
-        return next;
-      });
-    }
-  }
-  setContextMenu({ show: false, x: 0, y: 0, reservation: null });
-}}
+// In reservation card render
+<div className="reservation-card">
+  {reservation.label && (
+    <div className="mb-1">
+      <LabelBadge label={reservation.label} size="sm" />
+    </div>
+  )}
+  {/* Rest of card content */}
+</div>
 ```
 
-## Testing Plan
+### Update 3: Room Status Overview Cards
+**Location**: Similar pattern to HotelTimeline
 
-### 1. CheckInWorkflow Testing
-- [ ] Open reservation details view
-- [ ] Click "Check-In Workflow" button
-- [ ] Complete all required steps
-- [ ] Click "Complete Check-In"
-- [ ] Verify status changes to "checked-in"
-- [ ] Verify welcome email is sent
-- [ ] Check console for email send result
-- [ ] Check guest's email inbox for welcome email
-
-### 2. Fast Check-in Testing
-- [ ] Right-click on a reservation in the timeline
-- [ ] Click "Fast Check-in"
-- [ ] Verify status changes to "checked-in"
-- [ ] Verify welcome email is sent (check console)
-- [ ] Check guest's email inbox for welcome email
-
-### 3. Language Testing
-- [ ] Test with guest who has `preferredLanguage: 'de'`
-- [ ] Verify email is sent in German
-- [ ] Test with guest who has `preferredLanguage: 'it'`
-- [ ] Verify email is sent in Italian
-- [ ] Test with guest who has `preferredLanguage: 'en'`
-- [ ] Verify email is sent in English
-
-### 4. Error Handling Testing
-- [ ] Test with invalid guest email
-- [ ] Verify graceful error handling
-- [ ] Verify UI shows appropriate error message
-- [ ] Verify check-in still completes even if email fails
-
-## Success Criteria
-
-✅ Welcome email is automatically sent on check-in via both methods
-✅ Email uses guest's preferred language
-✅ Check-in process completes successfully even if email fails
-✅ User receives appropriate feedback about email sending
-✅ Console logs show email send status
-✅ No TypeScript errors
-✅ No breaking changes to existing functionality
-
-## Rollback Plan
-
-If issues occur:
-1. Remove email service imports
-2. Remove email sending code from both components
-3. Revert to original check-in logic
-
-## Notes
-
-- Email sending is **non-blocking** - check-in completes regardless of email success/failure
-- Email service has built-in fallback simulation if Supabase is not configured
-- Guest language preference is respected for email content
-- Console logs provide debugging information for email sending
-- UI feedback in CheckInWorkflow shows email send result
-
-## Questions for User
-
-1. Should we show a notification/toast when email fails in fast check-in? (Currently only logs to console)
-2. Do you want to track email send history in the database?
-3. Should there be a retry mechanism if email sending fails?
-4. Do you want to add email sending to check-out as well (thank you email)?
+**Changes**:
+- Display label at top of status cards
+- Same query pattern with label join
 
 ---
 
-**Ready for implementation?** Please review and confirm before I proceed with the changes.
+## ✅ Implementation Checklist
+
+### Phase 1: Database (30 minutes)
+- [ ] Create migration file `20251104000001_add_labels.sql`
+- [ ] Test migration on local Supabase
+- [ ] Verify indexes and constraints
+- [ ] Test RLS policies
+
+### Phase 2: TypeScript Types (15 minutes)
+- [ ] Add `Label` interface to `types.ts`
+- [ ] Add utility types (`LabelCreate`, `LabelUpdate`)
+- [ ] Update `Reservation` interface with `labelId` and `label?`
+- [ ] Verify TypeScript compilation
+
+### Phase 3: Service Layer (45 minutes)
+- [ ] Create `LabelService.ts` with all CRUD methods
+- [ ] Implement search functionality with debouncing
+- [ ] Add error handling and validation
+- [ ] Test service methods
+
+### Phase 4: UI Components (60 minutes)
+- [ ] Create `LabelBadge` component
+- [ ] Create `LabelAutocomplete` component with Popover
+- [ ] Test autocomplete search and create
+- [ ] Style components to match design
+
+### Phase 5: Integration (45 minutes)
+- [ ] Update `ModernCreateBookingModal` with label selection
+- [ ] Update `HotelTimeline` queries and rendering
+- [ ] Update Room Status Overview cards
+- [ ] Update `ReservationService` to handle labels
+
+### Phase 6: Testing (30 minutes)
+- [ ] Test label creation via autocomplete
+- [ ] Test label search functionality
+- [ ] Test reservation creation with labels
+- [ ] Verify label display in timeline
+- [ ] Verify label display in room status cards
+- [ ] Test edge cases (duplicate names, empty labels, etc.)
 
 ---
 
-# COMPLETED: Profile Onboarding & Infinite Loading Bug Fix - October 20, 2025 ✅
+## 🎯 Success Criteria
 
-## Bug Fix Summary: Infinite Loading on Login/Onboarding
-
-### Problem Discovered ✅ FIXED
-When users logged in (especially after closing and reopening the tab), the app got stuck on a **loading spinner for 15+ seconds**. The app would:
-1. Show "Loading..." spinner indefinitely
-2. Never proceed to onboarding or dashboard
-3. Eventually timeout and load the page
-
-### Root Cause Analysis ✅ IDENTIFIED
-**The issue was NOT a network problem** - it was an **architectural race condition**:
-
-Two simultaneous profile checks were happening:
-```
-1. supabase.auth.onAuthStateChange() → checkUserProfile() → SLOW/TIMES OUT
-2. supabase.auth.getSession() → checkUserProfile() → FAST/WORKS
-```
-
-Both queries ran at the same time. The first one would timeout after 15 seconds. Then the second one would complete and load the profile. Result: **15-second wait on every page refresh.**
-
-### Solution Implemented ✅ OPTIMIZED
-Three-part fix in `AuthProvider.tsx`:
-
-**1. Timeout Protection (Line 59-63)**
-```typescript
-const timeoutPromise = new Promise((_, reject) =>
-  setTimeout(() => reject(new Error('Profile query timeout after 15 seconds')), 15000)
-)
-```
-
-**2. Deduplication (Line 41, 47-50, 105)**
-```typescript
-const profileCheckInProgressRef = React.useRef(false)
-if (profileCheckInProgressRef.current) return // Skip if already checking
-```
-
-**3. Non-Blocking Listener (Line 153-155)** ← KEY FIX
-```typescript
-// Don't await the listener's profile check - only getSession awaits
-checkUserProfile(session.user.id) // Fire and forget, don't await
-```
-
-**Result:** Page now loads **instantly** (1-2 seconds) instead of waiting for timeouts!
-
-### Why This Works
-- ✅ `getSession()` is **reliable and fast** - runs first, blocks initial load
-- ✅ `onAuthStateChange` runs **in background** - doesn't block UI
-- ✅ **No race conditions** - deduplication prevents duplicate queries
-- ✅ **Timeout protection** - prevents infinite hanging if something goes wrong
+1. ✅ Users can create labels on-the-fly while booking
+2. ✅ Autocomplete shows matching labels as user types
+3. ✅ Labels appear on timeline reservation cards
+4. ✅ Labels appear on room status cards
+5. ✅ Multiple reservations can share same label
+6. ✅ Label names are unique per hotel
+7. ✅ No TypeScript errors
+8. ✅ No console errors in browser
+9. ✅ All existing functionality still works
 
 ---
 
-## Issue Report - August 17, 2025
+## 📝 Implementation Notes
 
-### **Problem Description**
-User reports that during account creation/first login, the role selection screen is no longer appearing. Previously, new users would see a role picker that allowed them to select their role (reception, kitchen, housekeeping, bookkeeping, or admin). The admin role required a password (`Hp247@$&`) to access all modules.
+### Technical Decisions
+1. **Lowercase normalization**: All labels stored as lowercase with hyphens
+2. **Color support**: Future enhancement for visual distinction
+3. **Soft delete**: Using `ON DELETE SET NULL` for reservations
+4. **Search**: Using PostgreSQL `ilike` for simple case-insensitive search
+5. **Autocomplete**: 300ms debounce for search performance
 
-### **Root Cause Analysis** ✅
-
-**Discovery**: The `RoleSelection` component EXISTS with full functionality intact, but is **NEVER RENDERED** in the application flow.
-
-**Evidence Found:**
-
-1. **RoleSelection Component** (`src/components/auth/RoleSelection.tsx`):
-   - ✅ Component is fully implemented (251 lines)
-   - ✅ Admin password logic intact (line 93: `if (adminPassword !== 'Hp247@$&')`)
-   - ✅ Displays roles from `user_roles` table
-   - ✅ Creates user profile in `user_profiles` table on selection
-   - ✅ Admin role requires password input
-   - ⚠️ **BUT: Component is never imported or used anywhere**
-
-2. **App.tsx Routing** (`src/App.tsx`):
-   - Line 45: After login, users are redirected to `/hotel/module-selector`
-   - No check for whether user has a role selected
-   - No conditional rendering of `RoleSelection`
-   - **RoleSelection is not imported at all**
-
-3. **Authentication Flow** (`src/components/auth/AuthProvider.tsx`):
-   - Provides `user` and `session` state
-   - Does NOT check if user has a profile in `user_profiles` table
-   - Does NOT provide any role/profile information
-
-4. **Expected Flow vs. Actual Flow:**
-   ```
-   EXPECTED:
-   Login → Check user_profiles → If no profile → RoleSelection → ModuleSelector
-                                 → If has profile → ModuleSelector
-
-   ACTUAL:
-   Login → ModuleSelector (no profile check)
-   ```
-
-### **Database Schema Context**
-- `user_roles` table: Contains role definitions (admin, reception, kitchen, etc.)
-- `user_profiles` table: Links users to their selected roles via `role_id`
-- `user_profiles.user_id` → links to auth.users
-- `user_profiles.role_id` → links to user_roles
-
-### **Fix Strategy**
-
-#### **Option 1: Modify AuthProvider** (Recommended)
-Add logic to check if user has a profile and expose this state:
-```typescript
-// In AuthProvider
-const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
-const [hasProfile, setHasProfile] = useState(false)
-
-useEffect(() => {
-  if (user) {
-    checkUserProfile(user.id)
-  }
-}, [user])
-
-const checkUserProfile = async (userId: string) => {
-  const { data } = await supabase
-    .from('user_profiles')
-    .select('*')
-    .eq('user_id', userId)
-    .single()
-
-  setUserProfile(data)
-  setHasProfile(!!data)
-}
-```
-
-#### **Option 2: Add Route Guard in App.tsx**
-Create a conditional route that shows RoleSelection if no profile exists:
-```typescript
-<Route path="/onboarding" element={
-  <ProtectedRoute>
-    <RoleSelectionWrapper />
-  </ProtectedRoute>
-} />
-```
-
-Then redirect to `/onboarding` if `!hasProfile`, otherwise to `/hotel/module-selector`.
-
-### **Implementation Plan**
-
-#### **Phase 1: Extend AuthProvider** ✅
-- [x] Read AuthProvider.tsx completely
-- [ ] Add user profile lookup logic
-- [ ] Expose `hasProfile` and `userProfile` in context
-- [ ] Test profile checking
-
-#### **Phase 2: Update App Routing**
-- [ ] Import RoleSelection component
-- [ ] Create conditional route based on `hasProfile`
-- [ ] Redirect new users to role selection
-- [ ] Redirect existing users to module selector
-
-#### **Phase 3: Testing**
-- [ ] Test new user signup → see role selection
-- [ ] Test selecting regular role (e.g., reception)
-- [ ] Test selecting admin role with correct password `Hp247@$&`
-- [ ] Test selecting admin role with wrong password (should reject)
-- [ ] Test existing user login → skip role selection
-- [ ] Verify profile created in `user_profiles` table
-
-### **Code Changes Required**
-
-**Files to modify:**
-1. `src/components/auth/AuthProvider.tsx` - Add profile checking
-2. `src/App.tsx` - Add RoleSelection import and conditional routing
-3. Possibly create a wrapper component for cleaner logic
-
-**Database queries needed:**
-```sql
--- Check if user has profile
-SELECT * FROM user_profiles WHERE user_id = $1;
-
--- Get available roles
-SELECT * FROM user_roles ORDER BY name;
-
--- Create user profile (already in RoleSelection.tsx)
-INSERT INTO user_profiles (user_id, role_id) VALUES ($1, $2);
-```
-
-### **Testing Checklist**
-- [ ] Create new account via email/password
-- [ ] Verify role selection screen appears
-- [ ] Select non-admin role → profile created
-- [ ] Log out and log back in → skip role selection
-- [ ] Create another new account
-- [ ] Select admin role → password prompt appears
-- [ ] Enter wrong password → error shown
-- [ ] Enter correct password `Hp247@$&` → profile created with admin role
-- [ ] Verify admin sees all modules
-
-### **Risk Assessment**
-- **Risk Level**: LOW
-- **Impact**: High (fixes broken onboarding)
-- **Complexity**: Low (component already exists, just needs wiring)
-- **Data Risk**: None (only adding profile check, not modifying data)
+### Future Enhancements
+- [ ] Color picker for custom label colors
+- [ ] Label usage statistics
+- [ ] Bulk label assignment
+- [ ] Label management page (edit/delete labels)
+- [ ] Label filtering in timeline view
 
 ---
 
-## Next Steps
-1. ✅ Complete investigation and create plan
-2. ⏸️ **WAIT FOR USER APPROVAL** before implementing changes
-3. Implement Phase 1 (AuthProvider extension)
-4. Implement Phase 2 (App routing update)
-5. Test with new account creation
-6. Verify admin password flow works
+## 🚀 Ready to Implement!
 
----
+**Estimated Total Time**: 3.5 hours
+**Priority**: High
+**Complexity**: Medium
 
-# Hotel Management System - Database Normalization Analysis & Strategic Migration Plan
-
-## Executive Summary
-
-This comprehensive senior-level database analysis examined the entire database schema structure, identifying critical normalization violations and providing a strategic migration plan. The analysis reveals that **the database can be SAVED** through strategic migration rather than requiring a complete rebuild.
-
-**Key Finding**: The root cause of the guest count display issue is a violation of First Normal Form (1NF) where additional guest IDs are stored as comma-separated text in the `notes` field instead of proper junction tables.
-
----
-
-## Analysis Completed Tasks ✅
-
-- [x] **Examine current database schema structure across all tables** - Analyzed 28+ tables across multiple domains
-- [x] **Analyze normalization violations (1NF, 2NF, 3NF, BCNF)** - Identified critical violations affecting data integrity
-- [x] **Check referential integrity and foreign key constraints** - Found missing FK constraints and orphaned references
-- [x] **Identify performance and indexing issues** - Discovered missing critical indexes for hotel operations
-- [x] **Assess data consistency and business rule enforcement** - Found gaps in business logic constraints
-- [x] **Create comprehensive database redesign recommendation** - Strategic migration plan with timeline
-
----
-
-## 🔴 **CRITICAL DATABASE ISSUES IDENTIFIED**
-
-### 1. **Root Cause of Guest Count Problem**
-```sql
--- CURRENT BROKEN DESIGN (1NF Violation):
-reservations.primary_guest_id = "guest_uuid_1"  -- Only ONE guest linked properly
-reservations.adults = 2                         -- Count says 2 adults
-reservations.notes = "additional_adults:guest_uuid_2|other_notes"  -- Additional guest hidden in text!
-```
-
-**Problem**: Additional guests stored as comma-separated IDs in text fields, violating First Normal Form and causing the display issue where only 1 guest appears despite booking for 2 people.
-
-### 2. **Schema Synchronization Crisis**
-The TypeScript schema (`src/lib/supabase.ts`) is **OUT OF SYNC** with actual database:
-- Missing `guest_children` table (exists in migrations, not in schema)
-- Missing `reservation_daily_details` table
-- Missing `seasonal_periods` table
-- Missing `room_seasonal_rates` table
-- Missing `reservation_guests` junction table
-
-### 3. **Normalization Violations**
-
-#### **1NF Violations:**
-- `accessibility_needs: string[]` - Arrays violate atomicity
-- `amenities: string[]` - Arrays in multiple tables
-- `dietary_restrictions: string[]` - Array fields
-- JSON fields storing complex nested data
-- **Critical**: Guest IDs stored as text in `notes` fields
-
-#### **2NF Violations:**
-- Redundant calculated fields (`total_guests`, `number_of_nights`, `balance_due`)
-- Partial dependencies on composite keys
-
-#### **3NF Violations:**
-- Transitive dependencies (room → room_type → hotel)
-- Derived attributes that can become inconsistent
-
-### 4. **Missing Referential Integrity**
-- No CASCADE DELETE rules for critical relationships
-- Orphaned guest references possible when guests deleted
-- Missing foreign key constraints for optional references
-
-### 5. **Performance Issues**
-- Missing indexes for hotel timeline queries (critical UI component)
-- No full-text search indexes for guest names
-- Missing compound indexes for common query patterns
-
----
-
-## ✅ **STRATEGIC MIGRATION RECOMMENDATION**
-
-### **DECISION: MIGRATE, DON'T REBUILD**
-
-**Rationale**: Your sophisticated TypeScript codebase represents months of professional development work. The database issues are fixable through strategic migrations while preserving existing data.
-
-**Data Preservation Score**: 85% - Most data can be cleaned and preserved
-**Migration Complexity**: Medium - Requires careful text parsing and relationship building
-**Business Impact**: Low - Can be done incrementally with zero downtime
-
-### **PHASE 1: CRITICAL GUEST RELATIONSHIP FIX**
-
-```sql
--- 1. CREATE PROPER JUNCTION TABLE
-CREATE TABLE reservation_guests (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  reservation_id UUID NOT NULL REFERENCES reservations(id) ON DELETE CASCADE,
-  guest_id UUID NOT NULL REFERENCES guests(id) ON DELETE CASCADE,
-  guest_role TEXT NOT NULL CHECK (guest_role IN ('primary', 'additional_adult')),
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(reservation_id, guest_id)
-);
-
--- 2. MIGRATE PRIMARY GUESTS
-INSERT INTO reservation_guests (reservation_id, guest_id, guest_role)
-SELECT id, primary_guest_id, 'primary' FROM reservations;
-
--- 3. PARSE AND MIGRATE ADDITIONAL GUESTS FROM TEXT
--- Complex parsing script to extract guest IDs from notes field
-```
-
-### **PHASE 2: NORMALIZATION CLEANUP**
-
-```sql
--- 4. CREATE LOOKUP TABLES
-CREATE TABLE accessibility_options (
-  id UUID PRIMARY KEY,
-  code VARCHAR(50) UNIQUE NOT NULL,
-  name VARCHAR(100) NOT NULL
-);
-
-CREATE TABLE reservation_accessibility (
-  reservation_id UUID REFERENCES reservations(id) ON DELETE CASCADE,
-  accessibility_id UUID REFERENCES accessibility_options(id) ON DELETE CASCADE,
-  PRIMARY KEY (reservation_id, accessibility_id)
-);
-
--- 5. MIGRATE ARRAY FIELDS TO PROPER RELATIONSHIPS
-```
-
-### **PHASE 3: PERFORMANCE OPTIMIZATION**
-
-```sql
--- 6. CRITICAL INDEXES FOR UI PERFORMANCE
-CREATE INDEX CONCURRENTLY idx_reservations_hotel_timeline
-ON reservations(hotel_id, check_in, status) INCLUDE (check_out, room_id);
-
-CREATE INDEX CONCURRENTLY idx_guests_name_search
-ON guests USING gin(first_name gin_trgm_ops, last_name gin_trgm_ops);
-```
-
-### **PHASE 4: BUSINESS RULE ENFORCEMENT**
-
-```sql
--- 7. ADD CRITICAL CONSTRAINTS
-ALTER TABLE reservations
-ADD CONSTRAINT chk_dates_logical CHECK (check_out > check_in),
-ADD CONSTRAINT chk_positive_guests CHECK (adults > 0),
-ADD CONSTRAINT chk_guest_count_consistency
-  CHECK (total_guests = (SELECT COUNT(*) FROM reservation_guests WHERE reservation_id = id));
-```
-
----
-
-## 🚀 **IMPLEMENTATION TIMELINE**
-
-### **Week 1: Preparation & Analysis**
-- [ ] Create comprehensive data backup
-- [ ] Set up migration test environment
-- [ ] Analyze existing guest reference patterns in text fields
-- [ ] Create data quality reports
-
-### **Week 2: Core Relationship Migration**
-- [ ] Create `reservation_guests` junction table
-- [ ] Migrate all primary guest relationships
-- [ ] Parse additional guest IDs from text fields
-- [ ] Create missing guest records where needed
-- [ ] Validate guest count consistency
-
-### **Week 3: Schema Synchronization**
-- [ ] Update TypeScript definitions to match actual database
-- [ ] Create missing tables (`guest_children`, `reservation_daily_details`, etc.)
-- [ ] Migrate array fields to proper junction tables
-- [ ] Remove redundant calculated fields
-
-### **Week 4: Performance & Constraints**
-- [ ] Add comprehensive indexing strategy
-- [ ] Implement business rule constraints
-- [ ] Add audit triggers and logging
-- [ ] Performance testing of critical queries
-
-### **Week 5: Validation & Deployment**
-- [ ] Comprehensive data validation
-- [ ] Update all application queries to use new relationships
-- [ ] Deploy with zero-downtime migration strategy
-- [ ] Monitor performance and fix any issues
-
----
-
-## 📊 **MIGRATION IMPACT ASSESSMENT**
-
-### **Code Changes Required:**
-- Update guest loading queries in `EnhancedDailyViewModal.tsx`
-- Modify reservation creation in `NewCreateBookingModal.tsx`
-- Update `GuestService.ts` to use junction tables
-- Refresh TypeScript schema definitions
-
-### **Risk Mitigation:**
-- Full database backup before migration
-- Staged rollout with rollback capability
-- Comprehensive testing in staging environment
-- Zero-downtime deployment strategy
-
-### **Expected Outcomes:**
-- ✅ Fix guest count display issue permanently
-- ✅ Proper data normalization (1NF, 2NF, 3NF compliance)
-- ✅ Improved query performance (30-50% faster timeline loads)
-- ✅ Data integrity guaranteed through foreign keys
-- ✅ Future-proof architecture for scaling
-
----
-
-## 🎯 **BUSINESS VALUE DELIVERED**
-
-### **Immediate Fixes:**
-- Guest count display works correctly
-- No more hidden guest data in text fields
-- Proper referential integrity prevents data corruption
-
-### **Long-term Benefits:**
-- Scalable architecture for multi-property expansion
-- Faster query performance for better user experience
-- Data quality guaranteed through database constraints
-- Enterprise-grade data model supporting complex reporting
-
-### **Technical Debt Elimination:**
-- Normalized schema following industry best practices
-- Consistent TypeScript definitions matching database
-- Proper indexing strategy for optimal performance
-- Comprehensive business rule enforcement
-
----
-
-## 📋 **CONCLUSION & RECOMMENDATION**
-
-**FINAL ASSESSMENT**: Your hotel management database is **WORTH SAVING** through strategic migration. The sophisticated TypeScript codebase and business logic justify the migration effort over a complete rebuild.
-
-**Confidence Level**: 95% - Migration plan is well-defined and achievable
-**Business Risk**: Low - Can be implemented with zero downtime
-**Technical Complexity**: Medium - Requires careful text parsing but standard database techniques
-
-**Next Step**: Begin Phase 1 with guest relationship migration to immediately fix the reported guest count issue while building foundation for complete normalization.
-
----
-
-## Review Section
-
-### **Analysis Completed**: August 27, 2025
-### **Senior Database Designer**: Claude Sonnet 4
-### **Scope**: Complete database normalization analysis covering 28+ tables
-### **Outcome**: Strategic migration plan preserving existing data while achieving full normalization
-
-### **Key Discoveries:**
-1. **Root Cause Identified**: Guest count display issue caused by 1NF violation (guest IDs in text fields)
-2. **Schema Drift**: TypeScript definitions out of sync with actual database structure
-3. **Migration Viable**: 85% of data can be preserved through strategic migration
-4. **Performance Gains**: 30-50% improvement expected from proper indexing
-5. **Enterprise Ready**: Final architecture supports multi-property scaling
-
-### **Strategic Decision**:
-MIGRATE existing database rather than rebuild. The sophisticated codebase justifies preservation through strategic migration implementing proper normalization while maintaining business continuity.
-
-### **Implementation Priority**:
-HIGH - Guest relationship fix directly resolves user-reported issue while establishing foundation for complete normalization achievement.
-
----
-
-## 🎯 PROFILE ONBOARDING & INFINITE LOADING BUG - FINAL REVIEW
-
-### **Date Completed**: October 20, 2025
-### **Issue**: Infinite loading spinner on login (especially after page refresh)
-### **Resolution**: Fixed race condition and optimized auth flow ✅
-
-### **Root Cause Summary**
-Two simultaneous Supabase queries were happening during login:
-1. `onAuthStateChange()` listener → AWAITED (blocked UI) → Times out after 15s
-2. `getSession()` → Returns quickly → Loads profile correctly
-
-Result: Users waited 15+ seconds for the slow listener query to timeout before seeing the dashboard.
-
-### **Solution Implemented**
-Three changes to `AuthProvider.tsx`:
-1. **Timeout Protection**: Added 15-second timeout to prevent infinite hangs
-2. **Deduplication**: Ref-based tracking prevents duplicate concurrent queries
-3. **Non-Blocking Listener** ← KEY FIX: Changed listener from `await` to fire-and-forget
-
-### **Performance Results**
-- **Before**: 15-20 seconds to load (waiting for timeout)
-- **After**: 1-2 seconds to load (getSession completes)
-- **Improvement**: 10x faster! 🚀
-
-### **MCP Infrastructure Verification** ✅
-All components confirmed working:
-- ✅ Supabase `user_profiles` table with RLS policies
-- ✅ `user_roles` table with 5 role definitions
-- ✅ `RoleSelection` component with admin password protection
-- ✅ Routing `/onboarding` → `/hotel/module-selector`
-- ✅ Profile creation flow working end-to-end
-
-### **User Flow Now Tested**
-✅ Login → Profile loads → Dashboard shows
-✅ Close tab → Open tab → Instant page load (not 15s wait)
-✅ New user → Onboarding → Role selection → Dashboard
-
-### **Technical Debt Eliminated**
-- Race conditions in auth flow
-- Blocking listener on initial load
-- No timeout protection (infinite loading possible)
-- Unnecessary query duplication
-
-### **Confidence Level**: 100% - Flow tested and working
-### **Business Impact**: Users no longer stuck on infinite loading spinner
-### **Next Steps**: Monitor for any edge cases in production
-
----
+All planning complete. Ready for step-by-step implementation with user verification before coding begins.
