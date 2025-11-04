@@ -7,9 +7,9 @@ import { gsap } from 'gsap';
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import { Button } from '../../ui/button';
 import { Badge } from '../../ui/badge';
-import { 
-  ChevronLeft, 
-  ChevronRight, 
+import {
+  ChevronLeft,
+  ChevronRight,
   Calendar as CalendarIcon,
   Users,
   Baby,
@@ -26,6 +26,7 @@ import {
   Square,
   ArrowLeftRight,
   BarChart3,
+  RefreshCw,
 
 } from 'lucide-react';
 import { useHotel } from '../../../lib/hotel/state/SupabaseHotelContext';
@@ -510,6 +511,7 @@ function ReservationBlock({
     item: {
       reservationId: reservation.id,
       currentRoomId: room.id,
+      currentRoomFloor: room.floor,
       checkIn: reservation.checkIn,
       checkOut: reservation.checkOut,
       guestName: guest?.fullName || 'Guest',
@@ -1457,43 +1459,53 @@ function DroppableDateCell({
         originalCheckIn: item.checkIn,
         originalCheckOut: item.checkOut
       });
-      
-      const originalDuration = Math.ceil((item.checkOut.getTime() - item.checkIn.getTime()) / (24 * 60 * 60 * 1000));
-      
-      if (isSecondHalf) {
-        // CONSTRAINT: PM cells only accept check-in (left edge of reservation)
-        const newCheckIn = new Date(date);
-        newCheckIn.setHours(15, 0, 0, 0); // 3:00 PM check-in
-        
-        const newCheckOut = addDays(newCheckIn, originalDuration);
-        newCheckOut.setHours(11, 0, 0, 0); // 11:00 AM check-out
-        
-        console.log('📞 CALLING onMoveReservation (PM):', {
-          reservationId: item.reservationId,
-          roomId: room.id,
-          newCheckIn,
-          newCheckOut,
-          functionName: onMoveReservation.name || 'anonymous'
-        });
-        
-        onMoveReservation(item.reservationId, room.id, newCheckIn, newCheckOut);
+
+      // Check if this is an allocation from Floor 5 (virtual room)
+      const isAllocationFromFloor5 = item.currentRoomFloor === 5;
+
+      if (isAllocationFromFloor5) {
+        // ALLOCATION: Keep original dates, just change the room
+        console.log('🎯 ALLOCATION DROP: Preserving original dates from Floor 5');
+        onMoveReservation(item.reservationId, room.id, item.checkIn, item.checkOut);
       } else {
-        // CONSTRAINT: AM cells only accept check-out (right edge of reservation)
-        const newCheckOut = new Date(date);
-        newCheckOut.setHours(11, 0, 0, 0); // 11:00 AM check-out
-        
-        const newCheckIn = addDays(newCheckOut, -originalDuration);
-        newCheckIn.setHours(15, 0, 0, 0); // 3:00 PM check-in (duration days before)
-        
-        console.log('📞 CALLING onMoveReservation (AM):', {
-          reservationId: item.reservationId,
-          roomId: room.id,
-          newCheckIn,
-          newCheckOut,
-          functionName: onMoveReservation.name || 'anonymous'
-        });
-        
-        onMoveReservation(item.reservationId, room.id, newCheckIn, newCheckOut);
+        // REGULAR MOVE: Recalculate dates based on drop position
+        const originalDuration = Math.ceil((item.checkOut.getTime() - item.checkIn.getTime()) / (24 * 60 * 60 * 1000));
+
+        if (isSecondHalf) {
+          // CONSTRAINT: PM cells only accept check-in (left edge of reservation)
+          const newCheckIn = new Date(date);
+          newCheckIn.setHours(15, 0, 0, 0); // 3:00 PM check-in
+
+          const newCheckOut = addDays(newCheckIn, originalDuration);
+          newCheckOut.setHours(11, 0, 0, 0); // 11:00 AM check-out
+
+          console.log('📞 CALLING onMoveReservation (PM):', {
+            reservationId: item.reservationId,
+            roomId: room.id,
+            newCheckIn,
+            newCheckOut,
+            functionName: onMoveReservation.name || 'anonymous'
+          });
+
+          onMoveReservation(item.reservationId, room.id, newCheckIn, newCheckOut);
+        } else {
+          // CONSTRAINT: AM cells only accept check-out (right edge of reservation)
+          const newCheckOut = new Date(date);
+          newCheckOut.setHours(11, 0, 0, 0); // 11:00 AM check-out
+
+          const newCheckIn = addDays(newCheckOut, -originalDuration);
+          newCheckIn.setHours(15, 0, 0, 0); // 3:00 PM check-in (duration days before)
+
+          console.log('📞 CALLING onMoveReservation (AM):', {
+            reservationId: item.reservationId,
+            roomId: room.id,
+            newCheckIn,
+            newCheckOut,
+            functionName: onMoveReservation.name || 'anonymous'
+          });
+
+          onMoveReservation(item.reservationId, room.id, newCheckIn, newCheckOut);
+        }
       }
     },
     canDrop: (item: any) => {
@@ -1513,19 +1525,7 @@ function DroppableDateCell({
       const isValidDropZone = true; // For now, allow both - we'll handle logic in drop
       
       const canDropHere = !hasExistingReservation && !isSamePosition && isValidDropZone;
-      
-      console.log('🎯 CAN DROP CHECK:', {
-        reservationId: item.reservationId,
-        room: room.number,
-        date: date.toLocaleDateString(),
-        isSecondHalf,
-        hasExistingReservation,
-        isSamePosition,
-        isValidDropZone,
-        canDropHere,
-        existingReservationsCount: existingReservations.length
-      });
-      
+
       return canDropHere;
     },
     collect: (monitor) => ({
@@ -2380,7 +2380,7 @@ function RoomOverviewFloorSection({
 
 // Main timeline component
 export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen }: HotelTimelineProps) {
-  const { reservations, rooms, guests, isUpdating, createReservation, createGuest, updateReservation, updateReservationStatus, deleteReservation } = useHotel();
+  const { reservations, rooms, guests, isUpdating, createReservation, createGuest, updateReservation, updateReservationStatus, deleteReservation, refreshData } = useHotel();
 
   // Simple drag-create functionality
   const dragCreate = useSimpleDragCreate();
@@ -2636,6 +2636,60 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
         guestId: reservation.guestId
       });
 
+      // Check if this is an allocation (moving from virtual room to real room)
+      const oldRoom = rooms.find(r => r.id === reservation.roomId);
+      const newRoom = rooms.find(r => r.id === newRoomId);
+
+      if (!oldRoom || !newRoom) {
+        throw new Error('Room not found');
+      }
+
+      const isVirtualToReal = virtualRoomService.isVirtualRoom(oldRoom) && !virtualRoomService.isVirtualRoom(newRoom);
+
+      // Prepare guest data for allocation if moving from virtual room
+      let allocationGuestData: any = undefined;
+
+      if (isVirtualToReal) {
+        console.log('🎯 ALLOCATION: Preparing allocation from virtual room to real room...', {
+          reservationId,
+          oldRoomId: oldRoom.id,
+          oldRoomNumber: oldRoom.number,
+          newRoomId: newRoom.id,
+          newRoomNumber: newRoom.number,
+          guestId: reservation.guestId
+        });
+
+        // Get the guest associated with this reservation
+        const guest = guests.find(g => g.id === reservation.guestId);
+
+        if (!guest) {
+          console.error('❌ ALLOCATION: Guest not found!', {
+            reservationId,
+            guestId: reservation.guestId
+          });
+          hotelNotification.error('Allocation Failed', 'Guest not found for reservation');
+          return;
+        }
+
+        // Parse actual guest name from placeholder format
+        // Placeholder: first_name="Unallocated", last_name="Actual Name"
+        const actualName = guest.lastName; // "Matija Sokol"
+        const nameParts = actualName.trim().split(/\s+/);
+        const actualFirstName = nameParts[0] || 'Guest';
+        const actualLastName = nameParts.slice(1).join(' ') || actualFirstName;
+
+        allocationGuestData = {
+          firstName: actualFirstName,
+          lastName: actualLastName,
+          email: guest.email || undefined,
+          phone: guest.phone || undefined,
+          nationality: guest.nationality || undefined,
+          dateOfBirth: guest.dateOfBirth ? new Date(guest.dateOfBirth) : undefined
+        };
+
+        console.log('📦 ALLOCATION: Prepared guest data for allocation');
+      }
+
       // FAST conflict detection using local data (no database calls)
       console.log('⚡ DRAG-DROP: Using instant local conflict detection...');
       const conflictResult = await basicRoomAvailabilityCheck(reservationId, newRoomId, newCheckIn, newCheckOut);
@@ -2663,12 +2717,6 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
       console.log('📍 DRAG-DROP: Past conflict detection, proceeding with move...');
 
       const guest = guests.find(g => g.id === reservation.guestId);
-      const newRoom = rooms.find(r => r.id === newRoomId);
-      const oldRoom = rooms.find(r => r.id === reservation.roomId);
-
-      if (!newRoom || !oldRoom) {
-        throw new Error('Room not found');
-      }
 
       // Check if room type is changing
       const isRoomTypeChange = oldRoom.type !== newRoom.type;
@@ -2687,48 +2735,91 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
 
       // If no room type change, proceed with optimistic updates for instant visual feedback
       console.log('🔄 DRAG-DROP: Starting optimistic update with data:', updatedReservationData);
-      
+
       const { OptimisticUpdateService } = await import('../../../lib/hotel/services/OptimisticUpdateService');
       const optimisticService = OptimisticUpdateService.getInstance();
-      
-      console.log('🚀 DRAG-DROP: Calling optimisticMoveReservation...');
-      const result = await optimisticService.optimisticMoveReservation(
-        reservationId,
-        reservation,
-        newRoomId,
-        newCheckIn,
-        newCheckOut,
-        updateReservationInState,
-        async () => {
-          console.log('📡 DRAG-DROP: About to call updateReservation with:', { reservationId, updatedReservationData });
-          const updateResult = await updateReservation(reservationId, updatedReservationData);
-          console.log('✅ DRAG-DROP: updateReservation completed:', updateResult);
-          return updateResult;
-        }
-      );
+
+      let result: { success: boolean; error?: string };
+
+      if (isVirtualToReal) {
+        // For allocations, use optimisticUpdateReservation to properly handle status change
+        console.log('🚀 ALLOCATION: Calling optimisticUpdateReservation with status change...');
+        const allocationUpdates = {
+          roomId: newRoomId,
+          checkIn: newCheckIn,
+          checkOut: newCheckOut,
+          status: 'confirmed' as any
+        };
+
+        result = await optimisticService.optimisticUpdateReservation(
+          reservationId,
+          reservation,
+          allocationUpdates,
+          updateReservationInState,
+          async () => {
+            console.log('📡 ALLOCATION: Calling convertToRealReservation...');
+            const allocationResult = await virtualRoomService.convertToRealReservation(
+              reservationId,
+              newRoomId,
+              allocationGuestData!
+            );
+
+            if (!allocationResult.success) {
+              throw new Error(allocationResult.error || 'Allocation failed');
+            }
+
+            console.log('✅ ALLOCATION: convertToRealReservation completed successfully');
+          }
+        );
+      } else {
+        // For regular moves, use optimisticMoveReservation
+        console.log('🚀 DRAG-DROP: Calling optimisticMoveReservation...');
+        result = await optimisticService.optimisticMoveReservation(
+          reservationId,
+          reservation,
+          newRoomId,
+          newCheckIn,
+          newCheckOut,
+          updateReservationInState,
+          async () => {
+            console.log('📡 DRAG-DROP: About to call updateReservation with:', { reservationId, updatedReservationData });
+            await updateReservation(reservationId, updatedReservationData);
+            console.log('✅ DRAG-DROP: updateReservation completed');
+          }
+        );
+      }
       
       console.log('📊 DRAG-DROP: OptimisticUpdateService result:', result);
 
       if (!result.success) {
         console.error('❌ DRAG-DROP: OptimisticUpdateService failed:', result.error);
+        const errorTitle = isVirtualToReal ? 'Allocation Failed' : 'Move Failed';
         hotelNotification.error(
-          'Move Failed',
-          result.error || 'Failed to move reservation. Please try again.',
+          errorTitle,
+          result.error || 'Failed to complete operation. Please try again.',
           4
         );
         return;
       }
 
-      const successMessage = `${guest?.fullName || 'Guest'} moved from ${formatRoomNumber(oldRoom)} to ${formatRoomNumber(newRoom)} • ${newCheckIn.toLocaleDateString()} - ${newCheckOut.toLocaleDateString()}`;
-
-      console.log('🎉 DRAG-DROP: Move successful! Showing notification:', successMessage);
-      
-      // Show success notification
-      hotelNotification.success(
-        'Reservation Moved Successfully!',
-        successMessage,
-        5
-      );
+      // Different success messages for allocation vs move
+      if (isVirtualToReal) {
+        const successMessage = `${guest?.fullName || 'Guest'} allocated to ${formatRoomNumber(newRoom)} • ${newCheckIn.toLocaleDateString()} - ${newCheckOut.toLocaleDateString()}`;
+        console.log('🎉 ALLOCATION: Allocation successful! Showing notification:', successMessage);
+        hotelNotification.success(
+          'Reservation Allocated!',
+          successMessage,
+          5
+        );
+      } else {
+        const successMessage = `${guest?.fullName || 'Guest'} moved from ${formatRoomNumber(oldRoom)} to ${formatRoomNumber(newRoom)} • ${newCheckIn.toLocaleDateString()} - ${newCheckOut.toLocaleDateString()}`;
+        console.log('🎉 DRAG-DROP: Move successful! Showing notification:', successMessage);
+        hotelNotification.success(
+          'Reservation Moved Successfully!',
+          successMessage,
+          5
+        );
+      }
 
     } catch (error) {
       console.error('Error moving reservation:', error);
@@ -3211,8 +3302,8 @@ Room Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item
               {isExpansionMode ? 'Exit Expand Mode' : 'Expand Reservations'}
             </Button>
             
-            <Button 
-              variant={isMoveMode ? "default" : "outline"} 
+            <Button
+              variant={isMoveMode ? "default" : "outline"}
               onClick={toggleMoveMode}
               className={`transition-all duration-200 ${isMoveMode ? "bg-purple-600 hover:bg-purple-700 text-white shadow-lg" : "hover:bg-purple-50"}`}
               title={isMoveMode ? 'Click to exit move mode' : 'Show drag handles and move controls on reservations'}
@@ -3220,6 +3311,26 @@ Room Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item
               {isMoveMode ? <Square className="h-4 w-4" /> : <Move className="h-4 w-4" />}
               {isMoveMode ? 'Exit Move Mode' : 'Move Reservations'}
             </Button>
+
+            <Button
+              variant="outline"
+              onClick={async () => {
+                try {
+                  hotelNotification.info('Refreshing Data', 'Loading latest reservations...', 2);
+                  await refreshData();
+                  hotelNotification.success('Data Refreshed', 'All reservations and rooms updated successfully', 3);
+                } catch (error) {
+                  console.error('Failed to refresh data:', error);
+                  hotelNotification.error('Refresh Failed', 'Unable to refresh data. Please try again.', 4);
+                }
+              }}
+              disabled={isUpdating}
+              title="Refresh all data from server"
+            >
+              <RefreshCw className={`h-4 w-4 ${isUpdating ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+
             {onToggleFullscreen && (
               <Button variant="outline" onClick={onToggleFullscreen}>
                 {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
@@ -3373,35 +3484,37 @@ Room Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map(item
                 />
               ))}
 
-            {/* Unallocated Rooms Section (only show if there are active reservations) */}
+            {/* Unallocated Rooms Section (sticky at bottom for easy drag-drop) */}
             {virtualRoomsWithReservations.length > 0 && (
-              <FloorSection
-                key="timeline-unallocated"
-                floor={5}
-                rooms={virtualRoomsWithReservations}
-                reservations={localReservations}
-                guests={guests}
-                startDate={currentDate}
-                isExpanded={expandedFloors[5]}
-                onToggle={() => toggleFloor(5)}
-                onReservationClick={handleReservationClick}
-                onMoveReservation={handleMoveReservation}
-                isFullscreen={isFullscreen}
-                onUpdateReservationStatus={updateReservationStatus}
-                onDeleteReservation={deleteReservation}
-                isDragCreateMode={dragCreate.state.isEnabled}
-                isDragCreating={dragCreate.state.isSelecting}
-                isExpansionMode={isExpansionMode}
-                isMoveMode={isMoveMode}
-                onResizeReservation={handleResizeReservation}
-                onShowDrinksModal={handleShowDrinksModalWrapper}
-                calculateContextMenuPosition={calculateContextMenuPosition}
-                onCellClick={handleDragCreateCellClick}
-                shouldHighlightCell={dragCreate.shouldHighlightCell}
-                dragCreate={dragCreate}
-                onShowExpandedDailyView={handleShowExpandedDailyView}
-                cellRefs={cellRefs.current}
-              />
+              <div className="sticky bottom-0 z-20 bg-white dark:bg-gray-900 border-t-4 border-blue-500 shadow-2xl">
+                <FloorSection
+                  key="timeline-unallocated"
+                  floor={5}
+                  rooms={virtualRoomsWithReservations}
+                  reservations={localReservations}
+                  guests={guests}
+                  startDate={currentDate}
+                  isExpanded={expandedFloors[5]}
+                  onToggle={() => toggleFloor(5)}
+                  onReservationClick={handleReservationClick}
+                  onMoveReservation={handleMoveReservation}
+                  isFullscreen={isFullscreen}
+                  onUpdateReservationStatus={updateReservationStatus}
+                  onDeleteReservation={deleteReservation}
+                  isDragCreateMode={dragCreate.state.isEnabled}
+                  isDragCreating={dragCreate.state.isSelecting}
+                  isExpansionMode={isExpansionMode}
+                  isMoveMode={isMoveMode}
+                  onResizeReservation={handleResizeReservation}
+                  onShowDrinksModal={handleShowDrinksModalWrapper}
+                  calculateContextMenuPosition={calculateContextMenuPosition}
+                  onCellClick={handleDragCreateCellClick}
+                  shouldHighlightCell={dragCreate.shouldHighlightCell}
+                  dragCreate={dragCreate}
+                  onShowExpandedDailyView={handleShowExpandedDailyView}
+                  cellRefs={cellRefs.current}
+                />
+              </div>
             )}
           </div>
           
