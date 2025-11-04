@@ -1,7 +1,7 @@
 // ReservationPopup - Simplified UI-only component using services and hooks
 // Reduced from 810 lines to ~400 lines with clean architecture
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -30,13 +30,16 @@ import {
   Send,
   Receipt,
   Printer,
-  Download
+  Download,
+  Building2
 } from 'lucide-react';
-import { CalendarEvent } from '../../../../lib/hotel/types';
+import { CalendarEvent, Company } from '../../../../lib/hotel/types';
 import { useReservationState } from '../../../../lib/hotel/hooks/useReservationState';
 import PaymentDetailsModal from './PaymentDetailsModal';
 import CheckInWorkflow from '../CheckInOut/CheckInWorkflow';
 import CheckOutWorkflow from '../CheckInOut/CheckOutWorkflow';
+import { supabase } from '../../../../lib/supabase';
+import { convertToDisplayName } from '../../../../lib/hotel/countryCodeUtils';
 
 interface ReservationPopupProps {
   isOpen: boolean;
@@ -80,6 +83,62 @@ export default function ReservationPopup({
     // Direct state updates
     updateState
   } = useReservationState(event, onClose, onStatusChange);
+
+  // State for company data (R1 billing)
+  const [company, setCompany] = useState<Company | null>(null);
+  const [loadingCompany, setLoadingCompany] = useState(false);
+
+  // Fetch company data if this is an R1 reservation
+  useEffect(() => {
+    const fetchCompanyData = async () => {
+      if (!reservationData) return;
+
+      const res = reservationData.reservation as any;
+      if (res.is_r1 && res.company_id) {
+        setLoadingCompany(true);
+        try {
+          const { data: companyData, error } = await supabase
+            .from('companies')
+            .select('*')
+            .eq('id', res.company_id)
+            .single();
+
+          if (error) {
+            console.error('Error fetching company:', error);
+          } else if (companyData) {
+            // Transform to Company type
+            setCompany({
+              id: companyData.id,
+              name: companyData.name,
+              oib: companyData.oib,
+              address: {
+                street: companyData.address,
+                city: companyData.city,
+                postalCode: companyData.postal_code,
+                country: companyData.country
+              },
+              contactPerson: companyData.contact_person,
+              email: companyData.email,
+              phone: companyData.phone,
+              fax: companyData.fax,
+              pricingTierId: companyData.pricing_tier_id,
+              roomAllocationGuarantee: companyData.room_allocation_guarantee,
+              isActive: companyData.is_active,
+              notes: companyData.notes,
+              createdAt: companyData.created_at,
+              updatedAt: companyData.updated_at
+            });
+          }
+        } catch (error) {
+          console.error('Error loading company data:', error);
+        } finally {
+          setLoadingCompany(false);
+        }
+      }
+    };
+
+    fetchCompanyData();
+  }, [reservationData]);
 
   if (!event) return null;
 
@@ -217,6 +276,83 @@ export default function ReservationPopup({
                   </div>
                 </div>
               </div>
+            )}
+
+            {/* Company Information (R1 Billing) */}
+            {company && (
+              <Card className="border-blue-200 bg-blue-50/30">
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Building2 className="h-5 w-5 text-blue-600" />
+                    <span>Company Billing (R1)</span>
+                    <Badge variant="outline" className="ml-2 bg-blue-100 text-blue-800 border-blue-300">
+                      Corporate
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-3">
+                      <div className="flex items-start space-x-2">
+                        <Building2 className="h-4 w-4 text-blue-600 mt-0.5" />
+                        <div>
+                          <p className="font-semibold text-gray-900">{company.name}</p>
+                          <p className="text-xs text-gray-500">Company Name</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start space-x-2">
+                        <FileText className="h-4 w-4 text-blue-600 mt-0.5" />
+                        <div>
+                          <p className="font-medium text-gray-900">{company.oib}</p>
+                          <p className="text-xs text-gray-500">OIB (Tax Number)</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start space-x-2">
+                        <MapPin className="h-4 w-4 text-blue-600 mt-0.5" />
+                        <div>
+                          <p className="text-sm text-gray-700">{company.address.street}</p>
+                          <p className="text-sm text-gray-700">
+                            {company.address.postalCode} {company.address.city}
+                          </p>
+                          <p className="text-sm text-gray-700">
+                            {convertToDisplayName(company.address.country)}
+                          </p>
+                          <p className="text-xs text-gray-500">Address</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      {company.contactPerson && (
+                        <div className="flex items-start space-x-2">
+                          <User className="h-4 w-4 text-blue-600 mt-0.5" />
+                          <div>
+                            <p className="text-sm text-gray-700">{company.contactPerson}</p>
+                            <p className="text-xs text-gray-500">Contact Person</p>
+                          </div>
+                        </div>
+                      )}
+                      {company.email && (
+                        <div className="flex items-start space-x-2">
+                          <Mail className="h-4 w-4 text-blue-600 mt-0.5" />
+                          <div>
+                            <p className="text-sm text-gray-700">{company.email}</p>
+                            <p className="text-xs text-gray-500">Email</p>
+                          </div>
+                        </div>
+                      )}
+                      {company.phone && (
+                        <div className="flex items-start space-x-2">
+                          <Phone className="h-4 w-4 text-blue-600 mt-0.5" />
+                          <div>
+                            <p className="text-sm text-gray-700">{company.phone}</p>
+                            <p className="text-xs text-gray-500">Phone</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             )}
 
             {/* Guest Information */}

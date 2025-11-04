@@ -8,6 +8,7 @@ import { X, Building2, Check, AlertCircle } from 'lucide-react';
 import { Company } from '../../../lib/hotel/types';
 import { useHotel } from '../../../lib/hotel/state/SupabaseHotelContext';
 import hotelNotification from '../../../lib/notifications';
+import { convertToCountryCode } from '../../../lib/hotel/countryCodeUtils';
 
 interface CreateCompanyModalProps {
   isOpen: boolean;
@@ -103,7 +104,7 @@ export default function CreateCompanyModal({ isOpen, onClose }: CreateCompanyMod
           street: formData.address,
           city: formData.city,
           postalCode: formData.postalCode,
-          country: formData.country
+          country: convertToCountryCode(formData.country) // Convert display name to ISO code
         },
         contactPerson: formData.contactPerson,
         email: formData.email,

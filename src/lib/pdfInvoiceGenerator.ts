@@ -1,8 +1,9 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { Reservation, Guest, Room, RoomServiceItem } from './hotel/types';
+import { Reservation, Guest, Room, RoomServiceItem, Company } from './hotel/types';
 import { format } from 'date-fns';
 import * as QRCode from 'qrcode';
+import { convertToDisplayName } from './hotel/countryCodeUtils';
 
 // Hotel Porec Contact Information (from HOTEL_MANAGEMENT_SPECS.md)
 const HOTEL_INFO = {
@@ -21,6 +22,7 @@ interface InvoiceData {
   room: Room;
   invoiceNumber: string;
   invoiceDate: Date;
+  company?: Company; // Company for R1 billing (optional)
   // Croatian Fiscal Receipt data
   jir?: string; // Jedinstveni identifikator računa (unique invoice identifier)
   zki?: string; // Zaštitni kod izdavatelja (security code of issuer)
@@ -74,17 +76,44 @@ export async function generatePDFInvoice(data: InvoiceData): Promise<void> {
   doc.text(`Invoice Date: ${format(invoiceDate, 'dd.MM.yyyy')}`, 20, 76);
   doc.text(`Booking Reference: ${reservation.id.substring(0, 8).toUpperCase()}`, 20, 82);
   
-  // Guest Information
+  // Billing Information - Show Company or Guest
   doc.setFontSize(12);
   doc.setTextColor(41, 98, 146);
-  doc.text('BILL TO:', 20, 95);
-  
-  doc.setFontSize(10);  
+  doc.text(data.company ? 'BILL TO (COMPANY - R1):' : 'BILL TO:', 20, 95);
+
+  doc.setFontSize(10);
   doc.setTextColor(0, 0, 0);
-  doc.text(guest.fullName, 20, 105);
-  doc.text(`Email: ${guest.email}`, 20, 111);
-  doc.text(`Phone: ${guest.phone}`, 20, 117);
-  doc.text(`Nationality: ${guest.nationality}`, 20, 123);
+
+  if (data.company) {
+    // Company billing (R1)
+    doc.text(data.company.name, 20, 105);
+    doc.text(`OIB: ${data.company.oib}`, 20, 111);
+    doc.text(data.company.address.street, 20, 117);
+    const countryName = convertToDisplayName(data.company.address.country);
+    doc.text(`${data.company.address.postalCode} ${data.company.address.city}, ${countryName}`, 20, 123);
+    if (data.company.contactPerson) {
+      doc.text(`Contact: ${data.company.contactPerson}`, 20, 129);
+    }
+    doc.text(`Email: ${data.company.email}`, 20, 135);
+
+    // Show guest info separately with smaller font
+    doc.setFontSize(9);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Guest: ${guest.fullName}`, 110, 95);
+    if (guest.phone) {
+      doc.text(`Phone: ${guest.phone}`, 110, 101);
+    }
+  } else {
+    // Individual guest billing
+    doc.text(guest.fullName, 20, 105);
+    doc.text(`Email: ${guest.email}`, 20, 111);
+    if (guest.phone) {
+      doc.text(`Phone: ${guest.phone}`, 20, 117);
+    }
+    if (guest.nationality) {
+      doc.text(`Nationality: ${guest.nationality}`, 20, 123);
+    }
+  }
   
   // Booking Details
   doc.setFontSize(12);

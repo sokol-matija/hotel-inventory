@@ -8,6 +8,7 @@ import { X, Building2, Check, AlertCircle } from 'lucide-react';
 import { Company } from '../../../lib/hotel/types';
 import { useHotel } from '../../../lib/hotel/state/SupabaseHotelContext';
 import hotelNotification from '../../../lib/notifications';
+import { convertToCountryCode, convertToDisplayName } from '../../../lib/hotel/countryCodeUtils';
 
 interface EditCompanyModalProps {
   isOpen: boolean;
@@ -62,7 +63,7 @@ export default function EditCompanyModal({ isOpen, onClose, company }: EditCompa
         address: company.address.street,
         city: company.address.city,
         postalCode: company.address.postalCode,
-        country: company.address.country,
+        country: convertToDisplayName(company.address.country), // Convert ISO code to display name
         contactPerson: company.contactPerson,
         email: company.email,
         phone: company.phone,
@@ -133,7 +134,7 @@ export default function EditCompanyModal({ isOpen, onClose, company }: EditCompa
           street: formData.address,
           city: formData.city,
           postalCode: formData.postalCode,
-          country: formData.country
+          country: convertToCountryCode(formData.country) // Convert display name to ISO code
         },
         contactPerson: formData.contactPerson,
         email: formData.email,
