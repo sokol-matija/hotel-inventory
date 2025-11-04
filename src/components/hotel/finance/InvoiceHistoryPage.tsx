@@ -18,10 +18,11 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { Invoice, Guest, Room, Reservation } from '../../../lib/hotel/types';
+import { Invoice, Guest, Room, Reservation, Company } from '../../../lib/hotel/types';
 import { generatePDFInvoice, generateInvoiceNumber } from '../../../lib/pdfInvoiceGenerator';
 import { SAMPLE_RESERVATIONS } from '../../../lib/hotel/sampleData';
 import hotelNotification from '../../../lib/notifications';
+import { supabase } from '../../../lib/supabase';
 
 export default function InvoiceHistoryPage() {
   const { invoices, guests, rooms, getInvoicesByDateRange, getUnpaidInvoices } = useHotel();
@@ -75,7 +76,7 @@ export default function InvoiceHistoryPage() {
     setShowInvoiceDetails(true);
   };
 
-  const handleDownloadPDF = (invoice: Invoice) => {
+  const handleDownloadPDF = async (invoice: Invoice) => {
     try {
       // Find related reservation
       const reservation = SAMPLE_RESERVATIONS.find(r => r.id === invoice.reservationId);
@@ -91,18 +92,55 @@ export default function InvoiceHistoryPage() {
         return;
       }
 
+      // Fetch company data if this is an R1 reservation
+      let company: Company | undefined;
+      if ((reservation as any).is_r1 && (reservation as any).company_id) {
+        const { data: companyData, error: companyError } = await supabase
+          .from('companies')
+          .select('*')
+          .eq('id', (reservation as any).company_id)
+          .single();
+
+        if (companyData && !companyError) {
+          // Transform database format to Company type
+          company = {
+            id: companyData.id,
+            name: companyData.name,
+            oib: companyData.oib,
+            address: {
+              street: companyData.address,
+              city: companyData.city,
+              postalCode: companyData.postal_code,
+              country: companyData.country
+            },
+            contactPerson: companyData.contact_person,
+            email: companyData.email,
+            phone: companyData.phone,
+            fax: companyData.fax,
+            pricingTierId: companyData.pricing_tier_id,
+            roomAllocationGuarantee: companyData.room_allocation_guarantee,
+            isActive: companyData.is_active,
+            notes: companyData.notes,
+            createdAt: companyData.created_at,
+            updatedAt: companyData.updated_at
+          };
+        }
+      }
+
       // Generate PDF using existing generator
       generatePDFInvoice({
         reservation,
         guest,
         room,
         invoiceNumber: invoice.invoiceNumber,
-        invoiceDate: invoice.issueDate
+        invoiceDate: invoice.issueDate,
+        company // Pass company data for R1 billing
       });
 
+      const invoiceType = company ? 'R1 Company Invoice' : 'Invoice';
       hotelNotification.success(
         'PDF Downloaded',
-        `Invoice ${invoice.invoiceNumber} has been downloaded successfully.`,
+        `${invoiceType} ${invoice.invoiceNumber} has been downloaded successfully.`,
         3000
       );
     } catch (error) {
