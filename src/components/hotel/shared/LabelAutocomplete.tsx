@@ -108,9 +108,8 @@ export const LabelAutocomplete: React.FC<LabelAutocompleteProps> = ({
       setIsLoading(true);
       const newLabel = await labelService.createLabel({
         hotelId,
-        name: searchQuery,
-        color: '#000000',
-        bgColor: '#FFFFFF'
+        name: searchQuery
+        // Colors will be auto-assigned from random pool
       });
 
       // Update state
@@ -153,7 +152,7 @@ export const LabelAutocomplete: React.FC<LabelAutocompleteProps> = ({
       {/* Display selected label or input */}
       {selectedLabel && !isOpen ? (
         <div className="flex items-center gap-2 p-2 border rounded-md bg-white">
-          <LabelBadge label={selectedLabel} size="sm" />
+          <LabelBadge label={selectedLabel} />
           <button
             type="button"
             onClick={handleClearSelection}
@@ -211,7 +210,8 @@ export const LabelAutocomplete: React.FC<LabelAutocompleteProps> = ({
                     selectedLabel?.id === label.id && "bg-blue-50"
                   )}
                 >
-                  <LabelBadge label={label} size="sm" />
+                  <LabelBadge label={label} />
+                  <span className="text-sm text-gray-700">{label.name}</span>
                 </button>
               ))}
               {searchQuery && !labels.find(l => l.name === searchQuery.toLowerCase().replace(/\s+/g, '-')) && (

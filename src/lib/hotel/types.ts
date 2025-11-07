@@ -173,7 +173,10 @@ export interface Label {
 }
 
 // Utility types for Label operations
-export type LabelCreate = Omit<Label, 'id' | 'createdAt' | 'updatedAt'>;
+export type LabelCreate = Omit<Label, 'id' | 'createdAt' | 'updatedAt' | 'color' | 'bgColor'> & {
+  color?: string; // Optional - auto-assigned from color pool if not provided
+  bgColor?: string; // Optional - auto-assigned from color pool if not provided
+};
 export type LabelUpdate = Partial<Pick<Label, 'name' | 'color' | 'bgColor'>>;
 
 export interface PricingCalculation {

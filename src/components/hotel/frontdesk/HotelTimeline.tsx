@@ -696,10 +696,10 @@ function ReservationBlock({
       }}
       title={`${guest?.fullName || 'Guest'} - ${reservation.numberOfGuests} guests ${isDragging ? '(Dragging...)' : '(Click for details)'}`}
     >
-      {/* Label Badge - Top Center */}
+      {/* Label Badge - Top Left Corner */}
       {reservation.label && (
-        <div className="absolute top-1 left-1/2 transform -translate-x-1/2 z-10">
-          <LabelBadge label={reservation.label} size="sm" />
+        <div className="absolute top-1 left-1 z-10">
+          <LabelBadge label={reservation.label} />
         </div>
       )}
 
@@ -722,7 +722,7 @@ function ReservationBlock({
               const daysLeft = Math.ceil((reservation.checkOut.getTime() - new Date().getTime()) / (24 * 60 * 60 * 1000));
               return (
                 <span className="text-xs text-white font-medium">
-                  {daysLeft > 0 ? <><span className="font-bold">{daysLeft}</span> days left</> : daysLeft === 0 ? 'Checking out today' : 'Checked out'}
+                  {daysLeft > 0 ? <><span className="font-bold">{daysLeft}</span> {daysLeft === 1 ? 'day' : 'days'}</> : daysLeft === 0 ? 'Today' : 'Checked out'}
                 </span>
               );
             })()}
@@ -2033,9 +2033,12 @@ function RoomOverviewFloorSection({
     y: 0,
     reservation: null
   });
-  
+
   // Flag to prevent click through when closing context menu (room overview section)
   const [isClosingContextMenuRoomOverview, setIsClosingContextMenuRoomOverview] = useState(false);
+
+  // Label display mode toggle
+  const [showFullLabelText, setShowFullLabelText] = useState(false);
   
   // Context menu positioning function (same as in main timeline)
   const calculateContextMenuPosition = (e: React.MouseEvent, menuWidth = 180, menuHeight = 300) => {
@@ -2086,10 +2089,25 @@ function RoomOverviewFloorSection({
               {occupancyRate.toFixed(0)}% occupied
             </Badge>
           </CardTitle>
-          
-          <Button variant="ghost" size="sm">
-            {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-          </Button>
+
+          <div className="flex items-center gap-3">
+            <label
+              className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer hover:text-gray-900"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <input
+                type="checkbox"
+                checked={showFullLabelText}
+                onChange={(e) => setShowFullLabelText(e.target.checked)}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span>Show full label text</span>
+            </label>
+
+            <Button variant="ghost" size="sm">
+              {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            </Button>
+          </div>
         </div>
       </CardHeader>
       
@@ -2132,6 +2150,7 @@ function RoomOverviewFloorSection({
                       : 'border border-gray-200 hover:border-blue-300 hover:bg-blue-50 bg-white'
                     }
                     ${room.isPremium && !isOccupied ? 'bg-gradient-to-br from-yellow-50 to-amber-50' : ''}
+                    ${room.is_clean ? 'border-l-4 border-l-blue-500' : 'border-l-4 border-l-red-500'}
                   `}
                   onClick={(e) => {
                     if (!isClosingContextMenuRoomOverview) {
@@ -2157,43 +2176,28 @@ function RoomOverviewFloorSection({
                     : `Create new booking for ${formatRoomNumber(room)}`
                   }
                 >
-                  {/* Price in top right corner */}
-                  {isOccupied && reservation && (
-                    <div className="absolute top-2 right-2 text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded">
-                      €{reservation.totalAmount}
+                  {/* Label badge - semi-circle flush with top-right corner */}
+                  {isOccupied && reservation?.label && (
+                    <div className="absolute top-0 right-0 z-10">
+                      <LabelBadge
+                        label={reservation.label}
+                        alwaysExpanded={showFullLabelText}
+                        expandDirection="left"
+                        semiCircle={true}
+                      />
                     </div>
                   )}
-                  
-                  {/* Payment status icon */}
-                  {isOccupied && reservation && (
-                    <div className={`absolute top-8 right-2 w-6 h-6 rounded-full flex items-center justify-center ${
-                      reservation.status === 'checked-out' 
-                        ? 'bg-green-100 text-green-600' 
-                        : 'bg-red-100 text-red-600'
-                    }`} title={reservation.status === 'checked-out' ? 'Payment Complete' : 'Payment Pending'}>
-                      <DollarSign className="h-3 w-3" />
-                    </div>
-                  )}
-                  
-                  <div className="flex flex-col space-y-1">
+
+                  <div className="flex flex-col space-y-1 pb-8">
                     <div className="flex items-center gap-2">
                       <div className="font-semibold text-sm">
                         {formatRoomNumber(room)}
                       </div>
-                      {/* Status Light Indicator */}
-                      <div
-                        className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
-                          room.is_clean
-                            ? 'bg-blue-500'
-                            : 'bg-red-500'
-                        }`}
-                        title={room.is_clean ? 'Room clean' : 'Room dirty'}
-                      />
                     </div>
                     <div className="text-xs text-gray-500">
                       {getRoomTypeDisplay(room)}
                     </div>
-                    
+
                     {isOccupied && reservation && guest ? (
                       <div className="text-xs mt-2 space-y-1">
                         <div className="font-medium">
@@ -2217,9 +2221,24 @@ function RoomOverviewFloorSection({
                           )}
                         </div>
                         
-                        {/* Days left */}
-                        <div className="text-xs text-blue-600 font-medium">
-                          {daysLeft > 0 ? `${daysLeft} days left` : 'Checking out today'}
+                        {/* Days remaining and price with payment status */}
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="text-xs text-blue-600 font-medium">
+                            {daysLeft > 0 ? `${daysLeft} ${daysLeft === 1 ? 'day' : 'days'}` : 'Today'}
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <div className="text-xs font-bold text-green-600">
+                              €{reservation.totalAmount}
+                            </div>
+                            {/* Payment status icon next to price */}
+                            <div className={`w-4 h-4 rounded-full flex items-center justify-center ${
+                              reservation.status === 'checked-out'
+                                ? 'bg-green-100 text-green-600'
+                                : 'bg-red-100 text-red-600'
+                            }`} title={reservation.status === 'checked-out' ? 'Payment Complete' : 'Payment Pending'}>
+                              <DollarSign className="h-2.5 w-2.5" />
+                            </div>
+                          </div>
                         </div>
                       </div>
                     ) : (
@@ -2227,19 +2246,20 @@ function RoomOverviewFloorSection({
                         Click to create booking
                       </div>
                     )}
-                    
-                    {isOccupied && statusColors && (
-                      <Badge
-                        className="mt-1 text-xs"
-                        style={{
-                          backgroundColor: statusColors.backgroundColor,
-                          color: statusColors.textColor
-                        }}
-                      >
-                        {statusColors.label}
-                      </Badge>
-                    )}
                   </div>
+
+                  {/* Status badge - aligned with bottom border */}
+                  {isOccupied && statusColors && (
+                    <div
+                      className="absolute bottom-0 left-1/2 transform -translate-x-1/2 px-4 py-1.5 rounded-t-lg text-xs font-medium shadow-sm"
+                      style={{
+                        backgroundColor: statusColors.backgroundColor,
+                        color: statusColors.textColor
+                      }}
+                    >
+                      {statusColors.label}
+                    </div>
+                  )}
                 </div>
               );
             })}

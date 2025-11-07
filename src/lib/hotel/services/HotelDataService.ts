@@ -423,7 +423,8 @@ export class HotelDataService {
   private mapReservationFromDB(reservationRow: any): Reservation {
     const guest = reservationRow.guest;
     const room = reservationRow.room;
-    
+    const label = reservationRow.label;
+
     return {
       id: reservationRow.id,
       roomId: reservationRow.room_id,
@@ -451,7 +452,18 @@ export class HotelDataService {
       totalAmount: reservationRow.total_amount,
       bookingDate: new Date(reservationRow.booking_date || reservationRow.created_at),
       lastModified: new Date(reservationRow.updated_at || reservationRow.created_at),
-      notes: reservationRow.notes || ''
+      notes: reservationRow.notes || '',
+      // Label/Group mapping
+      labelId: reservationRow.label_id || undefined,
+      label: label ? {
+        id: label.id,
+        hotelId: reservationRow.hotel_id?.toString() || '',
+        name: label.name,
+        color: label.color || '#000000',
+        bgColor: label.bg_color || '#FFFFFF',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      } : undefined
     };
   }
 

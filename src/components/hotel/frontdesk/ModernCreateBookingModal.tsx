@@ -66,13 +66,14 @@ export default function ModernCreateBookingModal({
 
   useEffect(() => {
     const fetchHotelId = async () => {
+      // Since there's only one hotel, just fetch the first hotel's ID
       const { data } = await supabase
-        .from('user_profiles')
-        .select('hotel_id')
-        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .from('hotels')
+        .select('id')
+        .limit(1)
         .single();
-      if (data?.hotel_id) {
-        setHotelId(data.hotel_id);
+      if (data?.id) {
+        setHotelId(data.id.toString());
       }
     };
     fetchHotelId();

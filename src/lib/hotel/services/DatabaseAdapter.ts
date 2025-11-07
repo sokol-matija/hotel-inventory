@@ -61,6 +61,7 @@ interface CurrentDBReservation {
   has_pets: boolean;
   parking_required: boolean;
   last_modified: string;
+  label_id: string | null;
 }
 
 interface CurrentDBGuest {
@@ -310,12 +311,20 @@ export class DatabaseAdapter {
 
       if (roomsError) throw roomsError;
 
+      // Get labels separately
+      const { data: labelsData, error: labelsError } = await supabase
+        .from('labels')
+        .select('*');
+
+      if (labelsError) throw labelsError;
+
       // Create lookup maps
       const guestLookup = new Map((guestsData as CurrentDBGuest[]).map(g => [g.id, g]));
       const roomLookup = new Map((roomsData as CurrentDBRoom[]).map(r => [r.id, r]));
+      const labelLookup = new Map((labelsData as any[]).map(l => [l.id, l]));
 
-      return (reservationsData as CurrentDBReservation[]).map(reservation => 
-        this.mapReservationFromCurrentDB(reservation, guestLookup, roomLookup)
+      return (reservationsData as CurrentDBReservation[]).map(reservation =>
+        this.mapReservationFromCurrentDB(reservation, guestLookup, roomLookup, labelLookup)
       );
     } catch (error) {
       console.error('Error fetching reservations:', error);
@@ -355,7 +364,8 @@ export class DatabaseAdapter {
           total_amount: reservationData.totalAmount,
           payment_status: 'pending',
           has_pets: (reservationData.petFee || 0) > 0,
-          confirmation_number: this.generateConfirmationNumber()
+          confirmation_number: this.generateConfirmationNumber(),
+          label_id: reservationData.labelId || null
         })
         .select()
         .single();
@@ -393,6 +403,7 @@ export class DatabaseAdapter {
       if (updates.status) updateData.status = updates.status;
       if (updates.specialRequests !== undefined) updateData.special_requests = updates.specialRequests;
       if (updates.totalAmount !== undefined) updateData.total_amount = updates.totalAmount;
+      if (updates.labelId !== undefined) updateData.label_id = updates.labelId || null;
 
       updateData.updated_at = new Date().toISOString();
 
@@ -502,9 +513,11 @@ export class DatabaseAdapter {
   private mapReservationFromCurrentDB(
     reservation: CurrentDBReservation,
     guestLookup: Map<number, CurrentDBGuest>,
-    roomLookup: Map<number, CurrentDBRoom>
+    roomLookup: Map<number, CurrentDBRoom>,
+    labelLookup?: Map<string, any>
   ): Reservation {
     const guestData = guestLookup.get(reservation.guest_id);
+    const labelData = labelLookup && reservation.label_id ? labelLookup.get(reservation.label_id) : undefined;
 
     return {
       id: reservation.id.toString(),
@@ -536,7 +549,18 @@ export class DatabaseAdapter {
       hasPets: reservation.has_pets || false,
       bookingDate: new Date(reservation.booking_date || reservation.created_at),
       lastModified: new Date(reservation.last_modified || reservation.updated_at),
-      notes: reservation.internal_notes || ''
+      notes: reservation.internal_notes || '',
+      // Label/Group mapping
+      labelId: reservation.label_id || undefined,
+      label: labelData ? {
+        id: labelData.id,
+        hotelId: labelData.hotel_id?.toString() || '',
+        name: labelData.name,
+        color: labelData.color || '#000000',
+        bgColor: labelData.bg_color || '#FFFFFF',
+        createdAt: new Date(labelData.created_at),
+        updatedAt: new Date(labelData.updated_at)
+      } : undefined
     };
   }
 

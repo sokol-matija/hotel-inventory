@@ -9,10 +9,28 @@
  * - Create new labels with lowercase normalization
  * - Fetch labels by ID or hotel
  * - Singleton pattern for consistent instance
+ * - Auto-assign random modern colors from curated palette
  */
 
 import { supabase } from '../../supabase';
 import { Label, LabelCreate, LabelUpdate } from '../types';
+
+/**
+ * Modern color palette for label backgrounds
+ * Carefully selected colors that work well with white text
+ */
+const LABEL_COLOR_POOL = [
+  { bg: '#3B82F6', text: '#FFFFFF' }, // Blue
+  { bg: '#8B5CF6', text: '#FFFFFF' }, // Purple
+  { bg: '#EC4899', text: '#FFFFFF' }, // Pink
+  { bg: '#EF4444', text: '#FFFFFF' }, // Red
+  { bg: '#F59E0B', text: '#FFFFFF' }, // Amber
+  { bg: '#10B981', text: '#FFFFFF' }, // Emerald
+  { bg: '#14B8A6', text: '#FFFFFF' }, // Teal
+  { bg: '#6366F1', text: '#FFFFFF' }, // Indigo
+  { bg: '#F97316', text: '#FFFFFF' }, // Orange
+  { bg: '#06B6D4', text: '#FFFFFF' }, // Cyan
+];
 
 export class LabelService {
   private static instance: LabelService;
@@ -66,6 +84,15 @@ export class LabelService {
   }
 
   /**
+   * Get a random color from the color pool
+   * @returns A random color object with bg and text properties
+   */
+  private getRandomColor() {
+    const randomIndex = Math.floor(Math.random() * LABEL_COLOR_POOL.length);
+    return LABEL_COLOR_POOL[randomIndex];
+  }
+
+  /**
    * Create a new label
    * @param labelData - The label data to create
    * @returns The created label
@@ -83,11 +110,14 @@ export class LabelService {
         throw new Error('Label name cannot be empty after normalization');
       }
 
+      // Auto-assign random color if not provided
+      const randomColor = this.getRandomColor();
+
       const insertData = {
         hotel_id: labelData.hotelId,
         name: normalizedName,
-        color: labelData.color || '#000000', // Default black text
-        bg_color: labelData.bgColor || '#FFFFFF' // Default white background
+        color: labelData.color || randomColor.text,
+        bg_color: labelData.bgColor || randomColor.bg
       };
 
       const { data, error } = await supabase
