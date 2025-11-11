@@ -83,3 +83,7 @@ supabase/.temp/
 # TaskMaster - keep config and PRD, ignore generated complexity reports
 .taskmaster/complexity/
 .taskmaster/.cache/
+p12 cert
+87246357068.49208351934.A.1 2.p12
+87246357068.49208351934.A.1.p12
+backup_87246357068.49208351934.A.1 copy.p12
