@@ -1,0 +1,91 @@
+{
+  "name": "Hotel Inventory Management System",
+  "logo": {
+    "light": "/docs/logo.png",
+    "dark": "/docs/logo.png"
+  },
+  "favicon": "/docs/favicon.ico",
+  "colors": {
+    "primary": "#0066CC",
+    "light": "#4285F4",
+    "dark": "#1E3A8A"
+  },
+  "topbarLinks": [
+    {
+      "name": "Support",
+      "url": "mailto:support@hotelinventory.com"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Dashboard",
+    "url": "https://app.hotelinventory.com"
+  },
+  "navigation": [
+    {
+      "group": "Getting Started",
+      "pages": [
+        "docs/introduction",
+        "docs/quickstart",
+        "docs/installation"
+      ]
+    },
+    {
+      "group": "Core Features",
+      "pages": [
+        "docs/features/hotel-management",
+        "docs/features/front-desk",
+        "docs/features/finance",
+        "docs/features/reservations",
+        "docs/features/channel-manager"
+      ]
+    },
+    {
+      "group": "Video Tutorials",
+      "pages": [
+        "docs/tutorials/video-demos",
+        "docs/tutorials/getting-started-videos",
+        "docs/tutorials/front-desk-videos",
+        "docs/tutorials/finance-videos",
+        "docs/tutorials/channel-manager-videos",
+        "docs/tutorials/advanced-videos"
+      ]
+    },
+    {
+      "group": "Integration Guides",
+      "pages": [
+        "docs/integrations/croatian-fiscalization",
+        "docs/integrations/channel-manager-setup",
+        "docs/integrations/supabase-setup"
+      ]
+    },
+    {
+      "group": "Phobs Channel Manager",
+      "pages": [
+        "docs/integrations/phobs-integration-readiness",
+        "docs/PHOBS_IMPLEMENTATION_STATUS",
+        "docs/phobs-soap-implementation"
+      ]
+    },
+    {
+      "group": "Technical Documentation",
+      "pages": [
+        "docs/technical/architecture",
+        "docs/technical/database-schema",
+        "docs/technical/backend-api",
+        "docs/technical/edge-functions",
+        "docs/technical/api-reference"
+      ]
+    },
+    {
+      "group": "Development",
+      "pages": [
+        "docs/development/setup",
+        "docs/development/contributing",
+        "docs/development/testing"
+      ]
+    }
+  ],
+  "footerSocials": {
+    "github": "https://github.com/your-username/hotel-inventory"
+  }
+}

@@ -19,7 +19,7 @@ description: 'Enterprise-grade Hotel Management System with Croatian Fiscal Comp
 A comprehensive, production-ready hotel management platform featuring real-time operations, multi-channel distribution, and complete Croatian fiscal compliance. Built with enterprise-grade architecture and modern technologies.
 
 <Note>
-**Latest Update (January 2025)**: Finance UI module completed with full Croatian fiscalization integration - JIR/ZKI generation, QR code verification, and PDF invoice generation with fiscal data.
+**Latest Update (November 2025)**: Enhanced label system with improved UI, R1 company billing support, and comprehensive reservation filtering capabilities.
 </Note>
 
 ### Core Features
@@ -72,43 +72,44 @@ A comprehensive, production-ready hotel management platform featuring real-time 
 ## What's New in v2.7
 
 <CardGroup cols={1}>
-  <Card title="✅ Finance UI Completion" icon="check-circle">
-    **January 2025** - Complete finance module with fiscal data display, PDF generation with existing JIR/ZKI, and QR code verification
+  <Card title="✅ Enhanced Label System" icon="tags">
+    **November 2025** - Advanced reservation labeling and categorization
 
-    - Invoice table with JIR column and fiscal status indicators
-    - Full fiscal details in invoice modal (JIR, ZKI, QR code)
-    - PDF generation using stored fiscal data (never regenerates)
-    - Real reservation data integration via Supabase JOIN queries
+    - Improved label UI with better visual indicators
+    - Database integration for persistent labels
+    - Label-based filtering and searching
+    - Color-coded reservation groups
+    - Timeline and room status label display
   </Card>
 
-  <Card title="✅ Croatian Fiscalization Complete" icon="certificate">
-    **October 2025** - Production-ready Croatian Tax Authority integration
+  <Card title="✅ R1 Company Billing Integration" icon="building">
+    **November 2025** - Complete R1 billing system for corporate clients
 
-    - s004 "Invalid digital signature" error RESOLVED
-    - Complete FINA P12 certificate integration
-    - JIR/ZKI generation and database storage
-    - QR code verification system for receipt validation
-    - Edge Function for secure fiscalization requests
+    - R1 company selection in booking modal
+    - PDF invoice generation with R1 branding
+    - Country code conversion utilities
+    - Payment flow integration
+    - Invoice page R1 support and refresh functionality
   </Card>
 
-  <Card title="✅ Advanced Backend Integration" icon="server">
-    **August 2025** - Enterprise-grade service layer architecture
+  <Card title="✅ NFC Room Cleaning System" icon="mobile">
+    **October 2025** - Automated room status management via NFC
 
-    - Real-time conflict detection with alternative room suggestions
-    - Optimistic UI updates with automatic rollback
-    - Batch operations for bulk reservation management
-    - 20+ keyboard shortcuts for power users
-    - Complete undo/redo system with operation history
+    - NFC tag integration for instant room status updates
+    - Real-time cleaning status indicators on timeline
+    - Automated daily room status reset system
+    - AM/PM toggle for room status overview
+    - Toast notifications with progress animations
   </Card>
 
-  <Card title="✅ Channel Manager Integration" icon="satellite-dish">
-    **October 2025** - Complete Phobs API integration
+  <Card title="✅ Development Environment Improvements" icon="code">
+    **October-November 2025** - Enhanced developer experience
 
-    - Multi-channel synchronization (13+ OTA platforms)
-    - Real-time inventory and rate management
-    - Intelligent conflict resolution
-    - Performance monitoring dashboard
-    - Comprehensive error handling with retry logic
+    - Local Supabase development environment with seed data
+    - Dual environment support (local/production)
+    - MCP environment switching scripts
+    - Comprehensive local development documentation
+    - Improved build configuration
   </Card>
 </CardGroup>
 
@@ -334,7 +335,7 @@ graph TD
 
 ---
 
-**Version**: 2.7 (Finance UI Complete)
+**Version**: 2.7 (Enhanced Labels & R1 Billing)
 **Status**: Production Ready
-**Last Updated**: January 2025
+**Last Updated**: November 2025
 **License**: Proprietary
