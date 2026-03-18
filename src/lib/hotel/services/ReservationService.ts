@@ -471,7 +471,7 @@ export class ReservationService {
     totalAmount: number,
     guestId: number  // Added to satisfy billing_target constraint
   ): Promise<void> {
-    const { supabase } = await import('../../supabase');
+
     const reservationIdNum = typeof reservationId === 'string' ? parseInt(reservationId) : reservationId;
 
     // Step 1: Create or get invoice record

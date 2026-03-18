@@ -189,7 +189,7 @@ export class RoomCleaningService {
    * This is what gets encoded on the physical NFC tag
    */
   generateNFCUri(roomId: string, hotelId: string = 'gkbpthurkucotikjefra'): string {
-    const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://gkbpthurkucotikjefra.supabase.co'
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://gkbpthurkucotikjefra.supabase.co'
     return `${supabaseUrl}/functions/v1/nfc-clean-room?roomId=${roomId}&hotelId=${hotelId}`
   }
 }

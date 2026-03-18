@@ -49,6 +49,8 @@ import DragCreateOverlay from './DragCreateOverlay';
 import { HotelEmailService } from '../../../lib/emailService';
 import { TimelineCleaningIndicator } from './TimelineCleaningIndicator';
 import { virtualRoomService } from '../../../lib/hotel/services/VirtualRoomService';
+import { OptimisticUpdateService } from '../../../lib/hotel/services/OptimisticUpdateService';
+import { calculatePricing } from '../../../lib/hotel/pricingCalculator';
 
 interface HotelTimelineProps {
   isFullscreen?: boolean;
@@ -2764,7 +2766,7 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
       // If no room type change, proceed with optimistic updates for instant visual feedback
       console.log('🔄 DRAG-DROP: Starting optimistic update with data:', updatedReservationData);
 
-      const { OptimisticUpdateService } = await import('../../../lib/hotel/services/OptimisticUpdateService');
+
       const optimisticService = OptimisticUpdateService.getInstance();
 
       let result: { success: boolean; error?: string };
@@ -2902,7 +2904,7 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
     if (!reservation || !targetRoom || !currentRoom) return;
     
     try {
-      const { calculatePricing } = await import('../../../lib/hotel/pricingCalculator');
+
       
       const newPricing = calculatePricing(
         targetRoom.id,
@@ -2928,7 +2930,7 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
       };
 
       // Use optimistic updates for smooth UX
-      const { OptimisticUpdateService } = await import('../../../lib/hotel/services/OptimisticUpdateService');
+
       const optimisticService = OptimisticUpdateService.getInstance();
       
       const result = await optimisticService.optimisticUpdateReservation(
@@ -2978,7 +2980,7 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
       };
 
       // Use optimistic updates for instant visual feedback
-      const { OptimisticUpdateService } = await import('../../../lib/hotel/services/OptimisticUpdateService');
+
       const optimisticService = OptimisticUpdateService.getInstance();
       
       const result = await optimisticService.optimisticUpdateReservation(
@@ -3059,7 +3061,7 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
       }
 
       // Calculate new pricing
-      const { calculatePricing } = await import('../../../lib/hotel/pricingCalculator');
+
       const newPricing = calculatePricing(
         reservation.roomId,
         newCheckIn,
@@ -3085,7 +3087,7 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
       };
 
       // Use OptimisticUpdateService for instant UI feedback
-      const { OptimisticUpdateService } = await import('../../../lib/hotel/services/OptimisticUpdateService');
+
       const optimisticService = OptimisticUpdateService.getInstance();
       
       const result = await optimisticService.optimisticUpdateReservation(

@@ -31,17 +31,17 @@ export const HOTEL_FISCAL_CONFIG: FiscalConfiguration = {
   },
   workingHours: '0-24',
   certificate: {
-    file: process.env.REACT_APP_FISCAL_CERT_FILE || '87246357068.49208351934.A.1.p12', // New FINA certificate
-    password: process.env.REACT_APP_FISCAL_CERT_PASSWORD || 'Marvel247@$&', // New certificate password
-    passwordBackup: process.env.REACT_APP_FISCAL_CERT_PASSWORD_BACKUP || 'Marvel2479@$&(', // Backup password
-    path: process.env.REACT_APP_FISCAL_CERT_PATH || '.certificates/87246357068.49208351934.A.1.p12',
+    file: import.meta.env.VITE_FISCAL_CERT_FILE || '87246357068.49208351934.A.1.p12', // New FINA certificate
+    password: import.meta.env.VITE_FISCAL_CERT_PASSWORD || 'Marvel247@$&', // New certificate password
+    passwordBackup: import.meta.env.VITE_FISCAL_CERT_PASSWORD_BACKUP || 'Marvel2479@$&(', // Backup password
+    path: import.meta.env.VITE_FISCAL_CERT_PATH || '.certificates/87246357068.49208351934.A.1.p12',
   },
 };
 
 // SAFETY: Force TEST mode in development
 export function getCurrentEnvironment(): FiscalEnvironment {
   const isDevelopment = process.env.NODE_ENV !== 'production';
-  const forceTest = process.env.REACT_APP_FISCAL_FORCE_TEST === 'true';
+  const forceTest = import.meta.env.VITE_FISCAL_FORCE_TEST === 'true';
   
   // SAFETY CHECK: Always use TEST in development or when forced
   if (isDevelopment || forceTest) {
@@ -50,7 +50,7 @@ export function getCurrentEnvironment(): FiscalEnvironment {
   }
   
   // Production environment (requires explicit flag)
-  const allowProduction = process.env.REACT_APP_FISCAL_ALLOW_PRODUCTION === 'true';
+  const allowProduction = import.meta.env.VITE_FISCAL_ALLOW_PRODUCTION === 'true';
   if (allowProduction) {
     console.warn('⚠️ FISCAL WARNING: Using PRODUCTION environment');
     return FISCAL_ENVIRONMENTS.PRODUCTION;

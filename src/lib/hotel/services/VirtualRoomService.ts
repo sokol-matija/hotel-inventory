@@ -3,6 +3,7 @@
 
 import { supabase } from '../../supabase';
 import { Room, Reservation, Guest } from '../types';
+import { calculatePricing } from '../pricingCalculator';
 
 export interface VirtualRoomConfig {
   VIRTUAL_FLOOR: number;
@@ -293,7 +294,7 @@ export class VirtualRoomService {
       }
 
       // Calculate new pricing based on target room
-      const { calculatePricing } = await import('../pricingCalculator');
+
       const checkInDate = new Date(existingReservation.check_in_date);
       const checkOutDate = new Date(existingReservation.check_out_date);
 

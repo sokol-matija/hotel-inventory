@@ -32,7 +32,7 @@ class NtfyService {
 
   constructor() {
     this.baseUrl = 'https://ntfy.sh';
-    this.defaultTopic = process.env.REACT_APP_NTFY_TOPIC || 'hotel-porec-room-401';
+    this.defaultTopic = import.meta.env.VITE_NTFY_TOPIC || 'hotel-porec-room-401';
   }
 
   private async sendNotification(notification: NtfyNotification): Promise<boolean> {

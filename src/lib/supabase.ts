@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 
-export const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://gkbpthurkucotikjefra.supabase.co'
-export const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY || ''
+export const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://gkbpthurkucotikjefra.supabase.co'
+export const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
 
 // Hotel Porec database types
 export type Json =

@@ -45,9 +45,6 @@ export const NFCCleanRoomPage = () => {
 
   async function callCleanRoomFunction(roomId: string) {
     try {
-      // Import supabase from the lib
-      const { supabase } = await import('@/lib/supabase')
-
       // Get the anon key from environment
       const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdrYnB0aHVya3Vjb3Rpa2plZnJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3MzMxNTksImV4cCI6MjA2ODMwOTE1OX0.pXbrXBCeJHgXzHGTB4WatYfWsaFFkrlr8ChUkVIV6SY'
 
