@@ -1,6 +1,13 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
-  "tags": [
-    "-lintignore"
+  "tags": ["-lintignore"],
+  "ignore": [
+    "scripts/**",
+    "**/__tests__/**",
+    "test-*.js"
+  ],
+  "entry": [
+    "public/sw.js",
+    "supabase/functions/*/index.ts"
   ]
 }

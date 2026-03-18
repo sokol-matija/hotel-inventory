@@ -6,4 +6,5 @@ import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 
 // Alias jest to vi for backwards compatibility with Jest-style test files
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (globalThis as any).jest = vi;
