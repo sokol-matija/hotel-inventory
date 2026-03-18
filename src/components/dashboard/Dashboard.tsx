@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from '@tanstack/react-router'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { Button } from '../ui/button'
 import { supabase } from '@/lib/supabase'
@@ -247,16 +247,16 @@ export default function Dashboard() {
     // Handle navigation when dashboard cards are clicked
     switch (cardType) {
       case 'total':
-        navigate('/global')
+        navigate({ to: '/global' })
         break
       case 'lowStock':
-        navigate('/global?filter=lowStock')
+        navigate({ to: '/global', search: { filter: 'lowStock' } })
         break
       case 'expiring':
-        navigate('/global?filter=expiring')
+        navigate({ to: '/global', search: { filter: 'expiring' } })
         break
       case 'locations':
-        navigate('/locations')
+        navigate({ to: '/locations' })
         break
     }
   }

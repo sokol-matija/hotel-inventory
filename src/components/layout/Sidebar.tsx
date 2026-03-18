@@ -1,5 +1,5 @@
 import React from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from '@tanstack/react-router'
 import { Button } from '../ui/button'
 import { useAuth } from '../auth/AuthProvider'
 import { useTranslation } from 'react-i18next'
@@ -88,7 +88,7 @@ export default function Sidebar() {
         <div className="flex items-center justify-center">
           <div 
             className="w-full h-20 flex items-center justify-center cursor-pointer"
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate({ to: '/dashboard' })}
           >
             <img 
               src="/LOGO1-hires.png" 

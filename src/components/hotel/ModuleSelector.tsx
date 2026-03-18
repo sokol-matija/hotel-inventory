@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@tanstack/react-router';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { 
@@ -71,7 +71,7 @@ export default function ModuleSelector() {
       description: 'Manage bookings from multiple platforms in one place',
       icon: <BarChart3 className="h-6 w-6" />,
       available: true,
-      onClick: () => navigate('/hotel/front-desk/channel-manager')
+      onClick: () => navigate({ to: '/hotel/front-desk/channel-manager' })
     },
     {
       key: 'frontDesk',
@@ -80,7 +80,7 @@ export default function ModuleSelector() {
       icon: <Hotel className="h-6 w-6" />,
       available: true,
       priority: 'Priority 1',
-      onClick: () => navigate('/hotel/front-desk')
+      onClick: () => navigate({ to: '/hotel/front-desk' })
     },
     {
       key: 'finance',
@@ -88,7 +88,7 @@ export default function ModuleSelector() {
       description: 'Croatian fiscal e-računi and financial management',
       icon: <CreditCard className="h-6 w-6" />,
       available: true,
-      onClick: () => navigate('/hotel/finance')
+      onClick: () => navigate({ to: '/hotel/finance' })
     },
     {
       key: 'inventory',
@@ -96,7 +96,7 @@ export default function ModuleSelector() {
       description: 'Current inventory management system',
       icon: <Package className="h-6 w-6" />,
       available: true,
-      onClick: () => navigate('/dashboard')
+      onClick: () => navigate({ to: '/dashboard' })
     }
   ];
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Outlet, useNavigate } from 'react-router-dom'
+import { Outlet, useNavigate } from '@tanstack/react-router'
 import Sidebar from './Sidebar'
 import MobileNav from './MobileNav'
 import { useAuth } from '../auth/AuthProvider'
@@ -45,7 +45,7 @@ export default function Layout() {
             <div className="flex items-center justify-center flex-1">
               <div 
                 className="w-32 h-12 flex items-center justify-center cursor-pointer"
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate({ to: '/dashboard' })}
               >
                 <img 
                   src="/LOGO1-hires.png" 

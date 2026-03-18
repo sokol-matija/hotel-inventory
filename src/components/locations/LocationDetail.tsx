@@ -2,7 +2,7 @@
 // Reduced from 928 lines to ~300 lines with clean architecture
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from '@tanstack/react-router';
 import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';

@@ -2,7 +2,7 @@
 // Manages all location-related state and operations
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from '@tanstack/react-router';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { LocationService, Location, InventoryItem, InventoryFilters, DragOperation } from '../services/LocationService';
 
@@ -44,7 +44,7 @@ const initialState: LocationState = {
 };
 
 export function useLocationState() {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams({ strict: false });
   const { user } = useAuth();
   const locationService = LocationService.getInstance();
   

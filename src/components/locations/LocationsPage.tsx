@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from '@tanstack/react-router'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { Button } from '../ui/button'
 import { supabase } from '@/lib/supabase'
@@ -134,7 +134,7 @@ export default function LocationsPage() {
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
           {locations.filter(location => location.is_refrigerated).map((location) => (
-            <Link key={location.id} to={`/locations/${location.id}`}>
+            <Link key={location.id} to="/locations/$id" params={{ id: String(location.id) }}>
               <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-blue-100 bg-gradient-to-br from-blue-50 to-blue-100">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
@@ -197,7 +197,7 @@ export default function LocationsPage() {
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
           {locations.filter(location => !location.is_refrigerated).map((location) => (
-            <Link key={location.id} to={`/locations/${location.id}`}>
+            <Link key={location.id} to="/locations/$id" params={{ id: String(location.id) }}>
               <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-gray-100 bg-gradient-to-br from-gray-50 to-gray-100">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">

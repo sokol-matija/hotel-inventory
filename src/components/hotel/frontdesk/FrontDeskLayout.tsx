@@ -1,26 +1,13 @@
 import React, { useState } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Outlet } from '@tanstack/react-router';
 import { Menu } from 'lucide-react';
 import { useAuth } from '../../auth/AuthProvider';
-import { SupabaseHotelProvider, useHotel } from '../../../lib/hotel/state/SupabaseHotelContext';
+import { SupabaseHotelProvider } from '../../../lib/hotel/state/SupabaseHotelContext';
 import HotelSidebar from '../shared/HotelSidebar';
 import MobileNav from '../../layout/MobileNav';
-import CalendarView from './CalendarView';
-import GuestsPage from './GuestsPage';
-import PaymentsPage from './PaymentsPage';
-import ReportsPage from './ReportsPage';
-import EmailTestPage from './EmailTestPage';
-import RoomServiceOrders from './RoomService/RoomServiceOrders';
-import PrinterTestPage from './PrinterTest/PrinterTestPage';
-import CompanyManagement from '../companies/CompanyManagement';
-import PricingManagement from '../pricing/PricingManagement';
-import ChannelManagerDashboard from './ChannelManager/ChannelManagerDashboard';
-import ChannelManagerSettings from './ChannelManager/ChannelManagerSettings';
-import ReservationsListPage from './ReservationsListPage';
 import FloatingCreateButton from './FloatingCreateButton';
 
 function FrontDeskContent() {
-  const { rooms } = useHotel();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
@@ -65,23 +52,9 @@ function FrontDeskContent() {
           </button>
         </div>
 
-        {/* Content Area with Internal Routes */}
+        {/* Content Area */}
         <div className="flex-1 overflow-auto">
-          <Routes>
-            <Route index element={<CalendarView />} />
-            <Route path="reservations-list" element={<ReservationsListPage />} />
-            <Route path="guests" element={<GuestsPage />} />
-            <Route path="payments" element={<PaymentsPage />} />
-            <Route path="room-service" element={<RoomServiceOrders rooms={rooms} />} />
-            <Route path="companies" element={<CompanyManagement />} />
-            <Route path="pricing" element={<PricingManagement />} />
-            <Route path="printer-test" element={<PrinterTestPage />} />
-            <Route path="reports" element={<ReportsPage />} />
-            <Route path="email-test" element={<EmailTestPage />} />
-            <Route path="channel-manager" element={<ChannelManagerDashboard />} />
-            <Route path="channel-manager/settings" element={<ChannelManagerSettings />} />
-            <Route path="*" element={<Navigate to="/hotel/front-desk" replace />} />
-          </Routes>
+          <Outlet />
         </div>
       </main>
 

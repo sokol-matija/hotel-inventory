@@ -1,5 +1,5 @@
 import React from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation } from '@tanstack/react-router'
 import { Button } from '../ui/button'
 import { useAuth } from '../auth/AuthProvider'
 import { useTranslation } from 'react-i18next'

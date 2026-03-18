@@ -2,7 +2,7 @@
 // Manage API credentials, channel settings, and sync preferences
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@tanstack/react-router';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../ui/card';
 import { Button } from '../../../ui/button';
 import { Input } from '../../../ui/input';
@@ -218,7 +218,7 @@ export default function ChannelManagerSettings() {
         <div className="flex items-center space-x-4">
           <Button 
             variant="ghost" 
-            onClick={() => navigate('/hotel/front-desk/channel-manager')}
+            onClick={() => navigate({ to: '/hotel/front-desk/channel-manager' })}
             className="flex items-center space-x-2"
           >
             <ArrowLeft className="h-4 w-4" />

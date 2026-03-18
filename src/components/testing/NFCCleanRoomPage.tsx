@@ -5,7 +5,7 @@
  */
 
 import { useEffect, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearch } from '@tanstack/react-router'
 import { CheckCircle2, AlertCircle, Loader2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
@@ -19,14 +19,14 @@ interface CleaningResult {
 }
 
 export const NFCCleanRoomPage = () => {
-  const [searchParams] = useSearchParams()
+  const searchParams = useSearch({ strict: false })
   const [result, setResult] = useState<CleaningResult | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const { toast } = useToast()
 
   useEffect(() => {
     // Get room ID from URL parameter
-    const roomId = searchParams.get('roomId')
+    const roomId = (searchParams as { roomId?: string }).roomId
 
     if (!roomId) {
       setResult({
@@ -41,7 +41,8 @@ export const NFCCleanRoomPage = () => {
     // Call the edge function
     callCleanRoomFunction(roomId)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function callCleanRoomFunction(roomId: string) {
     try {
@@ -181,7 +182,7 @@ export const NFCCleanRoomPage = () => {
 
               <div className="space-y-2 text-xs text-gray-600">
                 <p>📍 Please try again or contact management</p>
-                <p>🔗 Room ID: {searchParams.get('roomId') || 'Not provided'}</p>
+                <p>🔗 Room ID: {(searchParams as { roomId?: string }).roomId || 'Not provided'}</p>
               </div>
 
               <button

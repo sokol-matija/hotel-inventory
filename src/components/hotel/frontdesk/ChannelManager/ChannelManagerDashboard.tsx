@@ -2,7 +2,7 @@
 // Comprehensive dashboard for Phobs integration with real-time status updates
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@tanstack/react-router';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../ui/card';
 import { Button } from '../../../ui/button';
 import { Badge } from '../../../ui/badge';
@@ -338,7 +338,7 @@ export default function ChannelManagerDashboard() {
           </Button>
           <Button 
             variant="outline" 
-            onClick={() => navigate('/hotel/front-desk/channel-manager/settings')}
+            onClick={() => navigate({ to: '/hotel/front-desk/channel-manager/settings' })}
             className="flex items-center space-x-2"
           >
             <Settings className="h-4 w-4" />
