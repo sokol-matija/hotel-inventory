@@ -1,0 +1,27 @@
+# Add fingerprints here to ignore false positives
+# Format: <commit>:<file>:<rule>:<line>
+55b13b4da49317967f9799055d57dd373d89a1b2:src/lib/supabase.ts:jwt:4
+8129202a2399419c0a07802a82e83cc3aaa98bc5:.mcp.json:generic-api-key:44
+8129202a2399419c0a07802a82e83cc3aaa98bc5:.mcp.json:generic-api-key:66
+8129202a2399419c0a07802a82e83cc3aaa98bc5:scripts/show-prod-warning.sh:generic-api-key:12
+8129202a2399419c0a07802a82e83cc3aaa98bc5:scripts/hp-mcp-prod:generic-api-key:12
+b3d9791e6d8c1714256b7c38227df7bb16a26136:src/lib/supabase.ts:jwt:5
+b3d9791e6d8c1714256b7c38227df7bb16a26136:package.json:jwt:76
+b3d9791e6d8c1714256b7c38227df7bb16a26136:package.json:generic-api-key:75
+493c95c851a30f8c372704a18cb439f12e71586d:docs/ROOM_CLEANING_AUTOMATION.md:curl-auth-header:117
+76bfbc23879030d665d841e43202c3b0145a5b0c:src/components/testing/NFCCleanRoomPage.tsx:jwt:52
+2a13dcc451b55faa1dc99bef4bcef0c010eb4036:src/lib/supabase.ts:jwt:4
+25564712b4ac1cae778a2bc932dda607c7a3eb20:docs/FISCALIZATION_FINAL_STATUS.md:curl-auth-header:83
+04bbba34dd05818a3f722c3dc38fd8ec000b119a:docs/technical/edge-functions.mdx:generic-api-key:472
+04bbba34dd05818a3f722c3dc38fd8ec000b119a:docs/technical/edge-functions.mdx:curl-auth-header:282
+b14684dbb7b4c0fd526cbcbe9eaf1b732a764ceb:docs/integrations/croatian-fiscalization.mdx:curl-auth-header:115
+25564712b4ac1cae778a2bc932dda607c7a3eb20:scripts/b2b-b2g/test-ddd-get-new.ts:generic-api-key:5
+25564712b4ac1cae778a2bc932dda607c7a3eb20:scripts/b2b-b2g/test-ddd-simple.ts:generic-api-key:8
+25564712b4ac1cae778a2bc932dda607c7a3eb20:scripts/b2b-b2g/test-ddd-invoices.ts:generic-api-key:11
+ffd6300a652ae65755bd502b3e087065ff4f9343:supabase/functions/fiscalize-invoice/README.md:curl-auth-header:49
+6741c0e4fa4db9b2a5e07ef305d999643138dd36:docs/installation.mdx:curl-auth-header:346
+28d74d0898d1a78199cf32980e07eb6b44ea7123:src/components/hotel/shared/HotelSidebar.tsx:generic-api-key:36
+5947e1e18f1d5dc9908b46bcb65495d1b7c2a102:.claude/agents/hotel-corporate-billing-specialist.md:generic-api-key:43
+b9e7121c82bdedb68c2d37e1d566c8fda91fea12:.env:jwt:3
+8b033defb356e1edbce698d2f894ba46ef578f25:PUSH_NOTIFICATIONS_SETUP.md:curl-auth-header:112
+b50f6f13e9ee929ec82b7d66d53a87679f4b2e26:src/lib/supabase.ts:jwt:4

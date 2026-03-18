@@ -1,0 +1,7 @@
+# Build/validation scripts are not production code
+scripts/
+example/
+qr-frontend/
+# Email templates and docs are not production app code
+docs/
+supabase/

@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "exclude": [
+    "node_modules",
+    "src/lib/fiscalization/certificateManager.ts",
+    "src/lib/fiscalization/xmlSigner.ts",
+    "src/lib/fiscalization/testFINACert.ts",
+    "src/lib/fiscalization/testCertificate.ts",
+    "src/__tests__",
+    "**/__tests__/**",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx"
+  ]
+}
