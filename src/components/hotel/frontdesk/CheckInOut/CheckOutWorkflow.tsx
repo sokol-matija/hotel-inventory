@@ -20,12 +20,10 @@ import {
   ShoppingBag,
   Car,
   Star,
-  Receipt,
   MessageSquare,
-  Mail,
-  Download
+  Mail
 } from 'lucide-react';
-import { Reservation, Guest, Room } from '../../../../lib/hotel/types';
+import { Reservation } from '../../../../lib/hotel/types';
 import { useHotel } from '../../../../lib/hotel/state/SupabaseHotelContext';
 import hotelNotification from '../../../../lib/notifications';
 import { SAMPLE_GUESTS } from '../../../../lib/hotel/sampleData';
@@ -43,7 +41,7 @@ interface CheckOutStep {
   description: string;
   completed: boolean;
   required: boolean;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string }>;
 }
 
 export default function CheckOutWorkflow({
@@ -55,7 +53,7 @@ export default function CheckOutWorkflow({
   const [checkOutSteps, setCheckOutSteps] = useState<CheckOutStep[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [checkOutNotes, setCheckOutNotes] = useState('');
-  const [roomKeyReturned, setRoomKeyReturned] = useState(false);
+  const [roomKeyReturned] = useState(false);
   const [additionalCharges, setAdditionalCharges] = useState(0);
   const [guestSatisfaction, setGuestSatisfaction] = useState<number>(5);
   const [generateInvoice, setGenerateInvoice] = useState(false);
@@ -136,6 +134,7 @@ export default function CheckOutWorkflow({
     ];
 
     setCheckOutSteps(steps);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reservation, guest, roomKeyReturned, additionalCharges]);
 
   const handleStepToggle = (stepId: string) => {

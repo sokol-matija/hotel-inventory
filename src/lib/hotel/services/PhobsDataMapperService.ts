@@ -5,15 +5,12 @@ import {
   PhobsReservation,
   PhobsGuest,
   PhobsRoom,
-  PhobsRatePlan,
-  PhobsAvailability,
   OTAChannel,
   DataMapping,
   PhobsReservationStatus,
   createPhobsReservationId,
   createPhobsGuestId,
   createPhobsRoomId,
-  createPhobsRateId
 } from './phobsTypes';
 import {
   Reservation,
@@ -231,7 +228,9 @@ export class PhobsDataMapperService {
         taxes: reservation.vatAmount + reservation.tourismTax,
         fees: reservation.petFee + reservation.parkingFee + reservation.additionalCharges,
         
-        paymentMethod: ((reservation as any).paymentMethod ? 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        paymentMethod: ((reservation as any).paymentMethod ?
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           PhobsDataMapperService.PAYMENT_METHOD_MAPPINGS[(reservation as any).paymentMethod as PaymentMethod] || 'other'
           : 'other') as PaymentMethod,
         paymentStatus: this.mapPaymentStatus(reservation.paymentStatus || 'pending'),
@@ -294,6 +293,7 @@ export class PhobsDataMapperService {
         adults: phobsReservation.adults,
         children: [], // TODO: Map children data
         status: internalStatus,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         bookingSource: this.mapOTAToBookingSource(phobsReservation.channel) as any,
         specialRequests: phobsReservation.specialRequests,
         
@@ -588,7 +588,7 @@ export class PhobsDataMapperService {
    */
   private mapOTAToBookingSource(channel: OTAChannel): string {
     const mapping = Object.entries(PhobsDataMapperService.OTA_CHANNEL_MAPPINGS)
-      .find(([_, value]) => value === channel);
+      .find(([, value]) => value === channel);
     return mapping ? mapping[0] : 'other';
   }
 

@@ -2,7 +2,7 @@
 // Realistic data for testing the hotel management system
 
 import { Guest, GuestChild, Reservation, ReservationStatus } from './types';
-import { addDays, subDays, addWeeks, format } from 'date-fns';
+import { addDays, subDays, addWeeks } from 'date-fns';
 import { HotelPricingEngine, PricingCalculationInput } from './pricingEngine';
 import { HOTEL_POREC_ROOMS } from './hotelData';
 
@@ -354,12 +354,6 @@ export const SAMPLE_GUESTS: Guest[] = [
   }
 ];
 
-// Helper function to get random room
-function getRandomRoom(): string {
-  const randomIndex = Math.floor(Math.random() * HOTEL_POREC_ROOMS.length);
-  return HOTEL_POREC_ROOMS[randomIndex].id;
-}
-
 // Generate sample reservations with realistic patterns
 export function generateSampleReservations(): Reservation[] {
   const reservations: Reservation[] = [];
@@ -497,8 +491,8 @@ export function generateDemoReservations(): Reservation[] {
   
   // Helper function to get random booking source
   function getRandomBookingSource(): 'booking.com' | 'direct' | 'other' {
-    const sources = ['booking.com', 'direct', 'other'];
-    return sources[Math.floor(Math.random() * sources.length)] as any;
+    const sources: Array<'booking.com' | 'direct' | 'other'> = ['booking.com', 'direct', 'other'];
+    return sources[Math.floor(Math.random() * sources.length)];
   }
   
   // Helper function to get random status with realistic distribution
@@ -708,7 +702,7 @@ function createReservation(
   let pricing;
   try {
     pricing = calculate2026Pricing(roomId, normalizedCheckIn, normalizedCheckOut, adults, children, options);
-  } catch (error) {
+  } catch {
     // Fallback pricing if calculation fails
     pricing = {
       baseRate: 70,

@@ -77,6 +77,7 @@ export function useLocationState() {
     if (id) {
       fetchLocationData();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   // State updaters

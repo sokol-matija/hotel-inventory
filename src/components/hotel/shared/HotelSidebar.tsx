@@ -21,7 +21,6 @@ import {
   Building2,
   Coffee,
   Printer,
-  Sparkles,
   List
 } from 'lucide-react'
 
@@ -133,7 +132,6 @@ export default function HotelSidebar() {
 
   // Determine current module based on path
   const isFinanceModule = location.pathname.startsWith('/hotel/finance')
-  const isFrontDeskModule = location.pathname.startsWith('/hotel/front-desk')
   
   // Get appropriate sidebar items and module info
   const sidebarItems = isFinanceModule ? financeSidebarItems : frontDeskSidebarItems

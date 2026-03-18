@@ -23,8 +23,8 @@ interface AuditLogEntry {
   action: 'CREATE' | 'UPDATE' | 'DELETE' | 'QUANTITY_UPDATE'
   table_name: string
   record_id: number | null
-  old_values: Record<string, any> | null
-  new_values: Record<string, any> | null
+  old_values: Record<string, unknown> | null
+  new_values: Record<string, unknown> | null
   description: string | null
   created_at: string
   user_profile?: {
@@ -71,7 +71,7 @@ export default function AuditLogPage() {
   }, [])
 
   useEffect(() => {
-    let filtered = logs.filter(log => {
+    const filtered = logs.filter(log => {
       const matchesSearch = 
         (log.description?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
         log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -90,14 +90,16 @@ export default function AuditLogPage() {
           case 'today':
             matchesDate = logDate.toDateString() === now.toDateString()
             break
-          case 'week':
+          case 'week': {
             const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
             matchesDate = logDate >= weekAgo
             break
-          case 'month':
+          }
+          case 'month': {
             const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
             matchesDate = logDate >= monthAgo
             break
+          }
         }
       }
       
@@ -144,7 +146,7 @@ export default function AuditLogPage() {
     }
   }
 
-  const renderValueChange = (oldValues: any, newValues: any) => {
+  const renderValueChange = (oldValues: Record<string, unknown> | null, newValues: Record<string, unknown> | null) => {
     if (!oldValues && !newValues) return null
     
     if (newValues && !oldValues) {

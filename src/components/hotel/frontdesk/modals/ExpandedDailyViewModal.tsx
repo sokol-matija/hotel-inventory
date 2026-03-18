@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, Users, Baby, Car, Heart, Shirt, Calendar, Euro, Plus, Minus, Check, Save } from 'lucide-react';
+import { X, Users, Baby, Car, Heart, Shirt, Calendar } from 'lucide-react';
 import { Button } from '../../../ui/button';
-import { Badge } from '../../../ui/badge';
 import { 
   unifiedPricingService, 
   DayByDayPricingResult,
@@ -14,14 +13,6 @@ interface ExpandedDailyViewModalProps {
   onClose: () => void;
   reservationId: number;
   reservationTitle: string; // e.g., "John Doe - Room 202"
-}
-
-interface GuestPresence {
-  guestId: string;
-  guestName: string;
-  guestType: 'adult' | 'child';
-  age?: number;
-  isPresent: boolean;
 }
 
 interface EditableDayState {
@@ -53,6 +44,7 @@ export const ExpandedDailyViewModal: React.FC<ExpandedDailyViewModalProps> = ({
     if (isOpen && reservationId) {
       loadPricingData();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, reservationId]);
 
   const loadPricingData = async () => {
@@ -147,7 +139,7 @@ export const ExpandedDailyViewModal: React.FC<ExpandedDailyViewModalProps> = ({
     setEditingDay(null);
   };
 
-  const updateEditState = (dateKey: string, field: string, value: any) => {
+  const updateEditState = (dateKey: string, field: string, value: unknown) => {
     setEditState(prev => ({
       ...prev,
       [dateKey]: {
@@ -224,7 +216,7 @@ export const ExpandedDailyViewModal: React.FC<ExpandedDailyViewModalProps> = ({
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium text-gray-900">Daily Details</h3>
                   
-                  {pricingData.dailyBreakdown.map((day, index) => {
+                  {pricingData.dailyBreakdown.map((day, _index) => {
                     const dateKey = format(day.date, 'yyyy-MM-dd');
                     const isEditing = editingDay === dateKey;
                     const editData = editState[dateKey];

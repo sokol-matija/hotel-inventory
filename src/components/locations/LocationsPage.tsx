@@ -5,11 +5,10 @@ import { Button } from '../ui/button'
 import { supabase } from '@/lib/supabase'
 import AddLocationDialog from './AddLocationDialog'
 import { useTranslation } from 'react-i18next'
-import { 
-  MapPin, 
-  Refrigerator, 
-  Warehouse, 
-  Package, 
+import {
+  Refrigerator,
+  Warehouse,
+  Package,
   AlertTriangle,
   Clock,
   Plus
@@ -72,6 +71,7 @@ export default function LocationsPage() {
         
         // Calculate low stock
         const lowStockCount = locationInventory.filter(item => 
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           item.item && item.quantity <= (item.item as any).minimum_stock
         ).length
 

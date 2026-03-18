@@ -107,14 +107,14 @@ function TimelineHeader({ startDate, onNavigate }: {
 }
 
 // Reservation block matching original half-day system
-function ReservationBlock({ 
-  reservation, 
-  guest, 
-  startHalfDayIndex, 
-  endHalfDayIndex 
+function ReservationBlock({
+  reservation,
+  guest,
+  startHalfDayIndex,
+  endHalfDayIndex
 }: {
-  reservation: any;
-  guest: any;
+  reservation: Record<string, unknown>;
+  guest: Record<string, unknown> | undefined;
   startHalfDayIndex: number;
   endHalfDayIndex: number;
 }) {
@@ -149,15 +149,15 @@ function ReservationBlock({
 }
 
 // Room row matching original half-day system
-function RoomRow({ 
-  room, 
-  reservations, 
+function RoomRow({
+  room,
+  reservations,
   guests,
-  startDate 
+  startDate
 }: {
-  room: any;
-  reservations: any[];
-  guests: any[];
+  room: Record<string, unknown>;
+  reservations: Record<string, unknown>[];
+  guests: Record<string, unknown>[];
   startDate: Date;
 }) {
   const timelineStart = startOfDay(startDate);
@@ -251,7 +251,7 @@ export default function HotelTimelineV2({
   
   // Group rooms by floor
   const roomsByFloor = useMemo(() => {
-    const grouped: Record<number, any[]> = {};
+    const grouped: Record<number, Record<string, unknown>[]> = {};
     rooms.forEach(room => {
       if (!grouped[room.floor]) grouped[room.floor] = [];
       grouped[room.floor].push(room);

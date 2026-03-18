@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { Reservation, Guest, Room, RoomServiceItem, Company } from './hotel/types';
+import { Reservation, Guest, Room, Company } from './hotel/types';
 import { format } from 'date-fns';
 import * as QRCode from 'qrcode';
 import { convertToDisplayName } from './hotel/countryCodeUtils';
@@ -278,6 +278,7 @@ export async function generatePDFInvoice(data: InvoiceData): Promise<void> {
   });
   
   // Get the final Y position after the table
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const finalY = (doc as any).lastAutoTable.finalY || 200;
   
   // Payment information

@@ -2,7 +2,7 @@
 // Handles creation, assignment, and conversion of virtual rooms (501-599)
 
 import { supabase } from '../../supabase';
-import { Room, Reservation, Guest } from '../types';
+import { Room, Guest } from '../types';
 import { calculatePricing } from '../pricingCalculator';
 
 export interface VirtualRoomConfig {
@@ -132,7 +132,7 @@ export class VirtualRoomService {
   ): Promise<number | null> {
     try {
       // Check if placeholder guest exists
-      const { data: existingGuest, error: searchError } = await supabase
+      const { data: existingGuest } = await supabase
         .from('guests')
         .select('id')
         .eq('first_name', 'Unallocated')
@@ -315,6 +315,7 @@ export class VirtualRoomService {
         [transformedRoom] // Pass the target room so pricing calculator can find it
       );
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const updates: any = {
         room_id: parseInt(targetRoomId),
         status: 'confirmed',
@@ -387,6 +388,7 @@ export class VirtualRoomService {
   /**
    * Transform database room to application Room type
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private transformDatabaseRoomToRoom(dbRoom: any): Room {
     return {
       id: dbRoom.id.toString(),

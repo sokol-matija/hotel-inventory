@@ -213,7 +213,7 @@ export function getRolesWithPermission(permission: keyof UserPermissions): Role[
 }
 
 // Helper function to check if a user profile has a specific permission
-export function userHasPermission(userProfile: any, permission: keyof UserPermissions): boolean {
+export function userHasPermission(userProfile: Record<string, unknown>, permission: keyof UserPermissions): boolean {
   if (!userProfile?.role?.name) return false;
   return hasPermission(userProfile.role.name as Role, permission);
 } 

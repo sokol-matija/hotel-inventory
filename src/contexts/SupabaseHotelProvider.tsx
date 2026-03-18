@@ -23,6 +23,7 @@ interface HotelContextType {
 
 const HotelContext = createContext<HotelContextType | undefined>(undefined);
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useHotel = () => {
   const context = useContext(HotelContext);
   if (!context) {

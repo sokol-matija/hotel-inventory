@@ -46,7 +46,7 @@ export interface EmailTestActions {
   getEmailTypes: () => Array<{ value: EmailType; label: string; description: string }>;
   getEmailLanguages: () => Array<{ value: EmailLanguage; label: string; flag: string }>;
   formatDisplayDate: (date: Date) => string;
-  getGuestBadges: (guest: any) => Array<{ type: 'pet' | 'vip' | 'children'; label: string; icon: string }>;
+  getGuestBadges: (guest: unknown) => Array<{ type: 'pet' | 'vip' | 'children'; label: string; icon: string }>;
 }
 
 export function useEmailTestState(): EmailTestState & EmailTestActions {
@@ -140,8 +140,8 @@ export function useEmailTestState(): EmailTestState & EmailTestActions {
     [emailTestService]
   );
   
-  const getGuestBadges = useCallback((guest: any) => 
-    emailTestService.getGuestBadges(guest), 
+  const getGuestBadges = useCallback((guest: unknown) =>
+    emailTestService.getGuestBadges(guest),
     [emailTestService]
   );
   

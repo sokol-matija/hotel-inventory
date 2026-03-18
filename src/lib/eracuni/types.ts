@@ -92,7 +92,7 @@ export interface EracuniFiscalData {
   invoice_id: string;
   fiscal_receipt_url: string;
   submission_timestamp: string;
-  fina_response: any;
+  fina_response: unknown;
 }
 
 // Hotel Porec specific configuration

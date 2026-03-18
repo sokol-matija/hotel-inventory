@@ -7,12 +7,10 @@ import {
   HOTEL_CONSTANTS 
 } from './types';
 import { SEASONAL_PERIODS } from './hotelData';
-import { format, isWithinInterval, parseISO } from 'date-fns';
+import { isWithinInterval, parseISO } from 'date-fns';
 
 // Determine seasonal period for a given date
 export function getSeasonalPeriod(date: Date): SeasonalPeriod {
-  const dateStr = format(date, 'yyyy-MM-dd');
-  
   for (const periodDef of SEASONAL_PERIODS) {
     // Handle periods with multiple date ranges (B and C)
     if (periodDef.periods) {
@@ -129,7 +127,6 @@ export function calculatePricing(
   
   // Calculate tourism tax
   const tourismTaxRate = getTourismTaxRate(checkIn);
-  const totalGuests = adults + children.length;
   let tourismTax = 0;
   
   // Tourism tax calculation with age-based rates

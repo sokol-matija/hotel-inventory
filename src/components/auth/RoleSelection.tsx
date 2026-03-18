@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Button } from '../ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Input } from '../ui/input'
 import { Label } from '../ui/label'
 import { supabase } from '@/lib/supabase'
@@ -16,7 +16,7 @@ interface Role {
 }
 
 interface RoleSelectionProps {
-  user: any
+  user: { id: string }
   onRoleSelected: () => void
 }
 
@@ -45,7 +45,7 @@ const BACKGROUND_STYLE = {
 } as const
 
 export default function RoleSelection({ user, onRoleSelected }: RoleSelectionProps) {
-  const { user: authUser } = useAuth()
+  useAuth()
   const { t } = useTranslation()
   const { toast } = useToast()
   const [roles, setRoles] = useState<Role[]>([])

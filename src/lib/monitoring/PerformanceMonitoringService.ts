@@ -29,7 +29,7 @@ export interface UserInteractionMetric {
   success: boolean;
   timestamp: Date;
   userId?: string;
-  metadata?: any;
+  metadata?: unknown;
 }
 
 export interface SystemMetrics {
@@ -211,7 +211,7 @@ class PerformanceMonitoringService {
     duration: number,
     success: boolean,
     userId?: string,
-    metadata?: any
+    metadata?: unknown
   ): void {
     const metric: UserInteractionMetric = {
       action,
@@ -231,7 +231,7 @@ class PerformanceMonitoringService {
       logger.warn('SlowInteraction', `Slow ${action} in ${component}`, {
         duration,
         success,
-        metadata
+        metadata: metadata as Record<string, unknown>
       });
     }
 
@@ -239,7 +239,7 @@ class PerformanceMonitoringService {
       duration,
       success,
       userId,
-      metadata
+      metadata: metadata as Record<string, unknown>
     });
   }
 
@@ -473,6 +473,7 @@ class PerformanceMonitoringService {
 
   private getMemoryUsage(): number {
     if (typeof performance !== 'undefined' && 'memory' in performance) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return (performance as any).memory.usedJSHeapSize / 1024 / 1024; // MB
     }
     return 0;
@@ -486,6 +487,7 @@ class PerformanceMonitoringService {
   private getNetworkLatency(): number {
     // Simplified network latency estimation
     if (typeof navigator !== 'undefined' && 'connection' in navigator) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const connection = (navigator as any).connection;
       return connection.rtt || 0;
     }

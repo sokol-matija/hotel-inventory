@@ -13,7 +13,6 @@ import {
   Calendar as CalendarIcon,
   Users,
   Baby,
-  Heart,
   Maximize2,
   Minimize2,
   ChevronDown,
@@ -41,9 +40,9 @@ import HotelOrdersModal from './RoomService/HotelOrdersModal';
 import hotelNotification from '../../../lib/notifications';
 import { OrderItem } from '../../../lib/hotel/orderTypes';
 import { useHotelTimelineState } from '../../../lib/hooks/useHotelTimelineState';
-import { useSimpleDragCreate, DragCreateSelection } from '../../../lib/hooks/useSimpleDragCreate';
+import { OccupancyData } from '../../../lib/hotel/services/HotelTimelineService';
+import { useSimpleDragCreate, DragCreateSelection, SimpleDragCreateState } from '../../../lib/hooks/useSimpleDragCreate';
 import SimpleDragCreateButton from './SimpleDragCreateButton';
-import { ExpandedDailyViewModal } from './modals/ExpandedDailyViewModal';
 import { EnhancedDailyViewModal } from './modals/EnhancedDailyViewModal';
 import DragCreateOverlay from './DragCreateOverlay';
 import { HotelEmailService } from '../../../lib/emailService';
@@ -440,6 +439,32 @@ const ItemTypes = {
   RESERVATION: 'reservation'
 };
 
+// DnD drag item type
+interface DragItem {
+  reservationId: string;
+  currentRoomId: string;
+  currentRoomFloor: number;
+  checkIn: Date;
+  checkOut: Date;
+  guestName: string;
+  reservation: Reservation;
+}
+
+// Type for the useSimpleDragCreate return value
+interface SimpleDragCreateHook {
+  state: SimpleDragCreateState;
+  actions: {
+    enable: () => void;
+    disable: () => void;
+    startSelection: (roomId: string, checkInDate: Date) => void;
+    completeSelection: (checkOutDate: Date) => DragCreateSelection | null;
+    cancel: () => void;
+    setHoverPreview: (roomId: string, hoverDate: Date, isAM: boolean) => void;
+    clearHoverPreview: () => void;
+  };
+  shouldHighlightCell: (roomId: string, date: Date, isAM: boolean) => 'selectable' | 'preview' | 'hover-preview' | 'none';
+}
+
 // Reservation block component with resize handles
 function ReservationBlock({
   reservation,
@@ -459,7 +484,7 @@ function ReservationBlock({
   onShowExpandedDailyView
 }: {
   reservation: Reservation;
-  guest: any;
+  guest: Guest | undefined;
   room: Room;
   startDate: Date;
   onReservationClick: (reservation: Reservation) => void;
@@ -528,7 +553,7 @@ function ReservationBlock({
       });
       return isMoveMode; // Only allow dragging in move mode
     },
-    end: (item: any, monitor: any) => {
+    end: (_item: DragItem, monitor) => {
       console.log('🏁 DRAG-DROP: Drag ended:', {
         reservationId: reservation.id,
         didDrop: monitor.didDrop(),
@@ -582,22 +607,26 @@ function ReservationBlock({
   
   const statusColors = RESERVATION_STATUS_COLORS[reservation.status as ReservationStatus] || RESERVATION_STATUS_COLORS.confirmed;
   const flag = getCountryFlag(guest?.nationality || '');
-  
+
   // Calculate reservation length for adaptive UI
   const reservationDays = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (24 * 60 * 60 * 1000));
   const isShortReservation = reservationDays <= 2; // 1-2 day reservations
-  
+
+  // Extract timestamps for stable useEffect dependencies
+  const checkInTime = reservation.checkIn.getTime();
+  const checkOutTime = reservation.checkOut.getTime();
+
   // Animation effects - MUST be before any early returns to satisfy Rules of Hooks
   useEffect(() => {
     if (blockRef.current && !isDragging) {
       // Smooth animation when position updates after drop OR resize
-      gsap.fromTo(blockRef.current, 
-        { 
+      gsap.fromTo(blockRef.current,
+        {
           scale: 0.95,
           boxShadow: '0 4px 20px rgba(59, 130, 246, 0.3)',
           y: -2
         },
-        { 
+        {
           scale: 1,
           boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
           y: 0,
@@ -606,7 +635,7 @@ function ReservationBlock({
         }
       );
     }
-  }, [gridColumnStart, gridColumnEnd, isDragging, reservation.checkIn.getTime(), reservation.checkOut.getTime()]);
+  }, [gridColumnStart, gridColumnEnd, isDragging, checkInTime, checkOutTime]);
 
   // Initial entrance animation - MUST be before any early returns to satisfy Rules of Hooks
   useEffect(() => {
@@ -662,7 +691,7 @@ function ReservationBlock({
         color: statusColors.textColor,
         zIndex: isDragging ? 50 : 5 // Higher z-index when dragging
       }}
-      onClick={(e) => {
+      onClick={(_e) => {
         // Prevent click-to-view if dragging or closing context menu
         if (!isDragging && !isClosingContextMenu) {
           onReservationClick(reservation);
@@ -1385,14 +1414,14 @@ function DroppableDateCell({
   onMoveReservation,
   existingReservations = [],
   // New props for drag-to-create
-  isDragCreateMode,
+  isDragCreateMode: _isDragCreateMode,
   isDragCreating,
-  dragCreateStart,
-  dragCreateEnd,
+  dragCreateStart: _dragCreateStart,
+  dragCreateEnd: _dragCreateEnd,
   dragCreatePreview,
-  onDragCreateStart,
-  onDragCreateMove,
-  onDragCreateEnd,
+  onDragCreateStart: _onDragCreateStart,
+  onDragCreateMove: _onDragCreateMove,
+  onDragCreateEnd: _onDragCreateEnd,
   onCellClick,
   // Simple drag-create visual feedback
   shouldHighlightCell,
@@ -1419,11 +1448,11 @@ function DroppableDateCell({
   onCellClick?: (roomId: string, date: Date, isAM: boolean) => void;
   // Simple drag-create visual feedback
   shouldHighlightCell?: (roomId: string, date: Date, isAM: boolean) => 'selectable' | 'preview' | 'hover-preview' | 'none';
-  dragCreate?: any; // Drag create hook object
+  dragCreate?: SimpleDragCreateHook; // Drag create hook object
   cellRefs?: Map<string, HTMLElement>;
 }) {
   const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-  
+
   // Check if this half-day slot already has a reservation for this room
   const hasExistingReservation = existingReservations.some(res => {
     const resCheckInDate = startOfDay(res.checkIn);
@@ -1459,7 +1488,7 @@ function DroppableDateCell({
   // Drop zone for half-day positioning with CONSTRAINTS
   const [{ isOver, canDrop }, drop] = useDrop(() => ({
     accept: ItemTypes.RESERVATION,
-    drop: (item: any) => {
+    drop: (item: DragItem) => {
       console.log('🚀 DROP TRIGGERED:', {
         reservationId: item.reservationId,
         fromRoom: item.currentRoomId,
@@ -1518,7 +1547,7 @@ function DroppableDateCell({
         }
       }
     },
-    canDrop: (item: any) => {
+    canDrop: (item: DragItem) => {
       // ENHANCED CONSTRAINTS:
       // 1. No existing reservation conflicts
       // 2. Not same position
@@ -1561,7 +1590,7 @@ function DroppableDateCell({
   };
 
   // OLD right-click handler - DISABLED (using new drag-create system)
-  const handleRightClick = (e: React.MouseEvent) => {
+  const handleRightClick = (_e: React.MouseEvent) => {
     // Disabled - new system handles cancellation
   };
 
@@ -1750,7 +1779,7 @@ function RoomRow({
   onCellClick?: (roomId: string, date: Date, isAM: boolean) => void;
   // Simple drag-create visual feedback
   shouldHighlightCell?: (roomId: string, date: Date, isAM: boolean) => 'selectable' | 'preview' | 'hover-preview' | 'none';
-  dragCreate?: any; // Drag create hook object
+  dragCreate?: SimpleDragCreateHook; // Drag create hook object
   onShowExpandedDailyView?: (reservation: Reservation) => void;
   cellRefs?: Map<string, HTMLElement>;
 }) {
@@ -1914,14 +1943,14 @@ function FloorSection({
   // New drag-create system props
   shouldHighlightCell?: (roomId: string, date: Date, isAM: boolean) => 'selectable' | 'preview' | 'hover-preview' | 'none';
   onCellClick?: (roomId: string, date: Date, isAM: boolean) => void;
-  dragCreate?: any; // Drag create hook object
+  dragCreate?: SimpleDragCreateHook; // Drag create hook object
   onShowExpandedDailyView?: (reservation: Reservation) => void;
   cellRefs?: Map<string, HTMLElement>;
 }) {
   const floorName = floor === 4 ? 'Rooftop Premium' : `Floor ${floor}`;
-  const occupiedRooms = rooms.filter(room => 
-    reservations.some(r => r.roomId === room.id && 
-      startOfDay(new Date()) >= startOfDay(r.checkIn) && 
+  const occupiedRooms = rooms.filter(room =>
+    reservations.some(r => r.roomId === room.id &&
+      startOfDay(new Date()) >= startOfDay(r.checkIn) &&
       startOfDay(new Date()) < startOfDay(r.checkOut)
     )
   );
@@ -2013,8 +2042,8 @@ function RoomOverviewFloorSection({
   guests: Guest[];
   isExpanded: boolean;
   onToggle: () => void;
-  occupancyData: Record<string, any>;
-  onRoomClick: (room: Room, reservation?: any) => void;
+  occupancyData: OccupancyData;
+  onRoomClick: (room: Room, reservation?: Reservation) => void;
   onUpdateReservationStatus?: (id: string, status: ReservationStatus) => Promise<void>;
   onDeleteReservation?: (id: string) => Promise<void>;
   onShowDrinksModal?: (reservation: Reservation) => void;
@@ -2154,7 +2183,7 @@ function RoomOverviewFloorSection({
                     ${room.isPremium && !isOccupied ? 'bg-gradient-to-br from-yellow-50 to-amber-50' : ''}
                     ${room.is_clean ? 'border-l-4 border-l-blue-500' : 'border-l-4 border-l-red-500'}
                   `}
-                  onClick={(e) => {
+                  onClick={(_e) => {
                     if (!isClosingContextMenuRoomOverview) {
                       onRoomClick(room, reservation);
                     }
@@ -2410,7 +2439,7 @@ function RoomOverviewFloorSection({
 
 // Main timeline component
 export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen }: HotelTimelineProps) {
-  const { reservations, rooms, guests, isUpdating, createReservation, createGuest, updateReservation, updateReservationStatus, deleteReservation, refreshData } = useHotel();
+  const { reservations, rooms, guests, isUpdating, updateReservation, updateReservationStatus, deleteReservation, refreshData } = useHotel();
 
   // Simple drag-create functionality
   const dragCreate = useSimpleDragCreate();
@@ -2505,7 +2534,7 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
   // Note: Removed global mouse event listener since we're using two-click system instead of drag
 
   // Smart context menu positioning (now using service)
-  const calculateContextMenuPosition = (e: React.MouseEvent, menuWidth = 180, menuHeight = 300) => {
+  const calculateContextMenuPosition = (e: React.MouseEvent, _menuWidth = 180, _menuHeight = 300) => {
     return positionContextMenu(e.clientX, e.clientY);
   };
 
@@ -2516,18 +2545,20 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
   };
 
   // Escape key listener to cancel drag-to-create
+  const dragCreateActions = dragCreate.actions;
+  const dragCreateIsSelecting = dragCreate.state.isSelecting;
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && dragCreate.state.isSelecting) {
-        dragCreate.actions.cancel();
+      if (e.key === 'Escape' && dragCreateIsSelecting) {
+        dragCreateActions.cancel();
       }
     };
 
-    if (dragCreate.state.isSelecting) {
+    if (dragCreateIsSelecting) {
       document.addEventListener('keydown', handleKeyDown);
       return () => document.removeEventListener('keydown', handleKeyDown);
     }
-  }, [dragCreate.state.isSelecting]);
+  }, [dragCreateIsSelecting, dragCreateActions]);
 
   // Keyboard shortcuts integration
   useEffect(() => {
@@ -2558,7 +2589,11 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
             handleNavigate('TODAY');
             break;
           case 'toggle_drag_create':
-            dragCreate.state.isEnabled ? dragCreate.actions.disable() : dragCreate.actions.enable();
+            if (dragCreate.state.isEnabled) {
+              dragCreate.actions.disable();
+            } else {
+              dragCreate.actions.enable();
+            }
             break;
           case 'toggle_expansion':
             toggleExpansionMode();
@@ -2589,7 +2624,8 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
     };
 
     initKeyboardShortcuts();
-  }, [dragCreate.state.isEnabled, isExpansionMode, isMoveMode, showReservationPopup, showCreateBooking, roomChangeDialog.show, currentDate]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dragCreate.state.isEnabled, isExpansionMode, isMoveMode, showReservationPopup, showCreateBooking, roomChangeDialog.show, currentDate, closeCreateBooking, closeReservationPopup, closeRoomChangeDialog, dragCreate.actions, exitAllModes, handleNavigate, selectedReservation, toggleExpansionMode, toggleMoveMode]);
 
   // Group rooms by floor
   // roomsByFloor and currentOccupancy now provided by useHotelTimelineState hook
@@ -2598,7 +2634,7 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
   // and handleReservationClick now provided by useHotelTimelineState hook
   
   // handleRoomClick wrapper to handle room clicks with reservations
-  const handleRoomClickWrapper = (room: Room, reservation?: any) => {
+  const handleRoomClickWrapper = (room: Room, reservation?: Reservation) => {
     if (reservation) {
       // Occupied room - show reservation details
       handleReservationClick(reservation);
@@ -2616,7 +2652,13 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
       r.roomId === roomId && r.id !== excludeReservationId
     );
     
-    const conflicts: any[] = [];
+    interface ConflictItem {
+      type: string;
+      severity: string;
+      message: string;
+      suggestedAlternatives?: Room[];
+    }
+    const conflicts: ConflictItem[] = [];
     const checkInTime = checkIn.getTime();
     const checkOutTime = checkOut.getTime();
     
@@ -2677,7 +2719,7 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
       const isVirtualToReal = virtualRoomService.isVirtualRoom(oldRoom) && !virtualRoomService.isVirtualRoom(newRoom);
 
       // Prepare guest data for allocation if moving from virtual room
-      let allocationGuestData: any = undefined;
+      let allocationGuestData: Partial<Guest> | undefined = undefined;
 
       if (isVirtualToReal) {
         console.log('🎯 ALLOCATION: Preparing allocation from virtual room to real room...', {
@@ -2725,22 +2767,22 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
       const conflictResult = await basicRoomAvailabilityCheck(reservationId, newRoomId, newCheckIn, newCheckOut);
       
       if (conflictResult.hasConflict) {
-        const errorMessages = conflictResult.conflicts.map((c: any) => c.message).join('\n');
+        const errorMessages = conflictResult.conflicts.map(c => c.message).join('\n');
         hotelNotification.error('Move Blocked!', errorMessages, 5);
-        
+
         // Show alternatives if available
         const firstConflict = conflictResult.conflicts[0];
         if (firstConflict?.suggestedAlternatives && firstConflict.suggestedAlternatives.length > 0) {
           const alternatives = firstConflict.suggestedAlternatives;
-          const alternativeMessage = `Try these available rooms: ${alternatives.map((r: any) => `Room ${r.number}`).join(', ')}`;
+          const alternativeMessage = `Try these available rooms: ${alternatives.map(r => `Room ${r.number}`).join(', ')}`;
           hotelNotification.info('Alternative Rooms', alternativeMessage, 7);
         }
         return;
       }
-      
+
       // Show warnings
       if (conflictResult.warnings.length > 0) {
-        const warningMessages = conflictResult.warnings.map((w: any) => w.message).join('\n');
+        const warningMessages = conflictResult.warnings.map((w: { message: string }) => w.message).join('\n');
         hotelNotification.warning('Move Warnings', warningMessages, 4);
       }
 
@@ -2751,7 +2793,7 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
       // Check if room type is changing
       const isRoomTypeChange = oldRoom.type !== newRoom.type;
       
-      const updatedReservationData: any = {
+      const updatedReservationData: Partial<Reservation> = {
         roomId: newRoomId,
         checkIn: newCheckIn,
         checkOut: newCheckOut
@@ -2778,7 +2820,7 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
           roomId: newRoomId,
           checkIn: newCheckIn,
           checkOut: newCheckOut,
-          status: 'confirmed' as any
+          status: 'confirmed' as ReservationStatus
         };
 
         result = await optimisticService.optimisticUpdateReservation(
@@ -3129,7 +3171,7 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
         4
       );
     }
-  };;
+  }
 
   // Old handleCreateBooking function removed - modal now handles its own booking creation
   
@@ -3155,7 +3197,7 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
         hasPets: guest?.hasPets || false
       }
     };
-  }, [selectedReservation]);
+  }, [selectedReservation, rooms, guests]);
 
   // Handle showing hotel orders modal (wrapper for local state management)
   const handleShowDrinksModalWrapper = (reservation: Reservation) => {
@@ -3219,7 +3261,6 @@ export default function HotelTimeline({ isFullscreen = false, onToggleFullscreen
 
     try {
       // Add order charges to reservation bill
-      const guest = guests.find(g => g.id === hotelOrdersReservation.guestId);
       const room = rooms.find(r => r.id === hotelOrdersReservation.roomId);
       
       // Convert OrderItems to RoomServiceItems

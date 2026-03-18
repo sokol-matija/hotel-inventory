@@ -29,11 +29,13 @@ export interface OTAError {
 /**
  * SOAP Response interface
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface SoapResponse<T = any> {
   success: boolean;
   data?: T;
   errors?: OTAError[];
   warnings?: OTAError[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   rawResponse?: any;
 }
 
@@ -50,6 +52,7 @@ export class PhobsXmlParser {
   /**
    * Parse SOAP envelope and extract body
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   parseSoapResponse<T = any>(xmlString: string): SoapResponse<T> {
     try {
       const parsed = this.parser.parse(xmlString);
@@ -98,6 +101,7 @@ export class PhobsXmlParser {
   /**
    * Extract OTA response from SOAP body
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private extractOtaResponse(body: any): SoapResponse {
     // Common OTA response types
     const responseTypes = [
@@ -107,6 +111,7 @@ export class PhobsXmlParser {
       'OTA_HotelRatePlanRS',
     ];
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let otaResponse: any = null;
     for (const type of responseTypes) {
       if (body[type]) {
@@ -158,6 +163,7 @@ export class PhobsXmlParser {
   /**
    * Parse SOAP fault
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private parseSoapFault(fault: any): SoapResponse {
     const faultCode = fault.faultcode || fault.Code?.Value || 'UNKNOWN';
     const faultString =
@@ -180,6 +186,7 @@ export class PhobsXmlParser {
   /**
    * Extract OTA errors
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private extractErrors(errorsElement: any): OTAError[] {
     if (!errorsElement) return [];
 
@@ -206,6 +213,7 @@ export class PhobsXmlParser {
   /**
    * Extract OTA warnings
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private extractWarnings(warningsElement: any): OTAError[] {
     if (!warningsElement) return [];
 
@@ -347,6 +355,7 @@ export class PhobsXmlParser {
         ? hotelReservations
         : [hotelReservations];
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const reservations = reservationArray.map((res: any) => {
         const uniqueId = res.UniqueID;
         const roomStay = res.RoomStays?.RoomStay;
@@ -380,6 +389,7 @@ export class PhobsXmlParser {
           checkIn: timeSpan?.['@_Start'] || '',
           checkOut: timeSpan?.['@_End'] || '',
           numberOfUnits: parseInt(roomType?.['@_NumberOfUnits'] || '1', 10),
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           guestCounts: guestCountArray.map((gc: any) => ({
             ageQualifyingCode: parseInt(gc['@_AgeQualifyingCode'] || '10', 10),
             count: parseInt(gc['@_Count'] || '1', 10),
@@ -456,6 +466,7 @@ export class PhobsXmlParser {
         ? [ratePlansElement.RatePlan]
         : [];
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const ratePlans = ratePlansArray.map((rp: any) => ({
       ratePlanCode: rp['@_RatePlanCode'] || rp.RatePlanCode || '',
       ratePlanName: rp['@_RatePlanName'] || rp.RatePlanName,
@@ -533,6 +544,7 @@ export class PhobsXmlParser {
   /**
    * Parse raw XML to object
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   parseXml(xmlString: string): any {
     return this.parser.parse(xmlString);
   }

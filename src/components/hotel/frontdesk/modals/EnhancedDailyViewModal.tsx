@@ -14,7 +14,7 @@ import { Button } from '../../../ui/button';
 import { Badge } from '../../../ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
 import { unifiedPricingService, DayByDayPricingResult } from '../../../../lib/hotel/services/UnifiedPricingService';
-import { format, addDays, differenceInDays } from 'date-fns';
+import { format } from 'date-fns';
 import { supabase } from '../../../../lib/supabase';
 import { reservationAdapter } from '../../../../services/ReservationAdapter';
 
@@ -64,7 +64,7 @@ export const EnhancedDailyViewModal: React.FC<EnhancedDailyViewModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   
   // Core data
-  const [reservation, setReservation] = useState<any>(null);
+  const [, setReservation] = useState<Record<string, unknown> | null>(null);
   const [allGuests, setAllGuests] = useState<Guest[]>([]);
   const [dayStates, setDayStates] = useState<DayState[]>([]);
   const [pricingData, setPricingData] = useState<DayByDayPricingResult | null>(null);
@@ -111,7 +111,7 @@ export const EnhancedDailyViewModal: React.FC<EnhancedDailyViewModalProps> = ({
         console.warn('⚠️ Could not load children:', childrenError);
       } else if (childrenData && childrenData.length > 0) {
         console.log('✅ Children found:', childrenData);
-        childrenData.forEach((child: any) => {
+        childrenData.forEach((child: Record<string, unknown>) => {
           guests.push({
             id: child.id.toString(),
             name: child.name,
@@ -218,6 +218,7 @@ export const EnhancedDailyViewModal: React.FC<EnhancedDailyViewModalProps> = ({
     } finally {
       setLoading(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reservationId]);
 
   // Calculate pricing for current day states
@@ -282,7 +283,7 @@ export const EnhancedDailyViewModal: React.FC<EnhancedDailyViewModalProps> = ({
     const updatedStates = [...dayStates];
     const dayState = updatedStates[dayIndex];
     
-    (dayState.services as any)[field] = value;
+    (dayState.services as Record<string, unknown>)[field] = value;
     dayState.hasChanges = true;
     
     setDayStates(updatedStates);

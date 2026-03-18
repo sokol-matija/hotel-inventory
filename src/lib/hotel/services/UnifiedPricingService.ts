@@ -422,6 +422,7 @@ export class UnifiedPricingService {
     children: GuestChild[],
     numberOfNights: number,
     checkInDate: Date,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     services: any,
     isApartment: boolean
   ) {
@@ -526,7 +527,9 @@ export class UnifiedPricingService {
 
         if (!tierError && tierData) {
           const discountKey = `seasonal_rate_${seasonalPeriod.toLowerCase()}`;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const discountValue = (tierData as any)[discountKey];
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           if ((tierData as any).is_percentage_discount && discountValue) {
             finalRate = finalRate * (1 - Number(discountValue));
           }
@@ -544,6 +547,7 @@ export class UnifiedPricingService {
   /**
    * Get or create daily details for a reservation
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async getReservationDailyDetails(reservationId: string): Promise<any[]> {
     try {
       // Check if daily details exist
@@ -571,6 +575,7 @@ export class UnifiedPricingService {
   /**
    * Create initial daily details from main reservation
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async createInitialDailyDetails(reservationId: string): Promise<any[]> {
     try {
       // Get reservation data
@@ -590,6 +595,7 @@ export class UnifiedPricingService {
       const dailyDetails = [];
 
       // Get children IDs
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const childrenIds = (reservation.guest_children || []).map((child: any) => child.id);
 
       // Create daily detail for each night
@@ -627,6 +633,7 @@ export class UnifiedPricingService {
   /**
    * Calculate pricing for a single day
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async calculateSingleDayPricing(reservation: any, dailyDetail: any): Promise<any> {
     try {
       const seasonalPeriod = this.getSeasonalPeriod(new Date(dailyDetail.stay_date));
@@ -639,6 +646,7 @@ export class UnifiedPricingService {
       const isApartment = reservation.rooms?.number === '401';
 
       // Get children details
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let childrenPresent: any[] = [];
       if (dailyDetail.children_present && dailyDetail.children_present.length > 0) {
         const { data: children } = await supabase
@@ -712,6 +720,7 @@ export class UnifiedPricingService {
    */
   private calculateDailyServiceFees(
     adults: number,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     children: any[],
     parkingSpots: number,
     hasPets: boolean,
@@ -752,6 +761,7 @@ export class UnifiedPricingService {
   /**
    * Update daily details
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async updateDailyDetails(reservationId: string, dailyDetails: any[]): Promise<any[]> {
     try {
       const updates = dailyDetails.map(detail => ({

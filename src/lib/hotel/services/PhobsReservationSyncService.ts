@@ -12,7 +12,6 @@ import {
   ReservationSyncRequest,
   ConflictResolution,
   OTAChannel,
-  PhobsWebhookEvent
 } from './phobsTypes';
 import { Reservation, Guest, Room } from '../types';
 
@@ -39,6 +38,7 @@ export interface SyncQueueItem {
   maxAttempts: number;
   lastAttempt: Date | null;
   scheduledFor: Date;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: any;
   errors: string[];
   createdAt: Date;
@@ -185,7 +185,7 @@ export class PhobsReservationSyncService {
       room: Room;
       operation: 'create' | 'update' | 'cancel';
     }>,
-    options: ReservationSyncOptions = {}
+    _options: ReservationSyncOptions = {}
   ): Promise<{ queued: number; errors: string[] }> {
     const errors: string[] = [];
     let queued = 0;
@@ -197,6 +197,7 @@ export class PhobsReservationSyncService {
           type: 'outbound',
           operation,
           reservationId: reservation.id,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           phobsReservationId: (reservation as any).phobsReservationId,
           priority: this.calculateSyncPriority(reservation, operation),
           attempts: 0,
@@ -677,7 +678,7 @@ export class PhobsReservationSyncService {
 
   private async sendInboundReservationNotifications(
     phobsReservation: PhobsReservation,
-    internalReservationId: string
+    _internalReservationId: string
   ): Promise<void> {
     // Send NTFY notification for new OTA reservations
     try {
@@ -711,7 +712,7 @@ export class PhobsReservationSyncService {
 
   private async sendModificationNotifications(
     phobsReservation: PhobsReservation,
-    internalReservationId: string
+    _internalReservationId: string
   ): Promise<void> {
     hotelNotification.info(
       'Reservation Modified',
@@ -722,7 +723,7 @@ export class PhobsReservationSyncService {
 
   private async sendCancellationNotifications(
     phobsReservation: PhobsReservation,
-    internalReservationId: string
+    _internalReservationId: string
   ): Promise<void> {
     hotelNotification.warning(
       'Reservation Cancelled',
@@ -732,12 +733,14 @@ export class PhobsReservationSyncService {
   }
 
   // Placeholder methods that would integrate with actual database/services
-  private async findExistingReservation(phobsReservation: PhobsReservation): Promise<any> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private async findExistingReservation(_phobsReservation: PhobsReservation): Promise<any> {
     // TODO: Query database for existing reservation by phobsReservationId
     return null;
   }
 
-  private async findOverlappingReservations(roomId: string, checkIn: Date, checkOut: Date): Promise<any[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private async findOverlappingReservations(_roomId: string, _checkIn: Date, _checkOut: Date): Promise<any[]> {
     // TODO: Query database for overlapping reservations
     return [];
   }
@@ -747,42 +750,47 @@ export class PhobsReservationSyncService {
     return reservation.totalAmount;
   }
 
-  private async checkRoomAvailability(roomId: string, checkIn: Date, checkOut: Date): Promise<boolean> {
+  private async checkRoomAvailability(_roomId: string, _checkIn: Date, _checkOut: Date): Promise<boolean> {
     // TODO: Check room availability in database
     return true;
   }
 
-  private async createOrUpdateGuestFromPhobs(phobsGuest: any): Promise<string> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private async createOrUpdateGuestFromPhobs(_phobsGuest: any): Promise<string> {
     // TODO: Create or update guest in database
     return 'temp-guest-id';
   }
 
-  private async createInternalReservation(reservation: any, phobsReservation: PhobsReservation): Promise<string> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private async createInternalReservation(_reservation: any, _phobsReservation: PhobsReservation): Promise<string> {
     // TODO: Create reservation in database
     return 'temp-reservation-id';
   }
 
-  private async updateInternalReservation(reservationId: string, updates: any): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private async updateInternalReservation(_reservationId: string, _updates: any): Promise<void> {
     // TODO: Update reservation in database
   }
 
-  private async updateAvailabilityAfterReservationChange(reservation: Reservation, room: Room, operation: 'create' | 'cancel'): Promise<void> {
+  private async updateAvailabilityAfterReservationChange(_reservation: Reservation, _room: Room, _operation: 'create' | 'cancel'): Promise<void> {
     // TODO: Update availability in inventory service
   }
 
-  private async updateAvailabilityAfterInboundReservation(phobsReservation: PhobsReservation): Promise<void> {
+  private async updateAvailabilityAfterInboundReservation(_phobsReservation: PhobsReservation): Promise<void> {
     // TODO: Update availability after inbound reservation
   }
 
-  private async updateAvailabilityAfterDateChange(existing: any, updates: any): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private async updateAvailabilityAfterDateChange(_existing: any, _updates: any): Promise<void> {
     // TODO: Update availability when dates change
   }
 
-  private async updateAvailabilityAfterCancellation(reservation: any): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private async updateAvailabilityAfterCancellation(_reservation: any): Promise<void> {
     // TODO: Make room available again after cancellation
   }
 
-  private async handleSyncConflicts(conflicts: ConflictResolution[], reservation: PhobsReservation, operation: string): Promise<SyncResult> {
+  private async handleSyncConflicts(_conflicts: ConflictResolution[], _reservation: PhobsReservation, _operation: string): Promise<SyncResult> {
     // TODO: Implement conflict handling logic
     return {
       success: false,
@@ -795,7 +803,7 @@ export class PhobsReservationSyncService {
     };
   }
 
-  private async resolveInboundConflicts(conflicts: ConflictResolution[], reservation: PhobsReservation): Promise<{ success: boolean }> {
+  private async resolveInboundConflicts(_conflicts: ConflictResolution[], _reservation: PhobsReservation): Promise<{ success: boolean }> {
     // TODO: Implement inbound conflict resolution
     return { success: true };
   }

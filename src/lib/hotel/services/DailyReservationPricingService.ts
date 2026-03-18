@@ -124,7 +124,7 @@ export class DailyReservationPricingService {
       const dailyDetails: DailyDetail[] = [];
       
       // Get all children IDs for this reservation
-      const childrenIds = (reservation.guest_children || []).map((child: any) => child.id);
+      const childrenIds = (reservation.guest_children || []).map((child: { id: number }) => child.id);
       
       for (let date = new Date(checkIn); date < checkOut; date.setDate(date.getDate() + 1)) {
         const dailyDetail: DailyDetail = {
@@ -151,7 +151,7 @@ export class DailyReservationPricingService {
         towel_rentals: detail.towelRentals
       }));
       
-      const { data: insertedDetails, error: insertError } = await supabase
+      const { error: insertError } = await supabase
         .from('reservation_daily_details')
         .insert(dailyDetailsToInsert)
         .select();
@@ -218,6 +218,7 @@ export class DailyReservationPricingService {
   /**
    * Calculate pricing for a single day
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async calculateSingleDayPricing(reservation: any, dailyDetail: DailyDetail): Promise<DailyPricingBreakdown> {
     try {
       // Get seasonal period for this date
@@ -375,8 +376,7 @@ export class DailyReservationPricingService {
    */
   private getSeasonalPeriod(date: Date): string {
     const month = date.getMonth() + 1;
-    const day = date.getDate();
-    
+
     // Simplified seasonal logic - you can enhance this
     if (month <= 4 || month === 12) return 'A'; // Winter/Early Spring
     if (month === 5 || month === 10) return 'B'; // Spring/Late Fall  

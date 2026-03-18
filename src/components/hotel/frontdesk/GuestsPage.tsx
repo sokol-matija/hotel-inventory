@@ -3,17 +3,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { Badge } from '../../ui/badge';
-import { 
-  Search, 
-  Plus, 
-  Users, 
-  UserCheck, 
+import {
+  Search,
+  Plus,
+  Users,
+  UserCheck,
   Heart,
   Mail,
   Phone,
   MapPin,
   Baby,
-  Edit,
   Trash2,
   Eye,
   Filter
@@ -22,11 +21,10 @@ import { useHotel } from '../../../lib/hotel/state/SupabaseHotelContext';
 import { Guest } from '../../../lib/hotel/types';
 
 export default function GuestsPage() {
-  const { 
-    guests, 
-    isLoading, 
+  const {
+    guests,
+    isLoading,
     findGuestsByName,
-    createGuest 
   } = useHotel();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -51,11 +49,6 @@ export default function GuestsPage() {
   const totalGuests = guests.length;
   const vipGuests = guests.filter(guest => guest.isVip);
   const guestsWithPets = guests.filter(guest => guest.hasPets);
-
-  const formatDate = (date: Date | undefined) => {
-    if (!date) return 'N/A';
-    return date.toLocaleDateString('en-GB');
-  };
 
   const getAgeDisplay = (dateOfBirth: Date | undefined) => {
     if (!dateOfBirth) return 'N/A';

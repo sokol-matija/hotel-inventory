@@ -85,6 +85,7 @@ export const DragCreateOverlay: React.FC<DragCreateOverlayProps> = ({
     } else {
       overlayRef.current.style.opacity = '0';
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dragCreateState.hoverPreview, dragCreateState.currentSelection]);
 
   // Calculate number of nights for display

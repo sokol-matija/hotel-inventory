@@ -3,17 +3,11 @@
 
 import {
   PhobsReservation,
-  PhobsAvailability,
-  PhobsRatePlan,
   OTAChannel,
   PhobsReservationStatus,
   PhobsRoomId,
-  PhobsRateId,
-  createPhobsReservationId,
-  createPhobsGuestId,
-  createPhobsRoomId,
 } from './phobsTypes';
-import { Reservation, Room, ReservationStatus, PaymentMethod, GuestChild } from '../types';
+import { Reservation, ReservationStatus, GuestChild } from '../types';
 
 /**
  * Date format utilities for OTA standard

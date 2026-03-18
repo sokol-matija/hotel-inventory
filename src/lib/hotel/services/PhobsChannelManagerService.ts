@@ -19,8 +19,6 @@ import {
   RatesSyncRequest,
   ReservationSyncRequest,
   PhobsWebhookEvent,
-  PhobsRoomId,
-  createPhobsRoomId
 } from './phobsTypes';
 import { Reservation, BookingSource } from '../types';
 
@@ -30,7 +28,7 @@ export interface ApiRequestOptions {
   headers?: Record<string, string>;
 }
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
@@ -59,7 +57,7 @@ export class PhobsChannelManagerService {
   private soapClient: PhobsSoapClient | null = null;
   private authToken: string | null = null;
   private tokenExpiresAt: Date | null = null;
-  private retryQueue: Array<{ operation: SyncOperation; data: any; retryCount: number }> = [];
+  private retryQueue: Array<{ operation: SyncOperation; data: unknown; retryCount: number }> = [];
   private isConnected: boolean = false;
   private lastSyncAt: Date | null = null;
   private syncInProgress: Set<SyncOperation> = new Set();
@@ -818,7 +816,7 @@ export class PhobsChannelManagerService {
   async handleIncomingReservation(phobsReservation: PhobsReservation): Promise<{ success: boolean; internalReservationId?: string; error?: string }> {
     try {
       // Convert Phobs reservation to internal format
-      const internalReservation = this.mapPhobsReservationToInternal(phobsReservation);
+      this.mapPhobsReservationToInternal(phobsReservation);
       
       // Check for conflicts (double booking, rate mismatch)
       const conflicts = await this.detectConflicts(phobsReservation);
@@ -927,9 +925,9 @@ export class PhobsChannelManagerService {
    * TODO: Implement using SOAP/XML analytics endpoint when available
    */
   async getChannelMetrics(
-    channel: OTAChannel,
-    startDate: Date,
-    endDate: Date
+    _channel: OTAChannel,
+    _startDate: Date,
+    _endDate: Date
   ): Promise<ChannelPerformanceMetrics | null> {
     // TODO: This method needs to be implemented using SOAP/XML when analytics endpoint is available
     console.warn('getChannelMetrics: Analytics endpoint not yet implemented in SOAP/XML');
@@ -946,6 +944,7 @@ export class PhobsChannelManagerService {
   private mapReservationToSoapParams(
     reservation: PhobsReservation,
     operation: 'Commit' | 'Cancel' | 'Modify'
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): any {
     return {
       hotelCode: this.config!.hotelId,
@@ -1023,7 +1022,7 @@ export class PhobsChannelManagerService {
   /**
    * Detect conflicts for incoming reservations
    */
-  private async detectConflicts(reservation: PhobsReservation): Promise<ConflictResolution[]> {
+  private async detectConflicts(_reservation: PhobsReservation): Promise<ConflictResolution[]> {
     // TODO: Implement conflict detection logic
     // Check for double bookings, rate mismatches, availability conflicts
     return [];
@@ -1032,7 +1031,7 @@ export class PhobsChannelManagerService {
   /**
    * Resolve detected conflicts
    */
-  private async resolveConflicts(conflicts: ConflictResolution[]): Promise<{ success: boolean; error?: string }> {
+  private async resolveConflicts(_conflicts: ConflictResolution[]): Promise<{ success: boolean; error?: string }> {
     // TODO: Implement conflict resolution logic
     return { success: true };
   }
@@ -1040,7 +1039,7 @@ export class PhobsChannelManagerService {
   /**
    * Verify webhook signature for security
    */
-  private verifyWebhookSignature(event: PhobsWebhookEvent): boolean {
+  private verifyWebhookSignature(_event: PhobsWebhookEvent): boolean {
     if (!this.config?.webhookSecret) {
       return false; // No secret configured
     }

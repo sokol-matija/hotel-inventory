@@ -75,7 +75,7 @@ export const hotelService = {
     return [];
   },
 
-  async updateRoomStatus(roomId: number, status: Room['status']): Promise<void> {
+  async updateRoomStatus(_roomId: number, _status: Room['status']): Promise<void> {
     // Mock implementation
   },
 

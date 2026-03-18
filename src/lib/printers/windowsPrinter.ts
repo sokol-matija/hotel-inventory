@@ -9,8 +9,8 @@
  */
 
 import { PrintReceiptData } from '../hotel/orderTypes';
-import { HotelEracuniService } from '../eracuni/eracuniService';
-import { EracuniInvoice, EracuniResponse } from '../eracuni/types';
+// import { HotelEracuniService } from '../eracuni/eracuniService';
+// import { EracuniInvoice, EracuniResponse } from '../eracuni/types';
 
 interface FiscalPrintData extends PrintReceiptData {
   hotelInfo: {
@@ -26,6 +26,7 @@ interface FiscalPrintData extends PrintReceiptData {
 /**
  * Generate Croatian fiscal receipt HTML matching Hotel Poreč format
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function generateThermalReceiptHTML(data: FiscalPrintData): string {
   const { order, hotelInfo } = data;
   const currentDate = new Date();
@@ -417,6 +418,7 @@ function generateThermalReceiptHTML(data: FiscalPrintData): string {
  * Generate raw text receipt for generic thermal drivers
  * This bypasses HTML/CSS issues and works directly with printer drivers
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function generateRawTextReceipt(order: any, hotelInfo: any, timestamp: Date): string {
   const dateStr = timestamp.toLocaleDateString('hr-HR', { day: '2-digit', month: '2-digit', year: '2-digit' });
   const timeStr = timestamp.toLocaleTimeString('hr-HR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -450,7 +452,8 @@ Z Roba  5%PDV               0.00
 Z Roba 25%PDV               0.00
 
 
-${order.items.map((item: any, index: number) => 
+${/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+order.items.map((item: any, index: number) =>
   `${index + 9}${item.itemName.toUpperCase().padEnd(20)} ${item.quantity}.000${item.totalPrice.toFixed(2).padStart(6)}`
 ).join('\n')}
 
@@ -490,6 +493,7 @@ ${order.paymentMethod !== 'room_bill' ?
 /**
  * Generate HTML wrapper for raw text receipt (preserves formatting)
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function generateRawTextReceiptHTML(order: any, hotelInfo: any, timestamp: Date): string {
   const textContent = generateRawTextReceipt(order, hotelInfo, timestamp);
   
@@ -714,7 +718,7 @@ function printHTMLContent(htmlContent: string): Promise<boolean> {
       setTimeout(() => {
         try {
           document.body.removeChild(printFrame);
-        } catch (e) {
+        } catch {
           // Frame may have been removed already
         }
       }, 1000);
@@ -814,11 +818,13 @@ export async function printWindowsReceipt(data: PrintReceiptData): Promise<boole
 /**
  * Calculate Croatian VAT breakdown for fiscal compliance
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function calculateCroatianVAT(order: any) {
   let drinks25 = 0;
   let food13 = 0;
-  
+
   // Categorize items by Croatian VAT rates
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   order.items.forEach((item: any) => {
     if (item.category.toLowerCase().includes('beverage') || 
         item.category.toLowerCase().includes('drink') ||
@@ -879,11 +885,13 @@ function generateFiscalNumber(): string {
   return `HP-${year}-${sequence}`;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function generateJIR(): string {
   // Mock JIR (Jedinstveni identifikator računa)
   return Array.from({length: 32}, () => Math.floor(Math.random() * 16).toString(16)).join('').toUpperCase();
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function generateZKI(): string {
   // Mock ZKI (Zaštitni kod izdavatelja)
   return Array.from({length: 32}, () => Math.floor(Math.random() * 16).toString(16)).join('').toUpperCase();

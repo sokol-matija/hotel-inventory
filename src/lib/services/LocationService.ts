@@ -165,9 +165,9 @@ export class LocationService {
    * Update inventory item quantity
    */
   async updateQuantity(
-    inventoryId: number, 
-    newQuantity: number, 
-    userId: string
+    inventoryId: number,
+    newQuantity: number,
+    _userId: string
   ): Promise<void> {
     try {
       const { error } = await supabase
@@ -192,7 +192,7 @@ export class LocationService {
   /**
    * Delete inventory item
    */
-  async deleteInventoryItem(inventoryId: number, userId: string): Promise<void> {
+  async deleteInventoryItem(inventoryId: number, _userId: string): Promise<void> {
     try {
       const { error } = await supabase
         .from('inventory')
@@ -219,7 +219,7 @@ export class LocationService {
   async updateInventoryOrder(
     inventory: InventoryItem[],
     dragOperation: DragOperation,
-    userId: string
+    _userId: string
   ): Promise<InventoryItem[]> {
     try {
       // Reorder the array
@@ -332,7 +332,7 @@ export class LocationService {
     let lowStockItems = 0;
     let expiredItems = 0;
     let expiringItems = 0;
-    let totalValue = 0;
+    const totalValue = 0;
 
     inventory.forEach(item => {
       if (this.isLowStock(item)) {

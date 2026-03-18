@@ -3,7 +3,6 @@
 
 import { HOTEL_FISCAL_CONFIG, CERTIFICATE_EXTRACTION_GUIDE, getCurrentEnvironment } from './config';
 import type { FiscalXMLSigner } from './xmlSigner';
-import type * as forge from 'node-forge';
 
 export interface CertificateInfo {
   isValid: boolean;

@@ -2,7 +2,7 @@
 // Separates form logic from UI components
 
 import { useState, useCallback, useMemo } from 'react';
-import { Room, Guest, GuestChild, ReservationStatus, Company } from '../types';
+import { Room, Guest, GuestChild, ReservationStatus, Company, Reservation } from '../types';
 import { BookingService, BookingData, BookingValidationError } from '../services/BookingService';
 
 export interface BookingFormState {
@@ -134,7 +134,7 @@ export function useBookingForm(room?: Room, initialData?: Partial<BookingFormSta
   }, [bookingService, bookingData]);
 
   // Validation
-  const validate = useCallback((existingReservations: any[] = []) => {
+  const validate = useCallback((existingReservations: Reservation[] = []) => {
     const validationErrors = bookingService.validateBooking(bookingData, existingReservations);
     
     setFormState(prev => ({

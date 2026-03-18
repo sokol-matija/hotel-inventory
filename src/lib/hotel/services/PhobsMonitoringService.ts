@@ -1,7 +1,7 @@
 // PhobsMonitoringService - Logging and monitoring for channel manager operations
 // Comprehensive tracking of performance, operations, and health metrics
 
-import { OTAChannel, SyncOperation } from './phobsTypes';
+import { OTAChannel } from './phobsTypes';
 import { PhobsError, PhobsErrorType } from './PhobsErrorHandlingService';
 
 export enum LogLevel {
@@ -19,7 +19,7 @@ export interface LogEntry {
   operation: string;
   channel?: OTAChannel;
   message: string;
-  data?: any;
+  data?: unknown;
   duration?: number;
   error?: PhobsError;
   correlationId?: string;
@@ -89,7 +89,7 @@ export interface PerformanceTrace {
     startTime: Date;
     endTime?: Date;
     duration?: number;
-    metadata?: any;
+    metadata?: unknown;
   }>;
   success?: boolean;
   error?: PhobsError;
@@ -131,7 +131,7 @@ export class PhobsMonitoringService {
     level: LogLevel,
     operation: string,
     message: string,
-    data?: any,
+    data?: unknown,
     channel?: OTAChannel,
     duration?: number,
     error?: PhobsError
@@ -173,35 +173,35 @@ export class PhobsMonitoringService {
   /**
    * Debug level logging
    */
-  debug(operation: string, message: string, data?: any, channel?: OTAChannel): void {
+  debug(operation: string, message: string, data?: unknown, channel?: OTAChannel): void {
     this.log(LogLevel.DEBUG, operation, message, data, channel);
   }
 
   /**
    * Info level logging
    */
-  info(operation: string, message: string, data?: any, channel?: OTAChannel, duration?: number): void {
+  info(operation: string, message: string, data?: unknown, channel?: OTAChannel, duration?: number): void {
     this.log(LogLevel.INFO, operation, message, data, channel, duration);
   }
 
   /**
    * Warning level logging
    */
-  warn(operation: string, message: string, data?: any, channel?: OTAChannel, error?: PhobsError): void {
+  warn(operation: string, message: string, data?: unknown, channel?: OTAChannel, error?: PhobsError): void {
     this.log(LogLevel.WARN, operation, message, data, channel, undefined, error);
   }
 
   /**
    * Error level logging
    */
-  error(operation: string, message: string, error?: PhobsError, data?: any, channel?: OTAChannel): void {
+  error(operation: string, message: string, error?: PhobsError, data?: unknown, channel?: OTAChannel): void {
     this.log(LogLevel.ERROR, operation, message, data, channel, undefined, error);
   }
 
   /**
    * Fatal level logging
    */
-  fatal(operation: string, message: string, error?: PhobsError, data?: any): void {
+  fatal(operation: string, message: string, error?: PhobsError, data?: unknown): void {
     this.log(LogLevel.FATAL, operation, message, data, undefined, undefined, error);
   }
 
@@ -212,7 +212,7 @@ export class PhobsMonitoringService {
   /**
    * Start performance trace
    */
-  startTrace(operationName: string, metadata?: any): string {
+  startTrace(operationName: string, metadata?: unknown): string {
     const traceId = this.generateTraceId();
     const trace: PerformanceTrace = {
       traceId,
@@ -230,7 +230,7 @@ export class PhobsMonitoringService {
   /**
    * Add step to performance trace
    */
-  addTraceStep(traceId: string, stepName: string, metadata?: any): void {
+  addTraceStep(traceId: string, stepName: string, metadata?: unknown): void {
     const trace = this.activeTraces.get(traceId);
     if (!trace) return;
 
@@ -503,10 +503,11 @@ export class PhobsMonitoringService {
       let shouldTrigger = false;
 
       switch (rule.condition) {
-        case 'error_rate':
+        case 'error_rate': {
           const metrics = this.getSystemHealthMetrics();
           shouldTrigger = metrics.errorRate > rule.threshold;
           break;
+        }
         
         case 'response_time':
           if (logEntry.duration && logEntry.duration > rule.threshold) {

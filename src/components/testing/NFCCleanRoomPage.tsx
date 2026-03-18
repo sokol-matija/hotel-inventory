@@ -7,8 +7,7 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { CheckCircle2, AlertCircle, Loader2 } from 'lucide-react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
 
 interface CleaningResult {
@@ -41,6 +40,7 @@ export const NFCCleanRoomPage = () => {
 
     // Call the edge function
     callCleanRoomFunction(roomId)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
 
   async function callCleanRoomFunction(roomId: string) {

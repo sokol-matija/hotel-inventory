@@ -335,6 +335,7 @@ export interface Invoice {
   
   // Financial details (copies from reservation for audit trail)
   currency: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   items: any[]; // Invoice line items
   subtotal: number;
   vatRate: number;
@@ -397,6 +398,7 @@ export interface Payment {
   exchangeRate?: number;
   originalAmount?: number;
   originalCurrency?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   gatewayResponse?: any;
   
   // Refund support
@@ -487,6 +489,7 @@ export interface RevenueAnalytics {
   fiscalSubmissions: number;
   
   // Time series data
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   periods: any[];
 }
 
@@ -521,6 +524,7 @@ export interface FinancialHotelContextType extends HotelContextType {
   // Croatian fiscal compliance
   submitFiscalRecord: (invoiceId: string) => Promise<FiscalRecord>;
   validateFiscalCompliance: (invoiceId: string) => Promise<boolean>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   generateFiscalReport: (startDate: Date, endDate: Date) => Promise<any>;
   
   // Financial utilities
@@ -566,6 +570,7 @@ export interface Company {
   };
   
   // Business relationship
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   pricingTier?: any; // For joined queries
   pricingTierId?: string; // Links to PricingTier
   roomAllocationGuarantee?: number; // Number of guaranteed rooms

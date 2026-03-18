@@ -34,6 +34,7 @@ const SettingsPage: React.FC = () => {
   useEffect(() => {
     setSupportsPush(isPushNotificationSupported());
     loadSettings();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const loadSettings = async () => {

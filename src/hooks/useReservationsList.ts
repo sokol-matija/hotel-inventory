@@ -1,7 +1,7 @@
 // useReservationsList - Custom hook for managing reservations list state
 // Handles filtering, search, pagination, and sorting with debouncing
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Reservation } from '../lib/hotel/types';
 import { databaseAdapter } from '../lib/hotel/services/DatabaseAdapter';
 

@@ -129,11 +129,12 @@ export function HotelSupabaseProvider({ children }: { children: React.ReactNode 
   useEffect(() => {
     initializeData();
     setupRealtimeSubscriptions();
-    
+
     return () => {
       // Cleanup subscriptions
       supabase.removeAllChannels();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const initializeData = async () => {
@@ -162,7 +163,7 @@ export function HotelSupabaseProvider({ children }: { children: React.ReactNode 
 
   const setupRealtimeSubscriptions = () => {
     // Subscribe to reservations changes
-    const reservationsChannel = supabase
+    supabase
       .channel('reservations-changes')
       .on(
         'postgres_changes',
@@ -179,7 +180,7 @@ export function HotelSupabaseProvider({ children }: { children: React.ReactNode 
       .subscribe();
 
     // Subscribe to guests changes
-    const guestsChannel = supabase
+    supabase
       .channel('guests-changes')
       .on(
         'postgres_changes',
@@ -196,7 +197,7 @@ export function HotelSupabaseProvider({ children }: { children: React.ReactNode 
       .subscribe();
 
     // Subscribe to companies changes
-    const companiesChannel = supabase
+    supabase
       .channel('companies-changes')
       .on(
         'postgres_changes',
@@ -258,7 +259,7 @@ export function HotelSupabaseProvider({ children }: { children: React.ReactNode 
       console.log('🚀 Starting data migration from localStorage to Supabase...');
       
       // Create backup first
-      const backup = dataMigrationService.createLocalStorageBackup();
+      dataMigrationService.createLocalStorageBackup();
       console.log('📦 Created backup of localStorage data');
       
       // Perform migration
@@ -565,12 +566,12 @@ export function HotelSupabaseProvider({ children }: { children: React.ReactNode 
   // FINANCIAL ACTIONS (Simplified for now)
   // =====================================
   
-  const generateInvoice = async (reservationId: string): Promise<Invoice> => {
+  const generateInvoice = async (_reservationId: string): Promise<Invoice> => {
     // TODO: Implement invoice generation
     throw new Error('Invoice generation not implemented yet');
   };
 
-  const updateInvoiceStatus = async (invoiceId: string, status: InvoiceStatus): Promise<void> => {
+  const updateInvoiceStatus = async (_invoiceId: string, _status: InvoiceStatus): Promise<void> => {
     // TODO: Implement invoice status update
     throw new Error('Invoice status update not implemented yet');
   };
@@ -593,12 +594,12 @@ export function HotelSupabaseProvider({ children }: { children: React.ReactNode 
     );
   };
 
-  const addPayment = async (paymentData: Omit<Payment, 'id' | 'createdAt'>): Promise<void> => {
+  const addPayment = async (_paymentData: Omit<Payment, 'id' | 'createdAt'>): Promise<void> => {
     // TODO: Implement payment creation
     throw new Error('Payment creation not implemented yet');
   };
 
-  const updatePaymentStatus = async (paymentId: string, status: PaymentStatus): Promise<void> => {
+  const updatePaymentStatus = async (_paymentId: string, _status: PaymentStatus): Promise<void> => {
     // TODO: Implement payment status update
     throw new Error('Payment status update not implemented yet');
   };
@@ -736,6 +737,7 @@ export function HotelSupabaseProvider({ children }: { children: React.ReactNode 
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useHotelSupabase() {
   const context = useContext(HotelSupabaseContext);
   if (context === undefined) {

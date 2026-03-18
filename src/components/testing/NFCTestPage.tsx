@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { simulateNFCTap, generateNFCUri, batchTestNFCTaps } from '@/utils/nfcTest'
 import { supabase } from '@/lib/supabase'
-import { AlertCircle, CheckCircle2, Loader2, Copy, Smartphone } from 'lucide-react'
+import { CheckCircle2, Loader2, Copy, Smartphone } from 'lucide-react'
 
 interface RoomStatus {
   id: string
@@ -18,7 +18,7 @@ export const NFCTestPage = () => {
   const [rooms, setRooms] = useState<RoomStatus[]>([])
   const [testRoomId, setTestRoomId] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [testResults, setTestResults] = useState<{ [key: string]: any }>({})
+  const [testResults, setTestResults] = useState<{ [key: string]: Record<string, unknown> }>({})
   const [selectedRoom, setSelectedRoom] = useState<string | null>(null)
   const [copiedUri, setCopiedUri] = useState<string | null>(null)
 

@@ -57,7 +57,7 @@ export default function CompanyManagement() {
           'Company Deleted',
           `Company "${companyName}" has been successfully deleted.`
         );
-      } catch (error) {
+      } catch {
         hotelNotification.error(
           'Deletion Failed',
           `Failed to delete company "${companyName}". Please try again.`

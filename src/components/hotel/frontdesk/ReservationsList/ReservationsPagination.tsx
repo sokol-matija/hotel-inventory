@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import { PaginationState } from '../../../../hooks/useReservationsList';
 import { Button } from '../../../ui/button';
-import { Select } from '../../../ui/select';
 
 interface ReservationsPaginationProps {
   pagination: PaginationState;

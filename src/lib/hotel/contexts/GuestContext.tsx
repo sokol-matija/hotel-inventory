@@ -143,7 +143,7 @@ export function GuestProvider({ children }: { children: React.ReactNode }) {
       } else {
         dispatch({ type: 'SET_ERROR', payload: result.error });
       }
-    } catch (error) {
+    } catch {
       dispatch({ type: 'SET_ERROR', payload: 'Failed to load guests' });
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
@@ -166,7 +166,7 @@ export function GuestProvider({ children }: { children: React.ReactNode }) {
         dispatch({ type: 'SET_ERROR', payload: result.error });
         return null;
       }
-    } catch (error) {
+    } catch {
       dispatch({ type: 'SET_ERROR', payload: 'Failed to create guest' });
       return null;
     } finally {
@@ -190,7 +190,7 @@ export function GuestProvider({ children }: { children: React.ReactNode }) {
         dispatch({ type: 'SET_ERROR', payload: result.error });
         return null;
       }
-    } catch (error) {
+    } catch {
       dispatch({ type: 'SET_ERROR', payload: 'Failed to update guest' });
       return null;
     } finally {
@@ -214,7 +214,7 @@ export function GuestProvider({ children }: { children: React.ReactNode }) {
         dispatch({ type: 'SET_ERROR', payload: result.error });
         return false;
       }
-    } catch (error) {
+    } catch {
       dispatch({ type: 'SET_ERROR', payload: 'Failed to delete guest' });
       return false;
     } finally {
@@ -247,7 +247,7 @@ export function GuestProvider({ children }: { children: React.ReactNode }) {
       } else {
         dispatch({ type: 'SET_ERROR', payload: result.error });
       }
-    } catch (error) {
+    } catch {
       dispatch({ type: 'SET_ERROR', payload: 'Failed to search guests' });
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
@@ -292,7 +292,7 @@ export function GuestProvider({ children }: { children: React.ReactNode }) {
         dispatch({ type: 'SET_ERROR', payload: childResult.error });
         return false;
       }
-    } catch (error) {
+    } catch {
       dispatch({ type: 'SET_ERROR', payload: 'Failed to add child to guest' });
       return false;
     } finally {
@@ -320,7 +320,7 @@ export function GuestProvider({ children }: { children: React.ReactNode }) {
         dispatch({ type: 'SET_ERROR', payload: result.error });
         return false;
       }
-    } catch (error) {
+    } catch {
       dispatch({ type: 'SET_ERROR', payload: 'Failed to remove child from guest' });
       return false;
     } finally {
@@ -351,6 +351,7 @@ export function GuestProvider({ children }: { children: React.ReactNode }) {
   // Load initial data
   useEffect(() => {
     loadGuests();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty dependency array is fine here - we only want to load once
 
   const contextValue: GuestContextType = {
@@ -380,6 +381,7 @@ export function GuestProvider({ children }: { children: React.ReactNode }) {
 }
 
 // Hook to use guest context
+// eslint-disable-next-line react-refresh/only-export-components
 export function useGuests(): GuestContextType {
   const context = useContext(GuestContext);
   if (context === undefined) {

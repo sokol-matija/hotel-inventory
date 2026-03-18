@@ -18,7 +18,7 @@
 // DragCreateService removed - using simple approach
 import { ConflictDetectionService } from './ConflictDetectionService';
 import { OptimisticUpdateService } from './OptimisticUpdateService';
-import { Reservation, Room, Guest } from '../types';
+import { Reservation, Room } from '../types';
 import hotelNotification from '../../notifications';
 
 export interface BookingCreationData {
@@ -69,9 +69,9 @@ export class BookingCreationService {
    * Create a booking from drag-create selection with optimistic updates
    */
   public async createFromDragCreate(
-    addReservationToState: (reservation: Reservation) => void,
-    removeReservationFromState: (id: string) => void,
-    serverCreate: (data: BookingCreationData) => Promise<Reservation>
+    _addReservationToState: (reservation: Reservation) => void,
+    _removeReservationFromState: (id: string) => void,
+    _serverCreate: (data: BookingCreationData) => Promise<Reservation>
   ): Promise<BookingCreationResult> {
     // Method disabled - using simple drag-create approach
     return {
@@ -252,6 +252,7 @@ export class BookingCreationService {
       adults: bookingData.adults,
       children: Array(bookingData.children).fill({}),
       status: 'confirmed',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       bookingSource: bookingData.bookingSource === 'drag_create' ? 'direct' : (bookingData.bookingSource as any) || 'direct',
       specialRequests: bookingData.specialRequests || '',
       seasonalPeriod: 'A', // Default

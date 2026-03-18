@@ -18,7 +18,7 @@ import {
 } from '../types';
 import { hotelDataService } from '../services/HotelDataService';
 import { realtimeService } from '../services/RealtimeService';
-import { databasePricingService } from '../services/DatabasePricingService';
+// import { databasePricingService } from '../services/DatabasePricingService';
 import { databaseAdapter } from '../services/DatabaseAdapter';
 import { supabase, Database } from '../../supabase';
 import { logger, logUserActivity, logBusinessOperation, trackError } from '../../logging/LoggingService';
@@ -248,6 +248,7 @@ export function SupabaseHotelProvider({ children }: { children: React.ReactNode 
     if (error) throw error;
 
     // Map database rows to Invoice objects
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (data || []).map((row: any) => ({
       id: row.id.toString(),
       invoiceNumber: row.invoice_number,
@@ -535,7 +536,9 @@ export function SupabaseHotelProvider({ children }: { children: React.ReactNode 
 
         if (payload.eventType === 'UPDATE' && payload.new) {
           // Map the raw database row to Room object using DatabaseAdapter
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const newRoom = databaseAdapter.mapRoomFromCurrentDB(payload.new as any);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const oldRoom = payload.old ? databaseAdapter.mapRoomFromCurrentDB(payload.old as any) : undefined;
 
           // Check if is_clean status changed
@@ -592,6 +595,7 @@ export function SupabaseHotelProvider({ children }: { children: React.ReactNode 
       logger.info('HotelContext', 'Cleaning up real-time subscriptions');
       unsubscribe();
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Reservation actions
@@ -755,6 +759,7 @@ export function SupabaseHotelProvider({ children }: { children: React.ReactNode 
     }
   }, []);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const createReservation = useCallback(async (reservationData: any) => {
     const operationStart = performance.now();
     setIsUpdating(true);
@@ -973,6 +978,7 @@ export function SupabaseHotelProvider({ children }: { children: React.ReactNode 
   const updateCompany = useCallback(async (id: string, updates: Partial<Company>) => {
     setIsUpdating(true);
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const updateData: any = {};
       
       if (updates.name) updateData.name = updates.name;
@@ -1156,12 +1162,12 @@ export function SupabaseHotelProvider({ children }: { children: React.ReactNode 
   }, [pricingTiers]);
 
   // Financial placeholders - TODO: Implement properly
-  const generateInvoice = useCallback(async (reservationId: string): Promise<Invoice> => {
+  const generateInvoice = useCallback(async (_reservationId: string): Promise<Invoice> => {
     console.warn('generateInvoice not implemented yet');
     throw new Error('Invoice generation not implemented');
   }, []);
 
-  const updateInvoiceStatus = useCallback(async (invoiceId: string, status: InvoiceStatus) => {
+  const updateInvoiceStatus = useCallback(async (_invoiceId: string, _status: InvoiceStatus) => {
     console.warn('updateInvoiceStatus not implemented yet');
     throw new Error('Invoice management not implemented');
   }, []);
@@ -1183,12 +1189,12 @@ export function SupabaseHotelProvider({ children }: { children: React.ReactNode 
     );
   }, [invoices]);
 
-  const addPayment = useCallback(async (payment: Omit<Payment, 'id' | 'createdAt'>) => {
+  const addPayment = useCallback(async (_payment: Omit<Payment, 'id' | 'createdAt'>) => {
     console.warn('addPayment not implemented yet');
     throw new Error('Payment management not implemented');
   }, []);
 
-  const updatePaymentStatus = useCallback(async (paymentId: string, status: PaymentStatus) => {
+  const updatePaymentStatus = useCallback(async (_paymentId: string, _status: PaymentStatus) => {
     console.warn('updatePaymentStatus not implemented yet');
     throw new Error('Payment management not implemented');
   }, []);
@@ -1340,6 +1346,7 @@ export function SupabaseHotelProvider({ children }: { children: React.ReactNode 
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useHotel() {
   const context = useContext(HotelContext);
   if (context === undefined) {

@@ -8,6 +8,7 @@ export const safeSupabaseCall = async <T>(
   try {
     const result = await operation()
     return result
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     const errorMessage = error?.message?.toLowerCase() || ''
     
@@ -37,6 +38,7 @@ export const safeSupabaseCall = async <T>(
 }
 
 // Helper function to check if an error is session-related
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const isSessionError = (error: any): boolean => {
   const errorMessage = error?.message?.toLowerCase() || ''
   return (

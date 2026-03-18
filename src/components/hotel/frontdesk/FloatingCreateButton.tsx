@@ -3,7 +3,6 @@
 
 import React, { useState } from 'react';
 import { Plus } from 'lucide-react';
-import { Button } from '../../ui/button';
 import ModernCreateBookingModal from './ModernCreateBookingModal';
 
 interface FloatingCreateButtonProps {
@@ -78,6 +77,7 @@ export default function FloatingCreateButton({ onClick }: FloatingCreateButtonPr
         <ModernCreateBookingModal
           isOpen={isModalOpen}
           onClose={handleCloseModal}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           room={null as any} // We'll modify ModernCreateBookingModal to handle null room
           allowRoomSelection={true}
           unallocatedMode={true}

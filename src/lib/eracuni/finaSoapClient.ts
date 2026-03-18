@@ -70,7 +70,7 @@ export class FinaSoapClient {
     }
   }
 
-  private async simulateDemoSubmission(invoice: EracuniInvoice): Promise<EracuniResponse> {
+  private async simulateDemoSubmission(_invoice: EracuniInvoice): Promise<EracuniResponse> {
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
     
@@ -235,7 +235,7 @@ export class FinaSoapClient {
     return result;
   }
 
-  setCertificate(certificateData: string): void {
+  setCertificate(_certificateData: string): void {
     // In production, this would handle certificate installation
     this.certificateLoaded = true;
     console.log('Certificate loaded for FINA communication');

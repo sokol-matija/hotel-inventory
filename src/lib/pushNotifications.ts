@@ -8,7 +8,7 @@ export interface PushNotification {
   body: string
   icon?: string
   badge?: string
-  data?: any
+  data?: unknown
   tag?: string
 }
 

@@ -2,7 +2,7 @@
 // Sends check-in instructions, breakfast times, and hotel amenities information
 
 import { Reservation, Guest, Room } from './hotel/types';
-import { format, addDays } from 'date-fns';
+import { format } from 'date-fns';
 import { SAMPLE_GUESTS } from './hotel/sampleData';
 import { HOTEL_POREC_ROOMS } from './hotel/hotelData';
 import { formatRoomNumber } from './hotel/calendarUtils';
@@ -677,7 +677,7 @@ ${this.getEmailStyles()}
   static async sendEmail(
     to: string,
     template: EmailTemplate,
-    guestName: string
+    _guestName: string
   ): Promise<{ success: boolean; message: string }> {
     try {
       if (!supabaseUrl || !supabaseAnonKey) {

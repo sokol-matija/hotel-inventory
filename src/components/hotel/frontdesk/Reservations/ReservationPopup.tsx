@@ -86,14 +86,14 @@ export default function ReservationPopup({
 
   // State for company data (R1 billing)
   const [company, setCompany] = useState<Company | null>(null);
-  const [loadingCompany, setLoadingCompany] = useState(false);
+  const [, setLoadingCompany] = useState(false);
 
   // Fetch company data if this is an R1 reservation
   useEffect(() => {
     const fetchCompanyData = async () => {
       if (!reservationData) return;
 
-      const res = reservationData.reservation as any;
+      const res = reservationData.reservation as Record<string, unknown>;
       if (res.is_r1 && res.company_id) {
         setLoadingCompany(true);
         try {

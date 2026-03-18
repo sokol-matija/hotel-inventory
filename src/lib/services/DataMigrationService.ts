@@ -2,16 +2,18 @@
 // This service handles the one-time migration from localStorage to Supabase database
 
 import { supabase } from '../supabase';
-import { hotelSupabaseService } from './HotelSupabaseService';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type MigrationRecord = Record<string, any>;
 
 interface LocalStorageData {
-  reservations: any[];
-  guests: any[];
-  companies: any[];
-  pricingTiers: any[];
-  invoices: any[];
-  payments: any[];
-  fiscalRecords: any[];
+  reservations: MigrationRecord[];
+  guests: MigrationRecord[];
+  companies: MigrationRecord[];
+  pricingTiers: MigrationRecord[];
+  invoices: MigrationRecord[];
+  payments: MigrationRecord[];
+  fiscalRecords: MigrationRecord[];
 }
 
 interface MigrationResult {
@@ -116,7 +118,7 @@ export class DataMigrationService {
   /**
    * Migrate guests data
    */
-  private async migrateGuests(localGuests: any[]): Promise<{ count: number; errors: string[] }> {
+  private async migrateGuests(localGuests: MigrationRecord[]): Promise<{ count: number; errors: string[] }> {
     const errors: string[] = [];
     let count = 0;
 
@@ -171,7 +173,7 @@ export class DataMigrationService {
   /**
    * Migrate companies data
    */
-  private async migrateCompanies(localCompanies: any[]): Promise<{ count: number; errors: string[] }> {
+  private async migrateCompanies(localCompanies: MigrationRecord[]): Promise<{ count: number; errors: string[] }> {
     const errors: string[] = [];
     let count = 0;
 
@@ -218,7 +220,7 @@ export class DataMigrationService {
   /**
    * Migrate pricing tiers data
    */
-  private async migratePricingTiers(localTiers: any[]): Promise<{ count: number; errors: string[] }> {
+  private async migratePricingTiers(localTiers: MigrationRecord[]): Promise<{ count: number; errors: string[] }> {
     const errors: string[] = [];
     let count = 0;
 
@@ -264,7 +266,7 @@ export class DataMigrationService {
    * Migrate reservations data
    * Note: This requires guests and rooms to exist, so it should be run after guest migration
    */
-  private async migrateReservations(localReservations: any[]): Promise<{ count: number; errors: string[] }> {
+  private async migrateReservations(localReservations: MigrationRecord[]): Promise<{ count: number; errors: string[] }> {
     const errors: string[] = [];
     let count = 0;
 
@@ -476,7 +478,7 @@ export class DataMigrationService {
     try {
       localStorage.setItem(backupKey, backupString);
       console.log(`📦 Backup created with key: ${backupKey}`);
-    } catch (error) {
+    } catch {
       console.warn('⚠️ Could not store backup in localStorage, but returning backup data');
     }
     

@@ -3,15 +3,12 @@
 
 import { supabase, Database } from '../../supabase';
 import { Room, Guest, Reservation, Hotel, RoomType as AppRoomType } from '../types';
-import { HOTEL_POREC } from '../hotelData';
 import { databaseAdapter } from './DatabaseAdapter';
 
 // Database row types from Supabase
 type HotelRow = Database['public']['Tables']['hotels']['Row'];
 type RoomTypeRow = Database['public']['Tables']['room_types']['Row'];
-type RoomRow = Database['public']['Tables']['rooms']['Row'];
 type GuestRow = Database['public']['Tables']['guests']['Row'];
-type ReservationRow = Database['public']['Tables']['reservations']['Row'];
 
 // Hotel Porec ID in database
 // Generate a proper UUID for Hotel Porec 
@@ -40,7 +37,7 @@ export class HotelDataService {
   /**
    * Get all room types
    */
-  async getRoomTypes(): Promise<Array<RoomTypeRow & { mapped: any }>> {
+  async getRoomTypes(): Promise<Array<RoomTypeRow & { mapped: unknown }>> {
     try {
       const { data, error } = await supabase
         .from('room_types')
@@ -359,7 +356,9 @@ export class HotelDataService {
 
   // Private mapping methods
   private mapHotelFromDB(hotelRow: HotelRow): Hotel {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const address = hotelRow.address as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const contact = hotelRow.contact_info as any;
     
     return {
@@ -374,6 +373,7 @@ export class HotelDataService {
     };
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mapRoomFromDB(roomRow: any): Room {
     const roomType = roomRow.room_type;
     
@@ -420,9 +420,8 @@ export class HotelDataService {
     };
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mapReservationFromDB(reservationRow: any): Reservation {
-    const guest = reservationRow.guest;
-    const room = reservationRow.room;
     const label = reservationRow.label;
 
     return {
@@ -434,9 +433,12 @@ export class HotelDataService {
       numberOfGuests: reservationRow.total_guests || (reservationRow.adults + (reservationRow.children || 0)),
       adults: reservationRow.adults,
       children: [], // TODO: Load from reservation_guests table
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       status: reservationRow.status as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       bookingSource: reservationRow.booking_source as any,
       specialRequests: reservationRow.special_requests || '',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       seasonalPeriod: reservationRow.seasonal_period as any,
       baseRoomRate: reservationRow.base_room_rate,
       numberOfNights: reservationRow.number_of_nights || 1,

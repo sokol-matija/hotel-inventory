@@ -42,6 +42,7 @@ const CardDescription: React.FC<{ children: React.ReactNode }> = ({ children }) 
 export default function FiscalizationTestPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [testResult, setTestResult] = useState<FiscalResponse | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [serviceStatus, setServiceStatus] = useState<any>(null);
   const [showCertGuide, setShowCertGuide] = useState(false);
 
@@ -78,6 +79,7 @@ export default function FiscalizationTestPage() {
     // Load service status on component mount
     const status = fiscalizationService.getServiceStatus();
     setServiceStatus(status);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleTestFiscalization = async () => {

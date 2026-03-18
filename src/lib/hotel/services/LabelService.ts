@@ -208,6 +208,7 @@ export class LabelService {
    */
   async updateLabel(labelId: string, updates: LabelUpdate): Promise<Label> {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const updateData: any = {};
 
       if (updates.name) {
@@ -276,6 +277,7 @@ export class LabelService {
    * @param data - Raw database data
    * @returns Label object
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mapLabel(data: any): Label {
     return {
       id: data.id,
@@ -293,6 +295,7 @@ export class LabelService {
    * @param data - Array of raw database data
    * @returns Array of Label objects
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mapLabels(data: any[]): Label[] {
     return data.map(item => this.mapLabel(item));
   }

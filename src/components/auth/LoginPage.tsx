@@ -6,11 +6,9 @@ import { Label } from '../ui/label'
 import { supabase } from '@/lib/supabase'
 import { Chrome, Mail, Lock, CheckCircle2, X } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { useTranslation } from 'react-i18next'
 
 export default function LoginPage() {
   const { toast } = useToast()
-  const { t } = useTranslation()
   const [isLoading, setIsLoading] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')

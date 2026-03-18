@@ -23,6 +23,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   const context = useContext(AuthContext)
   if (context === undefined) {
@@ -67,6 +68,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('user_id', userId)
         .maybeSingle()
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any
 
       console.log('checkUserProfile: Query returned', { data, error, errorCode: error?.code })

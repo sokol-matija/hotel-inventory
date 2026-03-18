@@ -2,7 +2,7 @@
 // Manages all timeline-related state and computed values
 
 import { useState, useMemo, useCallback } from 'react';
-import { TimelineService, TimelineDate, DragCreateOperation, RoomChangeOperation } from '../services/TimelineService';
+import { TimelineService, DragCreateOperation } from '../services/TimelineService';
 import { Room, Reservation } from '../types';
 
 export interface TimelineState {
@@ -39,7 +39,7 @@ export interface TimelineState {
     newCheckIn: Date | null;
     newCheckOut: Date | null;
     reservation: Reservation | null;
-    guest: any;
+    guest: Record<string, unknown> | null;
   };
   
   // Hotel orders modal state
@@ -239,6 +239,7 @@ export function useTimelineState(reservations: Reservation[]) {
     }
     
     resetDragCreate();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentDragCreateOperation, roomsGroupedByFloor, openCreateBooking]);
 
   const resetDragCreate = useCallback(() => {
@@ -259,7 +260,7 @@ export function useTimelineState(reservations: Reservation[]) {
     newCheckIn: Date,
     newCheckOut: Date,
     reservation: Reservation,
-    guest: any
+    guest: Record<string, unknown>
   ) => {
     updateState({
       roomChangeDialog: {

@@ -5,7 +5,6 @@ import { startOfDay } from 'date-fns';
 import { HotelPricingEngine, PricingCalculationInput } from '../pricingEngine';
 import { Room, Guest, GuestChild, ReservationStatus, Reservation, Company } from '../types';
 import { SAMPLE_GUESTS } from '../sampleData';
-import { formatRoomNumber } from '../calendarUtils';
 
 export interface BookingData {
   room: Room;
@@ -38,7 +37,7 @@ export interface NewGuestData {
 export interface BookingValidationError {
   type: 'date_conflict' | 'room_401' | 'form_invalid' | 'guest_required';
   message: string;
-  details?: any;
+  details?: unknown;
 }
 
 export class BookingService {
@@ -56,7 +55,7 @@ export class BookingService {
   /**
    * Calculate pricing for booking
    */
-  public calculatePricing(bookingData: Partial<BookingData>): any {
+  public calculatePricing(bookingData: Partial<BookingData>): unknown {
     if (!bookingData.room || !bookingData.checkIn || !bookingData.checkOut) {
       return null;
     }
@@ -207,7 +206,7 @@ export class BookingService {
   /**
    * Transform booking data for reservation creation
    */
-  public transformToReservationData(bookingData: BookingData, pricing: any): any {
+  public transformToReservationData(bookingData: BookingData, pricing: unknown): Record<string, unknown> {
     return {
       room: bookingData.room,
       guest: bookingData.guest,

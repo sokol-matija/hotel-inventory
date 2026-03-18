@@ -2,12 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { X, Plus, Minus, Search, ShoppingCart, AlertTriangle } from 'lucide-react';
 import { Button } from '../../../ui/button';
 import { Input } from '../../../ui/input';
-import { Label } from '../../../ui/label';
 import { Badge } from '../../../ui/badge';
-import { 
-  InventoryItem, 
-  OrderItem, 
-  OrderValidationResult 
+import {
+  OrderItem,
+  OrderValidationResult
 } from '../../../../lib/hotel/orderTypes';
 import { 
   validateOrder,
@@ -124,9 +122,10 @@ export default function DrinksSelectionModal({
       const fridgeItems: FridgeInventoryItem[] = items
         ?.map(item => {
           // Only include inventory from refrigerated locations
-          const fridgeInventory = item.inventory?.filter(inv => 
-            (inv.location as any)?.is_refrigerated && inv.quantity > 0
-          ) || [];
+          const fridgeInventory = item.inventory?.filter(inv => {
+            const loc = inv.location as Record<string, unknown> | null;
+            return loc?.is_refrigerated && inv.quantity > 0;
+          }) || [];
 
           if (fridgeInventory.length === 0) return null;
 
@@ -137,9 +136,9 @@ export default function DrinksSelectionModal({
             name: item.name,
             description: item.description,
             category: {
-              id: (item.category as any).id,
-              name: (item.category as any).name,
-              requires_expiration: (item.category as any).requires_expiration
+              id: (item.category as Record<string, unknown>).id as number,
+              name: (item.category as Record<string, unknown>).name as string,
+              requires_expiration: (item.category as Record<string, unknown>).requires_expiration as boolean
             },
             unit: item.unit,
             price: item.price || 0,
@@ -152,8 +151,8 @@ export default function DrinksSelectionModal({
               originalQuantity: inv.quantity,
               expiration_date: inv.expiration_date,
               location: {
-                id: (inv.location as any).id,
-                name: (inv.location as any).name
+                id: (inv.location as Record<string, unknown>).id as number,
+                name: (inv.location as Record<string, unknown>).name as string
               }
             })),
             totalStock,
@@ -191,6 +190,7 @@ export default function DrinksSelectionModal({
   // Update available stock whenever basket changes
   useEffect(() => {
     updateAvailableStock();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [basketQuantities]);
 
   const addToOrder = (item: FridgeInventoryItem) => {

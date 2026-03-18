@@ -1,13 +1,12 @@
 // Comprehensive Pricing Engine for Hotel Porec
 // Handles all pricing calculations with 2026 rates and rules
 
-import { 
-  ROOM_RATES_2026, 
-  PRICING_RULES_2026, 
+import {
+  ROOM_RATES_2026,
+  PRICING_RULES_2026,
   SEASONAL_PERIODS_2026,
   calculateChildDiscount,
   calculateTourismTax,
-  needsShortStaySupplement,
   calculateShortStaySupplement
 } from './pricingData2026';
 import { SeasonalPeriod, RoomType, GuestChild } from './types';
@@ -236,7 +235,7 @@ export class HotelPricingEngine {
     return Math.ceil(timeDiff / (1000 * 3600 * 24));
   }
   
-  private getSeasonalPeriod(checkIn: Date, checkOut: Date): SeasonalPeriod {
+  private getSeasonalPeriod(checkIn: Date, _checkOut: Date): SeasonalPeriod {
     // For multi-day stays, use the check-in date's period
     // In future, we might want to pro-rate across periods
     return this.determinePeriodForDate(checkIn);
@@ -289,9 +288,9 @@ export class HotelPricingEngine {
     vipDiscountPercentage: number = 0,
     isRoom401: boolean = false
   ) {
-    let children0to3 = { count: 0, amount: 0 };
-    let children3to7 = { count: 0, amount: 0 };
-    let children7to14 = { count: 0, amount: 0 };
+    const children0to3 = { count: 0, amount: 0 };
+    const children3to7 = { count: 0, amount: 0 };
+    const children7to14 = { count: 0, amount: 0 };
     
     // Calculate children discounts (only for accommodation)
     children.forEach(child => {
@@ -416,7 +415,7 @@ export class HotelPricingEngine {
     };
   }
   
-  private calculateVAT(accommodationTotal: number, services: any) {
+  private calculateVAT(accommodationTotal: number, services: ReturnType<HotelPricingEngine['calculateServices']>) {
     // Accommodation VAT (13% already included in prices)
     const accommodationVAT = accommodationTotal * (PRICING_RULES_2026.vatRates.accommodation / (1 + PRICING_RULES_2026.vatRates.accommodation));
     
@@ -430,12 +429,12 @@ export class HotelPricingEngine {
     };
   }
   
-  private sumServicesSubtotal(services: any): number {
+  private sumServicesSubtotal(services: ReturnType<HotelPricingEngine['calculateServices']>): number {
     return services.parking.subtotal + services.pets.subtotal + services.towelRental.subtotal;
   }
   
   // Validation methods
-  public validateRoom401Booking(checkIn: Date, checkOut: Date, existingReservations: any[]): { isValid: boolean; errors: string[] } {
+  public validateRoom401Booking(checkIn: Date, checkOut: Date, _existingReservations: unknown[]): { isValid: boolean; errors: string[] } {
     const nights = this.calculateNights(checkIn, checkOut);
     const errors: string[] = [];
     

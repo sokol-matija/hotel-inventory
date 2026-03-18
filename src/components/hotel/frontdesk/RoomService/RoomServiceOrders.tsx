@@ -406,7 +406,7 @@ export default function RoomServiceOrders({ rooms }: RoomServiceOrdersProps) {
                   <Label>Payment Method</Label>
                   <select
                     value={paymentMethod}
-                    onChange={(e) => setPaymentMethod(e.target.value as any)}
+                    onChange={(e) => setPaymentMethod(e.target.value as 'room_bill' | 'immediate_cash' | 'immediate_card')}
                     className="w-full p-2 border border-gray-300 rounded-md text-sm"
                   >
                     <option value="room_bill">Add to Room Bill</option>

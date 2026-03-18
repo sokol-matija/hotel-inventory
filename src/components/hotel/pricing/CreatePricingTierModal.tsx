@@ -75,7 +75,7 @@ export default function CreatePricingTierModal({ isOpen, onClose, onSuccess }: C
     notes: ''
   });
 
-  const handleInputChange = (field: keyof FormData, value: any) => {
+  const handleInputChange = (field: keyof FormData, value: unknown) => {
     setFormData(prev => ({
       ...prev,
       [field]: value

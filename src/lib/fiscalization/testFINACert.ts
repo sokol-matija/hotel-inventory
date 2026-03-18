@@ -91,6 +91,7 @@ export function testFINACertificate(): void {
 // Run the test if this file is executed directly
 if (typeof window !== 'undefined') {
   // Browser environment - can call this from console
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (window as any).testFINACertificate = testFINACertificate;
   console.log('💡 FINA certificate test loaded! Run testFINACertificate() in console to test.');
 }

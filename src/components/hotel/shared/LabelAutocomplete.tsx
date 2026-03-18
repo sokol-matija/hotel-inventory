@@ -15,7 +15,6 @@ import { Label as LabelType } from '../../../lib/hotel/types';
 import labelService from '../../../lib/hotel/services/LabelService';
 import LabelBadge from './LabelBadge';
 import { Input } from '../../ui/input';
-import { Button } from '../../ui/button';
 
 interface LabelAutocompleteProps {
   hotelId: string;

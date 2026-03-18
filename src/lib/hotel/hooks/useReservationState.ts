@@ -2,7 +2,7 @@
 // Manages all reservation-related state and operations
 
 import { useState, useCallback, useEffect } from 'react';
-import { CalendarEvent, Reservation } from '../types';
+import { CalendarEvent } from '../types';
 import { useHotel } from '../state/SupabaseHotelContext';
 import { ReservationService, ReservationData, FiscalData } from '../services/ReservationService';
 
@@ -69,7 +69,7 @@ export function useReservationState(
   }, [event, reservations, reservationService]);
 
   // State updaters
-  const updateState = useCallback(<K extends keyof ReservationState>(
+  const updateState = useCallback((
     updates: Partial<ReservationState>
   ) => {
     setState(prev => ({ ...prev, ...updates }));
@@ -104,6 +104,7 @@ export function useReservationState(
 
     try {
       updateState({ statusUpdateError: null });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await updateReservationStatus(reservationData.reservation.id, newStatus as any);
       
       // Call original callback if provided

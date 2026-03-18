@@ -18,8 +18,8 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { Invoice, Guest, Room, Reservation, Company } from '../../../lib/hotel/types';
-import { generatePDFInvoice, generateInvoiceNumber } from '../../../lib/pdfInvoiceGenerator';
+import { Invoice, Company } from '../../../lib/hotel/types';
+import { generatePDFInvoice } from '../../../lib/pdfInvoiceGenerator';
 import { SAMPLE_RESERVATIONS } from '../../../lib/hotel/sampleData';
 import hotelNotification from '../../../lib/notifications';
 import { supabase } from '../../../lib/supabase';
@@ -94,10 +94,12 @@ export default function InvoiceHistoryPage() {
 
       // Fetch company data if this is an R1 reservation
       let company: Company | undefined;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if ((reservation as any).is_r1 && (reservation as any).company_id) {
         const { data: companyData, error: companyError } = await supabase
           .from('companies')
           .select('*')
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           .eq('id', (reservation as any).company_id)
           .single();
 

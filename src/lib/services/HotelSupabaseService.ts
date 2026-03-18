@@ -185,9 +185,9 @@ class HotelSupabaseService implements HotelSupabaseServiceInterface {
   }
   
   async updateReservationStatus(id: string, status: ReservationStatus): Promise<void> {
-    const updates: any = { 
-      status, 
-      last_modified: new Date().toISOString() 
+    const updates: Record<string, unknown> = {
+      status,
+      last_modified: new Date().toISOString()
     };
     
     // Set check-in/check-out timestamps based on status
@@ -592,10 +592,12 @@ class HotelSupabaseService implements HotelSupabaseServiceInterface {
   // MAPPING FUNCTIONS (Database ↔ TypeScript)
   // =====================================
   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mapGuestsFromDatabase(dbGuests: any[]): Guest[] {
     return dbGuests.map(guest => this.mapGuestFromDatabase(guest));
   }
   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mapGuestFromDatabase(dbGuest: any): Guest {
     return {
       id: dbGuest.id.toString(),
@@ -623,6 +625,7 @@ class HotelSupabaseService implements HotelSupabaseServiceInterface {
     };
   }
   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mapGuestToDatabase(guest: Partial<Guest>): any {
     return {
       first_name: guest.firstName,
@@ -650,10 +653,12 @@ class HotelSupabaseService implements HotelSupabaseServiceInterface {
   // RESERVATION MAPPING FUNCTIONS
   // =====================================
   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mapReservationsFromDatabase(dbReservations: any[]): Reservation[] {
     return dbReservations.map(res => this.mapReservationFromDatabase(res));
   }
   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mapReservationFromDatabase(dbReservation: any): Reservation {
     return {
       id: dbReservation.id.toString(),
@@ -715,6 +720,7 @@ class HotelSupabaseService implements HotelSupabaseServiceInterface {
     };
   }
   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mapReservationToDatabase(reservation: Partial<Reservation>): any {
     return {
       room_id: reservation.roomId,
@@ -754,10 +760,12 @@ class HotelSupabaseService implements HotelSupabaseServiceInterface {
   // COMPANY MAPPING FUNCTIONS
   // =====================================
   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mapCompaniesFromDatabase(dbCompanies: any[]): Company[] {
     return dbCompanies.map(company => this.mapCompanyFromDatabase(company));
   }
   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mapCompanyFromDatabase(dbCompany: any): Company {
     return {
       id: dbCompany.id.toString(),
@@ -791,6 +799,7 @@ class HotelSupabaseService implements HotelSupabaseServiceInterface {
     };
   }
   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mapCompanyToDatabase(company: Partial<Company>): any {
     return {
       name: company.name,
@@ -821,10 +830,12 @@ class HotelSupabaseService implements HotelSupabaseServiceInterface {
   // PRICING TIER MAPPING FUNCTIONS
   // =====================================
   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mapPricingTiersFromDatabase(dbTiers: any[]): PricingTier[] {
     return dbTiers.map(tier => this.mapPricingTierFromDatabase(tier));
   }
   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mapPricingTierFromDatabase(dbTier: any): PricingTier {
     return {
       id: dbTier.id.toString(),
@@ -851,6 +862,7 @@ class HotelSupabaseService implements HotelSupabaseServiceInterface {
     };
   }
   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mapPricingTierToDatabase(tier: Partial<PricingTier>): any {
     return {
       name: tier.name,
@@ -877,10 +889,12 @@ class HotelSupabaseService implements HotelSupabaseServiceInterface {
   // INVOICE MAPPING FUNCTIONS
   // =====================================
   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mapInvoicesFromDatabase(dbInvoices: any[]): Invoice[] {
     return dbInvoices.map(invoice => this.mapInvoiceFromDatabase(invoice));
   }
   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mapInvoiceFromDatabase(dbInvoice: any): Invoice {
     return {
       id: dbInvoice.id.toString(),
@@ -915,6 +929,7 @@ class HotelSupabaseService implements HotelSupabaseServiceInterface {
     };
   }
   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mapInvoiceToDatabase(invoice: Partial<Invoice>): any {
     return {
       invoice_number: invoice.invoiceNumber,
@@ -948,10 +963,12 @@ class HotelSupabaseService implements HotelSupabaseServiceInterface {
   // PAYMENT MAPPING FUNCTIONS
   // =====================================
   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mapPaymentsFromDatabase(dbPayments: any[]): Payment[] {
     return dbPayments.map(payment => this.mapPaymentFromDatabase(payment));
   }
   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mapPaymentFromDatabase(dbPayment: any): Payment {
     return {
       id: dbPayment.id.toString(),
@@ -979,6 +996,7 @@ class HotelSupabaseService implements HotelSupabaseServiceInterface {
     };
   }
   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mapPaymentToDatabase(payment: Partial<Payment>): any {
     return {
       invoice_id: payment.invoiceId,
@@ -1007,10 +1025,12 @@ class HotelSupabaseService implements HotelSupabaseServiceInterface {
   // FISCAL RECORD MAPPING FUNCTIONS
   // =====================================
   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mapFiscalRecordsFromDatabase(dbRecords: any[]): FiscalRecord[] {
     return dbRecords.map(record => this.mapFiscalRecordFromDatabase(record));
   }
   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mapFiscalRecordFromDatabase(dbRecord: any): FiscalRecord {
     return {
       id: dbRecord.id.toString(),
@@ -1042,6 +1062,7 @@ class HotelSupabaseService implements HotelSupabaseServiceInterface {
     };
   }
   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mapFiscalRecordToDatabase(record: Partial<FiscalRecord>): any {
     return {
       invoice_id: record.invoiceId,

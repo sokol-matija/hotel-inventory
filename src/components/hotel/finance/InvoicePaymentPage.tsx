@@ -5,7 +5,6 @@ import { Badge } from '../../ui/badge';
 import { Button } from '../../ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../ui/dialog';
 import {
-  Calendar,
   DollarSign,
   FileText,
   Search,
@@ -13,9 +12,7 @@ import {
   Download,
   Eye,
   CreditCard,
-  X,
   Clock,
-  CheckCircle,
   Banknote,
   Building2,
   Globe,
@@ -24,14 +21,13 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { QRCodeSVG } from 'qrcode.react';
-import { Invoice, Guest, Room, Reservation, Company } from '../../../lib/hotel/types';
-import { generatePDFInvoice, generateInvoiceNumber } from '../../../lib/pdfInvoiceGenerator';
-import { SAMPLE_RESERVATIONS } from '../../../lib/hotel/sampleData';
+import { Invoice, Company } from '../../../lib/hotel/types';
+import { generatePDFInvoice } from '../../../lib/pdfInvoiceGenerator';
 import hotelNotification from '../../../lib/notifications';
 import { supabase } from '../../../lib/supabase';
 
 export default function InvoicePaymentPage() {
-  const { invoices, payments, guests, rooms, reservations, getInvoicesByDateRange, getUnpaidInvoices, getPaymentsByMethod } = useHotel();
+  const { invoices, payments, guests, rooms, reservations, getUnpaidInvoices } = useHotel();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -120,10 +116,12 @@ export default function InvoicePaymentPage() {
 
       // Fetch company data if this is an R1 reservation
       let company: Company | undefined;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if ((reservation as any).is_r1 && (reservation as any).company_id) {
         const { data: companyData, error: companyError } = await supabase
           .from('companies')
           .select('*')
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           .eq('id', (reservation as any).company_id)
           .single();
 
@@ -184,8 +182,6 @@ export default function InvoicePaymentPage() {
 
   // Payment calculations
   const totalPaid = payments.reduce((sum, payment) => sum + payment.amount, 0);
-  const cashPayments = getPaymentsByMethod('cash').reduce((sum, p) => sum + p.amount, 0);
-  const cardPayments = getPaymentsByMethod('card').reduce((sum, p) => sum + p.amount, 0);
 
   return (
     <div className="p-6 max-w-7xl mx-auto">

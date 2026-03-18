@@ -50,6 +50,7 @@ export interface FiscalResponse {
   fiscalReceiptUrl?: string;
   qrCodeData?: string; // QR code data string
   timestamp: Date;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   rawResponse?: any; // Store raw server response like Ruby library
 }
 

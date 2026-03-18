@@ -1,9 +1,9 @@
 // ReservationsFilters - Advanced filter panel with multiple filter types
 // Provides comprehensive filtering options for power users
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Filter, X, Calendar, ChevronDown } from 'lucide-react';
+import { Filter, X, Calendar } from 'lucide-react';
 import { ReservationsFilters as FiltersType } from '../../../../hooks/useReservationsList';
 import { Button } from '../../../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';

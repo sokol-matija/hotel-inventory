@@ -15,7 +15,7 @@ export interface LogEntry {
   level: LogLevel;
   category: string;
   message: string;
-  data?: any;
+  data?: unknown;
   userId?: string;
   sessionId?: string;
   userAgent?: string;
@@ -108,23 +108,23 @@ class LoggingService {
   }
 
   // Core logging methods
-  public debug(category: string, message: string, data?: any): void {
+  public debug(category: string, message: string, data?: unknown): void {
     this.log(LogLevel.DEBUG, category, message, data);
   }
 
-  public info(category: string, message: string, data?: any): void {
+  public info(category: string, message: string, data?: unknown): void {
     this.log(LogLevel.INFO, category, message, data);
   }
 
-  public warn(category: string, message: string, data?: any): void {
+  public warn(category: string, message: string, data?: unknown): void {
     this.log(LogLevel.WARN, category, message, data);
   }
 
-  public error(category: string, message: string, data?: any): void {
+  public error(category: string, message: string, data?: unknown): void {
     this.log(LogLevel.ERROR, category, message, data);
   }
 
-  public critical(category: string, message: string, data?: any): void {
+  public critical(category: string, message: string, data?: unknown): void {
     this.log(LogLevel.CRITICAL, category, message, data);
   }
 
@@ -142,7 +142,7 @@ class LoggingService {
     return operationId;
   }
 
-  public performanceEnd(operationId: string, operation: string, additionalData?: any): void {
+  public performanceEnd(operationId: string, operation: string, additionalData?: unknown): void {
     const endTime = performance.now();
     const duration = endTime - (performance.getEntriesByName(`perf-${operationId}`)[0]?.startTime || endTime);
     
@@ -156,7 +156,7 @@ class LoggingService {
   }
 
   // Database operation logging
-  public logDatabaseOperation(operation: string, table: string, duration: number, data?: any): void {
+  public logDatabaseOperation(operation: string, table: string, duration: number, data?: unknown): void {
     this.debug('Database', `${operation} on ${table}`, {
       operation,
       table,
@@ -166,7 +166,7 @@ class LoggingService {
   }
 
   // User activity logging
-  public logUserActivity(action: string, details?: any): void {
+  public logUserActivity(action: string, details?: unknown): void {
     this.info('UserActivity', action, {
       userId: this.userId,
       timestamp: new Date().toISOString(),
@@ -177,7 +177,7 @@ class LoggingService {
   }
 
   // Business operation logging
-  public logBusinessOperation(operation: string, entityType: string, entityId: string, data?: any): void {
+  public logBusinessOperation(operation: string, entityType: string, entityId: string, data?: unknown): void {
     this.info('Business', `${operation} ${entityType}`, {
       operation,
       entityType,
@@ -188,7 +188,7 @@ class LoggingService {
   }
 
   // Error tracking with context
-  public trackError(error: Error, context?: any): void {
+  public trackError(error: Error, context?: unknown): void {
     this.error('ErrorTracking', error.message, {
       name: error.name,
       message: error.message,
@@ -201,7 +201,7 @@ class LoggingService {
   }
 
   // Core logging implementation
-  private log(level: LogLevel, category: string, message: string, data?: any): void {
+  private log(level: LogLevel, category: string, message: string, data?: unknown): void {
     if (level < this.config.level) {
       return; // Skip logs below configured level
     }
@@ -283,7 +283,7 @@ class LoggingService {
       try {
         const recentLogs = this.logBuffer.slice(-100); // Store last 100 entries
         localStorage.setItem('hotel-inventory-logs', JSON.stringify(recentLogs));
-      } catch (e) {
+      } catch {
         // Ignore storage errors
       }
     }
@@ -323,6 +323,7 @@ class LoggingService {
 
   private getMemoryUsage(): number {
     if (typeof performance !== 'undefined' && 'memory' in performance) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return (performance as any).memory.usedJSHeapSize;
     }
     return 0;
@@ -413,17 +414,17 @@ export const logger = LoggingService.getInstance();
 // Convenience functions for common use cases
 export const logPerformance = {
   start: (operation: string) => logger.performanceStart(operation),
-  end: (operationId: string, operation: string, data?: any) => logger.performanceEnd(operationId, operation, data)
+  end: (operationId: string, operation: string, data?: unknown) => logger.performanceEnd(operationId, operation, data)
 };
 
-export const logDatabase = (operation: string, table: string, duration: number, data?: any) => 
+export const logDatabase = (operation: string, table: string, duration: number, data?: unknown) =>
   logger.logDatabaseOperation(operation, table, duration, data);
 
-export const logUserActivity = (action: string, details?: any) => 
+export const logUserActivity = (action: string, details?: unknown) =>
   logger.logUserActivity(action, details);
 
-export const logBusinessOperation = (operation: string, entityType: string, entityId: string, data?: any) => 
+export const logBusinessOperation = (operation: string, entityType: string, entityId: string, data?: unknown) =>
   logger.logBusinessOperation(operation, entityType, entityId, data);
 
-export const trackError = (error: Error, context?: any) => 
+export const trackError = (error: Error, context?: unknown) =>
   logger.trackError(error, context);

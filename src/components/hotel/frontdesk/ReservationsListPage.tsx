@@ -43,8 +43,7 @@ export default function ReservationsListPage() {
     refetch,
     selectedIds,
     toggleSelection,
-    toggleSelectAll,
-    clearSelection
+    toggleSelectAll
   } = useReservationsList();
 
   // Convert Reservation to CalendarEvent for the popup

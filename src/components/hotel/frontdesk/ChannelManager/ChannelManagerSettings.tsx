@@ -66,6 +66,7 @@ export default function ChannelManagerSettings() {
 
   useEffect(() => {
     loadConfiguration();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadConfiguration = () => {
@@ -93,7 +94,7 @@ export default function ChannelManagerSettings() {
       } else {
         hotelNotification.error('Save Failed', result.error || 'Failed to save credentials');
       }
-    } catch (error) {
+    } catch {
       hotelNotification.error('Save Error', 'An unexpected error occurred');
     } finally {
       setSaving(false);
@@ -120,7 +121,7 @@ export default function ChannelManagerSettings() {
       } else {
         hotelNotification.error('Connection Test Failed', result.error || 'Unknown error');
       }
-    } catch (error) {
+    } catch {
       setConnectionTest({
         testing: false,
         success: false,
@@ -138,7 +139,7 @@ export default function ChannelManagerSettings() {
       } else {
         hotelNotification.error('Update Failed', result.error || 'Failed to update channel');
       }
-    } catch (error) {
+    } catch {
       hotelNotification.error('Update Error', 'An unexpected error occurred');
     }
   };
@@ -153,7 +154,7 @@ export default function ChannelManagerSettings() {
       } else {
         hotelNotification.error('Save Failed', result.error || 'Failed to save sync settings');
       }
-    } catch (error) {
+    } catch {
       hotelNotification.error('Save Error', 'An unexpected error occurred');
     } finally {
       setSaving(false);
@@ -174,7 +175,7 @@ export default function ChannelManagerSettings() {
       URL.revokeObjectURL(url);
       
       hotelNotification.success('Configuration Exported', 'Configuration file downloaded');
-    } catch (error) {
+    } catch {
       hotelNotification.error('Export Failed', 'Failed to export configuration');
     }
   };
@@ -185,7 +186,7 @@ export default function ChannelManagerSettings() {
         await configService.resetConfiguration();
         loadConfiguration();
         hotelNotification.warning('Configuration Reset', 'All settings have been reset to defaults');
-      } catch (error) {
+      } catch {
         hotelNotification.error('Reset Failed', 'Failed to reset configuration');
       }
     }
@@ -631,7 +632,7 @@ export default function ChannelManagerSettings() {
                               } else {
                                 hotelNotification.error('Import Failed', result.error || 'Invalid file');
                               }
-                            } catch (error) {
+                            } catch {
                               hotelNotification.error('Import Error', 'Failed to read configuration file');
                             }
                           };

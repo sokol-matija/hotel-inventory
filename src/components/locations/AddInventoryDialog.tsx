@@ -17,12 +17,6 @@ interface Item {
   unit: string
 }
 
-interface Location {
-  id: number
-  name: string
-  is_refrigerated: boolean
-}
-
 interface AddInventoryDialogProps {
   isOpen: boolean
   onClose: () => void
@@ -68,8 +62,9 @@ export default function AddInventoryDialog({ isOpen, onClose, onInventoryAdded, 
     if (!displayDate) return ''
     const parts = displayDate.split('/')
     if (parts.length !== 3) return ''
-    let [day, month, year] = parts
-    
+    const [day, month] = parts
+    let year = parts[2]
+
     // Handle 2-digit years: 25 → 2025, 99 → 2099, etc.
     if (year.length === 2) {
       const currentYear = new Date().getFullYear()
@@ -88,8 +83,8 @@ export default function AddInventoryDialog({ isOpen, onClose, onInventoryAdded, 
     const match = dateString.match(dateRegex)
     
     if (!match) return false
-    
-    let [, day, month, year] = match
+
+    const [, day, month, year] = match
     const dayNum = parseInt(day, 10)
     const monthNum = parseInt(month, 10)
     let yearNum = parseInt(year, 10)
@@ -146,7 +141,7 @@ export default function AddInventoryDialog({ isOpen, onClose, onInventoryAdded, 
       // Transform the data to match our interface
       const transformedData = data?.map(item => ({
         ...item,
-        category: (item as any).categories
+        category: (item as Record<string, unknown>).categories
       })) || []
       
       setItems(transformedData)

@@ -4,10 +4,11 @@ import { Badge } from '../../ui/badge';
 import { Users, Home, TrendingUp, DollarSign } from 'lucide-react';
 import { RESERVATION_STATUS_COLORS } from '../../../lib/hotel/calendarUtils';
 import { useHotel } from '../../../lib/hotel/state/SupabaseHotelContext';
+import { Reservation } from '../../../lib/hotel/types';
 import HotelTimeline from './HotelTimeline';
 
 // Hotel overview stats component
-function HotelOverviewStats({ reservations }: { reservations: any[] }) {
+function HotelOverviewStats({ reservations }: { reservations: Reservation[] }) {
   const { rooms } = useHotel(); // Get dynamic rooms from Supabase
   const today = new Date();
   

@@ -26,7 +26,7 @@
  * @since August 2025
  */
 
-import { Reservation, Room, Guest, ReservationStatus } from '../types';
+import { Reservation, Room, ReservationStatus } from '../types';
 import { ConflictDetectionService } from './ConflictDetectionService';
 import { OptimisticUpdateService } from './OptimisticUpdateService';
 
@@ -34,7 +34,7 @@ export interface BatchOperation {
   id: string;
   type: 'move' | 'update_status' | 'cancel' | 'extend' | 'pricing_update';
   reservationId: string;
-  data: any;
+  data: Record<string, unknown>;
   status: 'pending' | 'executing' | 'completed' | 'failed' | 'conflicted';
   error?: string;
   warnings?: string[];
@@ -104,7 +104,7 @@ export class BatchOperationService {
     });
 
     // Create operations
-    reservationsToMove.forEach((reservation, index) => {
+    reservationsToMove.forEach((reservation) => {
       operations.push({
         id: `bulk-move-${reservation.id}-${Date.now()}`,
         type: 'move',
@@ -163,8 +163,6 @@ export class BatchOperationService {
         operation.status = 'executing';
         onProgress?.(completed, operationsToExecute.length, operation);
 
-        const reservation = reservations.find(r => r.id === operation.reservationId)!;
-        
         await updateReservation(operation.reservationId, {
           roomId: operation.data.toRoomId
         });
@@ -365,9 +363,9 @@ export class BatchOperationService {
    */
   private async resolveConflicts(
     operations: BatchOperation[],
-    conflictResults: { [index: number]: any },
+    conflictResults: { [index: number]: { hasConflict: boolean; conflicts: Array<{ message: string; suggestedAlternatives?: Room[] }> } },
     resolution: BulkMoveOptions['conflictResolution'],
-    rooms: Room[]
+    _rooms: Room[]
   ): Promise<{ operationsToExecute: BatchOperation[]; operationsToSkip: BatchOperation[] }> {
     const operationsToExecute: BatchOperation[] = [];
     const operationsToSkip: BatchOperation[] = [];
@@ -382,7 +380,7 @@ export class BatchOperationService {
             operationsToSkip.push(operation);
             break;
 
-          case 'suggest_alternatives':
+          case 'suggest_alternatives': {
             const alternatives = conflictResult?.conflicts?.[0]?.suggestedAlternatives;
             if (alternatives && alternatives.length > 0) {
               operation.data.toRoomId = alternatives[0].id;
@@ -393,6 +391,7 @@ export class BatchOperationService {
               operationsToSkip.push(operation);
             }
             break;
+          }
 
           case 'force':
             operation.warnings = ['Forced execution despite conflicts'];
@@ -463,7 +462,7 @@ export class BatchOperationService {
   /**
    * Cancel batch operation in progress
    */
-  cancelBatchOperation(batchId: string): boolean {
+  cancelBatchOperation(_batchId: string): boolean {
     // Implementation would stop in-progress operations
     return true;
   }

@@ -79,11 +79,12 @@ export default function PaymentDetailsModal({
 
       // Fetch company data if this is an R1 reservation
       let company: Company | undefined;
-      if ((reservation as any).is_r1 && (reservation as any).company_id) {
+      const reservationExt = reservation as Record<string, unknown>;
+      if (reservationExt.is_r1 && reservationExt.company_id) {
         const { data: companyData, error: companyError } = await supabase
           .from('companies')
           .select('*')
-          .eq('id', (reservation as any).company_id)
+          .eq('id', reservationExt.company_id)
           .single();
 
         if (companyError) {
@@ -358,7 +359,7 @@ export default function PaymentDetailsModal({
                 <CardTitle className="text-lg">Room Service</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {reservation.roomServiceItems.map((item, index) => (
+                {reservation.roomServiceItems.map((item) => (
                   <div key={item.id} className="flex justify-between items-center">
                     <div>
                       <div className="font-medium">{item.itemName}</div>

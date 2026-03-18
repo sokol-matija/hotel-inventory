@@ -70,6 +70,7 @@ export class PhobsSoapClient {
   /**
    * Send SOAP request with XML body
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async sendSoapRequest<T = any>(
     xmlBody: string,
     options: SoapRequestOptions
@@ -256,7 +257,7 @@ export class PhobsSoapClient {
   }): Promise<SoapResponse<{ reservationId?: string; confirmationNumber?: string }>> {
     const xmlBody = phobsXmlBuilder.buildReservationNotification(params);
 
-    const response = await this.sendSoapRequest(xmlBody, {
+    await this.sendSoapRequest(xmlBody, {
       endpoint: '/reservations',
       soapAction: 'OTA_HotelResNotifRQ',
       requiresAuth: true,
@@ -452,7 +453,7 @@ export class PhobsSoapClient {
   async authenticate(
     apiKey: string,
     secretKey: string,
-    hotelId: string
+    _hotelId: string
   ): Promise<{
     success: boolean;
     token?: string;
@@ -555,6 +556,7 @@ export class PhobsSoapClient {
   /**
    * Send raw SOAP envelope
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async sendRawSoap<T = any>(
     soapEnvelope: string,
     endpoint: string,

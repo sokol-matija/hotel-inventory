@@ -4,7 +4,6 @@
 import { supabase, Database } from '../../supabase';
 
 // Database types
-type GuestRow = Database['public']['Tables']['guests']['Row'];
 type GuestInsert = Database['public']['Tables']['guests']['Insert'];
 type GuestUpdate = Database['public']['Tables']['guests']['Update'];
 // Note: guest_children table not yet implemented
@@ -313,7 +312,7 @@ export class GuestService {
   /**
    * Add child to guest
    */
-  async addChildToGuest(guestId: string, childData: any): Promise<GuestResult<any>> {
+  async addChildToGuest(_guestId: string, _childData: unknown): Promise<GuestResult<unknown>> {
     console.warn('Child management not yet implemented - guest_children table needed');
     return { success: false, error: 'Child management not yet implemented' };
   }
@@ -321,7 +320,7 @@ export class GuestService {
   /**
    * Remove child from guest
    */
-  async removeChildFromGuest(childId: string): Promise<GuestResult<void>> {
+  async removeChildFromGuest(_childId: string): Promise<GuestResult<void>> {
     console.warn('Child management not yet implemented - guest_children table needed');
     return { success: false, error: 'Child management not yet implemented' };
   }
@@ -338,6 +337,7 @@ export class GuestService {
   }
 
   // Private helper methods
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mapGuestFromDB(row: any): Guest {
     return {
       id: row.id,

@@ -74,6 +74,7 @@ export function useOrdersState(): OrdersState & OrdersActions {
   // Load available items on mount
   useEffect(() => {
     loadAvailableItems();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   
   const loadAvailableItems = async (): Promise<void> => {

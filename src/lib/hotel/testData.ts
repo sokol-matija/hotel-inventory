@@ -8,9 +8,11 @@ import { SAMPLE_GUESTS, SAMPLE_RESERVATIONS, SAMPLE_DATA_STATS } from './sampleD
 // Test Hotel Porec room configuration
 export function testHotelData(): {
   success: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   results: Record<string, any>;
   errors: string[];
 } {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const results: Record<string, any> = {};
   const errors: string[] = [];
 

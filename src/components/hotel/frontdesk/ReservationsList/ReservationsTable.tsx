@@ -11,7 +11,6 @@ import {
   Eye,
   Edit2,
   Trash2,
-  Mail,
   Receipt,
   MoreHorizontal,
   CheckCircle,

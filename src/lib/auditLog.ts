@@ -4,8 +4,8 @@ export interface AuditLogEntry {
   action: 'CREATE' | 'UPDATE' | 'DELETE' | 'QUANTITY_UPDATE'
   tableName: string
   recordId?: number
-  oldValues?: Record<string, any>
-  newValues?: Record<string, any>
+  oldValues?: Record<string, unknown>
+  newValues?: Record<string, unknown>
   description?: string
 }
 
@@ -41,7 +41,7 @@ export async function logAuditEvent(entry: AuditLogEntry): Promise<void> {
 // Helper functions for common audit operations
 export const auditLog = {
   // Item management
-  itemCreated: (itemId: number, itemData: any) => 
+  itemCreated: (itemId: number, itemData: Record<string, unknown>) =>
     logAuditEvent({
       action: 'CREATE',
       tableName: 'items',
@@ -50,7 +50,7 @@ export const auditLog = {
       description: `Created item: ${itemData.name}`
     }),
 
-  itemUpdated: (itemId: number, oldData: any, newData: any) => 
+  itemUpdated: (itemId: number, oldData: Record<string, unknown>, newData: Record<string, unknown>) =>
     logAuditEvent({
       action: 'UPDATE',
       tableName: 'items',
@@ -60,7 +60,7 @@ export const auditLog = {
       description: `Updated item: ${newData.name || oldData.name}`
     }),
 
-  itemDeleted: (itemId: number, itemData: any) => 
+  itemDeleted: (itemId: number, itemData: Record<string, unknown>) =>
     logAuditEvent({
       action: 'DELETE',
       tableName: 'items',
@@ -81,7 +81,7 @@ export const auditLog = {
     }),
 
   // Inventory management
-  inventoryCreated: (inventoryId: number, inventoryData: any, itemName: string, locationName: string) => 
+  inventoryCreated: (inventoryId: number, inventoryData: Record<string, unknown>, itemName: string, locationName: string) =>
     logAuditEvent({
       action: 'CREATE',
       tableName: 'inventory',
@@ -90,7 +90,7 @@ export const auditLog = {
       description: `Added inventory: ${itemName} to ${locationName} (Qty: ${inventoryData.quantity})`
     }),
 
-  inventoryUpdated: (inventoryId: number, oldData: any, newData: any, itemName: string, locationName: string) => 
+  inventoryUpdated: (inventoryId: number, oldData: Record<string, unknown>, newData: Record<string, unknown>, itemName: string, locationName: string) =>
     logAuditEvent({
       action: 'UPDATE',
       tableName: 'inventory',
@@ -100,7 +100,7 @@ export const auditLog = {
       description: `Updated inventory: ${itemName} in ${locationName}`
     }),
 
-  inventoryDeleted: (inventoryId: number, inventoryData: any, itemName: string, locationName: string) => 
+  inventoryDeleted: (inventoryId: number, inventoryData: Record<string, unknown>, itemName: string, locationName: string) =>
     logAuditEvent({
       action: 'DELETE',
       tableName: 'inventory',
@@ -110,7 +110,7 @@ export const auditLog = {
     }),
 
   // Location management
-  locationCreated: (locationId: number, locationData: any) => 
+  locationCreated: (locationId: number, locationData: Record<string, unknown>) =>
     logAuditEvent({
       action: 'CREATE',
       tableName: 'locations',
@@ -119,7 +119,7 @@ export const auditLog = {
       description: `Created location: ${locationData.name}`
     }),
 
-  locationUpdated: (locationId: number, oldData: any, newData: any) => 
+  locationUpdated: (locationId: number, oldData: Record<string, unknown>, newData: Record<string, unknown>) =>
     logAuditEvent({
       action: 'UPDATE',
       tableName: 'locations',
@@ -129,7 +129,7 @@ export const auditLog = {
       description: `Updated location: ${newData.name || oldData.name}`
     }),
 
-  locationDeleted: (locationId: number, locationData: any) => 
+  locationDeleted: (locationId: number, locationData: Record<string, unknown>) =>
     logAuditEvent({
       action: 'DELETE',
       tableName: 'locations',

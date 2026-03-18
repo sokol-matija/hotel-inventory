@@ -19,9 +19,8 @@ import {
   ArrowUp
 } from 'lucide-react';
 import { PhobsChannelManagerService } from '../../../../lib/hotel/services/PhobsChannelManagerService';
-import { PhobsReservationSyncService } from '../../../../lib/hotel/services/PhobsReservationSyncService';
-import { PhobsInventoryService } from '../../../../lib/hotel/services/PhobsInventoryService';
-import { PhobsMonitoringService } from '../../../../lib/hotel/services/PhobsMonitoringService';
+import { PhobsReservationSyncService, ReservationSyncStatus } from '../../../../lib/hotel/services/PhobsReservationSyncService';
+import { PhobsMonitoringService, LogEntry } from '../../../../lib/hotel/services/PhobsMonitoringService';
 import { PhobsErrorHandlingService } from '../../../../lib/hotel/services/PhobsErrorHandlingService';
 import { 
   ChannelManagerStatus, 
@@ -31,6 +30,7 @@ import {
 import {
   ChannelStatusCard,
   ConflictIndicator,
+  ConflictSeverity,
   SyncProgress,
   PerformanceMetrics,
   ErrorDetails,
@@ -66,7 +66,7 @@ export default function ChannelManagerDashboard() {
   const [channelManagerStatus, setChannelManagerStatus] = useState<ChannelManagerStatus | null>(null);
   const [channelData, setChannelData] = useState<ChannelStatusData[]>([]);
   const [recentReservations, setRecentReservations] = useState<RecentReservation[]>([]);
-  const [syncStatus, setSyncStatus] = useState<any>(null);
+  const [syncStatus, setSyncStatus] = useState<(ReservationSyncStatus & { queueLength: number; activeConflicts: number }) | null>(null);
   const [activeConflicts, setActiveConflicts] = useState<ConflictResolution[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState(new Date());
@@ -77,18 +77,17 @@ export default function ChannelManagerDashboard() {
     errorRate: 4.8,
     trend: 'stable' as 'stable' | 'up' | 'down'
   });
-  const [activeSyncOperations, setActiveSyncOperations] = useState<Array<{
+  const [activeSyncOperations] = useState<Array<{
     id: string;
     operation: string;
     progress: number;
     currentStep?: string;
   }>>([]);
-  const [recentErrors, setRecentErrors] = useState<any[]>([]);
+  const [recentErrors, setRecentErrors] = useState<LogEntry[]>([]);
 
   // Services
   const channelManagerService = PhobsChannelManagerService.getInstance();
   const reservationSyncService = PhobsReservationSyncService.getInstance();
-  const inventoryService = PhobsInventoryService.getInstance();
   const monitoringService = PhobsMonitoringService.getInstance();
   const errorHandlingService = PhobsErrorHandlingService.getInstance();
 
@@ -101,6 +100,7 @@ export default function ChannelManagerDashboard() {
     }, 30000);
 
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadDashboardData = async () => {
@@ -129,7 +129,7 @@ export default function ChannelManagerDashboard() {
 
       // Load performance metrics
       const healthMetrics = monitoringService.getSystemHealthMetrics();
-      const errorMetrics = errorHandlingService.getMetrics();
+      errorHandlingService.getMetrics();
       
       setPerformanceMetrics({
         successRate: healthMetrics.errorRate > 0 ? 100 - healthMetrics.errorRate : 100,
@@ -273,6 +273,7 @@ export default function ChannelManagerDashboard() {
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'active': return <CheckCircle className="h-4 w-4" />;
@@ -425,7 +426,7 @@ export default function ChannelManagerDashboard() {
             {activeConflicts.slice(0, 5).map((conflict) => (
               <ConflictIndicator
                 key={conflict.conflictId}
-                severity={conflict.severity as any}
+                severity={conflict.severity as ConflictSeverity}
                 conflictType={conflict.type}
                 affectedItems={conflict.affectedReservations?.length || 1}
                 autoResolvable={conflict.autoResolvable}

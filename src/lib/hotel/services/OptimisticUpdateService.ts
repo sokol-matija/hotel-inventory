@@ -27,13 +27,15 @@
  * @since August 2025
  */
 
-import { Reservation, Room, Guest } from '../types';
+import { Reservation } from '../types';
 
 export interface OptimisticOperation {
   id: string;
   type: 'create' | 'update' | 'delete' | 'move';
   entity: 'reservation' | 'guest' | 'room';
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   originalData?: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   newData?: any;
   timestamp: number;
   status: 'pending' | 'success' | 'failed' | 'rolled_back';
@@ -67,7 +69,9 @@ export class OptimisticUpdateService {
     operation: {
       type: OptimisticOperation['type'];
       entity: OptimisticOperation['entity'];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       originalData?: any;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       newData?: any;
       optimisticUpdate: () => void;
       rollbackUpdate: () => void;
@@ -338,6 +342,7 @@ export class OptimisticUpdateService {
       if (op.status === 'rolled_back') {
         stats.rolledBack++;
       } else if (op.status in stats) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (stats as any)[op.status]++;
       }
       if (op.timestamp < stats.oldestOperation || stats.oldestOperation === 0) {

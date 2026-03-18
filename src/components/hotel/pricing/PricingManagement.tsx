@@ -47,13 +47,6 @@ export default function PricingManagement() {
     return date.toLocaleDateString('en-GB');
   };
 
-  const formatModifier = (value: number, isPercentage: boolean = true) => {
-    if (isPercentage) {
-      return `${value > 0 ? '+' : ''}${value}%`;
-    }
-    return `€${value.toFixed(2)}`;
-  };
-
   return (
     <div className="p-6 space-y-6">
       {/* Header */}

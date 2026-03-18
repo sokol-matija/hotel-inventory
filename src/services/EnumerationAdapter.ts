@@ -50,6 +50,7 @@ export interface EnhancedReservation {
   status_info: ReservationStatus
   booking_source_info: BookingSource
   total_amount: number
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any
 }
 
@@ -62,6 +63,7 @@ export interface EnhancedRoom {
   // Dynamic pricing fields
   current_season_code?: string
   current_season_rate?: number
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any
 }
 

@@ -7,6 +7,7 @@ import { Reservation, Room, Guest } from '../types';
 
 export type RealtimeEventType = 'INSERT' | 'UPDATE' | 'DELETE';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface RealtimePayload<T = any> {
   eventType: RealtimeEventType;
   new: T | null;

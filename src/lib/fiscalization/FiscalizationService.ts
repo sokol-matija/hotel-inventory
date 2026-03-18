@@ -5,11 +5,9 @@ import {
   FiscalInvoiceData,
   FiscalResponse,
   FiscalStatus,
-  ZKIData,
-  FiscalRequest,
   StornoRequest
 } from './types';
-import { getCurrentEnvironment, FISCAL_VALIDATION } from './config';
+import { getCurrentEnvironment } from './config';
 import { FiscalXMLGenerator } from './xmlGenerator';
 import { supabaseUrl, supabaseAnonKey } from '../supabase';
 
@@ -206,7 +204,7 @@ export class FiscalizationService {
    * Send fiscal request to Croatian Tax Authority
    * Real SOAP implementation based on working production/test-fina-cert.js
    */
-  private async sendFiscalRequest(fiscalXML: string): Promise<FiscalResponse> {
+  private async sendFiscalRequest(_fiscalXML: string): Promise<FiscalResponse> {
     const environment = getCurrentEnvironment();
 
     //SAFETY: Extra warning for production
@@ -303,7 +301,7 @@ export class FiscalizationService {
    * Simulate fiscal request for testing
    * UPDATED: Based on our successful s004 fix and real Croatian Tax Authority responses
    */
-  private async simulateFiscalRequest(fiscalXML: string): Promise<FiscalResponse> {
+  private async simulateFiscalRequest(_fiscalXML: string): Promise<FiscalResponse> {
     const environment = getCurrentEnvironment();
     
     console.log('📋 Simulating Croatian Tax Authority SOAP request...');
@@ -379,7 +377,7 @@ export class FiscalizationService {
   /**
    * Get fiscal status for an invoice
    */
-  public async getFiscalStatus(invoiceNumber: string): Promise<FiscalStatus> {
+  public async getFiscalStatus(_invoiceNumber: string): Promise<FiscalStatus> {
     // This would query the database for fiscal status
     // For now, return a placeholder
     return {
@@ -457,7 +455,6 @@ export class FiscalizationService {
    * Must contain: verification URL, JIR, date+time, total amount
    */
   public generateFiscalQRData(jir: string, totalAmount: number, invoiceDateTime?: Date): string {
-    const environment = getCurrentEnvironment();
     const dateTime = invoiceDateTime || new Date();
     
     // Croatian fiscal QR code format (Official specification)

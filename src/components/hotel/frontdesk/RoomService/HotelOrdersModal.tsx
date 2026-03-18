@@ -5,13 +5,11 @@ import { Button } from '../../../ui/button';
 import { Input } from '../../../ui/input';
 import { Label } from '../../../ui/label';
 import { Badge } from '../../../ui/badge';
-import { 
-  ShoppingCart, 
-  Plus, 
-  Minus, 
+import {
+  ShoppingCart,
+  Plus,
+  Minus,
   Search,
-  Package,
-  AlertTriangle,
   DollarSign
 } from 'lucide-react';
 import { supabase } from '../../../../lib/supabase';
@@ -119,9 +117,9 @@ export default function HotelOrdersModal({
           name: item.name,
           description: item.description,
           category: {
-            id: (item.category as any).id,
-            name: (item.category as any).name,
-            requires_expiration: (item.category as any).requires_expiration
+            id: (item.category as Record<string, unknown>).id as number,
+            name: (item.category as Record<string, unknown>).name as string,
+            requires_expiration: (item.category as Record<string, unknown>).requires_expiration as boolean
           },
           unit: item.unit,
           price: item.price || 0,
@@ -130,7 +128,7 @@ export default function HotelOrdersModal({
           totalStock,
           locations: item.inventory?.map(inv => ({
             locationId: inv.location_id,
-            locationName: (inv.location as any)?.name || 'Unknown',
+            locationName: ((inv.location as Record<string, unknown>)?.name as string) || 'Unknown',
             quantity: inv.quantity || 0,
             expiration_date: inv.expiration_date
           })) || []

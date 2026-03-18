@@ -2,12 +2,11 @@
 // Complete workflow for fiscal compliance
 
 import { Invoice } from '../hotel/types';
-import { 
-  EracuniInvoice, 
-  EracuniResponse, 
-  EracuniFiscalData,
+import {
+  EracuniInvoice,
+  EracuniResponse,
   CROATIAN_TAX_RATES,
-  CROATIAN_FISCAL_RULES 
+  CROATIAN_FISCAL_RULES
 } from './types';
 import { HotelEracuniXMLGenerator } from './xmlGenerator';
 import { FinaSoapClient } from './finaSoapClient';
@@ -194,7 +193,7 @@ export class HotelEracuniService {
     return nights * guests * CROATIAN_TAX_RATES.TOURISM_TAX_PER_NIGHT;
   }
 
-  private extractAdditionalServices(invoice: Invoice): Array<{name: string; quantity: number; unit_price: number; total: number}> {
+  private extractAdditionalServices(_invoice: Invoice): Array<{name: string; quantity: number; unit_price: number; total: number}> {
     // Extract from invoice items or description
     // For now, return empty array - this would be implemented based on actual hotel invoice structure
     return [];

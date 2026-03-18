@@ -89,6 +89,7 @@ export default function GuestAutocomplete({
 
   const handleClearSelection = () => {
     setSearchQuery('');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onGuestSelect(null as any);
     inputRef.current?.focus();
   };

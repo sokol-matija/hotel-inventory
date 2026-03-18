@@ -304,7 +304,7 @@ class HotelNotification {
         return this.animateNotification(notificationContainer, duration);
     }
 
-    private createStackedNotification(type: NotificationType, title: string, message: string, duration: number): HTMLElement {
+    private createStackedNotification(type: NotificationType, title: string, message: string, _duration: number): HTMLElement {
         const container = document.createElement('div');
         container.className = 'hotel-notification-container';
         container.style.position = 'fixed';

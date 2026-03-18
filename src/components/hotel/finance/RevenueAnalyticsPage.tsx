@@ -10,18 +10,15 @@ import {
   Download
 } from 'lucide-react';
 import { useHotel } from '../../../lib/hotel/state/SupabaseHotelContext';
-import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
+import { subDays, startOfMonth, endOfMonth } from 'date-fns';
 
 export default function RevenueAnalyticsPage() {
-  const { calculateRevenueAnalytics, getTotalRevenue } = useHotel();
+  const { calculateRevenueAnalytics } = useHotel();
   const [selectedPeriod, setSelectedPeriod] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
 
   const today = new Date();
   const thisMonth = calculateRevenueAnalytics('monthly', startOfMonth(today), endOfMonth(today));
   const lastMonth = calculateRevenueAnalytics('monthly', startOfMonth(subDays(today, 30)), endOfMonth(subDays(today, 30)));
-  
-  const totalRevenueThisMonth = getTotalRevenue(startOfMonth(today), today);
-  const totalRevenueLast30Days = getTotalRevenue(subDays(today, 30), today);
 
   const growthRate = lastMonth.totalRevenue > 0 
     ? ((thisMonth.totalRevenue - lastMonth.totalRevenue) / lastMonth.totalRevenue) * 100 
@@ -40,7 +37,7 @@ export default function RevenueAnalyticsPage() {
         <div className="flex space-x-3 mt-4 sm:mt-0">
           <select
             value={selectedPeriod}
-            onChange={(e) => setSelectedPeriod(e.target.value as any)}
+            onChange={(e) => setSelectedPeriod(e.target.value as 'daily' | 'weekly' | 'monthly' | 'yearly')}
             className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="daily">Daily</option>

@@ -24,9 +24,9 @@
  * @since August 2025
  */
 
-import { Reservation, Room, Guest } from '../types';
+import { Reservation, Room } from '../types';
 import { DatabaseAdapter } from './DatabaseAdapter';
-import { startOfDay, endOfDay, isWithinInterval, isSameDay } from 'date-fns';
+import { startOfDay, endOfDay } from 'date-fns';
 
 export interface ConflictResult {
   hasConflict: boolean;
@@ -246,10 +246,10 @@ export class ConflictDetectionService {
    * Check for maintenance periods (placeholder for future implementation)
    */
   private async checkMaintenancePeriods(
-    roomId: string,
-    checkIn: Date,
-    checkOut: Date,
-    conflicts: BookingConflict[]
+    _roomId: string,
+    _checkIn: Date,
+    _checkOut: Date,
+    _conflicts: BookingConflict[]
   ): Promise<void> {
     // TODO: Implement maintenance period checking when maintenance table is added
     // For now, this is a placeholder for future enhancement
@@ -329,7 +329,7 @@ export class ConflictDetectionService {
     sourceReservationId: string,
     targetRoomId: string,
     targetDate: Date,
-    isStartDrag: boolean = false
+    _isStartDrag: boolean = false
   ): Promise<{ valid: boolean; message?: string; conflicts?: BookingConflict[] }> {
     try {
       // Get the source reservation

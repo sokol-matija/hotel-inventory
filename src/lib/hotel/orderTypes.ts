@@ -1,5 +1,3 @@
-import { Reservation } from './types';
-
 export interface OrderItem {
   id: string;
   itemId: number;

@@ -126,11 +126,12 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     initializeData();
     setupRealtimeSubscriptions();
-    
+
     return () => {
       // Cleanup subscriptions
       supabase.removeAllChannels();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const initializeData = async () => {
@@ -162,7 +163,7 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
     console.log('🔄 Setting up real-time subscriptions...');
     
     // Subscribe to reservations changes
-    const reservationsChannel = supabase
+    supabase
       .channel('reservations-changes')
       .on(
         'postgres_changes',
@@ -179,7 +180,7 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
       .subscribe();
 
     // Subscribe to guests changes
-    const guestsChannel = supabase
+    supabase
       .channel('guests-changes')
       .on(
         'postgres_changes',
@@ -196,7 +197,7 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
       .subscribe();
 
     // Subscribe to companies changes
-    const companiesChannel = supabase
+    supabase
       .channel('companies-changes')
       .on(
         'postgres_changes',
@@ -262,7 +263,7 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
       console.log('🚀 Starting data migration from localStorage to Supabase...');
       
       // Create backup first
-      const backup = dataMigrationService.createLocalStorageBackup();
+      dataMigrationService.createLocalStorageBackup();
       console.log('📦 Created backup of localStorage data');
       
       // Perform migration
@@ -985,6 +986,7 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useHotel(): HotelContextType {
   const context = useContext(HotelContext);
   if (context === undefined) {

@@ -6,20 +6,18 @@ import { Input } from '../../ui/input';
 import { Textarea } from '../../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
 import { FiscalizationService } from '../../../lib/fiscalization/FiscalizationService';
-import { FiscalInvoiceData, StornoRequest } from '../../../lib/fiscalization/types';
-import { 
+import { FiscalInvoiceData } from '../../../lib/fiscalization/types';
+import {
   RotateCcw,
   CheckCircle,
   XCircle,
   Clock,
-  AlertTriangle,
   MinusCircle,
-  FileText,
   Send
 } from 'lucide-react';
 
 interface StornoTestSectionProps {
-  fiscalizationResults: any[];
+  fiscalizationResults: Record<string, unknown>[];
 }
 
 const StornoTestSection: React.FC<StornoTestSectionProps> = ({ fiscalizationResults }) => {
@@ -28,7 +26,7 @@ const StornoTestSection: React.FC<StornoTestSectionProps> = ({ fiscalizationResu
   const [partialAmount, setPartialAmount] = useState<string>('');
   const [stornoReason, setStornoReason] = useState<string>('Customer refund request');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [stornoResults, setStornoResults] = useState<any[]>([]);
+  const [stornoResults, setStornoResults] = useState<Record<string, unknown>[]>([]);
 
   const fiscalizationService = FiscalizationService.getInstance();
 
@@ -57,7 +55,7 @@ const StornoTestSection: React.FC<StornoTestSectionProps> = ({ fiscalizationResu
         paymentMethod: 'CASH'
       };
 
-      let result: any;
+      let result: Record<string, unknown>;
       if (stornoType === 'FULL') {
         result = await fiscalizationService.stornoFullInvoice(selectedJir, originalInvoice, stornoReason);
       } else {

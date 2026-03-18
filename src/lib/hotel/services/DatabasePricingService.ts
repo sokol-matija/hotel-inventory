@@ -2,7 +2,7 @@
 // Integrates with database room types, pricing tiers, and fee configurations
 
 import { supabase } from '../../supabase';
-import { SeasonalPeriod, RoomType, GuestChild, PricingCalculation } from '../types';
+import { SeasonalPeriod, GuestChild, PricingCalculation } from '../types';
 import { hotelDataService } from './HotelDataService';
 
 interface DatabasePricingInput {
@@ -137,7 +137,7 @@ export class DatabasePricingService {
   /**
    * Get room type pricing from database
    */
-  private async getRoomTypePricing(roomId: string, pricingTierId?: string): Promise<RoomTypePricing> {
+  private async getRoomTypePricing(roomId: string, _pricingTierId?: string): Promise<RoomTypePricing> {
     try {
       // First get the room to find its room type
       const room = await hotelDataService.getRoomById(roomId);
@@ -332,7 +332,6 @@ export class DatabasePricingService {
    */
   private getSeasonalPeriod(date: Date): SeasonalPeriod {
     const month = date.getMonth() + 1;
-    const day = date.getDate();
 
     // Simplified seasonal period logic for 2025
     if (month <= 4 || month === 12) return 'A'; // Winter/Early Spring

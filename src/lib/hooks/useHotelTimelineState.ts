@@ -2,7 +2,7 @@
 // Manages all timeline modes, dates, UI states, and drag operations
 
 import { useState, useMemo, useCallback } from 'react';
-import { HotelTimelineService, TimelineContextMenu, DragCreateState, DragCreatePreview, RoomChangeDialog, DrinkModalState, OccupancyData } from '../hotel/services/HotelTimelineService';
+import { HotelTimelineService, DragCreateState, DragCreatePreview, RoomChangeDialog, DrinkModalState, OccupancyData } from '../hotel/services/HotelTimelineService';
 import { CalendarEvent, Reservation, Room } from '../hotel/types';
 import { useHotel } from '../hotel/state/SupabaseHotelContext';
 
@@ -92,7 +92,7 @@ export interface HotelTimelineActions {
 
 export function useHotelTimelineState(): HotelTimelineState & HotelTimelineActions {
   const timelineService = HotelTimelineService.getInstance();
-  const { reservations, rooms, updateReservation, updateReservationStatus, deleteReservation } = useHotel();
+  const { reservations, rooms } = useHotel();
   
   // Date states
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -147,20 +147,25 @@ export function useHotelTimelineState(): HotelTimelineState & HotelTimelineActio
   const [overviewPeriod, setOverviewPeriod] = useState<'AM' | 'PM'>('AM');
 
   // Computed states
-  const roomsByFloor = useMemo(() => timelineService.getRoomsByFloor(rooms), [rooms]);
-  
-  const calendarEvents = useMemo(() => 
+  const roomsByFloor = useMemo(() => timelineService.getRoomsByFloor(rooms),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [rooms]);
+
+  const calendarEvents = useMemo(() =>
     timelineService.generateCalendarEvents(reservations, currentDate, rooms),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [reservations, currentDate, rooms]
   );
-  
+
   const currentOccupancy = useMemo(() =>
     timelineService.calculateOccupancyDataByPeriod(reservations, overviewDate, rooms, overviewPeriod),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [reservations, overviewDate, rooms, overviewPeriod]
   );
-  
+
   const timelineStats = useMemo(() =>
     timelineService.getTimelineStats(reservations, currentDate, rooms),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [reservations, currentDate, rooms]
   );
   
@@ -168,11 +173,13 @@ export function useHotelTimelineState(): HotelTimelineState & HotelTimelineActio
   const handleNavigate = useCallback((action: 'PREV' | 'NEXT' | 'TODAY') => {
     const newDate = timelineService.navigateTimeline(currentDate, action);
     setCurrentDate(newDate);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentDate]);
   
   const handleOverviewNavigate = useCallback((action: 'PREV' | 'NEXT' | 'TODAY') => {
     const newDate = timelineService.navigateOverview(overviewDate, action);
     setOverviewDate(newDate);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [overviewDate]);
   
   // Floor expansion actions
@@ -310,32 +317,34 @@ export function useHotelTimelineState(): HotelTimelineState & HotelTimelineActio
   // Drag create operations
   const handleDragCreateStart = useCallback((roomId: string, dayIndex: number) => {
     if (!isDragCreateMode) return;
-    
+
     setIsDragCreating(true);
     setDragCreateStart({ roomId, dayIndex });
     setDragCreateEnd({ roomId, dayIndex });
-    
+
     const preview = timelineService.calculateDragCreatePreview({ roomId, dayIndex }, { roomId, dayIndex });
     setDragCreatePreview(preview);
-    
+
     if (preview) {
       const dates = timelineService.convertDayIndexToDates(preview.startDay, preview.endDay, currentDate);
       setDragCreateDates(dates);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDragCreateMode, currentDate]);
   
   const handleDragCreateMove = useCallback((roomId: string, dayIndex: number) => {
     if (!isDragCreating || !dragCreateStart) return;
-    
+
     setDragCreateEnd({ roomId, dayIndex });
-    
+
     const preview = timelineService.calculateDragCreatePreview(dragCreateStart, { roomId, dayIndex });
     setDragCreatePreview(preview);
-    
+
     if (preview) {
       const dates = timelineService.convertDayIndexToDates(preview.startDay, preview.endDay, currentDate);
       setDragCreateDates(dates);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDragCreating, dragCreateStart, currentDate]);
   
   const handleDragCreateEnd = useCallback(() => {
@@ -354,10 +363,12 @@ export function useHotelTimelineState(): HotelTimelineState & HotelTimelineActio
   // Utility functions
   const positionContextMenu = useCallback((x: number, y: number) => {
     return timelineService.positionContextMenu(x, y);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   
   const validateReservationMove = useCallback((reservation: Reservation, targetRoomId: string) => {
     return timelineService.validateReservationMove(reservation, targetRoomId, reservations, rooms);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reservations, rooms]);
   
   // Return combined state and actions

@@ -191,7 +191,7 @@ export class DatabaseAdapter {
    */
   async updateRoom(roomId: string, updates: Partial<Room>): Promise<Room> {
     try {
-      const updateData: Record<string, any> = {};
+      const updateData: Record<string, unknown> = {};
 
       // Map Room interface fields to database column names
       if (updates.is_clean !== undefined) {
@@ -321,7 +321,8 @@ export class DatabaseAdapter {
       // Create lookup maps
       const guestLookup = new Map((guestsData as CurrentDBGuest[]).map(g => [g.id, g]));
       const roomLookup = new Map((roomsData as CurrentDBRoom[]).map(r => [r.id, r]));
-      const labelLookup = new Map((labelsData as any[]).map(l => [l.id, l]));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const labelLookup = new Map((labelsData as any[]).map((l: any) => [l.id, l]));
 
       return (reservationsData as CurrentDBReservation[]).map(reservation =>
         this.mapReservationFromCurrentDB(reservation, guestLookup, roomLookup, labelLookup)
@@ -394,7 +395,7 @@ export class DatabaseAdapter {
    */
   async updateReservation(id: string, updates: Partial<Reservation>): Promise<Reservation> {
     try {
-      const updateData: any = {};
+      const updateData: Record<string, unknown> = {};
 
       if (updates.checkIn) updateData.check_in_date = updates.checkIn.toISOString().split('T')[0];
       if (updates.checkOut) updateData.check_out_date = updates.checkOut.toISOString().split('T')[0];
@@ -514,6 +515,7 @@ export class DatabaseAdapter {
     reservation: CurrentDBReservation,
     guestLookup: Map<number, CurrentDBGuest>,
     roomLookup: Map<number, CurrentDBRoom>,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     labelLookup?: Map<string, any>
   ): Reservation {
     const guestData = guestLookup.get(reservation.guest_id);
@@ -529,9 +531,12 @@ export class DatabaseAdapter {
       numberOfGuests: reservation.number_of_guests,
       adults: reservation.adults,
       children: [], // TODO: Load children if needed
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       status: reservation.status as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       bookingSource: reservation.booking_source as any,
       specialRequests: reservation.special_requests || '',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       seasonalPeriod: reservation.seasonal_period as any,
       baseRoomRate: reservation.base_room_rate,
       numberOfNights: reservation.number_of_nights || 1,
@@ -751,7 +756,8 @@ export class DatabaseAdapter {
       const roomLookup = new Map((allRoomsData as CurrentDBRoom[] || []).map(r => [r.id, r]));
 
       // Map reservations - the data includes joined guest/room data but we use lookup for consistency
-      let mappedReservations = (reservationsData as any[] || []).map((reservation: any) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let mappedReservations = (reservationsData as any[] || []).map((reservation: CurrentDBReservation & Record<string, unknown>) => {
         // Use the joined guest data if available, otherwise fall back to lookup
         const guestData = reservation.guests || guestLookup.get(reservation.guest_id);
         const roomData = reservation.rooms || roomLookup.get(reservation.room_id);

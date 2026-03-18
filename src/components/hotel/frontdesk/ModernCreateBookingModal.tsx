@@ -3,22 +3,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { Label } from '../../ui/label';
-import { Textarea } from '../../ui/textarea';
 import { Badge } from '../../ui/badge';
 import {
   X,
   Calendar as CalendarIcon,
   UserPlus,
-  Minus,
   Baby,
   Car,
-  PawPrint,
-  CreditCard,
   Users,
-  Mail,
-  Phone,
   User,
-  Search,
   Trash2,
   Receipt,
   Home,
@@ -59,7 +52,7 @@ export default function ModernCreateBookingModal({
   // Console log to confirm this is the active modal
   console.log('🎯 MODERN CREATE BOOKING MODAL - Component mounted/rendered');
 
-  const { guests, createReservation, refreshData, rooms, companies } = useHotel();
+  const { refreshData, rooms, companies } = useHotel();
 
   // Get hotel ID (for single-hotel setup)
   const [hotelId, setHotelId] = useState<string>('');
@@ -110,7 +103,7 @@ export default function ModernCreateBookingModal({
     hasPets: boolean;
     isVip: boolean;
     vipLevel: number;
-    children: any[];
+    children: GuestChild[];
     totalStays: number;
     createdAt: Date;
     updatedAt: Date;
@@ -121,6 +114,7 @@ export default function ModernCreateBookingModal({
     if (bookingGuests.length === 0) {
       setBookingGuests([createEmptyGuest('adult')]);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   
   // Simple booking-level services
@@ -456,7 +450,7 @@ export default function ModernCreateBookingModal({
         } else {
           hotelNotification.error('Creation Failed', result.error || 'Unknown error');
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Unallocated reservation creation failed:', error);
         hotelNotification.error('Creation Failed', 'Unable to create unallocated reservation');
       } finally {
@@ -677,10 +671,11 @@ export default function ModernCreateBookingModal({
 
       onClose();
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Booking creation failed:', error);
-      
-      if (error?.code === '23505' && error?.message?.includes('guests_email_key')) {
+
+      const dbError = error as { code?: string; message?: string };
+      if (dbError?.code === '23505' && dbError?.message?.includes('guests_email_key')) {
         hotelNotification.error(
           'Email Already Exists', 
           'This email address is already in use. Please use a different email.'

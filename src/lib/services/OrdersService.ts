@@ -119,8 +119,11 @@ export class OrdersService {
           name: item.name,
           description: item.description,
           category: {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             id: (item.category as any).id,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             name: (item.category as any).name,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             requires_expiration: (item.category as any).requires_expiration
           },
           unit: item.unit,
@@ -130,6 +133,7 @@ export class OrdersService {
           totalStock,
           locations: item.inventory?.map(inv => ({
             locationId: inv.location_id,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             locationName: (inv.location as any)?.name || 'Unknown',
             quantity: inv.quantity || 0,
             expiration_date: inv.expiration_date

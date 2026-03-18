@@ -12,14 +12,14 @@ export interface AuditEvent {
   action: string;
   entityType: string;
   entityId: string;
-  oldValues?: any;
-  newValues?: any;
+  oldValues?: Record<string, unknown>;
+  newValues?: Record<string, unknown>;
   changedFields?: string[];
   ipAddress?: string;
   userAgent?: string;
   result: 'success' | 'failure' | 'partial';
   errorMessage?: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 export interface AuditFilter {
@@ -91,11 +91,11 @@ class AuditTrailService {
     action: AuditableAction,
     entityType: AuditableEntity,
     entityId: string,
-    oldValues?: any,
-    newValues?: any,
+    oldValues?: Record<string, unknown>,
+    newValues?: Record<string, unknown>,
     result: 'success' | 'failure' | 'partial' = 'success',
     errorMessage?: string,
-    metadata?: any
+    metadata?: Record<string, unknown>
   ): void {
     const auditEvent: AuditEvent = {
       id: this.generateAuditId(),
@@ -134,43 +134,47 @@ class AuditTrailService {
   }
 
   // Specific audit methods for common operations
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public logReservationCreate(reservationId: string, reservationData: any): void {
     this.logAuditEvent('create', 'reservation', reservationId, undefined, reservationData, 'success');
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public logReservationUpdate(reservationId: string, oldData: any, newData: any): void {
     this.logAuditEvent('update', 'reservation', reservationId, oldData, newData, 'success');
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public logReservationDelete(reservationId: string, reservationData: any): void {
     this.logAuditEvent('delete', 'reservation', reservationId, reservationData, undefined, 'success');
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public logPaymentProcessed(paymentId: string, paymentData: any, result: 'success' | 'failure' = 'success', errorMessage?: string): void {
     this.logAuditEvent('payment_processed', 'payment', paymentId, undefined, paymentData, result, errorMessage);
   }
 
-  public logInvoiceGenerated(invoiceId: string, invoiceData: any): void {
+  public logInvoiceGenerated(invoiceId: string, invoiceData: Record<string, unknown>): void {
     this.logAuditEvent('invoice_generated', 'invoice', invoiceId, undefined, invoiceData, 'success');
   }
 
-  public logFiscalSubmission(fiscalRecordId: string, fiscalData: any, result: 'success' | 'failure' = 'success', errorMessage?: string): void {
+  public logFiscalSubmission(fiscalRecordId: string, fiscalData: Record<string, unknown>, result: 'success' | 'failure' = 'success', errorMessage?: string): void {
     this.logAuditEvent('fiscal_submitted', 'fiscal_record', fiscalRecordId, undefined, fiscalData, result, errorMessage);
   }
 
-  public logDataExport(entityType: AuditableEntity, criteria: any): void {
+  public logDataExport(entityType: AuditableEntity, criteria: Record<string, unknown>): void {
     this.logAuditEvent('export', entityType, 'bulk', undefined, undefined, 'success', undefined, { criteria });
   }
 
   public logDataImport(entityType: AuditableEntity, importedCount: number, result: 'success' | 'failure' | 'partial' = 'success', errorMessage?: string): void {
-    this.logAuditEvent('data_imported', entityType, 'bulk', undefined, undefined, result, errorMessage, { importedCount });
+    this.logAuditEvent('data_imported', entityType, 'bulk', undefined, undefined, result, errorMessage, { importedCount } as Record<string, unknown>);
   }
 
-  public logSettingsChange(settingKey: string, oldValue: any, newValue: any): void {
+  public logSettingsChange(settingKey: string, oldValue: unknown, newValue: unknown): void {
     this.logAuditEvent('settings_changed', 'settings', settingKey, { [settingKey]: oldValue }, { [settingKey]: newValue }, 'success');
   }
 
-  public logSystemBackup(backupId: string, backupMetadata: any): void {
+  public logSystemBackup(backupId: string, backupMetadata: Record<string, unknown>): void {
     this.logAuditEvent('backup_created', 'system', backupId, undefined, undefined, 'success', undefined, backupMetadata);
   }
 
@@ -375,7 +379,7 @@ class AuditTrailService {
     }
   }
 
-  private detectChangedFields(oldValues: any, newValues: any): string[] {
+  private detectChangedFields(oldValues: Record<string, unknown> | undefined, newValues: Record<string, unknown> | undefined): string[] {
     if (!oldValues || !newValues) return [];
 
     const changedFields: string[] = [];
@@ -415,6 +419,7 @@ class AuditTrailService {
     }).slice(0, filter.limit || 100);
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mapAuditEventFromDB(dbEvent: any): AuditEvent {
     return {
       id: dbEvent.id,

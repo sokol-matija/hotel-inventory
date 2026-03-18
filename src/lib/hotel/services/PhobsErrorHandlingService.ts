@@ -15,6 +15,7 @@ export interface RetryConfig {
 export interface ErrorContext {
   operation: string;
   endpoint?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   requestData?: any;
   attempt: number;
   timestamp: Date;
@@ -123,16 +124,10 @@ export class PhobsErrorHandlingService {
     const config = { ...this.defaultRetryConfig, ...retryConfig };
     const startTime = Date.now();
     let lastError: PhobsError | undefined;
-    let attempt = 0;
+    let attempt: number;
 
     for (attempt = 1; attempt <= config.maxAttempts; attempt++) {
       try {
-        const fullContext: ErrorContext = {
-          ...context,
-          attempt,
-          timestamp: new Date()
-        };
-
         // Add timeout wrapper
         const result = await this.withTimeout(operation(), config.timeoutMs);
         
@@ -216,7 +211,7 @@ export class PhobsErrorHandlingService {
   /**
    * Handle and classify errors
    */
-  handleError(error: any, context: ErrorContext): PhobsError {
+  handleError(error: unknown, context: ErrorContext): PhobsError {
     let phobsError: PhobsError;
 
     if (error instanceof PhobsError) {
@@ -290,6 +285,7 @@ export class PhobsErrorHandlingService {
   /**
    * Classify HTTP errors by status code
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private classifyHttpError(error: any, status: number, context: ErrorContext): PhobsError {
     const message = error.message || error.statusText || `HTTP ${status} Error`;
     
@@ -495,7 +491,7 @@ export class PhobsErrorHandlingService {
   /**
    * Get retry configuration recommendations based on error patterns
    */
-  getRecommendedRetryConfig(operation: string): Partial<RetryConfig> {
+  getRecommendedRetryConfig(_operation: string): Partial<RetryConfig> {
     const metrics = this.getMetrics();
     const config: Partial<RetryConfig> = {};
 

@@ -13,16 +13,12 @@ import {
   Search,
   Receipt
 } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import { useOrdersState } from '@/lib/hooks/useOrdersState';
 
 export default function OrdersPage() {
-  const { t } = useTranslation();
-  
   // Use consolidated state management hook
   const {
     // State
-    availableItems,
     orderItems,
     searchTerm,
     paymentMethod,
@@ -31,12 +27,11 @@ export default function OrdersPage() {
     isLoading,
     filteredItems,
     orderTotals: totals,
-    
+
     // Actions
     setSearchTerm,
     addToOrder,
     updateOrderItemQuantity,
-    removeFromOrder,
     setPaymentMethod,
     setOrderNotes,
     processOrder,

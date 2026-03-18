@@ -128,7 +128,7 @@ export function generateESCPOSReceipt(data: PrintReceiptData): string {
 export async function printViaNetwork(
   printerIP: string, 
   data: PrintReceiptData,
-  port: number = 9100
+  _port: number = 9100
 ): Promise<boolean> {
   try {
     const escposData = generateESCPOSReceipt(data);
@@ -146,7 +146,7 @@ export async function printViaNetwork(
       if (response.ok) {
         return true;
       }
-    } catch (httpError) {
+    } catch {
       console.log('HTTP interface not available, trying raw TCP...');
     }
     
@@ -364,7 +364,7 @@ export async function testPrinter(printerIP?: string): Promise<{
           message: 'Printer connected via network'
         };
       }
-    } catch (error) {
+    } catch {
       return {
         success: false,
         method: 'network',

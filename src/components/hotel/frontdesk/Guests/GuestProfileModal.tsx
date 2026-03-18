@@ -92,7 +92,7 @@ export default function GuestProfileModal({
     }
   }, [guest, initialData, isOpen]);
 
-  const handleInputChange = (field: keyof Guest, value: any) => {
+  const handleInputChange = (field: keyof Guest, value: unknown) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -100,7 +100,7 @@ export default function GuestProfileModal({
     setChildren(prev => [...prev, { name: '', age: 0, dateOfBirth: new Date() }]);
   };
 
-  const updateChild = (index: number, field: keyof GuestChild, value: any) => {
+  const updateChild = (index: number, field: keyof GuestChild, value: unknown) => {
     setChildren(prev => prev.map((child, i) => 
       i === index ? { ...child, [field]: value } : child
     ));

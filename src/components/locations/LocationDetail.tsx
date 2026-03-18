@@ -3,25 +3,23 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
+import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { useLocationState } from '@/lib/hooks/useLocationState';
 import { useAuth } from '../auth/AuthProvider';
 import AddInventoryDialog from './AddInventoryDialog';
-import { useTranslation } from 'react-i18next';
 import { formatDate } from '@/lib/dateUtils';
 import { 
-  ArrowLeft, 
-  Refrigerator, 
-  Warehouse, 
-  Package, 
+  ArrowLeft,
+  Refrigerator,
+  Warehouse,
+  Package,
   Plus,
   Minus,
   Search,
   Calendar,
-  DollarSign,
   Trash2,
   Edit3,
   Check,
@@ -44,7 +42,6 @@ import {
   DragStartEvent,
 } from '@dnd-kit/core';
 import {
-  arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
@@ -70,7 +67,7 @@ function SortableInventoryItem({
   formatDate,
   userCanEdit
 }: {
-  item: any;
+  item: Record<string, unknown>;
   editingQuantity: number | null;
   tempQuantity: string;
   onStartEdit: (id: number, quantity: number) => void;
@@ -79,8 +76,8 @@ function SortableInventoryItem({
   onTempQuantityChange: (value: string) => void;
   onDelete: (id: number) => void;
   translateCategory: (category: string) => string;
-  getExpirationStatus: (date?: string) => any;
-  isLowStock: (item: any) => boolean;
+  getExpirationStatus: (date?: string) => Record<string, unknown>;
+  isLowStock: (item: Record<string, unknown>) => boolean;
   formatDate: (date: string) => string;
   userCanEdit: boolean;
 }) {
@@ -210,7 +207,6 @@ function SortableInventoryItem({
 }
 
 export default function LocationDetail() {
-  const { t } = useTranslation();
   const { user } = useAuth();
   
   // Use our new state management hook - replaces all individual useState calls

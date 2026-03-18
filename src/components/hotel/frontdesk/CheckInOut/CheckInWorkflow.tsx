@@ -25,7 +25,7 @@ import {
   Car,
   CheckCheck
 } from 'lucide-react';
-import { Reservation, Guest, Room } from '../../../../lib/hotel/types';
+import { Reservation } from '../../../../lib/hotel/types';
 import { useHotel } from '../../../../lib/hotel/state/SupabaseHotelContext';
 import { SAMPLE_GUESTS } from '../../../../lib/hotel/sampleData';
 import { HotelEmailService } from '../../../../lib/emailService';
@@ -43,7 +43,7 @@ interface CheckInStep {
   description: string;
   completed: boolean;
   required: boolean;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string }>;
 }
 
 export default function CheckInWorkflow({
@@ -52,7 +52,6 @@ export default function CheckInWorkflow({
   reservation
 }: CheckInWorkflowProps) {
   const { rooms, updateReservationStatus, isUpdating } = useHotel();
-  const [currentStep, setCurrentStep] = useState(0);
   const [checkInSteps, setCheckInSteps] = useState<CheckInStep[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [checkInNotes, setCheckInNotes] = useState('');
@@ -136,6 +135,7 @@ export default function CheckInWorkflow({
     }
 
     setCheckInSteps(steps);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reservation, guest, roomKeyIssued, wifiInfoProvided, parkingAssigned]);
 
   const handleStepToggle = (stepId: string) => {
@@ -325,7 +325,7 @@ export default function CheckInWorkflow({
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {checkInSteps.map((step, index) => {
+                {checkInSteps.map((step, _index) => {
                   const StepIcon = step.icon;
                   return (
                     <div

@@ -1,15 +1,14 @@
 // New Entity Types for Enhanced Hotel Features
 // These will be integrated into the main types.ts file
 
-import { 
-  RoomServiceItem, 
-  SeasonalPeriod, 
-  Reservation, 
+import {
+  RoomServiceItem,
+  SeasonalPeriod,
+  Reservation,
   Guest,
   Invoice,
   Payment,
   FiscalRecord,
-  ReservationStatus 
 } from './types';
 
 // Import existing storage keys (will be updated)

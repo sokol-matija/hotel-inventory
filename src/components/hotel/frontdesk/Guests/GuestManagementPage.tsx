@@ -19,7 +19,6 @@ import {
 } from 'lucide-react';
 import { Guest } from '../../../../lib/hotel/types';
 import { useHotel } from '../../../../lib/hotel/state/SupabaseHotelContext';
-import GuestAutocomplete from './GuestAutocomplete';
 import GuestProfileModal from './GuestProfileModal';
 
 interface GuestManagementPageProps {
@@ -241,7 +240,7 @@ export default function GuestManagementPage({ onGuestSelect }: GuestManagementPa
               <select
                 className="px-3 py-1 border border-gray-300 rounded-md text-sm"
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
+                onChange={(e) => setSortBy(e.target.value as 'name' | 'totalStays' | 'lastStay')}
               >
                 <option value="name">Name</option>
                 <option value="totalStays">Total Stays</option>

@@ -151,6 +151,7 @@ export enum PhobsPaymentCardCode {
   /** VISA */
   VISA = 'VI',
   /** Maestro */
+  // eslint-disable-next-line @typescript-eslint/no-duplicate-enum-values
   MAESTRO = 'MA',
   /** Big Fish */
   BIGFISH = 'BIGFISH',

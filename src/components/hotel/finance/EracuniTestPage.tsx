@@ -4,10 +4,9 @@ import { Button } from '../../ui/button';
 import { Badge } from '../../ui/badge';
 import { useHotel } from '../../../lib/hotel/state/SupabaseHotelContext';
 import { FiscalizationService } from '../../../lib/fiscalization/FiscalizationService';
-import { FiscalInvoiceData, FiscalResponse } from '../../../lib/fiscalization/types';
+import { FiscalInvoiceData } from '../../../lib/fiscalization/types';
 import StornoTestSection from './StornoTestSection';
-import { 
-  Wifi,
+import {
   CheckCircle,
   XCircle,
   Clock,
@@ -23,11 +22,14 @@ import {
 const FiscalizationTestPage: React.FC = () => {
   const { invoices } = useHotel();
   const [isConnecting, setIsConnecting] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [connectionResult, setConnectionResult] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [submissionResults, setSubmissionResults] = useState<any[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<string>('');
   const [xmlPreview, setXmlPreview] = useState<string>('');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [serviceStatus, setServiceStatus] = useState<any>(null);
 
   const fiscalizationService = FiscalizationService.getInstance();
@@ -66,22 +68,6 @@ const FiscalizationTestPage: React.FC = () => {
     if (!invoice) return;
 
     try {
-      // Convert hotel invoice to fiscal format
-      const fiscalData: FiscalInvoiceData = {
-        invoiceNumber: invoice.invoiceNumber,
-        dateTime: invoice.issueDate,
-        totalAmount: invoice.totalAmount,
-        vatAmount: invoice.vatAmount,
-        items: [{
-          name: `Hotel accommodation (Room N/A)`,
-          quantity: 1,
-          unitPrice: invoice.subtotal,
-          totalAmount: invoice.subtotal,
-          vatRate: 0.25 // 25% Croatian VAT
-        }],
-        paymentMethod: 'CASH' as const
-      };
-
       // Generate preview XML (this would use xmlGenerator)
       const xmlPreviewContent = `<?xml version="1.0" encoding="UTF-8"?>
 <!-- Croatian Fiscal XML Preview for Invoice ${invoice.invoiceNumber} -->
@@ -133,6 +119,7 @@ const FiscalizationTestPage: React.FC = () => {
         invoiceId,
         invoiceNumber: invoice.invoiceNumber,
         submittedAt: new Date().toISOString()
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any]);
     } catch (error) {
       setSubmissionResults(prev => [...prev, {
@@ -142,6 +129,7 @@ const FiscalizationTestPage: React.FC = () => {
         invoiceId,
         invoiceNumber: invoice.invoiceNumber,
         submittedAt: new Date().toISOString()
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any]);
     } finally {
       setIsSubmitting(false);
@@ -166,6 +154,7 @@ const FiscalizationTestPage: React.FC = () => {
     // Load service status on component mount
     const status = fiscalizationService.getServiceStatus();
     setServiceStatus(status);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

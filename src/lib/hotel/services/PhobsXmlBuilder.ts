@@ -43,6 +43,7 @@ export class PhobsXmlBuilder {
   /**
    * Build SOAP envelope wrapper
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   buildSoapEnvelope(body: any, headers?: any): string {
     const envelope = {
       '?xml': {
@@ -94,6 +95,7 @@ export class PhobsXmlBuilder {
       timestamp = new Date().toISOString(),
     } = params;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const message: any = {
       '@_xmlns': OTA_NAMESPACES.OTA,
       '@_xmlns:xsi': OTA_NAMESPACES.XSI,
@@ -181,6 +183,7 @@ export class PhobsXmlBuilder {
       timestamp = new Date().toISOString(),
     } = params;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const message: any = {
       '@_xmlns': OTA_NAMESPACES.OTA,
       '@_xmlns:xsi': OTA_NAMESPACES.XSI,
@@ -263,6 +266,7 @@ export class PhobsXmlBuilder {
       timestamp = new Date().toISOString(),
     } = params;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const message: any = {
       '@_xmlns': OTA_NAMESPACES.OTA,
       '@_xmlns:xsi': OTA_NAMESPACES.XSI,
@@ -366,7 +370,6 @@ export class PhobsXmlBuilder {
     timestamp?: string;
   }): string {
     const {
-      hotelCode,
       username,
       password,
       timestamp = new Date().toISOString(),
@@ -387,6 +390,7 @@ export class PhobsXmlBuilder {
       },
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const message: any = {
       '@_xmlns': OTA_NAMESPACES.OTA,
       '@_xmlns:xsi': OTA_NAMESPACES.XSI,
@@ -424,7 +428,6 @@ export class PhobsXmlBuilder {
     timestamp?: string;
   }): string {
     const {
-      hotelCode,
       username,
       password,
       confirmationCodes,
@@ -446,6 +449,7 @@ export class PhobsXmlBuilder {
       },
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const message: any = {
       '@_xmlns': OTA_NAMESPACES.OTA,
       '@_xmlns:xsi': OTA_NAMESPACES.XSI,
@@ -497,6 +501,7 @@ export class PhobsXmlBuilder {
       timestamp = new Date().toISOString(),
     } = params;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const message: any = {
       '@_xmlns': OTA_NAMESPACES.OTA,
       '@_xmlns:xsi': OTA_NAMESPACES.XSI,
@@ -525,6 +530,7 @@ export class PhobsXmlBuilder {
   /**
    * Build authentication SOAP header
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   buildAuthHeader(username: string, password: string): any {
     return {
       'wsse:Security': {
@@ -541,6 +547,7 @@ export class PhobsXmlBuilder {
   /**
    * Build raw XML from object
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   buildXml(obj: any): string {
     return this.builder.build(obj);
   }

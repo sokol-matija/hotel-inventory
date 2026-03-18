@@ -1,14 +1,11 @@
 // Phobs Channel Manager Integration - TypeScript Interfaces
 // Integration with Hotel Porec inventory management system
 
-import type { 
-  Reservation, 
-  Guest, 
-  Room, 
-  RoomType, 
-  SeasonalPeriod, 
+import type {
+  RoomType,
+  SeasonalPeriod,
   ReservationStatus,
-  PaymentMethod 
+  PaymentMethod
 } from '../types';
 
 // Branded types for Phobs IDs to prevent mixing with internal IDs
@@ -437,6 +434,7 @@ export interface ReservationSyncRequest {
 export interface PhobsApiError {
   code: string;
   message: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   details?: any;
   timestamp: Date;
   requestId?: string;
@@ -479,8 +477,11 @@ export interface ConflictResolution {
   severity: 'low' | 'medium' | 'high' | 'critical';
   
   // Conflict details
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   internalData: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   phobsData: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   channelData?: any;
   
   // Resolution

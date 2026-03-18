@@ -73,7 +73,7 @@ export default function GlobalView() {
   }, [location.search])
 
   useEffect(() => {
-    let filtered = inventory.filter(item => {
+    const filtered = inventory.filter(item => {
       const matchesSearch = item.item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.item.category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.location.name.toLowerCase().includes(searchTerm.toLowerCase())
