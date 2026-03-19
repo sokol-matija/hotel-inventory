@@ -228,7 +228,11 @@ export class DailyReservationPricingService {
    */
 
   private async calculateSingleDayPricing(
-    reservation: any,
+    reservation: {
+      rooms: { room_number: string; [key: string]: unknown };
+      pricing_tiers?: { is_percentage_discount: boolean; [key: string]: unknown } | null;
+      [key: string]: unknown;
+    },
     dailyDetail: DailyDetail
   ): Promise<DailyPricingBreakdown> {
     try {
@@ -237,13 +241,15 @@ export class DailyReservationPricingService {
 
       // Get base room rate from rooms table (single source of truth!)
       const roomRateField = `seasonal_rate_${seasonalPeriod.toLowerCase()}`;
-      const baseRoomRate = parseFloat(reservation.rooms[roomRateField] || '0');
+      const baseRoomRate = parseFloat(String(reservation.rooms[roomRateField] ?? '0'));
 
       // Apply pricing tier discount if applicable
       let finalRate = baseRoomRate;
       if (reservation.pricing_tiers) {
         const tierDiscountField = `seasonal_rate_${seasonalPeriod.toLowerCase()}`;
-        const discountMultiplier = parseFloat(reservation.pricing_tiers[tierDiscountField] || '0');
+        const discountMultiplier = parseFloat(
+          String(reservation.pricing_tiers[tierDiscountField] ?? '0')
+        );
         if (reservation.pricing_tiers.is_percentage_discount) {
           finalRate = baseRoomRate * (1 - discountMultiplier);
         }

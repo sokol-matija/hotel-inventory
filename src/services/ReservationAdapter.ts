@@ -5,6 +5,24 @@
 
 import { supabase } from '@/lib/supabase';
 
+interface ReservationInput {
+  room_id: unknown;
+  check_in: unknown;
+  check_out: unknown;
+  status?: unknown;
+  guests: Array<{
+    guest_type?: string;
+    first_name: string;
+    last_name: string;
+    email?: string;
+    phone?: string;
+    check_in?: unknown;
+    check_out?: unknown;
+    [key: string]: unknown;
+  }>;
+  [key: string]: unknown;
+}
+
 console.log('[RESERVATION ADAPTER] Module loaded');
 
 export interface LegacyReservation {
@@ -208,7 +226,7 @@ export class ReservationAdapter {
   }
 
   private async createReservationNewSchema(
-    reservationData: any
+    reservationData: ReservationInput
   ): Promise<{ reservationId: string; success: boolean }> {
     const { data: reservation, error: reservationError } = await supabase
       .from('reservations')
@@ -216,10 +234,8 @@ export class ReservationAdapter {
         room_id: reservationData.room_id,
         check_in: reservationData.check_in,
         check_out: reservationData.check_out,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        adults: reservationData.guests.filter((g: any) => g.guest_type === 'adult').length,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        children_count: reservationData.guests.filter((g: any) => g.guest_type === 'child').length,
+        adults: reservationData.guests.filter((g) => g.guest_type === 'adult').length,
+        children_count: reservationData.guests.filter((g) => g.guest_type === 'child').length,
         status: reservationData.status || 'confirmed',
       })
       .select()
@@ -271,7 +287,7 @@ export class ReservationAdapter {
   }
 
   private async createReservationLegacySchema(
-    reservationData: any
+    reservationData: ReservationInput
   ): Promise<{ reservationId: string; success: boolean }> {
     // Legacy creation with text storage
     const primaryGuest = reservationData.guests[0];
@@ -322,10 +338,8 @@ export class ReservationAdapter {
         check_in_date: reservationData.check_in,
         check_out_date: reservationData.check_out,
         guest_id: guest.id,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        adults: reservationData.guests.filter((g: any) => g.guest_type === 'adult').length,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        children_count: reservationData.guests.filter((g: any) => g.guest_type === 'child').length,
+        adults: reservationData.guests.filter((g) => g.guest_type === 'adult').length,
+        children_count: reservationData.guests.filter((g) => g.guest_type === 'child').length,
         internal_notes: notes,
         status: reservationData.status || 'confirmed',
       })

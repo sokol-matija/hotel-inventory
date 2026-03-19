@@ -45,8 +45,6 @@ import { Route as LayoutLocationsIdRouteImport } from './routes/_layout/location
 import { Route as LayoutAdminTestingRouteImport } from './routes/_layout/admin/testing';
 import { Route as LayoutAdminLocationsRouteImport } from './routes/_layout/admin/locations';
 import { Route as LayoutAdminAuditRouteImport } from './routes/_layout/admin/audit';
-import { Route as HotelFrontDeskChannelManagerIndexRouteImport } from './routes/hotel/front-desk/channel-manager/index';
-import { Route as HotelFrontDeskChannelManagerSettingsRouteImport } from './routes/hotel/front-desk/channel-manager/settings';
 
 const TermsOfServiceRoute = TermsOfServiceRouteImport.update({
   id: '/terms-of-service',
@@ -227,17 +225,6 @@ const LayoutAdminAuditRoute = LayoutAdminAuditRouteImport.update({
   path: '/admin/audit',
   getParentRoute: () => LayoutRoute,
 } as any);
-const HotelFrontDeskChannelManagerIndexRoute = HotelFrontDeskChannelManagerIndexRouteImport.update({
-  id: '/channel-manager/',
-  path: '/channel-manager/',
-  getParentRoute: () => HotelFrontDeskRoute,
-} as any);
-const HotelFrontDeskChannelManagerSettingsRoute =
-  HotelFrontDeskChannelManagerSettingsRouteImport.update({
-    id: '/channel-manager/settings',
-    path: '/channel-manager/settings',
-    getParentRoute: () => HotelFrontDeskRoute,
-  } as any);
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute;
@@ -275,8 +262,6 @@ export interface FileRoutesByFullPath {
   '/locations/': typeof LayoutLocationsIndexRoute;
   '/hotel/finance/': typeof HotelFinanceIndexRoute;
   '/hotel/front-desk/': typeof HotelFrontDeskIndexRoute;
-  '/hotel/front-desk/channel-manager/settings': typeof HotelFrontDeskChannelManagerSettingsRoute;
-  '/hotel/front-desk/channel-manager/': typeof HotelFrontDeskChannelManagerIndexRoute;
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute;
@@ -312,8 +297,6 @@ export interface FileRoutesByTo {
   '/locations': typeof LayoutLocationsIndexRoute;
   '/hotel/finance': typeof HotelFinanceIndexRoute;
   '/hotel/front-desk': typeof HotelFrontDeskIndexRoute;
-  '/hotel/front-desk/channel-manager/settings': typeof HotelFrontDeskChannelManagerSettingsRoute;
-  '/hotel/front-desk/channel-manager': typeof HotelFrontDeskChannelManagerIndexRoute;
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport;
@@ -353,8 +336,6 @@ export interface FileRoutesById {
   '/_layout/locations/': typeof LayoutLocationsIndexRoute;
   '/hotel/finance/': typeof HotelFinanceIndexRoute;
   '/hotel/front-desk/': typeof HotelFrontDeskIndexRoute;
-  '/hotel/front-desk/channel-manager/settings': typeof HotelFrontDeskChannelManagerSettingsRoute;
-  '/hotel/front-desk/channel-manager/': typeof HotelFrontDeskChannelManagerIndexRoute;
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
@@ -393,9 +374,7 @@ export interface FileRouteTypes {
     | '/hotel/front-desk/room-service'
     | '/locations/'
     | '/hotel/finance/'
-    | '/hotel/front-desk/'
-    | '/hotel/front-desk/channel-manager/settings'
-    | '/hotel/front-desk/channel-manager/';
+    | '/hotel/front-desk/';
   fileRoutesByTo: FileRoutesByTo;
   to:
     | '/'
@@ -430,9 +409,7 @@ export interface FileRouteTypes {
     | '/hotel/front-desk/room-service'
     | '/locations'
     | '/hotel/finance'
-    | '/hotel/front-desk'
-    | '/hotel/front-desk/channel-manager/settings'
-    | '/hotel/front-desk/channel-manager';
+    | '/hotel/front-desk';
   id:
     | '__root__'
     | '/'
@@ -470,9 +447,7 @@ export interface FileRouteTypes {
     | '/hotel/front-desk/room-service'
     | '/_layout/locations/'
     | '/hotel/finance/'
-    | '/hotel/front-desk/'
-    | '/hotel/front-desk/channel-manager/settings'
-    | '/hotel/front-desk/channel-manager/';
+    | '/hotel/front-desk/';
   fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
@@ -742,20 +717,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutAdminAuditRouteImport;
       parentRoute: typeof LayoutRoute;
     };
-    '/hotel/front-desk/channel-manager/': {
-      id: '/hotel/front-desk/channel-manager/';
-      path: '/channel-manager';
-      fullPath: '/hotel/front-desk/channel-manager/';
-      preLoaderRoute: typeof HotelFrontDeskChannelManagerIndexRouteImport;
-      parentRoute: typeof HotelFrontDeskRoute;
-    };
-    '/hotel/front-desk/channel-manager/settings': {
-      id: '/hotel/front-desk/channel-manager/settings';
-      path: '/channel-manager/settings';
-      fullPath: '/hotel/front-desk/channel-manager/settings';
-      preLoaderRoute: typeof HotelFrontDeskChannelManagerSettingsRouteImport;
-      parentRoute: typeof HotelFrontDeskRoute;
-    };
   }
 }
 
@@ -818,8 +779,6 @@ interface HotelFrontDeskRouteChildren {
   HotelFrontDeskReservationsListRoute: typeof HotelFrontDeskReservationsListRoute;
   HotelFrontDeskRoomServiceRoute: typeof HotelFrontDeskRoomServiceRoute;
   HotelFrontDeskIndexRoute: typeof HotelFrontDeskIndexRoute;
-  HotelFrontDeskChannelManagerSettingsRoute: typeof HotelFrontDeskChannelManagerSettingsRoute;
-  HotelFrontDeskChannelManagerIndexRoute: typeof HotelFrontDeskChannelManagerIndexRoute;
 }
 
 const HotelFrontDeskRouteChildren: HotelFrontDeskRouteChildren = {
@@ -833,8 +792,6 @@ const HotelFrontDeskRouteChildren: HotelFrontDeskRouteChildren = {
   HotelFrontDeskReservationsListRoute: HotelFrontDeskReservationsListRoute,
   HotelFrontDeskRoomServiceRoute: HotelFrontDeskRoomServiceRoute,
   HotelFrontDeskIndexRoute: HotelFrontDeskIndexRoute,
-  HotelFrontDeskChannelManagerSettingsRoute: HotelFrontDeskChannelManagerSettingsRoute,
-  HotelFrontDeskChannelManagerIndexRoute: HotelFrontDeskChannelManagerIndexRoute,
 };
 
 const HotelFrontDeskRouteWithChildren = HotelFrontDeskRoute._addFileChildren(

@@ -228,7 +228,7 @@ function TimelineHeader({
           <div className="border-r border-gray-200 bg-gray-50 p-2 text-center text-sm font-medium text-gray-700">
             Available
           </div>
-          {dates.map((date, index) => {
+          {dates.map((date) => {
             const availability = calculateDayAvailability(date);
 
             return (
@@ -267,7 +267,7 @@ function TimelineHeader({
           <div className="border-r border-gray-200 bg-gray-50 p-3 text-sm font-medium text-gray-700">
             Rooms
           </div>
-          {dates.map((date, index) => {
+          {dates.map((date) => {
             const isToday = isSameDay(date, new Date());
             const isWeekend = date.getDay() === 0 || date.getDay() === 6;
 
