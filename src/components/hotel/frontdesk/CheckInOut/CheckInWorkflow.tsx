@@ -339,9 +339,10 @@ export default function CheckInWorkflow({ isOpen, onClose, reservation }: CheckI
                 {checkInSteps.map((step, _index) => {
                   const StepIcon = step.icon;
                   return (
-                    <div
+                    <button
                       key={step.id}
-                      className={`flex cursor-pointer items-center space-x-4 rounded-lg border p-4 transition-colors ${
+                      type="button"
+                      className={`flex w-full cursor-pointer items-center space-x-4 rounded-lg border p-4 text-left transition-colors ${
                         step.completed
                           ? 'border-green-200 bg-green-50'
                           : step.required
@@ -373,7 +374,7 @@ export default function CheckInWorkflow({ isOpen, onClose, reservation }: CheckI
                         <p className="text-sm text-gray-600">{step.description}</p>
                       </div>
                       <div className="text-2xl">{step.completed ? '✅' : '⭕'}</div>
-                    </div>
+                    </button>
                   );
                 })}
               </div>

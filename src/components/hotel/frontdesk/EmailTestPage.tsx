@@ -84,9 +84,9 @@ export default function EmailTestPage() {
               </div>
 
               <div className="flex items-center space-x-4 pt-2">
-                {getGuestBadges(testData.guest).map((badge, index) => (
+                {getGuestBadges(testData.guest).map((badge) => (
                   <Badge
-                    key={index}
+                    key={badge.label}
                     variant={badge.type === 'vip' ? 'default' : 'outline'}
                     className="text-xs"
                   >
@@ -163,10 +163,14 @@ export default function EmailTestPage() {
             <CardContent className="space-y-4">
               {/* Email Address Input */}
               <div>
-                <label className="mb-2 block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="email-address"
+                  className="mb-2 block text-sm font-medium text-gray-700"
+                >
                   📧 Send to Email Address:
                 </label>
                 <Input
+                  id="email-address"
                   type="email"
                   value={emailAddress}
                   onChange={(e) => setEmailAddress(e.target.value)}
@@ -180,9 +184,7 @@ export default function EmailTestPage() {
 
               {/* Email Type Selection */}
               <div>
-                <label className="mb-2 block text-sm font-medium text-gray-700">
-                  📝 Email Type:
-                </label>
+                <p className="mb-2 block text-sm font-medium text-gray-700">📝 Email Type:</p>
                 <div className="grid grid-cols-1 gap-2">
                   {getEmailTypes().map((type) => (
                     <button
@@ -204,10 +206,10 @@ export default function EmailTestPage() {
               {/* Language Selection */}
               {selectedEmailType === 'welcome' && (
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700">
+                  <p className="mb-2 block text-sm font-medium text-gray-700">
                     <Globe className="mr-1 inline h-4 w-4" />
                     Language:
-                  </label>
+                  </p>
                   <div className="grid grid-cols-3 gap-2">
                     {getEmailLanguages().map((lang) => (
                       <button

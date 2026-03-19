@@ -161,19 +161,19 @@ export default function FiscalizationTestPage() {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium">Environment</label>
+              <p className="text-sm font-medium">Environment</p>
               <p className="text-muted-foreground text-sm">{environment.mode}</p>
             </div>
             <div>
-              <label className="text-sm font-medium">OIB</label>
+              <p className="text-sm font-medium">OIB</p>
               <p className="text-muted-foreground text-sm">{environment.oib}</p>
             </div>
             <div>
-              <label className="text-sm font-medium">URL</label>
+              <p className="text-sm font-medium">URL</p>
               <p className="text-muted-foreground text-sm break-all">{environment.url}</p>
             </div>
             <div>
-              <label className="text-sm font-medium">Certificate Status</label>
+              <p className="text-sm font-medium">Certificate Status</p>
               <Badge variant={serviceStatus?.certificateConfigured ? 'default' : 'destructive'}>
                 {serviceStatus?.certificateConfigured ? 'Configured' : 'Not Configured'}
               </Badge>
@@ -202,8 +202,8 @@ export default function FiscalizationTestPage() {
                   <AlertDescription>
                     <strong>Configuration Errors:</strong>
                     <ul className="mt-2 list-inside list-disc">
-                      {serviceStatus.validation.errors.map((error: string, index: number) => (
-                        <li key={index}>{error}</li>
+                      {serviceStatus.validation.errors.map((error: string) => (
+                        <li key={error}>{error}</li>
                       ))}
                     </ul>
                   </AlertDescription>
@@ -216,8 +216,8 @@ export default function FiscalizationTestPage() {
                   <AlertDescription>
                     <strong>Warnings:</strong>
                     <ul className="mt-2 list-inside list-disc">
-                      {serviceStatus.validation.warnings.map((warning: string, index: number) => (
-                        <li key={index}>{warning}</li>
+                      {serviceStatus.validation.warnings.map((warning: string) => (
+                        <li key={warning}>{warning}</li>
                       ))}
                     </ul>
                   </AlertDescription>
@@ -376,8 +376,8 @@ export default function FiscalizationTestPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {serviceStatus?.recommendations.map((recommendation: string, index: number) => (
-              <div key={index} className="flex items-start gap-2">
+            {serviceStatus?.recommendations.map((recommendation: string) => (
+              <div key={recommendation} className="flex items-start gap-2">
                 <div className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500" />
                 <p className="text-sm">{recommendation}</p>
               </div>

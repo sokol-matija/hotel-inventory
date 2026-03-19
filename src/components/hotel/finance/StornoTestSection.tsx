@@ -117,7 +117,7 @@ const StornoTestSection: React.FC<StornoTestSectionProps> = ({ fiscalizationResu
             <div className="grid gap-4">
               {/* Select JIR to cancel */}
               <div>
-                <label className="mb-2 block text-sm font-medium">
+                <label htmlFor="storno-jir" className="mb-2 block text-sm font-medium">
                   Select Invoice to Cancel (JIR)
                 </label>
                 <Select value={selectedJir} onValueChange={setSelectedJir}>
@@ -125,8 +125,8 @@ const StornoTestSection: React.FC<StornoTestSectionProps> = ({ fiscalizationResu
                     <SelectValue placeholder="Choose successfully fiscalized invoice" />
                   </SelectTrigger>
                   <SelectContent>
-                    {successfulInvoices.map((result, index) => (
-                      <SelectItem key={index} value={result.jir}>
+                    {successfulInvoices.map((result) => (
+                      <SelectItem key={result.jir as string} value={result.jir as string}>
                         {result.invoiceNumber} - {result.jir}
                       </SelectItem>
                     ))}
@@ -141,7 +141,9 @@ const StornoTestSection: React.FC<StornoTestSectionProps> = ({ fiscalizationResu
 
               {/* Storno Type */}
               <div>
-                <label className="mb-2 block text-sm font-medium">Storno Type</label>
+                <label htmlFor="storno-type" className="mb-2 block text-sm font-medium">
+                  Storno Type
+                </label>
                 <Select
                   value={stornoType}
                   onValueChange={(value) => setStornoType(value as 'FULL' | 'PARTIAL')}
@@ -159,8 +161,11 @@ const StornoTestSection: React.FC<StornoTestSectionProps> = ({ fiscalizationResu
               {/* Partial Amount (only for PARTIAL) */}
               {stornoType === 'PARTIAL' && (
                 <div>
-                  <label className="mb-2 block text-sm font-medium">Partial Amount (EUR)</label>
+                  <label htmlFor="storno-partial-amount" className="mb-2 block text-sm font-medium">
+                    Partial Amount (EUR)
+                  </label>
                   <Input
+                    id="storno-partial-amount"
                     type="number"
                     step="0.01"
                     value={partialAmount}
@@ -172,8 +177,11 @@ const StornoTestSection: React.FC<StornoTestSectionProps> = ({ fiscalizationResu
 
               {/* Storno Reason */}
               <div>
-                <label className="mb-2 block text-sm font-medium">Cancellation Reason</label>
+                <label htmlFor="storno-reason" className="mb-2 block text-sm font-medium">
+                  Cancellation Reason
+                </label>
                 <Textarea
+                  id="storno-reason"
                   value={stornoReason}
                   onChange={(e) => setStornoReason(e.target.value)}
                   placeholder="Enter reason for cancellation..."
@@ -202,8 +210,11 @@ const StornoTestSection: React.FC<StornoTestSectionProps> = ({ fiscalizationResu
             <div>
               <h3 className="mb-3 text-lg font-semibold">Croatian Tax Authority Storno Results</h3>
               <div className="space-y-3">
-                {stornoResults.map((result, index) => (
-                  <div key={index} className="rounded-lg border p-4">
+                {stornoResults.map((result) => (
+                  <div
+                    key={`${result.originalJir as string}-${result.submittedAt as string}`}
+                    className="rounded-lg border p-4"
+                  >
                     <div className="mb-2 flex items-center justify-between">
                       <span className="font-medium">
                         Storno for: {result.originalInvoiceNumber} ({result.stornoType})

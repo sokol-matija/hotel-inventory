@@ -64,7 +64,16 @@ export default function MobileNav({ isOpen, onClose }: MobileNavProps) {
     <>
       {/* Backdrop */}
       {isOpen && (
-        <div className="bg-opacity-50 fixed inset-0 z-40 bg-black lg:hidden" onClick={onClose} />
+        <div
+          className="bg-opacity-50 fixed inset-0 z-40 bg-black lg:hidden"
+          role="button"
+          tabIndex={0}
+          aria-label="Close navigation"
+          onClick={onClose}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') onClose();
+          }}
+        />
       )}
 
       {/* Mobile Navigation Panel */}

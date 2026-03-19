@@ -40,7 +40,7 @@ export default function Layout() {
               <LanguageSwitcher />
             </div>
             <div className="flex flex-1 items-center justify-center">
-              <div
+              <button
                 className="flex h-12 w-32 cursor-pointer items-center justify-center"
                 onClick={() => navigate({ to: '/dashboard' })}
               >
@@ -49,7 +49,7 @@ export default function Layout() {
                   alt="Hotel Porec Logo"
                   className="h-full w-full object-contain"
                 />
-              </div>
+              </button>
             </div>
             <button
               onClick={() => setIsMobileMenuOpen(true)}

@@ -81,13 +81,6 @@ export default function CheckOutWorkflow({ isOpen, onClose, reservation }: Check
   const guest = reservation ? SAMPLE_GUESTS.find((g) => g.id === reservation.guestId) : null;
   const room = reservation ? rooms.find((r) => r.id === reservation.roomId) : null;
 
-  // Update payment status when reservation changes
-  useEffect(() => {
-    if (reservation) {
-      setPaymentStatus(reservation.status);
-    }
-  }, [reservation]);
-
   // Initialize check-out steps
   useEffect(() => {
     if (!reservation || !guest) return;
@@ -453,10 +446,13 @@ export default function CheckOutWorkflow({ isOpen, onClose, reservation }: Check
                 <CardContent>
                   <div className="space-y-3">
                     <div>
-                      <label className="mb-2 block text-sm font-medium">
+                      <label
+                        htmlFor="checkout-satisfaction-rating"
+                        className="mb-2 block text-sm font-medium"
+                      >
                         Rate the stay (1-5 stars)
                       </label>
-                      <div className="flex space-x-1">
+                      <div id="checkout-satisfaction-rating" className="flex space-x-1">
                         {[1, 2, 3, 4, 5].map((rating) => (
                           <button
                             key={rating}
@@ -486,9 +482,10 @@ export default function CheckOutWorkflow({ isOpen, onClose, reservation }: Check
                     {checkOutSteps.map((step) => {
                       const StepIcon = step.icon;
                       return (
-                        <div
+                        <button
                           key={step.id}
-                          className={`flex cursor-pointer items-center space-x-4 rounded-lg border p-4 transition-colors ${
+                          type="button"
+                          className={`flex w-full cursor-pointer items-center space-x-4 rounded-lg border p-4 text-left transition-colors ${
                             step.completed
                               ? 'border-green-200 bg-green-50'
                               : step.required
@@ -522,7 +519,7 @@ export default function CheckOutWorkflow({ isOpen, onClose, reservation }: Check
                             <p className="text-sm text-gray-600">{step.description}</p>
                           </div>
                           <div className="text-2xl">{step.completed ? '✅' : '⭕'}</div>
-                        </div>
+                        </button>
                       );
                     })}
                   </div>

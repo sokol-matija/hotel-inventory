@@ -513,7 +513,12 @@ export const EnhancedDailyViewModal: React.FC<EnhancedDailyViewModalProps> = ({
   return (
     <div className="fixed inset-0 z-[9999] overflow-y-auto">
       {/* Backdrop */}
-      <div className="bg-opacity-50 fixed inset-0 bg-black" onClick={onClose} />
+      <button
+        type="button"
+        className="bg-opacity-50 fixed inset-0 bg-black"
+        onClick={onClose}
+        aria-label="Close modal"
+      />
 
       {/* Modal */}
       <div className="relative flex min-h-screen items-center justify-center p-4">
@@ -671,18 +676,24 @@ export const EnhancedDailyViewModal: React.FC<EnhancedDailyViewModalProps> = ({
                     {/* Add Guest Dialog */}
                     {showAddGuestDialog && (
                       <div className="fixed inset-0 z-50 flex items-center justify-center">
-                        <div
+                        <button
+                          type="button"
                           className="bg-opacity-50 fixed inset-0 bg-black"
                           onClick={() => setShowAddGuestDialog(false)}
+                          aria-label="Close dialog"
                         />
                         <div className="relative mx-4 w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
                           <h3 className="mb-4 text-lg font-semibold">Add Guest to Booking</h3>
                           <div className="space-y-4">
                             <div>
-                              <label className="mb-1 block text-sm font-medium text-gray-700">
+                              <label
+                                htmlFor="new-guest-type"
+                                className="mb-1 block text-sm font-medium text-gray-700"
+                              >
                                 Guest Type
                               </label>
                               <select
+                                id="new-guest-type"
                                 value={newGuestType}
                                 onChange={(e) =>
                                   setNewGuestType(e.target.value as 'adult' | 'child')
@@ -694,10 +705,14 @@ export const EnhancedDailyViewModal: React.FC<EnhancedDailyViewModalProps> = ({
                               </select>
                             </div>
                             <div>
-                              <label className="mb-1 block text-sm font-medium text-gray-700">
+                              <label
+                                htmlFor="new-guest-name"
+                                className="mb-1 block text-sm font-medium text-gray-700"
+                              >
                                 Guest Name
                               </label>
                               <input
+                                id="new-guest-name"
                                 type="text"
                                 value={newGuestName}
                                 onChange={(e) => setNewGuestName(e.target.value)}
@@ -707,10 +722,14 @@ export const EnhancedDailyViewModal: React.FC<EnhancedDailyViewModalProps> = ({
                             </div>
                             {newGuestType === 'child' && (
                               <div>
-                                <label className="mb-1 block text-sm font-medium text-gray-700">
+                                <label
+                                  htmlFor="new-guest-age"
+                                  className="mb-1 block text-sm font-medium text-gray-700"
+                                >
                                   Age
                                 </label>
                                 <input
+                                  id="new-guest-age"
                                   type="number"
                                   value={newGuestAge}
                                   onChange={(e) => setNewGuestAge(e.target.value)}

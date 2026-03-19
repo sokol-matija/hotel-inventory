@@ -160,7 +160,12 @@ export const ExpandedDailyViewModal: React.FC<ExpandedDailyViewModalProps> = ({
   return (
     <div className="fixed inset-0 z-[9999] overflow-y-auto">
       {/* Backdrop */}
-      <div className="bg-opacity-50 fixed inset-0 bg-black" onClick={onClose} />
+      <button
+        type="button"
+        className="bg-opacity-50 fixed inset-0 bg-black"
+        onClick={onClose}
+        aria-label="Close modal"
+      />
 
       {/* Modal */}
       <div className="relative flex min-h-screen items-center justify-center p-4">

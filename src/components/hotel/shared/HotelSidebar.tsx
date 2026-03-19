@@ -158,7 +158,7 @@ export default function HotelSidebar() {
       <div className="relative z-10 flex h-full flex-col">
         <div className="p-6">
           <div className="flex items-center justify-center">
-            <div
+            <button
               className="flex h-20 w-full cursor-pointer items-center justify-center"
               onClick={() => navigate({ to: logoClickPath as '/' })}
             >
@@ -167,7 +167,7 @@ export default function HotelSidebar() {
                 alt="Hotel Porec Logo"
                 className="h-full w-full object-contain"
               />
-            </div>
+            </button>
           </div>
 
           {/* Module Title */}

@@ -489,11 +489,11 @@ export default function InvoicePaymentPage() {
             <div className="space-y-4 pb-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-600">Invoice Number</label>
+                  <p className="text-sm font-medium text-gray-600">Invoice Number</p>
                   <p className="font-mono">{selectedInvoice.invoiceNumber}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-600">Status</label>
+                  <p className="text-sm font-medium text-gray-600">Status</p>
                   <Badge
                     className={`text-xs ${statusColors[selectedInvoice.status as keyof typeof statusColors]}`}
                   >
@@ -501,19 +501,19 @@ export default function InvoicePaymentPage() {
                   </Badge>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-600">Guest</label>
+                  <p className="text-sm font-medium text-gray-600">Guest</p>
                   <p>{getGuestName(selectedInvoice.guestId)}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-600">Room</label>
+                  <p className="text-sm font-medium text-gray-600">Room</p>
                   <p>{getRoomNumber(selectedInvoice.id)}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-600">Issue Date</label>
+                  <p className="text-sm font-medium text-gray-600">Issue Date</p>
                   <p>{format(selectedInvoice.issueDate, 'MMM dd, yyyy')}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-600">Due Date</label>
+                  <p className="text-sm font-medium text-gray-600">Due Date</p>
                   <p>{format(selectedInvoice.dueDate, 'MMM dd, yyyy')}</p>
                 </div>
               </div>
@@ -527,24 +527,22 @@ export default function InvoicePaymentPage() {
                   </h4>
                   <div className="space-y-3 rounded-lg border border-green-200 bg-green-50 p-4">
                     <div>
-                      <label className="text-sm font-medium text-gray-600">
+                      <p className="text-sm font-medium text-gray-600">
                         JIR (Unique Invoice Identifier)
-                      </label>
+                      </p>
                       <p className="font-mono text-sm break-all text-green-800">
                         {selectedInvoice.fiscalData.jir}
                       </p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-600">
-                        ZKI (Security Code)
-                      </label>
+                      <p className="text-sm font-medium text-gray-600">ZKI (Security Code)</p>
                       <p className="font-mono text-sm break-all text-green-800">
                         {selectedInvoice.fiscalData.zki}
                       </p>
                     </div>
                     {selectedInvoice.fiscalData.qrCodeData && (
                       <div>
-                        <label className="text-sm font-medium text-gray-600">QR Code</label>
+                        <p className="text-sm font-medium text-gray-600">QR Code</p>
                         <div className="mt-2 inline-block rounded border bg-white p-3">
                           <QRCodeSVG value={selectedInvoice.fiscalData.qrCodeData} size={128} />
                         </div>

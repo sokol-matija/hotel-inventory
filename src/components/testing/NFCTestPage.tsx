@@ -177,9 +177,12 @@ export const NFCTestPage = () => {
           </Button>
 
           <div className="space-y-2">
-            <label className="block text-sm font-medium">Test Single Room by ID</label>
+            <label htmlFor="nfc-room-id" className="block text-sm font-medium">
+              Test Single Room by ID
+            </label>
             <div className="flex gap-2">
               <Input
+                id="nfc-room-id"
                 placeholder="Enter room ID (e.g., room-101)"
                 value={testRoomId}
                 onChange={(e) => setTestRoomId(e.target.value)}
