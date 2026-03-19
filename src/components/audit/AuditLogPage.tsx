@@ -55,6 +55,64 @@ const tableDisplayNames = {
   categories: 'Categories',
 };
 
+interface ValueChangeProps {
+  oldValues: Record<string, unknown> | null;
+  newValues: Record<string, unknown> | null;
+}
+
+const ValueChange: React.FC<ValueChangeProps> = ({ oldValues, newValues }) => {
+  if (!oldValues && !newValues) return null;
+
+  if (newValues && !oldValues) {
+    return (
+      <div className="mt-2 rounded bg-green-50 p-2 text-sm">
+        <p className="mb-1 font-medium text-green-800">New Values:</p>
+        {Object.entries(newValues).map(([key, value]) => (
+          <div key={key} className="text-green-700">
+            <span className="font-medium">{key}:</span> {JSON.stringify(value)}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (oldValues && !newValues) {
+    return (
+      <div className="mt-2 rounded bg-red-50 p-2 text-sm">
+        <p className="mb-1 font-medium text-red-800">Deleted Values:</p>
+        {Object.entries(oldValues).map(([key, value]) => (
+          <div key={key} className="text-red-700">
+            <span className="font-medium">{key}:</span> {JSON.stringify(value)}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (oldValues && newValues) {
+    const changes = Object.keys({ ...oldValues, ...newValues }).filter(
+      (key) => JSON.stringify(oldValues[key]) !== JSON.stringify(newValues[key])
+    );
+
+    if (changes.length === 0) return null;
+
+    return (
+      <div className="mt-2 rounded bg-blue-50 p-2 text-sm">
+        <p className="mb-1 font-medium text-blue-800">Changes:</p>
+        {changes.map((key) => (
+          <div key={key} className="text-blue-700">
+            <span className="font-medium">{key}:</span>{' '}
+            <span className="text-gray-500 line-through">{JSON.stringify(oldValues[key])}</span> →{' '}
+            <span className="text-blue-800">{JSON.stringify(newValues[key])}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return null;
+};
+
 export default function AuditLogPage() {
   const { user } = useAuth();
   const { t } = useTranslation();
@@ -151,65 +209,6 @@ export default function AuditLogPage() {
       default:
         return action;
     }
-  };
-
-  const renderValueChange = (
-    oldValues: Record<string, unknown> | null,
-    newValues: Record<string, unknown> | null
-  ) => {
-    if (!oldValues && !newValues) return null;
-
-    if (newValues && !oldValues) {
-      // Creation - show new values
-      return (
-        <div className="mt-2 rounded bg-green-50 p-2 text-sm">
-          <p className="mb-1 font-medium text-green-800">{t('audit.newValues')}:</p>
-          {Object.entries(newValues).map(([key, value]) => (
-            <div key={key} className="text-green-700">
-              <span className="font-medium">{key}:</span> {JSON.stringify(value)}
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    if (oldValues && !newValues) {
-      // Deletion - show old values
-      return (
-        <div className="mt-2 rounded bg-red-50 p-2 text-sm">
-          <p className="mb-1 font-medium text-red-800">{t('audit.deletedValues')}:</p>
-          {Object.entries(oldValues).map(([key, value]) => (
-            <div key={key} className="text-red-700">
-              <span className="font-medium">{key}:</span> {JSON.stringify(value)}
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    if (oldValues && newValues) {
-      // Update - show changes
-      const changes = Object.keys({ ...oldValues, ...newValues }).filter(
-        (key) => JSON.stringify(oldValues[key]) !== JSON.stringify(newValues[key])
-      );
-
-      if (changes.length === 0) return null;
-
-      return (
-        <div className="mt-2 rounded bg-blue-50 p-2 text-sm">
-          <p className="mb-1 font-medium text-blue-800">{t('audit.changes')}:</p>
-          {changes.map((key) => (
-            <div key={key} className="text-blue-700">
-              <span className="font-medium">{key}:</span>{' '}
-              <span className="text-gray-500 line-through">{JSON.stringify(oldValues[key])}</span> →{' '}
-              <span className="text-blue-800">{JSON.stringify(newValues[key])}</span>
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    return null;
   };
 
   if (loading) {
@@ -349,7 +348,7 @@ export default function AuditLogPage() {
                           </div>
                         </div>
 
-                        {renderValueChange(log.old_values, log.new_values)}
+                        <ValueChange oldValues={log.old_values} newValues={log.new_values} />
                       </div>
                     </div>
                   </div>

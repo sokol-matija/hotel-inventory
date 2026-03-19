@@ -23,7 +23,7 @@ interface OverlayRect {
   height: number;
 }
 
-export const DragCreateOverlay: React.FC<DragCreateOverlayProps> = ({
+const DragCreateOverlay: React.FC<DragCreateOverlayProps> = ({
   dragCreateState,
   timelineRef,
   cellRefs,

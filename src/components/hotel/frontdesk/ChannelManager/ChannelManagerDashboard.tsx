@@ -507,16 +507,16 @@ export default function ChannelManagerDashboard() {
       {recentErrors.length > 0 && (
         <div className="space-y-4">
           <h2 className="text-xl font-semibold">Recent Errors</h2>
-          {recentErrors.slice(0, 3).map((error, index) => (
+          {recentErrors.slice(0, 3).map((error) => (
             <ErrorDetails
-              key={index}
+              key={error.id}
               error={error}
               onRetry={() => {
                 // Handle retry logic
-                setRecentErrors((prev) => prev.filter((_, i) => i !== index));
+                setRecentErrors((prev) => prev.filter((e) => e.id !== error.id));
               }}
               onDismiss={() => {
-                setRecentErrors((prev) => prev.filter((_, i) => i !== index));
+                setRecentErrors((prev) => prev.filter((e) => e.id !== error.id));
               }}
             />
           ))}

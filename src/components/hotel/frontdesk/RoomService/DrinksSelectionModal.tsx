@@ -183,10 +183,10 @@ export default function DrinksSelectionModal({
   );
 
   // Update available stock calculation based on basket quantities
-  const updateAvailableStock = () => {
+  const updateAvailableStock = (newBasketQuantities: Record<number, number>) => {
     setAvailableItems((prevItems) =>
       prevItems.map((item) => {
-        const basketQty = basketQuantities[item.id] || 0;
+        const basketQty = newBasketQuantities[item.id] || 0;
         return {
           ...item,
           availableStock: item.totalStock - basketQty,
@@ -194,12 +194,6 @@ export default function DrinksSelectionModal({
       })
     );
   };
-
-  // Update available stock whenever basket changes
-  useEffect(() => {
-    updateAvailableStock();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [basketQuantities]);
 
   const addToOrder = (item: FridgeInventoryItem) => {
     const existingOrderItem = orderItems.find((oi) => oi.itemId === item.id);
@@ -230,10 +224,9 @@ export default function DrinksSelectionModal({
     }
 
     // Update basket quantities to reflect the change
-    setBasketQuantities((prev) => ({
-      ...prev,
-      [item.id]: currentBasketQty + 1,
-    }));
+    const newBasketQuantities = { ...basketQuantities, [item.id]: currentBasketQty + 1 };
+    setBasketQuantities(newBasketQuantities);
+    updateAvailableStock(newBasketQuantities);
   };
 
   const updateOrderItemQuantity = (itemId: number, newQuantity: number) => {
@@ -256,10 +249,9 @@ export default function DrinksSelectionModal({
     if (newQuantity <= 0) {
       setOrderItems(orderItems.filter((item) => item.itemId !== itemId));
       // Reset basket quantity for this item
-      setBasketQuantities((prev) => ({
-        ...prev,
-        [itemId]: 0,
-      }));
+      const newBasketQuantities = { ...basketQuantities, [itemId]: 0 };
+      setBasketQuantities(newBasketQuantities);
+      updateAvailableStock(newBasketQuantities);
       return;
     }
 
@@ -272,19 +264,17 @@ export default function DrinksSelectionModal({
     );
 
     // Update basket quantities
-    setBasketQuantities((prev) => ({
-      ...prev,
-      [itemId]: newBasketQty,
-    }));
+    const newBasketQuantities = { ...basketQuantities, [itemId]: newBasketQty };
+    setBasketQuantities(newBasketQuantities);
+    updateAvailableStock(newBasketQuantities);
   };
 
   const removeFromOrder = (itemId: number) => {
     setOrderItems(orderItems.filter((item) => item.itemId !== itemId));
     // Reset basket quantity for this item
-    setBasketQuantities((prev) => ({
-      ...prev,
-      [itemId]: 0,
-    }));
+    const newBasketQuantities = { ...basketQuantities, [itemId]: 0 };
+    setBasketQuantities(newBasketQuantities);
+    updateAvailableStock(newBasketQuantities);
   };
 
   const handleAddToRoomBill = () => {
@@ -464,8 +454,8 @@ export default function DrinksSelectionModal({
                       <AlertTriangle className="h-4 w-4" />
                       <span className="font-medium">Errors:</span>
                     </div>
-                    {validationResult.errors.map((error, index) => (
-                      <p key={index} className="text-xs text-red-600">
+                    {validationResult.errors.map((error) => (
+                      <p key={error} className="text-xs text-red-600">
                         {error}
                       </p>
                     ))}
@@ -478,8 +468,8 @@ export default function DrinksSelectionModal({
                       <AlertTriangle className="h-4 w-4" />
                       <span className="font-medium">Warnings:</span>
                     </div>
-                    {validationResult.warnings.map((warning, index) => (
-                      <p key={index} className="text-xs text-yellow-600">
+                    {validationResult.warnings.map((warning) => (
+                      <p key={warning} className="text-xs text-yellow-600">
                         {warning}
                       </p>
                     ))}

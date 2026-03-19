@@ -24,7 +24,7 @@ interface LabelAutocompleteProps {
   disabled?: boolean;
 }
 
-export const LabelAutocomplete: React.FC<LabelAutocompleteProps> = ({
+const LabelAutocomplete: React.FC<LabelAutocompleteProps> = ({
   hotelId,
   value,
   onChange,
@@ -33,9 +33,11 @@ export const LabelAutocomplete: React.FC<LabelAutocompleteProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [labels, setLabels] = useState<LabelType[]>([]);
+  const [searchState, setSearchState] = useState<{ labels: LabelType[]; isLoading: boolean }>({
+    labels: [],
+    isLoading: false,
+  });
   const [allLabels, setAllLabels] = useState<LabelType[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [selectedLabel, setSelectedLabel] = useState<LabelType | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -69,19 +71,17 @@ export const LabelAutocomplete: React.FC<LabelAutocompleteProps> = ({
   useEffect(() => {
     const timer = setTimeout(async () => {
       if (searchQuery.trim()) {
-        setIsLoading(true);
+        setSearchState({ labels: [], isLoading: true });
         try {
           const results = await labelService.searchLabels(hotelId, searchQuery);
-          setLabels(results);
+          setSearchState({ labels: results, isLoading: false });
         } catch (error) {
           console.error('Error searching labels:', error);
-          setLabels([]);
-        } finally {
-          setIsLoading(false);
+          setSearchState({ labels: [], isLoading: false });
         }
       } else {
         // Show all labels when search is empty
-        setLabels(allLabels);
+        setSearchState({ labels: allLabels, isLoading: false });
       }
     }, 300);
 
@@ -104,7 +104,7 @@ export const LabelAutocomplete: React.FC<LabelAutocompleteProps> = ({
     if (!searchQuery.trim()) return;
 
     try {
-      setIsLoading(true);
+      setSearchState((prev) => ({ ...prev, isLoading: true }));
       const newLabel = await labelService.createLabel({
         hotelId,
         name: searchQuery,
@@ -121,7 +121,7 @@ export const LabelAutocomplete: React.FC<LabelAutocompleteProps> = ({
       console.error('Error creating label:', error);
       alert(error instanceof Error ? error.message : 'Failed to create label');
     } finally {
-      setIsLoading(false);
+      setSearchState((prev) => ({ ...prev, isLoading: false }));
     }
   };
 
@@ -142,7 +142,7 @@ export const LabelAutocomplete: React.FC<LabelAutocompleteProps> = ({
   const handleInputFocus = () => {
     setIsOpen(true);
     if (!searchQuery && allLabels.length > 0) {
-      setLabels(allLabels);
+      setSearchState((prev) => ({ ...prev, labels: allLabels }));
     }
   };
 
@@ -180,9 +180,9 @@ export const LabelAutocomplete: React.FC<LabelAutocompleteProps> = ({
       {/* Dropdown list */}
       {isOpen && (
         <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border bg-white shadow-lg">
-          {isLoading ? (
+          {searchState.isLoading ? (
             <div className="p-3 text-center text-sm text-gray-500">Searching...</div>
-          ) : labels.length === 0 && searchQuery ? (
+          ) : searchState.labels.length === 0 && searchQuery ? (
             <button
               type="button"
               onClick={handleCreateLabel}
@@ -193,13 +193,13 @@ export const LabelAutocomplete: React.FC<LabelAutocompleteProps> = ({
                 Create "<span className="font-medium">{searchQuery}</span>"
               </span>
             </button>
-          ) : labels.length === 0 ? (
+          ) : searchState.labels.length === 0 ? (
             <div className="p-3 text-center text-sm text-gray-500">
               No labels yet. Type to create one.
             </div>
           ) : (
             <>
-              {labels.map((label) => (
+              {searchState.labels.map((label) => (
                 <button
                   key={label.id}
                   type="button"
@@ -214,7 +214,9 @@ export const LabelAutocomplete: React.FC<LabelAutocompleteProps> = ({
                 </button>
               ))}
               {searchQuery &&
-                !labels.find((l) => l.name === searchQuery.toLowerCase().replace(/\s+/g, '-')) && (
+                !searchState.labels.find(
+                  (l) => l.name === searchQuery.toLowerCase().replace(/\s+/g, '-')
+                ) && (
                   <div className="border-t">
                     <button
                       type="button"

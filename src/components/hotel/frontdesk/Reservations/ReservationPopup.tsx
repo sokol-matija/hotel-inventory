@@ -36,6 +36,39 @@ import CheckOutWorkflow from '../CheckInOut/CheckOutWorkflow';
 import { supabase } from '../../../../lib/supabase';
 import { convertToDisplayName } from '../../../../lib/hotel/countryCodeUtils';
 
+interface StatusActionsProps {
+  statusActions: Array<{
+    status: string;
+    label: string;
+    icon: string;
+    variant: 'default' | 'outline' | 'destructive';
+  }>;
+  isUpdating: boolean;
+  onStatusUpdate: (status: string) => void;
+}
+
+const StatusActions = ({ statusActions, isUpdating, onStatusUpdate }: StatusActionsProps) => {
+  return (
+    <>
+      {statusActions.map((action) => (
+        <Button
+          key={action.status}
+          variant={action.variant}
+          size="sm"
+          onClick={() => onStatusUpdate(action.status)}
+          disabled={isUpdating}
+        >
+          {action.icon === 'log-in' && <LogIn className="mr-1 h-4 w-4" />}
+          {action.icon === 'log-out' && <LogOut className="mr-1 h-4 w-4" />}
+          {action.icon === 'check' && <Check className="mr-1 h-4 w-4" />}
+          {action.icon === 'x' && <X className="mr-1 h-4 w-4" />}
+          {action.label}
+        </Button>
+      ))}
+    </>
+  );
+};
+
 interface ReservationPopupProps {
   isOpen: boolean;
   onClose: () => void;
@@ -191,25 +224,6 @@ export default function ReservationPopup({
   // Get available status actions
   const statusActions = getStatusActions();
 
-  // Render status action buttons
-  const renderStatusActions = () => {
-    return statusActions.map((action) => (
-      <Button
-        key={action.status}
-        variant={action.variant}
-        size="sm"
-        onClick={() => handleStatusUpdate(action.status)}
-        disabled={isUpdating}
-      >
-        {action.icon === 'log-in' && <LogIn className="mr-1 h-4 w-4" />}
-        {action.icon === 'log-out' && <LogOut className="mr-1 h-4 w-4" />}
-        {action.icon === 'check' && <Check className="mr-1 h-4 w-4" />}
-        {action.icon === 'x' && <X className="mr-1 h-4 w-4" />}
-        {action.label}
-      </Button>
-    ));
-  };
-
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
@@ -234,7 +248,11 @@ export default function ReservationPopup({
                   {state.isEditing ? <X className="h-4 w-4" /> : <Edit className="h-4 w-4" />}
                   {state.isEditing ? 'Cancel' : 'Edit'}
                 </Button>
-                {renderStatusActions()}
+                <StatusActions
+                  statusActions={statusActions}
+                  isUpdating={isUpdating}
+                  onStatusUpdate={handleStatusUpdate}
+                />
               </div>
             </DialogTitle>
           </DialogHeader>

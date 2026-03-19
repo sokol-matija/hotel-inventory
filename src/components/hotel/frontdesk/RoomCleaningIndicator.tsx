@@ -17,29 +17,27 @@ export const RoomCleaningIndicator = ({
   className,
   showLabel = true,
 }: RoomCleaningIndicatorProps) => {
-  const [isClean, setIsClean] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [state, setState] = useState({ isClean: false, isLoading: true });
 
   useEffect(() => {
     const service = RoomCleaningService.getInstance();
 
     // Get initial status
     service.getRoomStatus(roomId).then((status) => {
-      if (status) {
-        setIsClean(status.isClean);
-      }
-      setIsLoading(false);
+      setState({ isClean: status?.isClean ?? false, isLoading: false });
     });
 
     // Subscribe to real-time changes
     const subscription = service.subscribeToRoomStatus(roomId, (clean) => {
-      setIsClean(clean);
+      setState((prev) => ({ ...prev, isClean: clean }));
     });
 
     return () => {
       subscription.unsubscribe();
     };
   }, [roomId]);
+
+  const { isClean, isLoading } = state;
 
   if (isLoading) {
     return (

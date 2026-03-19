@@ -218,8 +218,8 @@ const FiscalizationTestPage: React.FC = () => {
             <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3">
               <h4 className="mb-2 text-sm font-medium text-red-800">Configuration Issues:</h4>
               <ul className="space-y-1 text-sm text-red-700">
-                {serviceStatus.validationErrors.map((error: string, index: number) => (
-                  <li key={index}>• {error}</li>
+                {serviceStatus.validationErrors.map((error: string) => (
+                  <li key={error}>• {error}</li>
                 ))}
               </ul>
             </div>
@@ -277,8 +277,8 @@ const FiscalizationTestPage: React.FC = () => {
                   <div className="mb-2">
                     <p className="mb-1 text-xs font-medium text-orange-700">Warnings:</p>
                     <ul className="space-y-1 text-xs text-orange-600">
-                      {connectionResult.warnings.map((warning: string, index: number) => (
-                        <li key={index}>• {warning}</li>
+                      {connectionResult.warnings.map((warning: string) => (
+                        <li key={warning}>• {warning}</li>
                       ))}
                     </ul>
                   </div>
@@ -396,8 +396,8 @@ const FiscalizationTestPage: React.FC = () => {
               <div>
                 <h3 className="mb-3 text-lg font-semibold">Croatian Tax Authority Results</h3>
                 <div className="space-y-3">
-                  {submissionResults.map((result, index) => (
-                    <div key={index} className="rounded-lg border p-4">
+                  {submissionResults.map((result) => (
+                    <div key={result.invoiceId} className="rounded-lg border p-4">
                       <div className="mb-2 flex items-center justify-between">
                         <span className="font-medium">Invoice: {result.invoiceNumber}</span>
                         <div className="flex items-center space-x-2">

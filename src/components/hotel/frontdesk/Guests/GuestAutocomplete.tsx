@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Search, User, Phone, Mail, Globe, Users, X } from 'lucide-react';
 import { Badge } from '../../../ui/badge';
 import { Button } from '../../../ui/button';
@@ -23,22 +23,16 @@ export default function GuestAutocomplete({
 }: GuestAutocompleteProps) {
   const { data: guests = [] } = useGuests();
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredGuests, setFilteredGuests] = useState<Guest[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Filter guests based on search query
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setFilteredGuests([]);
-      setIsOpen(false);
-      return;
-    }
-
+  // Derived: filter guests based on search query inline (no useEffect needed)
+  const filteredGuests = useMemo<Guest[]>(() => {
+    if (!searchQuery.trim()) return [];
     const query = searchQuery.toLowerCase().trim();
-    const filtered = guests
+    return guests
       .filter(
         (guest) =>
           guest.fullName.toLowerCase().includes(query) ||
@@ -46,11 +40,7 @@ export default function GuestAutocomplete({
           (guest.phone && guest.phone.toLowerCase().includes(query)) ||
           (guest.nationality && guest.nationality.toLowerCase().includes(query))
       )
-      .slice(0, 8); // Limit to 8 results
-
-    setFilteredGuests(filtered);
-    setIsOpen(filtered.length > 0);
-    setHighlightedIndex(-1);
+      .slice(0, 8);
   }, [searchQuery, guests]);
 
   // Handle keyboard navigation
@@ -80,6 +70,11 @@ export default function GuestAutocomplete({
         break;
     }
   };
+
+  // Reset highlighted index when search results change
+  useEffect(() => {
+    setHighlightedIndex(-1);
+  }, [filteredGuests]);
 
   const handleGuestSelect = (guest: Guest) => {
     onGuestSelect(guest);
@@ -175,7 +170,10 @@ export default function GuestAutocomplete({
               className="w-full rounded-lg border border-gray-300 py-3 pr-4 pl-10 focus:border-transparent focus:ring-2 focus:ring-blue-500"
               placeholder={placeholder}
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setIsOpen(e.target.value.trim().length > 0);
+              }}
               onKeyDown={handleKeyDown}
               onFocus={() => {
                 if (searchQuery && filteredGuests.length > 0) {
@@ -189,12 +187,19 @@ export default function GuestAutocomplete({
           {isOpen && (
             <div className="absolute top-full right-0 left-0 z-50 mt-1 max-h-80 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg">
               {filteredGuests.map((guest, index) => (
-                <div
+                <button
                   key={guest.id}
-                  className={`cursor-pointer border-b border-gray-100 p-4 last:border-b-0 hover:bg-gray-50 ${
+                  type="button"
+                  className={`w-full cursor-pointer border-b border-gray-100 p-4 text-left last:border-b-0 hover:bg-gray-50 ${
                     index === highlightedIndex ? 'bg-blue-50' : ''
                   }`}
                   onClick={() => handleGuestSelect(guest)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleGuestSelect(guest);
+                    }
+                  }}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
@@ -225,15 +230,23 @@ export default function GuestAutocomplete({
                       </div>
                     </div>
                   </div>
-                </div>
+                </button>
               ))}
 
               {/* Create New Guest Option */}
-              <div
-                className="cursor-pointer border-t border-gray-200 bg-blue-50 p-4 text-blue-700 hover:bg-blue-100"
+              <button
+                type="button"
+                className="w-full cursor-pointer border-t border-gray-200 bg-blue-50 p-4 text-left text-blue-700 hover:bg-blue-100"
                 onClick={() => {
                   onCreateNew();
                   setIsOpen(false);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onCreateNew();
+                    setIsOpen(false);
+                  }
                 }}
               >
                 <div className="flex items-center space-x-2">
@@ -243,7 +256,7 @@ export default function GuestAutocomplete({
                 <p className="mt-1 text-xs text-blue-600">
                   {searchQuery ? `for "${searchQuery}"` : 'Add a new guest to the database'}
                 </p>
-              </div>
+              </button>
             </div>
           )}
         </div>

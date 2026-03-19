@@ -232,8 +232,9 @@ function TimelineHeader({
             const availability = calculateDayAvailability(date);
 
             return (
-              <div
-                key={`availability-${index}`}
+              <button
+                key={date.toISOString()}
+                type="button"
                 className="cursor-pointer border-r border-gray-200 p-2 text-center transition-all hover:bg-gray-50"
                 title={`${format(date, 'EEEE, MMMM dd, yyyy')} - Click for detailed breakdown`}
                 onClick={() => handleAvailabilityClick(date)}
@@ -253,7 +254,7 @@ function TimelineHeader({
                 >
                   {showFreeRooms ? availability.availableRooms : availability.occupiedRooms}
                 </div>
-              </div>
+              </button>
             );
           })}
         </div>
@@ -271,7 +272,7 @@ function TimelineHeader({
             const isWeekend = date.getDay() === 0 || date.getDay() === 6;
 
             return (
-              <React.Fragment key={index}>
+              <React.Fragment key={date.toISOString()}>
                 {/* AM half (Check-out zone) */}
                 <div
                   className={`border-r border-gray-300 p-1 text-center text-xs ${
@@ -357,7 +358,16 @@ function RoomAvailabilityModal({
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center">
       {/* Backdrop */}
-      <div className="bg-opacity-50 absolute inset-0 bg-black backdrop-blur-sm" onClick={onClose} />
+      <div
+        className="bg-opacity-50 absolute inset-0 bg-black backdrop-blur-sm"
+        role="button"
+        tabIndex={0}
+        aria-label="Close modal"
+        onClick={onClose}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') onClose();
+        }}
+      />
 
       {/* Modal */}
       <div className="relative mx-4 max-h-[80vh] w-full max-w-2xl overflow-hidden rounded-xl bg-white shadow-2xl">
@@ -744,6 +754,8 @@ function ReservationBlock({
         blockRef.current = el;
         cardRef.current = el;
       }}
+      role="button"
+      tabIndex={0}
       className={`flex cursor-pointer items-center rounded border px-2 py-0.5 text-xs font-medium hover:shadow-md ${
         isExpansionMode ? 'overflow-visible' : 'overflow-hidden'
       } group pointer-events-auto z-10 ${isDragging ? 'opacity-50 ring-2 ring-blue-400' : ''}`}
@@ -763,6 +775,13 @@ function ReservationBlock({
         // Prevent click-to-view if dragging or closing context menu
         if (!isDragging && !isClosingContextMenu) {
           onReservationClick(reservation);
+        }
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          if (!isDragging && !isClosingContextMenu) {
+            onReservationClick(reservation);
+          }
         }
       }}
       onContextMenu={(e) => {
@@ -937,12 +956,22 @@ function ReservationBlock({
               {/* Backdrop to close menu */}
               <div
                 className="fixed inset-0 z-40"
+                role="button"
+                tabIndex={0}
+                aria-label="Close context menu"
                 onClick={() => {
                   console.log('[CONTEXT MENU] Backdrop clicked - closing menu');
                   setIsClosingContextMenu(true);
                   setContextMenu({ show: false, x: 0, y: 0, reservation: null });
                   // Reset flag after a short delay
                   setTimeout(() => setIsClosingContextMenu(false), 100);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    setIsClosingContextMenu(true);
+                    setContextMenu({ show: false, x: 0, y: 0, reservation: null });
+                    setTimeout(() => setIsClosingContextMenu(false), 100);
+                  }
                 }}
               />
 
@@ -953,6 +982,7 @@ function ReservationBlock({
                   left: contextMenu.x,
                   top: contextMenu.y,
                 }}
+                role="menu"
                 onClick={(e) => {
                   e.stopPropagation();
                   console.log('[CONTEXT MENU] Menu clicked');
@@ -1187,12 +1217,22 @@ function ReservationBlock({
             {/* Backdrop to close menu */}
             <div
               className="fixed inset-0 z-40"
+              role="button"
+              tabIndex={0}
+              aria-label="Close context menu"
               onClick={() => {
                 console.log('[CONTEXT MENU] Backdrop clicked - closing menu');
                 setIsClosingContextMenu(true);
                 setContextMenu({ show: false, x: 0, y: 0, reservation: null });
                 // Reset flag after a short delay
                 setTimeout(() => setIsClosingContextMenu(false), 100);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  setIsClosingContextMenu(true);
+                  setContextMenu({ show: false, x: 0, y: 0, reservation: null });
+                  setTimeout(() => setIsClosingContextMenu(false), 100);
+                }
               }}
             />
 
@@ -1203,6 +1243,7 @@ function ReservationBlock({
                 left: contextMenu.x,
                 top: contextMenu.y,
               }}
+              role="menu"
               onClick={(e) => {
                 e.stopPropagation();
                 console.log('[CONTEXT MENU] Menu clicked');
@@ -1552,6 +1593,9 @@ function ReservationBlock({
   );
 }
 
+// Stable empty array to avoid creating a new reference on every render
+const EMPTY_RESERVATIONS: Reservation[] = [];
+
 // Enhanced date cell with drag-to-create functionality - Updated for half-day system
 function DroppableDateCell({
   room,
@@ -1560,7 +1604,7 @@ function DroppableDateCell({
   isSecondHalf,
   date,
   onMoveReservation,
-  existingReservations = [],
+  existingReservations = EMPTY_RESERVATIONS,
   // New props for drag-to-create
   isDragCreateMode: _isDragCreateMode,
   isDragCreating,
@@ -1813,6 +1857,20 @@ function DroppableDateCell({
         drop(el);
         if (el && cellRefs) {
           cellRefs.set(cellKey, el);
+        }
+      }}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          if (
+            !hasExistingReservation &&
+            onCellClick &&
+            shouldHighlightCell &&
+            shouldHighlightCell(room.id, date, !isSecondHalf) !== 'none'
+          ) {
+            onCellClick(room.id, date, !isSecondHalf);
+          }
         }
       }}
       className={`relative h-12 border-r border-gray-200 transition-all duration-200 ${
@@ -2165,8 +2223,9 @@ function FloorSection({
   return (
     <div className="border-b border-gray-200">
       {/* Floor header */}
-      <div
-        className="relative z-10 cursor-pointer border-b border-gray-200 bg-gray-50 p-3 transition-colors hover:bg-gray-100"
+      <button
+        type="button"
+        className="relative z-10 w-full cursor-pointer border-b border-gray-200 bg-gray-50 p-3 text-left transition-colors hover:bg-gray-100"
         onClick={onToggle}
       >
         <div className="flex items-center justify-between">
@@ -2189,7 +2248,7 @@ function FloorSection({
             </Badge>
           </div>
         </div>
-      </div>
+      </button>
 
       {/* Room rows */}
       {isExpanded && (
@@ -2392,6 +2451,8 @@ function RoomOverviewFloorSection({
               return (
                 <div
                   key={room.id}
+                  role="button"
+                  tabIndex={0}
                   data-testid={`room-card-${room.number}`}
                   className={`relative cursor-pointer rounded-lg p-3 transition-all duration-200 hover:shadow-md ${
                     isOccupied && status
@@ -2401,6 +2462,13 @@ function RoomOverviewFloorSection({
                   onClick={(_e) => {
                     if (!isClosingContextMenuRoomOverview) {
                       onRoomClick(room, reservation);
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      if (!isClosingContextMenuRoomOverview) {
+                        onRoomClick(room, reservation);
+                      }
                     }
                   }}
                   onContextMenu={(e) => {
@@ -2523,17 +2591,28 @@ function RoomOverviewFloorSection({
           {/* Backdrop to close menu */}
           <div
             className="fixed inset-0 z-40"
+            role="button"
+            tabIndex={0}
+            aria-label="Close context menu"
             onClick={() => {
               setIsClosingContextMenuRoomOverview(true);
               setContextMenu({ show: false, x: 0, y: 0, reservation: null });
               // Reset flag after a short delay
               setTimeout(() => setIsClosingContextMenuRoomOverview(false), 100);
             }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                setIsClosingContextMenuRoomOverview(true);
+                setContextMenu({ show: false, x: 0, y: 0, reservation: null });
+                setTimeout(() => setIsClosingContextMenuRoomOverview(false), 100);
+              }
+            }}
           />
 
           {/* Context Menu */}
           <div
             className="fixed z-[9999] min-w-[180px] rounded-lg border border-gray-200 bg-white py-2 shadow-xl"
+            role="menu"
             style={{
               left: contextMenu.x,
               top: contextMenu.y,
@@ -2715,17 +2794,24 @@ export default function HotelTimeline({
   const timelineRef = useRef<HTMLDivElement>(null);
   const cellRefs = useRef<Map<string, HTMLElement>>(new Map());
 
-  // Create local state for immediate optimistic updates
-  const [localReservations, setLocalReservations] = useState<Reservation[]>([]);
+  // Local overlay for optimistic updates; merged with server state during render
+  const [optimisticOverrides, setOptimisticOverrides] = useState<Map<string, Partial<Reservation>>>(
+    new Map()
+  );
 
-  // Sync local state with context state
-  useEffect(() => {
-    setLocalReservations(reservations);
-  }, [reservations]);
+  // Derive localReservations inline — no useEffect needed
+  const localReservations = useMemo(
+    () =>
+      reservations.map((r) => {
+        const overrides = optimisticOverrides.get(r.id);
+        return overrides ? { ...r, ...overrides } : r;
+      }),
+    [reservations, optimisticOverrides]
+  );
 
   // Function to immediately update local state for optimistic updates
   const updateReservationInState = useCallback((id: string, updates: Partial<Reservation>) => {
-    setLocalReservations((prev) => prev.map((r) => (r.id === id ? { ...r, ...updates } : r)));
+    setOptimisticOverrides((prev) => new Map(prev).set(id, { ...prev.get(id), ...updates }));
   }, []);
 
   // Use consolidated timeline state management - cleaned up unused variables

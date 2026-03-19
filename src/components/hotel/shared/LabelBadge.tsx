@@ -21,7 +21,7 @@ interface LabelBadgeProps {
   semiCircle?: boolean; // If true, renders as semi-circle on border edge
 }
 
-export const LabelBadge: React.FC<LabelBadgeProps> = ({
+const LabelBadge: React.FC<LabelBadgeProps> = ({
   label,
   className = '',
   alwaysExpanded = false,

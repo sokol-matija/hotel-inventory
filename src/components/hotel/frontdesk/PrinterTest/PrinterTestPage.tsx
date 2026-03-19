@@ -247,7 +247,7 @@ export default function PrinterTestPage() {
                 ) : (
                   <div className="space-y-1">
                     {testResults.map((result, index) => (
-                      <p key={index} className="font-mono text-xs text-gray-700">
+                      <p key={`${index}-${result}`} className="font-mono text-xs text-gray-700">
                         {result}
                       </p>
                     ))}

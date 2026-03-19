@@ -512,9 +512,9 @@ export default function InvoiceHistoryPage() {
                 <CardContent>
                   {selectedInvoice.payments && selectedInvoice.payments.length > 0 ? (
                     <div className="space-y-3">
-                      {selectedInvoice.payments.map((payment, index) => (
+                      {selectedInvoice.payments.map((payment) => (
                         <div
-                          key={index}
+                          key={payment.id}
                           className="flex items-center justify-between rounded-lg bg-gray-50 p-3"
                         >
                           <div className="flex items-center space-x-3">

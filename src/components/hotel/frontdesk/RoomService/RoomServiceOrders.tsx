@@ -368,8 +368,8 @@ export default function RoomServiceOrders() {
                           <AlertTriangle className="h-4 w-4" />
                           <span className="font-medium">Errors:</span>
                         </div>
-                        {validationResult.errors.map((error, index) => (
-                          <p key={index} className="text-xs text-red-600">
+                        {validationResult.errors.map((error) => (
+                          <p key={error} className="text-xs text-red-600">
                             {error}
                           </p>
                         ))}
@@ -382,8 +382,8 @@ export default function RoomServiceOrders() {
                           <AlertTriangle className="h-4 w-4" />
                           <span className="font-medium">Warnings:</span>
                         </div>
-                        {validationResult.warnings.map((warning, index) => (
-                          <p key={index} className="text-xs text-yellow-600">
+                        {validationResult.warnings.map((warning) => (
+                          <p key={warning} className="text-xs text-yellow-600">
                             {warning}
                           </p>
                         ))}

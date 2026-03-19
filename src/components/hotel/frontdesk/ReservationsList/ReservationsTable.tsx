@@ -37,6 +37,44 @@ interface ReservationsTableProps {
   isLoading?: boolean;
 }
 
+// Sortable column header — defined at module scope to avoid re-mounting on every render
+function SortableHeader({
+  column,
+  label,
+  className = '',
+  sortState,
+  onSort,
+}: {
+  column: SortState['sortBy'];
+  label: string;
+  className?: string;
+  sortState: SortState;
+  onSort: (column: SortState['sortBy']) => void;
+}) {
+  const isSorted = sortState.sortBy === column;
+  const isAsc = sortState.sortOrder === 'asc';
+
+  return (
+    <th className={`px-4 py-3 text-left ${className}`}>
+      <button
+        onClick={() => onSort(column)}
+        className="group flex items-center gap-2 text-sm font-semibold text-gray-700 transition-colors hover:text-gray-900"
+      >
+        <span>{label}</span>
+        {isSorted ? (
+          isAsc ? (
+            <ArrowUp className="h-4 w-4" />
+          ) : (
+            <ArrowDown className="h-4 w-4" />
+          )
+        ) : (
+          <ArrowUpDown className="h-4 w-4 opacity-0 transition-opacity group-hover:opacity-50" />
+        )}
+      </button>
+    </th>
+  );
+}
+
 export default function ReservationsTable({
   reservations,
   sortState,
@@ -93,40 +131,6 @@ export default function ReservationsTable({
       <Badge variant={statusMap[status] || 'secondary'} className="text-xs">
         {status}
       </Badge>
-    );
-  };
-
-  // Sortable column header
-  const SortableHeader = ({
-    column,
-    label,
-    className = '',
-  }: {
-    column: SortState['sortBy'];
-    label: string;
-    className?: string;
-  }) => {
-    const isSorted = sortState.sortBy === column;
-    const isAsc = sortState.sortOrder === 'asc';
-
-    return (
-      <th className={`px-4 py-3 text-left ${className}`}>
-        <button
-          onClick={() => onSort(column)}
-          className="group flex items-center gap-2 text-sm font-semibold text-gray-700 transition-colors hover:text-gray-900"
-        >
-          <span>{label}</span>
-          {isSorted ? (
-            isAsc ? (
-              <ArrowUp className="h-4 w-4" />
-            ) : (
-              <ArrowDown className="h-4 w-4" />
-            )
-          ) : (
-            <ArrowUpDown className="h-4 w-4 opacity-0 transition-opacity group-hover:opacity-50" />
-          )}
-        </button>
-      </th>
     );
   };
 
@@ -258,17 +262,26 @@ export default function ReservationsTable({
                   className="h-4 w-4 rounded border-gray-300"
                 />
               </th>
-              <SortableHeader column="guest_name" label={t('reservationsList.columns.guest')} />
+              <SortableHeader
+                column="guest_name"
+                label={t('reservationsList.columns.guest')}
+                sortState={sortState}
+                onSort={onSort}
+              />
               <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
                 {t('reservationsList.columns.room')}
               </th>
               <SortableHeader
                 column="check_in_date"
                 label={t('reservationsList.columns.checkIn')}
+                sortState={sortState}
+                onSort={onSort}
               />
               <SortableHeader
                 column="check_out_date"
                 label={t('reservationsList.columns.checkOut')}
+                sortState={sortState}
+                onSort={onSort}
               />
               <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
                 {t('reservationsList.columns.status')}
@@ -279,6 +292,8 @@ export default function ReservationsTable({
               <SortableHeader
                 column="total_amount"
                 label={t('reservationsList.columns.totalAmount')}
+                sortState={sortState}
+                onSort={onSort}
               />
               <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
                 {t('reservationsList.columns.paymentStatus')}
@@ -289,6 +304,8 @@ export default function ReservationsTable({
               <SortableHeader
                 column="booking_date"
                 label={t('reservationsList.columns.bookingDate')}
+                sortState={sortState}
+                onSort={onSort}
               />
               <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">
                 {t('common.actions')}
