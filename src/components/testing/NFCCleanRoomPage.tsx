@@ -45,8 +45,7 @@ export const NFCCleanRoomPage = () => {
   async function callCleanRoomFunction(roomId: string) {
     try {
       // Get the anon key from environment
-      const anonKey =
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdrYnB0aHVya3Vjb3Rpa2plZnJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3MzMxNTksImV4cCI6MjA2ODMwOTE1OX0.pXbrXBCeJHgXzHGTB4WatYfWsaFFkrlr8ChUkVIV6SY';
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
       const endpoint = `https://gkbpthurkucotikjefra.supabase.co/functions/v1/nfc-clean-room?roomId=${roomId}`;
 
