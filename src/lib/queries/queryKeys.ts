@@ -1,0 +1,32 @@
+// Query key factory for all entities — single source of truth for cache keys.
+// Use these keys in all useQuery/useMutation calls to ensure consistent cache behavior.
+
+export const queryKeys = {
+  rooms: {
+    all: () => ['rooms'] as const,
+    detail: (id: string) => ['rooms', id] as const,
+    byFloor: (floor: number) => ['rooms', 'floor', floor] as const,
+  },
+  guests: {
+    all: () => ['guests'] as const,
+    detail: (id: string) => ['guests', id] as const,
+    search: (query: string) => ['guests', 'search', query] as const,
+  },
+  reservations: {
+    all: () => ['reservations'] as const,
+    detail: (id: string) => ['reservations', id] as const,
+    byDateRange: (start: string, end: string) => ['reservations', 'range', start, end] as const,
+  },
+  invoices: {
+    all: () => ['invoices'] as const,
+    detail: (id: string) => ['invoices', id] as const,
+  },
+  companies: {
+    all: () => ['companies'] as const,
+    detail: (id: string) => ['companies', id] as const,
+  },
+  pricingTiers: {
+    all: () => ['pricingTiers'] as const,
+    detail: (id: string) => ['pricingTiers', id] as const,
+  },
+} as const;

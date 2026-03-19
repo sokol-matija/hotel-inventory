@@ -18,7 +18,7 @@ export default defineConfig({
       output: {
         manualChunks: {
           'vendor-react': ['react', 'react-dom', '@tanstack/react-router'],
-          'vendor-ui': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select', '@radix-ui/react-tabs', '@radix-ui/react-toast'],
+          'vendor-ui': ['@radix-ui/react-dialog', '@radix-ui/react-select', '@radix-ui/react-tabs', '@radix-ui/react-toast'],
           'vendor-dnd': ['react-dnd', 'react-dnd-html5-backend'],
           'vendor-gsap': ['gsap'],
           'vendor-supabase': ['@supabase/supabase-js'],
