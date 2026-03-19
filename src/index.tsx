@@ -8,8 +8,9 @@ if (import.meta.env.DEV) {
 }
 import './i18n'
 import { RouterProvider } from '@tanstack/react-router'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider, useAuth } from './components/auth/AuthProvider'
-import { router } from './router'
+import { router, queryClient } from './router'
 
 function InnerApp() {
   const auth = useAuth()
@@ -24,14 +25,16 @@ function InnerApp() {
     )
   }
 
-  return <RouterProvider router={router} context={{ auth }} />
+  return <RouterProvider router={router} context={{ auth, queryClient }} />
 }
 
 const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement)
 root.render(
   <React.StrictMode>
-    <AuthProvider>
-      <InnerApp />
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <InnerApp />
+      </AuthProvider>
+    </QueryClientProvider>
   </React.StrictMode>,
 )

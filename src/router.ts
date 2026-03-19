@@ -1,4 +1,5 @@
 import { createRouter } from '@tanstack/react-router'
+import { QueryClient } from '@tanstack/react-query'
 import { routeTree } from './routeTree.gen'
 
 export interface AuthContext {
@@ -11,12 +12,16 @@ export interface AuthContext {
 
 export interface RouterContext {
   auth: AuthContext
+  queryClient: QueryClient
 }
+
+export const queryClient = new QueryClient()
 
 export const router = createRouter({
   routeTree,
   context: {
     auth: undefined!,
+    queryClient,
   },
 })
 
