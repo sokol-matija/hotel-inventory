@@ -1,174 +1,77 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
-import { supabase } from '@/lib/supabase';
-import { auditLog } from '@/lib/auditLog';
 import { useAuth } from '../auth/AuthProvider';
 import AddItemDialog from './AddItemDialog';
 import EditItemDialog from './EditItemDialog';
 import { useTranslation } from 'react-i18next';
 import { Package, Plus, Search, Edit, Trash2, DollarSign, AlertTriangle } from 'lucide-react';
-
-interface Item {
-  id: number;
-  name: string;
-  description: string | null;
-  unit: string;
-  price: number | null;
-  minimum_stock: number;
-  is_active: boolean;
-  created_at: string;
-  category_id: number;
-  category: {
-    id: number;
-    name: string;
-    requires_expiration: boolean;
-  };
-  inventory_count: number;
-  total_quantity: number;
-}
-
-interface Category {
-  id: number;
-  name: string;
-  requires_expiration: boolean;
-}
+import { useItemsWithCounts, useDeleteItem } from '@/lib/queries/hooks/useItems';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/queries/queryKeys';
 
 export default function ItemsPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
-  // Helper function to translate category names
   const translateCategory = (categoryName: string) => {
-    // Convert category name to lowercase and normalize for translation key
     const key = categoryName.toLowerCase().replace(/\s+/g, '').replace(/&/g, '');
     return t(`categories.${key}`, { defaultValue: categoryName });
   };
-  const [items, setItems] = useState<Item[]>([]);
-  const [filteredItems, setFilteredItems] = useState<Item[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+
+  const { data, isLoading } = useItemsWithCounts();
+  const deleteItemMutation = useDeleteItem();
+
+  const categories = data?.categories ?? [];
+  const items = data?.items ?? [];
+
+  type ItemType = (typeof items)[number];
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [loading, setLoading] = useState(true);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
-  const [editingItem, setEditingItem] = useState<Item | null>(null);
+  const [editingItem, setEditingItem] = useState<ItemType | null>(null);
 
-  // Allow all authenticated users access
+  // Sync editingItem with latest data after refetch
+  useEffect(() => {
+    if (editingItem) {
+      const updated = items.find((i) => i.id === editingItem.id);
+      if (updated) setEditingItem(updated);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items]);
+
+  const invalidateItems = () =>
+    queryClient.invalidateQueries({ queryKey: queryKeys.items.withCounts() });
+
   const canAddItem = !!user;
   const canEditItem = !!user;
   const canDeleteItem = !!user;
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  const filteredItems = items.filter((item) => {
+    const matchesSearch =
+      !searchTerm ||
+      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesCategory = selectedCategory === 'all' || item.category.name === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
 
-  useEffect(() => {
-    let filtered = items;
-
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (item) =>
-          item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          item.category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
-    }
-
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter((item) => item.category.name === selectedCategory);
-    }
-
-    setFilteredItems(filtered);
-  }, [items, searchTerm, selectedCategory]);
-
-  const fetchData = async () => {
-    try {
-      // Fetch categories
-      const { data: categoriesData, error: categoriesError } = await supabase
-        .from('categories')
-        .select('*')
-        .order('name');
-
-      if (categoriesError) throw categoriesError;
-
-      // Fetch items with inventory counts
-      const { data: itemsData, error: itemsError } = await supabase
-        .from('items')
-        .select(
-          `
-          *,
-          category:categories(id, name, requires_expiration)
-        `
-        )
-        .eq('is_active', true)
-        .order('name');
-
-      if (itemsError) throw itemsError;
-
-      // Get inventory counts efficiently with a single query
-      const { data: inventoryData } = await supabase.from('inventory').select('item_id, quantity');
-
-      // Calculate counts locally to avoid N+1 query problem
-      const itemsWithCounts = (itemsData || []).map((item) => {
-        const itemInventory = inventoryData?.filter((inv) => inv.item_id === item.id) || [];
-        const totalQuantity = itemInventory.reduce((sum, inv) => sum + inv.quantity, 0);
-        const inventoryCount = itemInventory.length;
-
-        return {
-          ...item,
-          inventory_count: inventoryCount,
-          total_quantity: totalQuantity,
-        };
-      });
-
-      setCategories(categoriesData || []);
-      setItems(itemsWithCounts);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-      // Still set empty arrays on error
-      setCategories([]);
-      setItems([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleEditItem = (item: Item) => {
+  const handleEditItem = (item: ItemType) => {
     setEditingItem(item);
     setShowEditDialog(true);
   };
 
-  const deleteItem = async (itemId: number) => {
+  const deleteItem = (item: ItemType) => {
     if (!window.confirm(t('items.deleteConfirm'))) return;
-
-    try {
-      // Find the item to get its data for audit logging
-      const itemToDelete = items.find((item) => item.id === itemId);
-      if (!itemToDelete) return;
-
-      const { error } = await supabase.from('items').update({ is_active: false }).eq('id', itemId);
-
-      if (error) throw error;
-
-      // Log the deletion
-      await auditLog.itemDeleted(itemId, {
-        name: itemToDelete.name,
-        description: itemToDelete.description,
-        category: itemToDelete.category.name,
-        unit: itemToDelete.unit,
-        price: itemToDelete.price,
-        minimum_stock: itemToDelete.minimum_stock,
-      });
-
-      setItems((prev) => prev.filter((item) => item.id !== itemId));
-    } catch (error) {
-      console.error('Error deleting item:', error);
-    }
+    deleteItemMutation.mutate(item);
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
@@ -176,7 +79,6 @@ export default function ItemsPage() {
     );
   }
 
-  // Allow all authenticated users to view items
   if (!user) {
     return (
       <div className="py-8 text-center">
@@ -254,7 +156,7 @@ export default function ItemsPage() {
                         </Button>
                       )}
                       {canDeleteItem && (
-                        <Button size="sm" variant="outline" onClick={() => deleteItem(item.id)}>
+                        <Button size="sm" variant="outline" onClick={() => deleteItem(item)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       )}
@@ -338,14 +240,12 @@ export default function ItemsPage() {
         </CardContent>
       </Card>
 
-      {/* Add Item Dialog */}
       <AddItemDialog
         isOpen={showAddDialog}
         onClose={() => setShowAddDialog(false)}
-        onItemAdded={fetchData}
+        onItemAdded={invalidateItems}
       />
 
-      {/* Edit Item Dialog */}
       {editingItem && (
         <EditItemDialog
           isOpen={showEditDialog}
@@ -353,7 +253,7 @@ export default function ItemsPage() {
             setShowEditDialog(false);
             setEditingItem(null);
           }}
-          onItemUpdated={fetchData}
+          onItemUpdated={invalidateItems}
           item={editingItem}
         />
       )}

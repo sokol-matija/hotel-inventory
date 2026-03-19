@@ -25,3 +25,4 @@ ffd6300a652ae65755bd502b3e087065ff4f9343:supabase/functions/fiscalize-invoice/RE
 b9e7121c82bdedb68c2d37e1d566c8fda91fea12:.env:jwt:3
 8b033defb356e1edbce698d2f894ba46ef578f25:PUSH_NOTIFICATIONS_SETUP.md:curl-auth-header:112
 b50f6f13e9ee929ec82b7d66d53a87679f4b2e26:src/lib/supabase.ts:jwt:4
+2a8792396c5dc674cdb97c1346ce38d296d82318:src/components/testing/NFCCleanRoomPage.tsx:jwt:49

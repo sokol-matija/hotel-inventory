@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '../auth/AuthProvider';
 import { useTranslation } from 'react-i18next';
 import { formatDateTimeForDisplay } from '@/lib/dateUtils';
@@ -16,23 +15,7 @@ import {
   TrendingUp,
   Calendar,
 } from 'lucide-react';
-
-interface AuditLogEntry {
-  id: number;
-  user_id: string;
-  action: 'CREATE' | 'UPDATE' | 'DELETE' | 'QUANTITY_UPDATE';
-  table_name: string;
-  record_id: number | null;
-  old_values: Record<string, unknown> | null;
-  new_values: Record<string, unknown> | null;
-  description: string | null;
-  created_at: string;
-  user_profile?: {
-    role: {
-      name: string;
-    };
-  };
-}
+import { useAuditLogs, AuditLogEntry } from '@/lib/queries/hooks/useAuditLogs';
 
 const actionIcons = {
   CREATE: PlusCircle,
@@ -93,17 +76,15 @@ const ValueChange: React.FC<ValueChangeProps> = ({ oldValues, newValues }) => {
     const changes = Object.keys({ ...oldValues, ...newValues }).filter(
       (key) => JSON.stringify(oldValues[key]) !== JSON.stringify(newValues[key])
     );
-
     if (changes.length === 0) return null;
-
     return (
       <div className="mt-2 rounded bg-blue-50 p-2 text-sm">
         <p className="mb-1 font-medium text-blue-800">Changes:</p>
         {changes.map((key) => (
           <div key={key} className="text-blue-700">
             <span className="font-medium">{key}:</span>{' '}
-            <span className="text-gray-500 line-through">{JSON.stringify(oldValues[key])}</span> →{' '}
-            <span className="text-blue-800">{JSON.stringify(newValues[key])}</span>
+            <span className="text-gray-500 line-through">{JSON.stringify(oldValues![key])}</span> →{' '}
+            <span className="text-blue-800">{JSON.stringify(newValues![key])}</span>
           </div>
         ))}
       </div>
@@ -116,20 +97,16 @@ const ValueChange: React.FC<ValueChangeProps> = ({ oldValues, newValues }) => {
 export default function AuditLogPage() {
   const { user } = useAuth();
   const { t } = useTranslation();
-  const [logs, setLogs] = useState<AuditLogEntry[]>([]);
-  const [filteredLogs, setFilteredLogs] = useState<AuditLogEntry[]>([]);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAction, setSelectedAction] = useState<string>('all');
   const [selectedTable, setSelectedTable] = useState<string>('all');
   const [selectedDateRange, setSelectedDateRange] = useState<string>('all');
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchAuditLogs();
-  }, []);
+  const { data: logs = [], isLoading } = useAuditLogs();
 
-  useEffect(() => {
-    const filtered = logs.filter((log) => {
+  const filteredLogs = useMemo(() => {
+    return logs.filter((log: AuditLogEntry) => {
       const matchesSearch =
         (log.description?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
         log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -138,12 +115,10 @@ export default function AuditLogPage() {
       const matchesAction = selectedAction === 'all' || log.action === selectedAction;
       const matchesTable = selectedTable === 'all' || log.table_name === selectedTable;
 
-      // Date range filtering
       let matchesDate = true;
       if (selectedDateRange !== 'all') {
         const logDate = new Date(log.created_at);
         const now = new Date();
-
         switch (selectedDateRange) {
           case 'today':
             matchesDate = logDate.toDateString() === now.toDateString();
@@ -163,38 +138,7 @@ export default function AuditLogPage() {
 
       return matchesSearch && matchesAction && matchesTable && matchesDate;
     });
-
-    setFilteredLogs(filtered);
   }, [logs, searchTerm, selectedAction, selectedTable, selectedDateRange]);
-
-  const fetchAuditLogs = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('audit_logs')
-        .select(
-          `
-          *,
-          user_profile:user_profiles!user_profiles_user_id_fkey(
-            role:user_roles(name)
-          )
-        `
-        )
-        .order('created_at', { ascending: false })
-        .limit(500);
-
-      if (error) throw error;
-      setLogs(data || []);
-    } catch (error) {
-      console.error('Error fetching audit logs:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Use optimized date formatting utility
-  const formatDateTime = (dateString: string) => {
-    return formatDateTimeForDisplay(dateString);
-  };
 
   const getActionDisplayName = (action: string) => {
     switch (action) {
@@ -211,7 +155,7 @@ export default function AuditLogPage() {
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
@@ -219,7 +163,6 @@ export default function AuditLogPage() {
     );
   }
 
-  // Allow all authenticated users access
   if (!user) {
     return (
       <div className="py-8 text-center">
@@ -304,10 +247,10 @@ export default function AuditLogPage() {
           </div>
 
           <div className="space-y-4">
-            {filteredLogs.map((log) => {
+            {filteredLogs.map((log: AuditLogEntry) => {
               const ActionIcon = actionIcons[log.action] || History;
               const actionColor = actionColors[log.action] || 'text-gray-600 bg-gray-50';
-              const { date, time } = formatDateTime(log.created_at);
+              const { date, time } = formatDateTimeForDisplay(log.created_at);
 
               return (
                 <div key={log.id} className="rounded-lg border bg-gray-50 p-4">

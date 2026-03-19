@@ -1,10 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '../auth/AuthProvider';
-import { auditLog } from '@/lib/auditLog';
 import { useTranslation } from 'react-i18next';
 import { formatDate, getCurrentDateFormatted } from '@/lib/dateUtils';
 import {
@@ -17,239 +15,90 @@ import {
   Plus,
   Minus,
 } from 'lucide-react';
+import {
+  useInventoryWithDetails,
+  useUpdateInventoryQuantity,
+} from '@/lib/queries/hooks/useInventory';
+import { useLocationsWithStats } from '@/lib/queries/hooks/useLocations';
 
-interface InventoryItem {
-  id: number;
-  quantity: number;
-  expiration_date: string | null;
-  item: {
-    id: number;
-    name: string;
-    minimum_stock: number;
-    category: {
-      name: string;
-      requires_expiration: boolean;
-    };
+const translateCategory = (categoryName: string) => {
+  const directMapping: Record<string, string> = {
+    'Food & Beverage': 'Hrana i piće',
+    'Food&Beverage': 'Hrana i piće',
+    foodbeverage: 'Hrana i piće',
+    Cleaning: 'Čišćenje',
+    Supplies: 'Potrepštine',
+    Toiletries: 'Toaletni artikli',
+    Equipment: 'Oprema',
+    Office: 'Ured',
   };
-  location: {
-    id: number;
-    name: string;
-    is_refrigerated: boolean;
-  };
-}
+  return directMapping[categoryName] ?? categoryName;
+};
 
-interface DashboardStats {
-  totalItems: number;
-  lowStockItems: number;
-  expiringItems: number;
-  locations: number;
-}
+const getExpirationStatus = (expirationDate: string | null) => {
+  if (!expirationDate) return 'none';
+  const expDate = new Date(expirationDate);
+  const today = new Date();
+  const diffDays = Math.ceil((expDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  if (diffDays < 0) return 'expired';
+  if (diffDays <= 1) return 'critical';
+  if (diffDays <= 7) return 'warning';
+  if (diffDays <= 30) return 'info';
+  return 'good';
+};
 
 export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const [inventory, setInventory] = useState<InventoryItem[]>([]);
-  const [stats, setStats] = useState<DashboardStats>({
-    totalItems: 0,
-    lowStockItems: 0,
-    expiringItems: 0,
-    locations: 0,
-  });
+  const currentDateFormatted = useMemo(() => getCurrentDateFormatted(), []);
 
-  // Helper function to translate category names
-  const translateCategory = (categoryName: string) => {
-    // Direct mapping to avoid translation lookup altogether for known problematic categories
-    const directMapping: Record<string, string> = {
-      'Food & Beverage': 'Hrana i piće',
-      'Food&Beverage': 'Hrana i piće',
-      foodbeverage: 'Hrana i piće',
-      Cleaning: 'Čišćenje',
-      Supplies: 'Potrepštine',
-      Toiletries: 'Toaletni artikli',
-      Equipment: 'Oprema',
-      Office: 'Ured',
-    };
+  const { data: inventory = [], isLoading: inventoryLoading } = useInventoryWithDetails();
+  const { data: locations = [], isLoading: locationsLoading } = useLocationsWithStats();
+  const updateQuantityMutation = useUpdateInventoryQuantity();
 
-    // Use direct mapping first to avoid i18next calls
-    if (directMapping[categoryName]) {
-      return directMapping[categoryName];
-    }
-
-    // For unknown categories, just return the original name to avoid console spam
-    return categoryName;
-  };
-  const [loading, setLoading] = useState(true);
-
-  const currentDateFormatted = useMemo(() => {
-    return getCurrentDateFormatted();
-  }, []);
-
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  const fetchDashboardData = async () => {
-    try {
-      // Fetch inventory with related data
-      const { data: inventoryData, error: inventoryError } = await supabase
-        .from('inventory')
-        .select(
-          `
-          *,
-          item:items(
-            id,
-            name,
-            minimum_stock,
-            category:categories(name, requires_expiration)
-          ),
-          location:locations(id, name, is_refrigerated)
-        `
-        )
-        .order('expiration_date', { ascending: true });
-
-      if (inventoryError) throw inventoryError;
-
-      // Fetch locations count
-      const { count: locationsCount, error: locationsError } = await supabase
-        .from('locations')
-        .select('*', { count: 'exact', head: true });
-
-      if (locationsError) throw locationsError;
-
-      const inventoryItems = inventoryData || [];
-      const totalItems = inventoryItems.length; // Count of unique inventory entries, not total quantity
-
-      // Calculate low stock items (with null checks)
-      const lowStockItems = inventoryItems.filter(
+  const stats = useMemo(() => {
+    const thirtyDaysFromNow = new Date();
+    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+    const today = new Date();
+    return {
+      totalItems: inventory.length,
+      lowStockItems: inventory.filter(
         (item) => item.item && item.quantity <= item.item.minimum_stock
-      ).length;
-
-      // Calculate expiring items (within 30 days with priority for critical items)
-      const thirtyDaysFromNow = new Date();
-      thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
-      const expiringItems = inventoryItems.filter(
+      ).length,
+      expiringItems: inventory.filter(
         (item) =>
           item.expiration_date &&
           new Date(item.expiration_date) <= thirtyDaysFromNow &&
-          new Date(item.expiration_date) >= new Date()
-      ).length;
+          new Date(item.expiration_date) >= today
+      ).length,
+      locations: locations.length,
+    };
+  }, [inventory, locations]);
 
-      setInventory(inventoryItems);
-      setStats({
-        totalItems,
-        lowStockItems,
-        expiringItems,
-        locations: locationsCount || 0,
-      });
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-      // Set default values on error
-      setInventory([]);
-      setStats({
-        totalItems: 0,
-        lowStockItems: 0,
-        expiringItems: 0,
-        locations: 0,
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const sortedInventory = useMemo(
+    () =>
+      [...inventory].sort((a, b) => {
+        if (!a.expiration_date) return 1;
+        if (!b.expiration_date) return -1;
+        return new Date(a.expiration_date).getTime() - new Date(b.expiration_date).getTime();
+      }),
+    [inventory]
+  );
 
-  const updateQuantity = async (inventoryId: number, newQuantity: number) => {
+  const updateQuantity = (inventoryId: number, newQuantity: number) => {
     if (newQuantity < 0) return;
-
-    console.log('🔢 QUANTITY UPDATE ATTEMPT:', {
+    const item = inventory.find((i) => i.id === inventoryId);
+    if (!item) return;
+    updateQuantityMutation.mutate({
       inventoryId,
       newQuantity,
-      timestamp: new Date().toISOString(),
-      documentHidden: document.hidden,
+      oldQuantity: item.quantity,
+      itemName: item.item?.name ?? 'Unknown Item',
     });
-
-    try {
-      // Skip session check - AuthProvider already handles session validation
-      console.log('🔢 STARTING DATABASE UPDATE (NO SESSION CHECK)...');
-
-      const itemToUpdate = inventory.find((item) => item.id === inventoryId);
-      if (!itemToUpdate) {
-        console.error('🔢 ITEM NOT FOUND:', { inventoryId });
-        return;
-      }
-
-      const oldQuantity = itemToUpdate.quantity;
-
-      const { error } = await supabase
-        .from('inventory')
-        .update({ quantity: newQuantity })
-        .eq('id', inventoryId);
-
-      if (error) {
-        console.error('🔢 QUANTITY UPDATE ERROR:', {
-          error: error.message,
-          code: error.code,
-          details: error.details,
-          hint: error.hint,
-        });
-        throw error;
-      }
-
-      console.log('🔢 QUANTITY UPDATE SUCCESS:', { inventoryId, newQuantity });
-
-      // Update local state
-      setInventory((prev) =>
-        prev.map((item) => (item.id === inventoryId ? { ...item, quantity: newQuantity } : item))
-      );
-
-      // Log to audit trail
-      try {
-        await auditLog.quantityUpdated(
-          inventoryId,
-          itemToUpdate.item?.name || 'Unknown Item',
-          oldQuantity,
-          newQuantity,
-          'Dashboard' // Location context for dashboard updates
-        );
-      } catch (auditError) {
-        console.warn('Audit log failed (non-critical):', auditError);
-      }
-    } catch (error) {
-      console.error('🔢 QUANTITY UPDATE FAILED:', {
-        error: error instanceof Error ? error.message : error,
-        inventoryId,
-        newQuantity,
-        timestamp: new Date().toISOString(),
-      });
-
-      if (
-        error instanceof Error &&
-        (error.message.includes('fetch') ||
-          error.message.includes('network') ||
-          error.message.includes('timeout'))
-      ) {
-        console.log(
-          '🔌 NETWORK ERROR DETECTED - CONNECTION MAY BE REFRESHING, TRY AGAIN IN A MOMENT'
-        );
-      }
-    }
-  };
-
-  const getExpirationStatus = (expirationDate: string | null) => {
-    if (!expirationDate) return 'none';
-
-    const expDate = new Date(expirationDate);
-    const today = new Date();
-    const diffDays = Math.ceil((expDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-
-    if (diffDays < 0) return 'expired';
-    if (diffDays <= 1) return 'critical';
-    if (diffDays <= 7) return 'warning';
-    if (diffDays <= 30) return 'info';
-    return 'good';
   };
 
   const handleCardClick = (cardType: string) => {
-    // Handle navigation when dashboard cards are clicked
     switch (cardType) {
       case 'total':
         navigate({ to: '/global' });
@@ -266,7 +115,7 @@ export default function Dashboard() {
     }
   };
 
-  if (loading) {
+  if (inventoryLoading || locationsLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
@@ -370,7 +219,7 @@ export default function Dashboard() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {inventory.slice(0, 10).map((item) => {
+            {sortedInventory.slice(0, 10).map((item) => {
               const expirationStatus = getExpirationStatus(item.expiration_date);
               const isLowStock = item.quantity <= item.item.minimum_stock;
 
@@ -428,49 +277,48 @@ export default function Dashboard() {
                       )}
                     </div>
 
-                    {
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            console.log('➖ DASHBOARD DECREMENT BUTTON CLICKED:', {
-                              itemId: item.id,
-                              currentQuantity: item.quantity,
-                              newQuantity: item.quantity - 1,
-                              timestamp: new Date().toISOString(),
-                              itemName: item.item?.name,
-                              locationName: item.location?.name,
-                              documentHidden: document.hidden,
-                              windowFocused: document.hasFocus(),
-                            });
-                            updateQuantity(item.id, item.quantity - 1);
-                          }}
-                          disabled={item.quantity <= 0}
-                        >
-                          <Minus className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            console.log('➕ DASHBOARD INCREMENT BUTTON CLICKED:', {
-                              itemId: item.id,
-                              currentQuantity: item.quantity,
-                              newQuantity: item.quantity + 1,
-                              timestamp: new Date().toISOString(),
-                              itemName: item.item?.name,
-                              locationName: item.location?.name,
-                              documentHidden: document.hidden,
-                              windowFocused: document.hasFocus(),
-                            });
-                            updateQuantity(item.id, item.quantity + 1);
-                          }}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    }
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          console.log('➖ DASHBOARD DECREMENT BUTTON CLICKED:', {
+                            itemId: item.id,
+                            currentQuantity: item.quantity,
+                            newQuantity: item.quantity - 1,
+                            timestamp: new Date().toISOString(),
+                            itemName: item.item?.name,
+                            locationName: item.location?.name,
+                            documentHidden: document.hidden,
+                            windowFocused: document.hasFocus(),
+                          });
+                          updateQuantity(item.id, item.quantity - 1);
+                        }}
+                        disabled={item.quantity <= 0 || updateQuantityMutation.isPending}
+                      >
+                        <Minus className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          console.log('➕ DASHBOARD INCREMENT BUTTON CLICKED:', {
+                            itemId: item.id,
+                            currentQuantity: item.quantity,
+                            newQuantity: item.quantity + 1,
+                            timestamp: new Date().toISOString(),
+                            itemName: item.item?.name,
+                            locationName: item.location?.name,
+                            documentHidden: document.hidden,
+                            windowFocused: document.hasFocus(),
+                          });
+                          updateQuantity(item.id, item.quantity + 1);
+                        }}
+                        disabled={updateQuantityMutation.isPending}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               );

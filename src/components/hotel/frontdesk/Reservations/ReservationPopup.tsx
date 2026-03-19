@@ -121,7 +121,7 @@ export default function ReservationPopup({
     const fetchCompanyData = async () => {
       if (!reservationData) return;
 
-      const res = reservationData.reservation as Record<string, unknown>;
+      const res = reservationData.reservation as unknown as Record<string, unknown>;
       if (res.is_r1 && res.company_id) {
         setLoadingCompany(true);
         try {

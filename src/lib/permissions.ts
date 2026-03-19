@@ -219,6 +219,7 @@ export function userHasPermission(
   userProfile: Record<string, unknown>,
   permission: keyof UserPermissions
 ): boolean {
-  if (!userProfile?.role?.name) return false;
-  return hasPermission(userProfile.role.name as Role, permission);
+  const role = userProfile?.role as { name?: string } | undefined;
+  if (!role?.name) return false;
+  return hasPermission(role.name as Role, permission);
 }

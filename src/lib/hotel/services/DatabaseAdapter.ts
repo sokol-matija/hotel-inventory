@@ -776,8 +776,10 @@ export class DatabaseAdapter {
 
           return this.mapReservationFromCurrentDB(
             reservation as CurrentDBReservation,
-            guestData ? new Map([[reservation.guest_id, guestData]]) : guestLookup,
-            roomData ? new Map([[reservation.room_id, roomData]]) : roomLookup
+            guestData
+              ? new Map([[reservation.guest_id, guestData as CurrentDBGuest]])
+              : guestLookup,
+            roomData ? new Map([[reservation.room_id, roomData as CurrentDBRoom]]) : roomLookup
           );
         }
       );

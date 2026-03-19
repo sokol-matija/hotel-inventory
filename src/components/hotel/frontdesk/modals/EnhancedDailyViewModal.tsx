@@ -132,10 +132,10 @@ export const EnhancedDailyViewModal: React.FC<EnhancedDailyViewModalProps> = ({
         console.log('✅ Children found:', childrenData);
         childrenData.forEach((child: Record<string, unknown>) => {
           guests.push({
-            id: child.id.toString(),
-            name: child.name,
+            id: String(child.id),
+            name: child.name as string,
             type: 'child',
-            age: child.age,
+            age: child.age as number | undefined,
           });
         });
       } else {
@@ -305,7 +305,7 @@ export const EnhancedDailyViewModal: React.FC<EnhancedDailyViewModalProps> = ({
     const updatedStates = [...dayStates];
     const dayState = updatedStates[dayIndex];
 
-    (dayState.services as Record<string, unknown>)[field] = value;
+    (dayState.services as unknown as Record<string, unknown>)[field] = value;
     dayState.hasChanges = true;
 
     setDayStates(updatedStates);

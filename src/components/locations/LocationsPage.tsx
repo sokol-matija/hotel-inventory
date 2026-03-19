@@ -1,104 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
-import { supabase } from '@/lib/supabase';
 import AddLocationDialog from './AddLocationDialog';
 import { useTranslation } from 'react-i18next';
 import { Refrigerator, Warehouse, Package, AlertTriangle, Clock, Plus } from 'lucide-react';
-
-interface Location {
-  id: number;
-  name: string;
-  type: string;
-  description: string | null;
-  is_refrigerated: boolean;
-  inventory_count: number;
-  low_stock_count: number;
-  expiring_count: number;
-  total_items: number;
-}
+import { useLocationsWithStats, useInvalidateLocations } from '@/lib/queries/hooks/useLocations';
 
 export default function LocationsPage() {
-  const [locations, setLocations] = useState<Location[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const { t } = useTranslation();
+  const { data: locations = [], isLoading } = useLocationsWithStats();
+  const invalidateLocations = useInvalidateLocations();
 
-  useEffect(() => {
-    fetchLocations();
-  }, []); // Empty dependency array to run only once
-
-  const fetchLocations = async () => {
-    try {
-      // First get all locations
-      const { data: locationsData, error: locationsError } = await supabase
-        .from('locations')
-        .select('*')
-        .order('name');
-
-      if (locationsError) throw locationsError;
-
-      // Get all inventory data in one query with proper joins
-      // Use left join instead of inner join to handle empty tables
-      const { data: inventoryData, error: inventoryError } = await supabase.from('inventory')
-        .select(`
-          location_id,
-          quantity,
-          expiration_date,
-          item:items(minimum_stock)
-        `);
-
-      // Don't throw error if inventory is empty, just use empty array
-      if (inventoryError && inventoryError.code !== 'PGRST116') {
-        throw inventoryError;
-      }
-
-      // Calculate stats for each location
-      const locationsWithStats = (locationsData || []).map((location) => {
-        const locationInventory =
-          inventoryData?.filter((inv) => inv.location_id === location.id) || [];
-
-        const totalItems = locationInventory.reduce((sum, item) => sum + item.quantity, 0);
-        const inventoryCount = locationInventory.length;
-
-        // Calculate low stock
-        const lowStockCount = locationInventory.filter(
-          (item) =>
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            item.item && item.quantity <= (item.item as any).minimum_stock
-        ).length;
-
-        // Calculate expiring items (within 7 days)
-        const sevenDaysFromNow = new Date();
-        sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
-
-        const expiringCount = locationInventory.filter((item) => {
-          if (!item.expiration_date) return false;
-          const expDate = new Date(item.expiration_date);
-          return expDate <= sevenDaysFromNow && expDate >= new Date();
-        }).length;
-
-        return {
-          ...location,
-          inventory_count: inventoryCount,
-          low_stock_count: lowStockCount,
-          expiring_count: expiringCount,
-          total_items: totalItems,
-        };
-      });
-
-      setLocations(locationsWithStats);
-    } catch (error) {
-      console.error('Error fetching locations:', error);
-      // Still show something even if there's an error
-      setLocations([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
@@ -263,7 +178,7 @@ export default function LocationsPage() {
       <AddLocationDialog
         isOpen={showAddDialog}
         onClose={() => setShowAddDialog(false)}
-        onLocationAdded={fetchLocations}
+        onLocationAdded={invalidateLocations}
       />
     </div>
   );

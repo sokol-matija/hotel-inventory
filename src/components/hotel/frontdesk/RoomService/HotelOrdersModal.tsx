@@ -115,9 +115,9 @@ export default function HotelOrdersModal({
             name: item.name,
             description: item.description,
             category: {
-              id: (item.category as Record<string, unknown>).id as number,
-              name: (item.category as Record<string, unknown>).name as string,
-              requires_expiration: (item.category as Record<string, unknown>)
+              id: (item.category as unknown as Record<string, unknown>).id as number,
+              name: (item.category as unknown as Record<string, unknown>).name as string,
+              requires_expiration: (item.category as unknown as Record<string, unknown>)
                 .requires_expiration as boolean,
             },
             unit: item.unit,
@@ -129,7 +129,8 @@ export default function HotelOrdersModal({
               item.inventory?.map((inv) => ({
                 locationId: inv.location_id,
                 locationName:
-                  ((inv.location as Record<string, unknown>)?.name as string) || 'Unknown',
+                  ((inv.location as unknown as Record<string, unknown>)?.name as string) ||
+                  'Unknown',
                 quantity: inv.quantity || 0,
                 expiration_date: inv.expiration_date,
               })) || [],

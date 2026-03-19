@@ -27,7 +27,10 @@ import {
   PhobsMonitoringService,
   LogEntry,
 } from '../../../../lib/hotel/services/PhobsMonitoringService';
-import { PhobsErrorHandlingService } from '../../../../lib/hotel/services/PhobsErrorHandlingService';
+import {
+  PhobsError,
+  PhobsErrorHandlingService,
+} from '../../../../lib/hotel/services/PhobsErrorHandlingService';
 import {
   ChannelManagerStatus,
   OTAChannel,
@@ -510,7 +513,7 @@ export default function ChannelManagerDashboard() {
           {recentErrors.slice(0, 3).map((error) => (
             <ErrorDetails
               key={error.id}
-              error={error}
+              error={error as unknown as PhobsError}
               onRetry={() => {
                 // Handle retry logic
                 setRecentErrors((prev) => prev.filter((e) => e.id !== error.id));
@@ -604,10 +607,11 @@ export default function ChannelManagerDashboard() {
             <div className="space-y-2">
               <div className="text-sm font-medium">Success Rate</div>
               <div className="text-2xl font-bold text-green-600">
-                {syncStatus?.totalReservationsSynced > 0
+                {(syncStatus?.totalReservationsSynced ?? 0) > 0
                   ? Math.round(
-                      (syncStatus.totalReservationsSynced /
-                        (syncStatus.totalReservationsSynced + syncStatus.syncErrors)) *
+                      ((syncStatus?.totalReservationsSynced ?? 0) /
+                        ((syncStatus?.totalReservationsSynced ?? 0) +
+                          (syncStatus?.syncErrors ?? 0))) *
                         100
                     )
                   : 100}

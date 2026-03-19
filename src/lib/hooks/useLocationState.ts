@@ -1,9 +1,11 @@
 // useLocationState - Location inventory state management hook
-// Manages all location-related state and operations
+// Manages server state via TanStack Query and local UI state via useState
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useParams } from '@tanstack/react-router';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '../queries/queryKeys';
 import {
   LocationService,
   Location,
@@ -33,325 +35,224 @@ export interface LocationState {
   error: string | null;
 }
 
-const initialState: LocationState = {
-  location: null,
-  inventory: [],
-  filteredInventory: [],
-  loading: true,
-  searchTerm: '',
-  selectedCategory: 'all',
-  showAddDialog: false,
-  editingQuantity: null,
-  tempQuantity: '',
-  orderingMode: false,
-  supportsOrdering: false,
-  activeId: null,
-  error: null,
-};
-
 export function useLocationState() {
   const { id } = useParams({ strict: false });
   const { user } = useAuth();
   const locationService = LocationService.getInstance();
+  const queryClient = useQueryClient();
 
-  const [state, setState] = useState<LocationState>(initialState);
+  // UI state
+  const [searchTerm, setSearchTermState] = useState('');
+  const [selectedCategory, setSelectedCategoryState] = useState('all');
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [editingQuantity, setEditingQuantityState] = useState<number | null>(null);
+  const [tempQuantity, setTempQuantityState] = useState('');
+  const [orderingMode, setOrderingModeState] = useState(false);
+  const [activeId, setActiveIdState] = useState<number | null>(null);
+
+  // Server state via TQ
+  const {
+    data,
+    isLoading,
+    error: queryError,
+  } = useQuery({
+    queryKey: queryKeys.locations.detail(id ?? ''),
+    queryFn: () => locationService.fetchLocationData(id!),
+    enabled: !!id,
+  });
+
+  const location = data?.location ?? null;
+  const inventory = data?.inventory ?? [];
 
   // Computed values
   const filters: InventoryFilters = useMemo(
-    () => ({
-      searchTerm: state.searchTerm,
-      selectedCategory: state.selectedCategory,
-    }),
-    [state.searchTerm, state.selectedCategory]
+    () => ({ searchTerm, selectedCategory }),
+    [searchTerm, selectedCategory]
+  );
+
+  const filteredInventory = useMemo(
+    () => locationService.filterInventory(inventory, filters),
+    [inventory, filters, locationService]
   );
 
   const uniqueCategories = useMemo(
-    () => locationService.getUniqueCategories(state.inventory),
-    [state.inventory, locationService]
+    () => locationService.getUniqueCategories(inventory),
+    [inventory, locationService]
   );
 
   const locationStats = useMemo(
-    () => locationService.getLocationStats(state.inventory),
-    [state.inventory, locationService]
+    () => locationService.getLocationStats(inventory),
+    [inventory, locationService]
   );
 
-  // Apply filters whenever inventory or filters change
-  useEffect(() => {
-    const filtered = locationService.filterInventory(state.inventory, filters);
-    setState((prev) => ({ ...prev, filteredInventory: filtered }));
-  }, [state.inventory, filters, locationService]);
-
-  // Load data when location ID changes
-  useEffect(() => {
-    if (id) {
-      fetchLocationData();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
-
-  // State updaters
-  const updateState = useCallback(
-    <K extends keyof LocationState>(updates: Pick<LocationState, K>) => {
-      setState((prev) => ({ ...prev, ...updates }));
+  // Mutations
+  const updateQuantityMutation = useMutation({
+    mutationFn: ({ inventoryId, newQuantity }: { inventoryId: number; newQuantity: number }) =>
+      locationService.updateQuantity(inventoryId, newQuantity, user!.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.locations.detail(id ?? '') });
+      queryClient.invalidateQueries({ queryKey: queryKeys.locations.withStats() });
+      setEditingQuantityState(null);
+      setTempQuantityState('');
     },
-    []
-  );
+  });
+
+  const deleteItemMutation = useMutation({
+    mutationFn: (inventoryId: number) => locationService.deleteInventoryItem(inventoryId, user!.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.locations.detail(id ?? '') });
+      queryClient.invalidateQueries({ queryKey: queryKeys.locations.withStats() });
+    },
+  });
+
+  const reorderMutation = useMutation({
+    mutationFn: ({
+      inventory: inv,
+      dragOperation,
+    }: {
+      inventory: InventoryItem[];
+      dragOperation: DragOperation;
+    }) => locationService.updateInventoryOrder(inv, dragOperation, user!.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.locations.detail(id ?? '') });
+      setActiveIdState(null);
+    },
+    onError: () => {
+      setActiveIdState(null);
+    },
+  });
+
+  // Build state object (same shape as before for component compatibility)
+  const state: LocationState = {
+    location,
+    inventory,
+    filteredInventory,
+    loading: isLoading,
+    searchTerm,
+    selectedCategory,
+    showAddDialog,
+    editingQuantity,
+    tempQuantity,
+    orderingMode,
+    supportsOrdering: true,
+    activeId,
+    error: queryError instanceof Error ? queryError.message : null,
+  };
 
   // Data operations
-  const fetchLocationData = useCallback(async () => {
-    if (!id) return;
-
-    try {
-      updateState({ loading: true, error: null });
-
-      const { location, inventory } = await locationService.fetchLocationData(id);
-
-      updateState({
-        location,
-        inventory,
-        supportsOrdering: true, // Display order column exists
-        loading: false,
-      });
-    } catch (error) {
-      console.error('Error fetching location data:', error);
-      updateState({
-        error: error instanceof Error ? error.message : 'Failed to load location data',
-        loading: false,
-      });
-    }
-  }, [id, locationService, updateState]);
-
-  // Search and filtering
-  const setSearchTerm = useCallback(
-    (searchTerm: string) => {
-      updateState({ searchTerm });
-    },
-    [updateState]
-  );
-
-  const setSelectedCategory = useCallback(
-    (selectedCategory: string) => {
-      updateState({ selectedCategory });
-    },
-    [updateState]
-  );
-
-  const clearFilters = useCallback(() => {
-    updateState({
-      searchTerm: '',
-      selectedCategory: 'all',
-    });
-  }, [updateState]);
-
-  // Dialog management
-  const openAddDialog = useCallback(() => {
-    updateState({ showAddDialog: true });
-  }, [updateState]);
-
-  const closeAddDialog = useCallback(() => {
-    updateState({ showAddDialog: false });
-  }, [updateState]);
+  const fetchLocationData = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.locations.detail(id ?? '') });
+  }, [queryClient, id]);
 
   const refreshAfterAdd = useCallback(() => {
-    fetchLocationData();
-    closeAddDialog();
-  }, [fetchLocationData, closeAddDialog]);
+    queryClient.invalidateQueries({ queryKey: queryKeys.locations.detail(id ?? '') });
+    queryClient.invalidateQueries({ queryKey: queryKeys.locations.withStats() });
+    setShowAddDialog(false);
+  }, [queryClient, id]);
+
+  // Search and filtering
+  const setSearchTerm = useCallback((term: string) => setSearchTermState(term), []);
+  const setSelectedCategory = useCallback((cat: string) => setSelectedCategoryState(cat), []);
+  const clearFilters = useCallback(() => {
+    setSearchTermState('');
+    setSelectedCategoryState('all');
+  }, []);
+
+  // Dialog management
+  const openAddDialog = useCallback(() => setShowAddDialog(true), []);
+  const closeAddDialog = useCallback(() => setShowAddDialog(false), []);
 
   // Quantity editing
-  const startEditingQuantity = useCallback(
-    (inventoryId: number, currentQuantity: number) => {
-      updateState({
-        editingQuantity: inventoryId,
-        tempQuantity: currentQuantity.toString(),
-      });
-    },
-    [updateState]
-  );
+  const startEditingQuantity = useCallback((inventoryId: number, currentQuantity: number) => {
+    setEditingQuantityState(inventoryId);
+    setTempQuantityState(currentQuantity.toString());
+  }, []);
 
   const cancelEditingQuantity = useCallback(() => {
-    updateState({
-      editingQuantity: null,
-      tempQuantity: '',
-    });
-  }, [updateState]);
+    setEditingQuantityState(null);
+    setTempQuantityState('');
+  }, []);
 
   const saveQuantity = useCallback(
     async (inventoryId: number) => {
       if (!user?.id) return;
-
-      try {
-        const newQuantity = parseInt(state.tempQuantity, 10);
-        if (isNaN(newQuantity) || newQuantity < 0) {
-          throw new Error('Invalid quantity');
-        }
-
-        await locationService.updateQuantity(inventoryId, newQuantity, user.id);
-
-        // Update local state
-        const updatedInventory = state.inventory.map((item) =>
-          item.id === inventoryId ? { ...item, quantity: newQuantity } : item
-        );
-
-        updateState({
-          inventory: updatedInventory,
-          editingQuantity: null,
-          tempQuantity: '',
-        });
-      } catch (error) {
-        console.error('Error updating quantity:', error);
-        updateState({
-          error: error instanceof Error ? error.message : 'Failed to update quantity',
-        });
-      }
+      const newQuantity = parseInt(tempQuantity, 10);
+      if (isNaN(newQuantity) || newQuantity < 0) return;
+      updateQuantityMutation.mutate({ inventoryId, newQuantity });
     },
-    [state.tempQuantity, state.inventory, user?.id, locationService, updateState]
+    [user?.id, tempQuantity, updateQuantityMutation]
   );
 
-  const setTempQuantity = useCallback(
-    (tempQuantity: string) => {
-      updateState({ tempQuantity });
-    },
-    [updateState]
-  );
+  const setTempQuantity = useCallback((q: string) => setTempQuantityState(q), []);
 
   // Item deletion
   const deleteItem = useCallback(
     async (inventoryId: number) => {
       if (!user?.id) return;
-
-      try {
-        await locationService.deleteInventoryItem(inventoryId, user.id);
-
-        // Update local state
-        const updatedInventory = state.inventory.filter((item) => item.id !== inventoryId);
-        updateState({ inventory: updatedInventory });
-      } catch (error) {
-        console.error('Error deleting item:', error);
-        updateState({
-          error: error instanceof Error ? error.message : 'Failed to delete item',
-        });
-      }
+      deleteItemMutation.mutate(inventoryId);
     },
-    [state.inventory, user?.id, locationService, updateState]
+    [user?.id, deleteItemMutation]
   );
 
-  // Drag and drop operations
-  const toggleOrderingMode = useCallback(() => {
-    updateState({ orderingMode: !state.orderingMode });
-  }, [state.orderingMode, updateState]);
+  // Drag and drop
+  const toggleOrderingMode = useCallback(() => setOrderingModeState((prev) => !prev), []);
 
-  const setActiveId = useCallback(
-    (activeId: number | null) => {
-      updateState({ activeId });
-    },
-    [updateState]
-  );
+  const setActiveId = useCallback((id: number | null) => setActiveIdState(id), []);
 
   const handleDragEnd = useCallback(
     async (fromIndex: number, toIndex: number, itemId: number) => {
       if (!user?.id || fromIndex === toIndex) return;
-
-      try {
-        const dragOperation: DragOperation = {
-          fromIndex,
-          toIndex,
-          itemId,
-        };
-
-        const reorderedInventory = await locationService.updateInventoryOrder(
-          state.filteredInventory,
-          dragOperation,
-          user.id
-        );
-
-        // Update both inventory and filtered inventory
-        updateState({
-          inventory: reorderedInventory,
-          filteredInventory: reorderedInventory,
-          activeId: null,
-        });
-      } catch (error) {
-        console.error('Error updating order:', error);
-        updateState({
-          error: error instanceof Error ? error.message : 'Failed to save item order',
-          activeId: null,
-        });
-      }
+      const dragOperation: DragOperation = { fromIndex, toIndex, itemId };
+      reorderMutation.mutate({ inventory: filteredInventory, dragOperation });
     },
-    [state.filteredInventory, user?.id, locationService, updateState]
+    [user?.id, filteredInventory, reorderMutation]
   );
 
   // Error management
-  const clearError = useCallback(() => {
-    updateState({ error: null });
-  }, [updateState]);
+  const clearError = useCallback(() => {}, []);
 
   // Helper functions using service
   const getExpirationStatus = useCallback(
-    (expirationDate?: string) => {
-      return locationService.getExpirationStatus(expirationDate);
-    },
+    (expirationDate?: string) => locationService.getExpirationStatus(expirationDate),
     [locationService]
   );
 
   const isLowStock = useCallback(
-    (item: InventoryItem) => {
-      return locationService.isLowStock(item);
-    },
+    (item: InventoryItem) => locationService.isLowStock(item),
     [locationService]
   );
 
   const translateCategory = useCallback(
-    (categoryName: string) => {
-      return locationService.translateCategory(categoryName);
-    },
+    (categoryName: string) => locationService.translateCategory(categoryName),
     [locationService]
   );
 
-  return {
-    // State
-    state,
+  // no-op — kept for API compatibility
+  const updateState = useCallback(() => {}, []);
 
-    // Computed values
+  return {
+    state,
     uniqueCategories,
     locationStats,
-
-    // Data operations
     fetchLocationData,
     refreshAfterAdd,
-
-    // Search and filtering
     setSearchTerm,
     setSelectedCategory,
     clearFilters,
-
-    // Dialog management
     openAddDialog,
     closeAddDialog,
-
-    // Quantity editing
     startEditingQuantity,
     cancelEditingQuantity,
     saveQuantity,
     setTempQuantity,
-
-    // Item operations
     deleteItem,
-
-    // Drag and drop
     toggleOrderingMode,
     setActiveId,
     handleDragEnd,
-
-    // Error management
     clearError,
-
-    // Helper functions
     getExpirationStatus,
     isLowStock,
     translateCategory,
-
-    // Direct state updates (for complex cases)
     updateState,
   };
 }

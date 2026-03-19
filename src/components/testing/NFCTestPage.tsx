@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { simulateNFCTap, generateNFCUri, batchTestNFCTaps } from '@/utils/nfcTest';
+import { simulateNFCTap, generateNFCUri, batchTestNFCTaps, NFCTestResult } from '@/utils/nfcTest';
 import { supabase } from '@/lib/supabase';
 import { CheckCircle2, Loader2, Copy, Smartphone } from 'lucide-react';
 
@@ -18,7 +18,7 @@ export const NFCTestPage = () => {
   const [rooms, setRooms] = useState<RoomStatus[]>([]);
   const [testRoomId, setTestRoomId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [testResults, setTestResults] = useState<{ [key: string]: Record<string, unknown> }>({});
+  const [testResults, setTestResults] = useState<{ [key: string]: NFCTestResult }>({});
   const [selectedRoom, setSelectedRoom] = useState<string | null>(null);
   const [copiedUri, setCopiedUri] = useState<string | null>(null);
 
@@ -92,6 +92,8 @@ export const NFCTestPage = () => {
         ...prev,
         [roomId]: {
           success: false,
+          message: 'Error occurred',
+          timestamp: new Date(),
           error: error instanceof Error ? error.message : 'Unknown error',
         },
       }));

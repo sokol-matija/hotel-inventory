@@ -29,4 +29,28 @@ export const queryKeys = {
     all: () => ['pricingTiers'] as const,
     detail: (id: string) => ['pricingTiers', id] as const,
   },
+  locations: {
+    all: () => ['locations'] as const,
+    withStats: () => ['locations', 'withStats'] as const,
+    detail: (id: string) => ['locations', id] as const,
+  },
+  items: {
+    withCounts: () => ['items', 'withCounts'] as const,
+    active: () => ['items', 'active'] as const,
+  },
+  categories: {
+    all: () => ['categories'] as const,
+  },
+  orders: {
+    availableItems: () => ['orders', 'availableItems'] as const,
+  },
+  inventory: {
+    all: () => ['inventory'] as const,
+  },
+  auditLogs: {
+    all: () => ['auditLogs'] as const,
+  },
+  roomService: {
+    foodAndBeverage: () => ['roomService', 'foodAndBeverage'] as const,
+  },
 } as const;

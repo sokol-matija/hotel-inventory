@@ -148,7 +148,10 @@ export function useEmailTestState(): EmailTestState & EmailTestActions {
   );
 
   const getGuestBadges = useCallback(
-    (guest: unknown) => emailTestService.getGuestBadges(guest),
+    (guest: unknown) =>
+      emailTestService.getGuestBadges(
+        guest as Parameters<typeof emailTestService.getGuestBadges>[0]
+      ),
     [emailTestService]
   );
 

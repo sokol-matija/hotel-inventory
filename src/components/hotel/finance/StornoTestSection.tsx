@@ -6,7 +6,16 @@ import { Input } from '../../ui/input';
 import { Textarea } from '../../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
 import { FiscalizationService } from '../../../lib/fiscalization/FiscalizationService';
-import { FiscalInvoiceData } from '../../../lib/fiscalization/types';
+import { FiscalInvoiceData, FiscalResponse } from '../../../lib/fiscalization/types';
+
+interface StornoResult extends FiscalResponse {
+  originalJir: string;
+  originalInvoiceNumber: string;
+  stornoType: 'FULL' | 'PARTIAL';
+  partialAmount?: number;
+  reason: string;
+  submittedAt: string;
+}
 import { RotateCcw, CheckCircle, XCircle, Clock, MinusCircle, Send } from 'lucide-react';
 
 interface StornoTestSectionProps {
@@ -19,7 +28,7 @@ const StornoTestSection: React.FC<StornoTestSectionProps> = ({ fiscalizationResu
   const [partialAmount, setPartialAmount] = useState<string>('');
   const [stornoReason, setStornoReason] = useState<string>('Customer refund request');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [stornoResults, setStornoResults] = useState<Record<string, unknown>[]>([]);
+  const [stornoResults, setStornoResults] = useState<StornoResult[]>([]);
 
   const fiscalizationService = FiscalizationService.getInstance();
 
@@ -34,8 +43,8 @@ const StornoTestSection: React.FC<StornoTestSectionProps> = ({ fiscalizationResu
     try {
       // Create original invoice data (simplified for demo)
       const originalInvoice: FiscalInvoiceData = {
-        invoiceNumber: selectedResult.invoiceNumber,
-        dateTime: new Date(selectedResult.submittedAt),
+        invoiceNumber: selectedResult.invoiceNumber as string,
+        dateTime: new Date(selectedResult.submittedAt as string),
         totalAmount: 75.5, // Demo amount
         vatAmount: 15.1,
         items: [
@@ -50,7 +59,7 @@ const StornoTestSection: React.FC<StornoTestSectionProps> = ({ fiscalizationResu
         paymentMethod: 'CASH',
       };
 
-      let result: Record<string, unknown>;
+      let result: FiscalResponse;
       if (stornoType === 'FULL') {
         result = await fiscalizationService.stornoFullInvoice(
           selectedJir,
@@ -75,7 +84,7 @@ const StornoTestSection: React.FC<StornoTestSectionProps> = ({ fiscalizationResu
         {
           ...result,
           originalJir: selectedJir,
-          originalInvoiceNumber: selectedResult.invoiceNumber,
+          originalInvoiceNumber: selectedResult.invoiceNumber as string,
           stornoType,
           partialAmount: stornoType === 'PARTIAL' ? parseFloat(partialAmount) : undefined,
           reason: stornoReason,
@@ -87,9 +96,10 @@ const StornoTestSection: React.FC<StornoTestSectionProps> = ({ fiscalizationResu
         ...prev,
         {
           success: false,
+          timestamp: new Date(),
           error: `Storno failed: ${error}`,
           originalJir: selectedJir,
-          originalInvoiceNumber: selectedResult.invoiceNumber,
+          originalInvoiceNumber: selectedResult.invoiceNumber as string,
           stornoType,
           reason: stornoReason,
           submittedAt: new Date().toISOString(),
@@ -127,7 +137,7 @@ const StornoTestSection: React.FC<StornoTestSectionProps> = ({ fiscalizationResu
                   <SelectContent>
                     {successfulInvoices.map((result) => (
                       <SelectItem key={result.jir as string} value={result.jir as string}>
-                        {result.invoiceNumber} - {result.jir}
+                        {String(result.invoiceNumber)} - {String(result.jir)}
                       </SelectItem>
                     ))}
                   </SelectContent>

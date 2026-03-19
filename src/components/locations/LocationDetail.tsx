@@ -8,6 +8,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { useLocationState } from '@/lib/hooks/useLocationState';
+import { InventoryItem } from '@/lib/services/LocationService';
 import { useAuth } from '../auth/AuthProvider';
 import AddInventoryDialog from './AddInventoryDialog';
 import { formatDate } from '@/lib/dateUtils';
@@ -65,7 +66,7 @@ function SortableInventoryItem({
   formatDate,
   userCanEdit,
 }: {
-  item: Record<string, unknown>;
+  item: InventoryItem;
   editingQuantity: number | null;
   tempQuantity: string;
   onStartEdit: (id: number, quantity: number) => void;
@@ -75,7 +76,7 @@ function SortableInventoryItem({
   onDelete: (id: number) => void;
   translateCategory: (category: string) => string;
   getExpirationStatus: (date?: string) => Record<string, unknown>;
-  isLowStock: (item: Record<string, unknown>) => boolean;
+  isLowStock: (item: InventoryItem) => boolean;
   formatDate: (date: string) => string;
   userCanEdit: boolean;
 }) {
@@ -110,7 +111,7 @@ function SortableInventoryItem({
     <Card
       ref={setNodeRef}
       style={style}
-      className={`mb-3 ${expirationClasses[expirationStatus.status]} ${lowStock ? 'ring-2 ring-orange-300' : ''}`}
+      className={`mb-3 ${expirationClasses[expirationStatus.status as string]} ${lowStock ? 'ring-2 ring-orange-300' : ''}`}
     >
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
@@ -127,7 +128,7 @@ function SortableInventoryItem({
             <p className="text-sm text-gray-600">{translateCategory(item.item.category.name)}</p>
 
             {item.expiration_date && (
-              <p className={`text-xs ${expirationTextClasses[expirationStatus.status]}`}>
+              <p className={`text-xs ${expirationTextClasses[expirationStatus.status as string]}`}>
                 <Calendar className="mr-1 inline h-3 w-3" />
                 Expires: {formatDate(item.expiration_date)}
                 {expirationStatus.status === 'expired' &&

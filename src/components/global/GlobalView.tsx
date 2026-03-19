@@ -1,93 +1,63 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useLocation } from '@tanstack/react-router';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { supabase } from '@/lib/supabase';
 import { useTranslation } from 'react-i18next';
 import { Search, Package, MapPin, Refrigerator, Warehouse } from 'lucide-react';
-
-interface GlobalInventoryItem {
-  id: number;
-  quantity: number;
-  expiration_date: string | null;
-  cost_per_unit: number | null;
-  created_at: string;
-  updated_at: string;
-  item: {
-    id: number;
-    name: string;
-    description: string | null;
-    unit: string;
-    minimum_stock: number;
-    category: {
-      id: number;
-      name: string;
-      requires_expiration: boolean;
-    };
-  };
-  location: {
-    id: number;
-    name: string;
-    type: string;
-    is_refrigerated: boolean;
-  };
-}
+import { useInventoryWithDetails } from '@/lib/queries/hooks/useInventory';
 
 export default function GlobalView() {
   const location = useLocation();
   const { t } = useTranslation();
-  const [inventory, setInventory] = useState<GlobalInventoryItem[]>([]);
-  const [filteredInventory, setFilteredInventory] = useState<GlobalInventoryItem[]>([]);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedLocation, setSelectedLocation] = useState<string>('all');
   const [perishableFilter, setPerishableFilter] = useState<string>('all');
   const [activeFilter, setActiveFilter] = useState<string>('all');
-  const [loading, setLoading] = useState(true);
 
-  // Helper function to translate category names
+  const { data: inventory = [], isLoading } = useInventoryWithDetails();
+
   const translateCategory = (categoryName: string) => {
-    // Convert category name to lowercase and normalize for translation key
     const key = categoryName.toLowerCase().replace(/\s+/g, '').replace(/&/g, '');
     return t(`categories.${key}`, { defaultValue: categoryName });
   };
 
   useEffect(() => {
-    fetchGlobalInventory();
-  }, []);
-
-  useEffect(() => {
-    // Handle URL parameters for filtering
     const searchParams = new URLSearchParams(location.search);
     const filter = searchParams.get('filter');
-    if (filter) {
-      setActiveFilter(filter);
-    }
+    if (filter) setActiveFilter(filter);
   }, [location.search]);
 
-  useEffect(() => {
-    const filtered = inventory.filter((item) => {
+  const uniqueCategories = useMemo(
+    () => Array.from(new Set(inventory.map((item) => item.item.category.name))),
+    [inventory]
+  );
+
+  const uniqueLocations = useMemo(
+    () => Array.from(new Set(inventory.map((item) => item.location.name))),
+    [inventory]
+  );
+
+  const filteredInventory = useMemo(() => {
+    return inventory.filter((item) => {
       const matchesSearch =
         item.item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.item.category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.location.name.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesCategory =
-        selectedCategory === 'all' ? true : item.item.category.name === selectedCategory;
-      const matchesLocation =
-        selectedLocation === 'all' ? true : item.location.name === selectedLocation;
+        selectedCategory === 'all' || item.item.category.name === selectedCategory;
+      const matchesLocation = selectedLocation === 'all' || item.location.name === selectedLocation;
 
-      // Filter by perishable preference
       let matchesPerishable = true;
       if (perishableFilter === 'perishable') {
         matchesPerishable = item.item.category.requires_expiration;
       } else if (perishableFilter === 'non-perishable') {
         matchesPerishable = !item.item.category.requires_expiration;
       }
-      // If perishableFilter === 'all', matchesPerishable stays true
 
-      // Apply dashboard filter
       let matchesActiveFilter = true;
       if (activeFilter === 'lowStock') {
         matchesActiveFilter = item.quantity <= item.item.minimum_stock;
@@ -109,50 +79,9 @@ export default function GlobalView() {
         matchesActiveFilter
       );
     });
-
-    setFilteredInventory(filtered);
   }, [inventory, searchTerm, selectedCategory, selectedLocation, perishableFilter, activeFilter]);
 
-  const fetchGlobalInventory = async () => {
-    try {
-      const { data, error, count } = await supabase
-        .from('inventory')
-        .select(
-          `
-          *,
-          item:items(
-            id,
-            name,
-            description,
-            unit,
-            minimum_stock,
-            category:categories(id, name, requires_expiration)
-          ),
-          location:locations(id, name, type, is_refrigerated)
-        `,
-          { count: 'exact' }
-        )
-        .order('item(name)');
-
-      if (error) throw error;
-      console.log('Global inventory fetched:', data?.length, 'items, total count:', count);
-      setInventory(data || []);
-    } catch (error) {
-      console.error('Error fetching global inventory:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getUniqueCategories = () => {
-    return Array.from(new Set(inventory.map((item) => item.item.category.name)));
-  };
-
-  const getUniqueLocations = () => {
-    return Array.from(new Set(inventory.map((item) => item.location.name)));
-  };
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
@@ -211,7 +140,7 @@ export default function GlobalView() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{t('common.allCategories')}</SelectItem>
-                  {getUniqueCategories().map((category) => (
+                  {uniqueCategories.map((category) => (
                     <SelectItem key={category} value={category}>
                       {category}
                     </SelectItem>
@@ -225,9 +154,9 @@ export default function GlobalView() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{t('common.allLocations')}</SelectItem>
-                  {getUniqueLocations().map((location) => (
-                    <SelectItem key={location} value={location}>
-                      {location}
+                  {uniqueLocations.map((loc) => (
+                    <SelectItem key={loc} value={loc}>
+                      {loc}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -298,7 +227,7 @@ export default function GlobalView() {
             <div className="py-8 text-center">
               <Package className="mx-auto mb-4 h-12 w-12 text-gray-400" />
               <p className="text-gray-600">
-                {searchTerm || selectedCategory || selectedLocation
+                {searchTerm || selectedCategory !== 'all' || selectedLocation !== 'all'
                   ? 'No items found matching your filters.'
                   : 'No items found in inventory.'}
               </p>

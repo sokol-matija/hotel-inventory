@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -6,16 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { supabase } from '@/lib/supabase';
 import { X, Package, Hash, Calendar, DollarSign, AlertCircle, Type } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-
-interface Item {
-  id: number;
-  name: string;
-  category: {
-    name: string;
-    requires_expiration: boolean;
-  };
-  unit: string;
-}
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useActiveItems } from '@/lib/queries/hooks/useItems';
+import { queryKeys } from '@/lib/queries/queryKeys';
 
 interface AddInventoryDialogProps {
   isOpen: boolean;
@@ -31,29 +24,37 @@ export default function AddInventoryDialog({
   locationId,
 }: AddInventoryDialogProps) {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
+
   const [formData, setFormData] = useState({
     item_id: '',
     quantity: '1',
     expiration_date: '',
     cost_per_unit: '',
   });
-  const [items, setItems] = useState<Item[]>([]);
-  const [selectedItem, setSelectedItem] = useState<Item | null>(null);
-  const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  // Default to manual entry on mobile devices
-  const [useManualDateEntry, setUseManualDateEntry] = useState(() => {
-    return window.innerWidth <= 768; // Mobile breakpoint
-  });
+  const [useManualDateEntry, setUseManualDateEntry] = useState(() => window.innerWidth <= 768);
 
-  // Helper function to translate category names
+  const { data: items = [] } = useActiveItems(isOpen);
+
+  const selectedItem = formData.item_id
+    ? (items.find((i) => i.id === parseInt(formData.item_id)) ?? null)
+    : null;
+
+  // Reset form when dialog closes
+  useEffect(() => {
+    if (!isOpen) {
+      setFormData({ item_id: '', quantity: '1', expiration_date: '', cost_per_unit: '' });
+      setErrors({});
+      setUseManualDateEntry(window.innerWidth <= 768);
+    }
+  }, [isOpen]);
+
   const translateCategory = (categoryName: string) => {
-    // Convert category name to lowercase for translation key
     const key = categoryName.toLowerCase().replace(/\s+/g, '').replace(/&/g, '');
     return t(`categories.${key}`, { defaultValue: categoryName });
   };
 
-  // Helper functions for date format conversion
   const formatDateForDisplay = (isoDate: string): string => {
     if (!isoDate) return '';
     const date = new Date(isoDate);
@@ -69,44 +70,32 @@ export default function AddInventoryDialog({
     if (parts.length !== 3) return '';
     const [day, month] = parts;
     let year = parts[2];
-
-    // Handle 2-digit years: 25 → 2025, 99 → 2099, etc.
     if (year.length === 2) {
       const currentYear = new Date().getFullYear();
       const currentCentury = Math.floor(currentYear / 100) * 100;
       const twoDigitYear = parseInt(year, 10);
       year = (currentCentury + twoDigitYear).toString();
     }
-
     return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
   };
 
   const validateDateFormat = (dateString: string): boolean => {
     if (!dateString) return false;
-    // Accept both 2-digit and 4-digit years
     const dateRegex = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/;
     const match = dateString.match(dateRegex);
-
     if (!match) return false;
-
     const [, day, month, year] = match;
     const dayNum = parseInt(day, 10);
     const monthNum = parseInt(month, 10);
     let yearNum = parseInt(year, 10);
-
-    // Handle 2-digit years
     if (year.length === 2) {
       const currentYear = new Date().getFullYear();
       const currentCentury = Math.floor(currentYear / 100) * 100;
       yearNum = currentCentury + yearNum;
     }
-
-    // Basic validation
     if (monthNum < 1 || monthNum > 12) return false;
     if (dayNum < 1 || dayNum > 31) return false;
     if (yearNum < 1900 || yearNum > 2100) return false;
-
-    // Check if date is valid
     const date = new Date(yearNum, monthNum - 1, dayNum);
     return (
       date.getFullYear() === yearNum &&
@@ -115,62 +104,11 @@ export default function AddInventoryDialog({
     );
   };
 
-  useEffect(() => {
-    if (isOpen) {
-      fetchItems();
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (formData.item_id) {
-      const item = items.find((i) => i.id === parseInt(formData.item_id));
-      setSelectedItem(item || null);
-    } else {
-      setSelectedItem(null);
-    }
-  }, [formData.item_id, items]);
-
-  const fetchItems = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('items')
-        .select(
-          `
-          id,
-          name,
-          unit,
-          categories!inner(name, requires_expiration)
-        `
-        )
-        .eq('is_active', true)
-        .order('name');
-
-      if (error) throw error;
-
-      // Transform the data to match our interface
-      const transformedData =
-        data?.map((item) => ({
-          ...item,
-          category: (item as Record<string, unknown>).categories,
-        })) || [];
-
-      setItems(transformedData);
-    } catch (error) {
-      console.error('Error fetching items:', error);
-    }
-  };
-
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-
-    if (!formData.item_id) {
-      newErrors.item_id = t('validation.itemRequired');
-    }
-
-    if (!formData.quantity || parseInt(formData.quantity) <= 0) {
+    if (!formData.item_id) newErrors.item_id = t('validation.itemRequired');
+    if (!formData.quantity || parseInt(formData.quantity) <= 0)
       newErrors.quantity = t('validation.quantityPositive');
-    }
-
     if (selectedItem?.category.requires_expiration) {
       if (!formData.expiration_date) {
         newErrors.expiration_date = t('addInventory.expirationRequired');
@@ -178,29 +116,20 @@ export default function AddInventoryDialog({
         newErrors.expiration_date = t('addInventory.dateFormatError');
       }
     }
-
-    if (formData.cost_per_unit && parseFloat(formData.cost_per_unit) < 0) {
+    if (formData.cost_per_unit && parseFloat(formData.cost_per_unit) < 0)
       newErrors.cost_per_unit = t('validation.priceNegative');
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!validateForm()) return;
-
-    setLoading(true);
-    try {
-      // Convert manual date format to database format if needed
-      let expirationDate = formData.expiration_date;
-      if (useManualDateEntry && formData.expiration_date) {
-        expirationDate = formatDateForDatabase(formData.expiration_date);
-      }
-
-      // Temporarily disable safeSupabaseCall to test if it's causing issues
+  const addInventoryMutation = useMutation({
+    mutationFn: async (payload: {
+      item_id: number;
+      location_id: number;
+      quantity: number;
+      expiration_date: string | null;
+      cost_per_unit: number | null;
+    }) => {
       const { data: maxOrderData } = await supabase
         .from('inventory')
         .select('display_order')
@@ -210,95 +139,80 @@ export default function AddInventoryDialog({
       const nextDisplayOrder =
         maxOrderData && maxOrderData.length > 0 ? maxOrderData[0].display_order + 1 : 1;
 
-      const { error } = await supabase.from('inventory').insert([
-        {
-          item_id: parseInt(formData.item_id),
-          location_id: locationId,
-          quantity: parseInt(formData.quantity),
-          expiration_date: expirationDate || null,
-          cost_per_unit: formData.cost_per_unit ? parseFloat(formData.cost_per_unit) : null,
-          display_order: nextDisplayOrder,
-        },
-      ]);
+      const { error } = await supabase
+        .from('inventory')
+        .insert([{ ...payload, display_order: nextDisplayOrder }]);
       if (error) throw error;
-
-      // Reset form
-      setFormData({
-        item_id: '',
-        quantity: '1',
-        expiration_date: '',
-        cost_per_unit: '',
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.locations.detail(String(locationId)),
       });
-      setErrors({});
-      setSelectedItem(null);
-      setUseManualDateEntry(false);
-
+      queryClient.invalidateQueries({ queryKey: queryKeys.locations.withStats() });
       onInventoryAdded();
       onClose();
-    } catch (error) {
-      console.error('Error adding inventory:', error);
+    },
+    onError: () => {
       setErrors({ submit: t('addInventory.addError') });
-    } finally {
-      setLoading(false);
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+
+    let expirationDate = formData.expiration_date;
+    if (useManualDateEntry && formData.expiration_date) {
+      expirationDate = formatDateForDatabase(formData.expiration_date);
     }
+
+    addInventoryMutation.mutate({
+      item_id: parseInt(formData.item_id),
+      location_id: locationId,
+      quantity: parseInt(formData.quantity),
+      expiration_date: expirationDate || null,
+      cost_per_unit: formData.cost_per_unit ? parseFloat(formData.cost_per_unit) : null,
+    });
   };
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: '' }));
-    }
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: '' }));
   };
 
   const handleDateInputChange = (value: string) => {
-    // Auto-format date input with slashes
-    let formattedValue = value.replace(/\D/g, ''); // Remove non-digits
-
-    if (formattedValue.length >= 2) {
+    let formattedValue = value.replace(/\D/g, '');
+    if (formattedValue.length >= 2)
       formattedValue = formattedValue.substring(0, 2) + '/' + formattedValue.substring(2);
-    }
-    if (formattedValue.length >= 5) {
+    if (formattedValue.length >= 5)
       formattedValue = formattedValue.substring(0, 5) + '/' + formattedValue.substring(5);
-    }
-
-    // Limit to DD/MM/YYYY format (10 characters max)
-    if (formattedValue.length > 10) {
-      formattedValue = formattedValue.substring(0, 10);
-    }
-
+    if (formattedValue.length > 10) formattedValue = formattedValue.substring(0, 10);
     setFormData((prev) => ({ ...prev, expiration_date: formattedValue }));
-
-    // Clear error when user starts typing
-    if (errors.expiration_date) {
-      setErrors((prev) => ({ ...prev, expiration_date: '' }));
-    }
+    if (errors.expiration_date) setErrors((prev) => ({ ...prev, expiration_date: '' }));
   };
 
   const handleDateModeToggle = () => {
     const newManualMode = !useManualDateEntry;
     setUseManualDateEntry(newManualMode);
-
-    // Convert existing date when switching modes
     if (formData.expiration_date) {
       if (newManualMode) {
-        // Switching to manual - convert from YYYY-MM-DD to DD/MM/YYYY
-        const displayDate = formatDateForDisplay(formData.expiration_date);
-        setFormData((prev) => ({ ...prev, expiration_date: displayDate }));
+        setFormData((prev) => ({
+          ...prev,
+          expiration_date: formatDateForDisplay(formData.expiration_date),
+        }));
       } else {
-        // Switching to date picker - convert from DD/MM/YYYY to YYYY-MM-DD
-        const isoDate = formatDateForDatabase(formData.expiration_date);
-        setFormData((prev) => ({ ...prev, expiration_date: isoDate }));
+        setFormData((prev) => ({
+          ...prev,
+          expiration_date: formatDateForDatabase(formData.expiration_date),
+        }));
       }
     }
-
-    // Clear any date validation errors
-    if (errors.expiration_date) {
-      setErrors((prev) => ({ ...prev, expiration_date: '' }));
-    }
+    if (errors.expiration_date) setErrors((prev) => ({ ...prev, expiration_date: '' }));
   };
 
   if (!isOpen) return null;
+
+  const loading = addInventoryMutation.isPending;
 
   return (
     <div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black p-4">

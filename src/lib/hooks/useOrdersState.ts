@@ -1,22 +1,20 @@
 // useOrdersState - State management hook for order operations
-// Consolidates all state management from OrdersPage into reusable hook
+// Server state (available items) managed by TanStack Query; order cart state is local
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { OrdersService, InventoryItem, OrderItem } from '../services/OrdersService';
+import { useAvailableOrderItems } from '../queries/hooks/useOrders';
+import { queryKeys } from '../queries/queryKeys';
 
 export interface OrdersState {
-  // Data state
   availableItems: InventoryItem[];
   orderItems: OrderItem[];
   searchTerm: string;
   paymentMethod: 'cash' | 'card';
   orderNotes: string;
   lastOrderNumber: string;
-
-  // UI state
   isLoading: boolean;
-
-  // Computed state
   filteredItems: InventoryItem[];
   orderTotals: {
     subtotal: number;
@@ -31,104 +29,43 @@ export interface OrdersState {
 }
 
 export interface OrdersActions {
-  // Data loading
   loadAvailableItems: () => Promise<void>;
-
-  // Search and filtering
   setSearchTerm: (term: string) => void;
-
-  // Order management
   addToOrder: (item: InventoryItem) => void;
   updateOrderItemQuantity: (itemId: number, newQuantity: number) => void;
   removeFromOrder: (itemId: number) => void;
   clearOrder: () => void;
-
-  // Payment processing
   setPaymentMethod: (method: 'cash' | 'card') => void;
   setOrderNotes: (notes: string) => void;
   processOrder: () => Promise<void>;
-
-  // Utility functions
   formatCurrency: (amount: number) => string;
   validateOrder: () => { valid: boolean; errors: string[] };
 }
 
 export function useOrdersState(): OrdersState & OrdersActions {
   const ordersService = OrdersService.getInstance();
+  const queryClient = useQueryClient();
 
-  // Core state
-  const [availableItems, setAvailableItems] = useState<InventoryItem[]>([]);
+  // Server state via TQ
+  const { data: availableItems = [], isLoading: itemsLoading } = useAvailableOrderItems();
+
+  // Local cart state
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card'>('cash');
-  const [orderNotes, setOrderNotes] = useState('');
+  const [searchTerm, setSearchTermState] = useState('');
+  const [paymentMethod, setPaymentMethodState] = useState<'cash' | 'card'>('cash');
+  const [orderNotes, setOrderNotesState] = useState('');
   const [lastOrderNumber, setLastOrderNumber] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(false);
 
-  // Computed state - filtered items
-  const filteredItems = ordersService.filterItems(availableItems, searchTerm);
-
-  // Computed state - order totals
-  const orderTotals = ordersService.calculateOrderTotal(orderItems);
-
-  // Load available items on mount
-  useEffect(() => {
-    loadAvailableItems();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const loadAvailableItems = async (): Promise<void> => {
-    try {
-      setIsLoading(true);
-      const items = await ordersService.loadAvailableItems();
-      setAvailableItems(items);
-    } catch (error) {
-      console.error('Error loading items:', error);
-      alert('Error loading available items. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const addToOrder = (item: InventoryItem): void => {
-    const result = ordersService.addToOrder(item, orderItems);
-
-    if (result.success && result.updatedOrderItems) {
-      setOrderItems(result.updatedOrderItems);
-    } else if (result.error) {
-      alert(result.error);
-    }
-  };
-
-  const updateOrderItemQuantity = (itemId: number, newQuantity: number): void => {
-    const updatedItems = ordersService.updateOrderItemQuantity(orderItems, itemId, newQuantity);
-    setOrderItems(updatedItems);
-  };
-
-  const removeFromOrder = (itemId: number): void => {
-    const updatedItems = ordersService.removeFromOrder(orderItems, itemId);
-    setOrderItems(updatedItems);
-  };
-
-  const clearOrder = (): void => {
-    setOrderItems([]);
-    setOrderNotes('');
-  };
-
-  const processOrder = async (): Promise<void> => {
-    try {
-      setIsLoading(true);
-
-      const result = await ordersService.processOrder(orderItems, paymentMethod, orderNotes);
-
+  // Process order mutation
+  const processOrderMutation = useMutation({
+    mutationFn: () => ordersService.processOrder(orderItems, paymentMethod, orderNotes),
+    onSuccess: (result) => {
       if (result.success && result.orderNumber) {
         setLastOrderNumber(result.orderNumber);
-
-        // Reset form
-        clearOrder();
-
-        // Reload items to update stock quantities
-        await loadAvailableItems();
+        setOrderItems([]);
+        setOrderNotesState('');
+        queryClient.invalidateQueries({ queryKey: queryKeys.orders.availableItems() });
+        queryClient.invalidateQueries({ queryKey: queryKeys.locations.withStats() });
 
         if (result.printSuccess) {
           alert(`Order ${result.orderNumber} processed successfully and sent to printer!`);
@@ -140,25 +77,47 @@ export function useOrdersState(): OrdersState & OrdersActions {
       } else {
         alert(`Error processing order: ${result.error}`);
       }
-    } catch (error) {
-      console.error('Error processing order:', error);
+    },
+    onError: (error) => {
       alert('Error processing order: ' + error);
-    } finally {
-      setIsLoading(false);
+    },
+  });
+
+  // Computed state
+  const filteredItems = ordersService.filterItems(availableItems, searchTerm);
+  const orderTotals = ordersService.calculateOrderTotal(orderItems);
+  const isLoading = itemsLoading || processOrderMutation.isPending;
+
+  const loadAvailableItems = (): Promise<void> =>
+    queryClient.invalidateQueries({ queryKey: queryKeys.orders.availableItems() });
+
+  const addToOrder = (item: InventoryItem): void => {
+    const result = ordersService.addToOrder(item, orderItems);
+    if (result.success && result.updatedOrderItems) {
+      setOrderItems(result.updatedOrderItems);
+    } else if (result.error) {
+      alert(result.error);
     }
   };
 
-  const formatCurrency = (amount: number): string => {
-    return ordersService.formatCurrency(amount);
+  const updateOrderItemQuantity = (itemId: number, newQuantity: number): void => {
+    setOrderItems(ordersService.updateOrderItemQuantity(orderItems, itemId, newQuantity));
   };
 
-  const validateOrder = (): { valid: boolean; errors: string[] } => {
-    return ordersService.validateOrder(orderItems);
+  const removeFromOrder = (itemId: number): void => {
+    setOrderItems(ordersService.removeFromOrder(orderItems, itemId));
   };
 
-  // Return combined state and actions
+  const clearOrder = (): void => {
+    setOrderItems([]);
+    setOrderNotesState('');
+  };
+
+  const processOrder = async (): Promise<void> => {
+    processOrderMutation.mutate();
+  };
+
   return {
-    // State
     availableItems,
     orderItems,
     searchTerm,
@@ -168,18 +127,16 @@ export function useOrdersState(): OrdersState & OrdersActions {
     isLoading,
     filteredItems,
     orderTotals,
-
-    // Actions
     loadAvailableItems,
-    setSearchTerm,
+    setSearchTerm: setSearchTermState,
     addToOrder,
     updateOrderItemQuantity,
     removeFromOrder,
     clearOrder,
-    setPaymentMethod,
-    setOrderNotes,
+    setPaymentMethod: setPaymentMethodState,
+    setOrderNotes: setOrderNotesState,
     processOrder,
-    formatCurrency,
-    validateOrder,
+    formatCurrency: (amount: number) => ordersService.formatCurrency(amount),
+    validateOrder: () => ordersService.validateOrder(orderItems),
   };
 }

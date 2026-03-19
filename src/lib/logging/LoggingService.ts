@@ -156,7 +156,7 @@ class LoggingService {
       operation,
       duration: Math.round(duration * 100) / 100,
       memoryUsage: this.getMemoryUsage(),
-      ...additionalData,
+      ...(additionalData as Record<string, unknown>),
     });
   }
 
@@ -182,7 +182,7 @@ class LoggingService {
       timestamp: new Date().toISOString(),
       url: typeof window !== 'undefined' ? window.location.href : undefined,
       userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
-      ...details,
+      ...(details as Record<string, unknown>),
     });
   }
 

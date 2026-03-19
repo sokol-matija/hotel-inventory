@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
 import { Button } from '../../../ui/button';
 import { Input } from '../../../ui/input';
@@ -25,22 +25,26 @@ import {
   OrderValidationResult,
 } from '../../../../lib/hotel/orderTypes';
 import {
-  getFoodAndBeverageItems,
   validateOrder,
   calculateOrderTotal,
-  processRoomServiceOrder,
   formatCurrency,
   getAvailableRooms,
 } from '../../../../lib/hotel/orderService';
+import {
+  useFoodAndBeverageItems,
+  useProcessRoomServiceOrder,
+} from '../../../../lib/queries/hooks/useRoomService';
 import { printReceipt as printBixolonReceipt } from '../../../../lib/printers/bixolonPrinter';
 import { HOTEL_POREC } from '../../../../lib/hotel/hotelData';
 
 export default function RoomServiceOrders() {
   const { data: rooms = [] } = useRooms();
   const { data: guests = [] } = useGuests();
+  const { data: availableItems = [], isLoading: itemsLoading } = useFoodAndBeverageItems();
+  const processOrderMutation = useProcessRoomServiceOrder();
+  const isLoading = itemsLoading || processOrderMutation.isPending;
 
   // State
-  const [availableItems, setAvailableItems] = useState<InventoryItem[]>([]);
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -48,14 +52,8 @@ export default function RoomServiceOrders() {
     'room_bill' | 'immediate_cash' | 'immediate_card'
   >('room_bill');
   const [orderNotes, setOrderNotes] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [validationResult, setValidationResult] = useState<OrderValidationResult | null>(null);
   const [lastOrder, setLastOrder] = useState<RoomServiceOrder | null>(null);
-
-  // Load food and beverage items on component mount
-  useEffect(() => {
-    loadFoodAndBeverageItems();
-  }, []);
 
   // Validate order whenever order items change
   useEffect(() => {
@@ -65,18 +63,6 @@ export default function RoomServiceOrders() {
       setValidationResult(null);
     }
   }, [orderItems]);
-
-  const loadFoodAndBeverageItems = async () => {
-    try {
-      setIsLoading(true);
-      const items = await getFoodAndBeverageItems();
-      setAvailableItems(items);
-    } catch (error) {
-      console.error('Error loading food and beverage items:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const filteredItems = availableItems.filter(
     (item) =>
@@ -126,49 +112,40 @@ export default function RoomServiceOrders() {
     setOrderItems(orderItems.filter((item) => item.itemId !== itemId));
   };
 
-  const processOrder = async () => {
-    if (!selectedRoom || orderItems.length === 0 || !validationResult?.isValid) {
-      return;
-    }
+  const processOrder = () => {
+    if (!selectedRoom || orderItems.length === 0 || !validationResult?.isValid) return;
 
-    try {
-      setIsLoading(true);
+    const guestName = guests.find((g) => g.id === selectedRoom.id)?.fullName || 'Unknown Guest';
+    const totals = calculateOrderTotal(orderItems);
 
-      const guestName = guests.find((g) => g.id === selectedRoom.id)?.fullName || 'Unknown Guest';
-      const totals = calculateOrderTotal(orderItems);
+    const orderData: Omit<RoomServiceOrder, 'id' | 'orderNumber' | 'orderedAt'> = {
+      roomId: selectedRoom.id,
+      roomNumber: selectedRoom.number,
+      guestName,
+      items: orderItems,
+      subtotal: totals.subtotal,
+      tax: totals.tax,
+      totalAmount: totals.total,
+      paymentMethod,
+      paymentStatus: paymentMethod === 'room_bill' ? 'pending' : 'paid',
+      orderStatus: 'pending',
+      notes: orderNotes,
+      orderedBy: 'Front Desk Staff', // TODO: Get actual staff member
+      printedReceipt: false,
+    };
 
-      const orderData: Omit<RoomServiceOrder, 'id' | 'orderNumber' | 'orderedAt'> = {
-        roomId: selectedRoom.id,
-        roomNumber: selectedRoom.number,
-        guestName,
-        items: orderItems,
-        subtotal: totals.subtotal,
-        tax: totals.tax,
-        totalAmount: totals.total,
-        paymentMethod,
-        paymentStatus: paymentMethod === 'room_bill' ? 'pending' : 'paid',
-        orderStatus: 'pending',
-        notes: orderNotes,
-        orderedBy: 'Front Desk Staff', // TODO: Get actual staff member
-        printedReceipt: false,
-      };
-
-      const processedOrder = await processRoomServiceOrder(orderData);
-      setLastOrder(processedOrder);
-
-      // Reset form
-      setOrderItems([]);
-      setOrderNotes('');
-      setSelectedRoom(null);
-
-      // Reload items to update stock quantities
-      await loadFoodAndBeverageItems();
-    } catch (error) {
-      console.error('Error processing order:', error);
-      alert('Error processing order: ' + error);
-    } finally {
-      setIsLoading(false);
-    }
+    processOrderMutation.mutate(orderData, {
+      onSuccess: (processedOrder) => {
+        setLastOrder(processedOrder);
+        setOrderItems([]);
+        setOrderNotes('');
+        setSelectedRoom(null);
+      },
+      onError: (error) => {
+        console.error('Error processing order:', error);
+        alert('Error processing order: ' + error);
+      },
+    });
   };
 
   const printReceipt = async () => {
