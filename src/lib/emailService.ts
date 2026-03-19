@@ -3,7 +3,6 @@
 
 import { Reservation, Guest, Room } from './hotel/types';
 import { format } from 'date-fns';
-import { SAMPLE_GUESTS } from './hotel/sampleData';
 import { HOTEL_POREC_ROOMS } from './hotel/hotelData';
 import { formatRoomNumber } from './hotel/calendarUtils';
 import { supabaseUrl, supabaseAnonKey } from './supabase';
@@ -767,7 +766,7 @@ ${this.getEmailStyles()}
   ): Promise<{ success: boolean; message: string }> {
     try {
       // Try to get guest and room from parameters, fallback to sample data
-      const guestData = guest || SAMPLE_GUESTS.find((g) => g.id === reservation.guestId);
+      const guestData = guest || reservation.guest;
       const roomData = room || HOTEL_POREC_ROOMS.find((r) => r.id === reservation.roomId);
 
       if (!guestData || !roomData) {
@@ -801,7 +800,7 @@ ${this.getEmailStyles()}
   ): Promise<{ success: boolean; message: string }> {
     try {
       // Try to get guest and room from parameters, fallback to sample data
-      const guestData = guest || SAMPLE_GUESTS.find((g) => g.id === reservation.guestId);
+      const guestData = guest || reservation.guest;
       const roomData = room || HOTEL_POREC_ROOMS.find((r) => r.id === reservation.roomId);
 
       if (!guestData || !roomData) {
@@ -833,7 +832,7 @@ ${this.getEmailStyles()}
   ): Promise<{ success: boolean; message: string }> {
     try {
       // Try to get guest and room from parameters, fallback to sample data
-      const guestData = guest || SAMPLE_GUESTS.find((g) => g.id === reservation.guestId);
+      const guestData = guest || reservation.guest;
       const roomData = room || HOTEL_POREC_ROOMS.find((r) => r.id === reservation.roomId);
 
       if (!guestData || !roomData) {

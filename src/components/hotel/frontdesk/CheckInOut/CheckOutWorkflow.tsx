@@ -25,7 +25,6 @@ import {
   useUpdateReservationStatus,
 } from '../../../../lib/queries/hooks/useReservations';
 import hotelNotification from '../../../../lib/notifications';
-import { SAMPLE_GUESTS } from '../../../../lib/hotel/sampleData';
 // Removed static HOTEL_POREC_ROOMS import - now using dynamic rooms from context
 
 interface CheckOutWorkflowProps {
@@ -78,7 +77,7 @@ export default function CheckOutWorkflow({ isOpen, onClose, reservation }: Check
   );
 
   // Find associated guest and room data
-  const guest = reservation ? SAMPLE_GUESTS.find((g) => g.id === reservation.guestId) : null;
+  const guest = reservation?.guest ?? null;
   const room = reservation ? rooms.find((r) => r.id === reservation.roomId) : null;
 
   // Initialize check-out steps

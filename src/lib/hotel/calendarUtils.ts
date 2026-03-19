@@ -1,6 +1,5 @@
 // Hotel Calendar Utilities - Convert hotel data to calendar events
 import { CalendarEvent, Reservation, ReservationStatus, Room } from './types';
-import { SAMPLE_GUESTS } from './sampleData';
 import { addDays, isWithinInterval, startOfDay } from 'date-fns';
 
 // Status color mapping for reservation blocks
@@ -55,10 +54,9 @@ export function reservationToCalendarEvent(
   }
 
   const room = rooms.find((r) => r.id === reservation.roomId);
-  const guest = SAMPLE_GUESTS.find((g) => g.id === reservation.guestId);
 
   const roomNumber = room?.number || 'Unknown';
-  const guestName = guest?.fullName || reservation.guestId || 'Unknown Guest';
+  const guestName = reservation.guest?.fullName || 'Unknown Guest';
 
   // Create title based on status
   let title: string;
@@ -88,7 +86,7 @@ export function reservationToCalendarEvent(
       guestName,
       roomNumber,
       numberOfGuests: reservation.numberOfGuests || 1,
-      hasPets: guest?.hasPets || false,
+      hasPets: reservation.guest?.hasPets || false,
     },
   };
 }

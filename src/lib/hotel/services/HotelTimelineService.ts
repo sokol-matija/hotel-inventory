@@ -3,7 +3,6 @@
 
 import { format, addDays, startOfDay, isSameDay } from 'date-fns';
 import { CalendarEvent, Reservation, Room, Guest, ReservationStatus } from '../types';
-import { SAMPLE_GUESTS } from '../sampleData';
 import { RESERVATION_STATUS_COLORS } from '../calendarUtils';
 
 export interface TimelineContextMenu {
@@ -131,7 +130,6 @@ export class HotelTimelineService {
         return checkIn < timelineEnd && checkOut > timelineStart;
       })
       .map((reservation) => {
-        const guest = SAMPLE_GUESTS.find((g) => g.id === reservation.guestId);
         const room = rooms.find((r) => r.id === reservation.roomId);
 
         return {
@@ -143,7 +141,7 @@ export class HotelTimelineService {
           title: this.getReservationTitle(reservation),
           resource: {
             status: reservation.status,
-            guestName: guest ? guest.fullName : 'Unknown Guest',
+            guestName: reservation.guest?.fullName ?? 'Unknown Guest',
             roomNumber: room ? room.number : 'Unknown Room',
             numberOfGuests: reservation.adults + reservation.children.length,
             hasPets: reservation.petFee > 0,
@@ -156,8 +154,7 @@ export class HotelTimelineService {
    * Generate reservation title for display
    */
   private getReservationTitle(reservation: Reservation): string {
-    const guest = SAMPLE_GUESTS.find((g) => g.id === reservation.guestId);
-    return guest ? guest.fullName : 'Unknown Guest';
+    return reservation.guest?.fullName ?? 'Unknown Guest';
   }
 
   /**
@@ -226,11 +223,9 @@ export class HotelTimelineService {
 
       // Check if reservation covers the target date
       if (checkInDate <= targetDate && checkOutDate > targetDate) {
-        const guest = SAMPLE_GUESTS.find((g) => g.id === reservation.guestId);
-
         occupancy[reservation.roomId] = {
           status: reservation.status, // Use the actual reservation status for color coding
-          guest,
+          guest: reservation.guest,
           reservation,
           checkInTime: isSameDay(checkInDate, targetDate) ? '15:00' : undefined,
           checkOutTime: isSameDay(checkOutDate, targetDate) ? '11:00' : undefined,
@@ -275,7 +270,6 @@ export class HotelTimelineService {
       const isCheckingInToday = isSameDay(checkInDate, targetDate);
       const isMiddleDay = !isCheckingOutToday && !isCheckingInToday;
 
-      const guest = SAMPLE_GUESTS.find((g) => g.id === reservation.guestId);
       let shouldInclude = false;
 
       if (period === 'AM') {
@@ -289,7 +283,7 @@ export class HotelTimelineService {
       if (shouldInclude) {
         occupancy[reservation.roomId] = {
           status: reservation.status,
-          guest,
+          guest: reservation.guest,
           reservation,
           checkInTime: isCheckingInToday ? '15:00' : undefined,
           checkOutTime: isCheckingOutToday ? '11:00' : undefined,

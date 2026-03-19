@@ -23,7 +23,6 @@ import {
 import { Reservation } from '../../../../lib/hotel/types';
 import { useUpdateReservationStatus } from '../../../../lib/queries/hooks/useReservations';
 import { useRooms } from '../../../../lib/queries/hooks/useRooms';
-import { SAMPLE_GUESTS } from '../../../../lib/hotel/sampleData';
 import { HotelEmailService } from '../../../../lib/emailService';
 // Removed static HOTEL_POREC_ROOMS import - now using dynamic rooms from context
 
@@ -64,7 +63,7 @@ export default function CheckInWorkflow({ isOpen, onClose, reservation }: CheckI
   } | null>(null);
 
   // Find associated guest and room data
-  const guest = reservation ? SAMPLE_GUESTS.find((g) => g.id === reservation.guestId) : null;
+  const guest = reservation?.guest ?? null;
   const room = reservation ? rooms.find((r) => r.id === reservation.roomId) : null;
 
   // Initialize check-in steps

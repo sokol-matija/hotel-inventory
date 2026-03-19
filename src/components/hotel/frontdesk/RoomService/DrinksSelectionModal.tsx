@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Plus, Minus, Search, ShoppingCart, AlertTriangle } from 'lucide-react';
 import { Button } from '../../../ui/button';
 import { Input } from '../../../ui/input';
@@ -13,7 +13,6 @@ import { supabase } from '../../../../lib/supabase';
 import { Reservation } from '../../../../lib/hotel/types';
 import { formatRoomNumber } from '../../../../lib/hotel/calendarUtils';
 import { useRooms } from '../../../../lib/queries/hooks/useRooms';
-import { SAMPLE_GUESTS } from '../../../../lib/hotel/sampleData';
 
 interface DrinksSelectionModalProps {
   reservation: Reservation;
@@ -307,7 +306,7 @@ export default function DrinksSelectionModal({
   if (!isOpen) return null;
 
   const room = rooms.find((r) => r.id === reservation.roomId);
-  const guest = SAMPLE_GUESTS.find((g) => g.id === reservation.guestId);
+  const guest = reservation.guest;
 
   return (
     <div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black">
