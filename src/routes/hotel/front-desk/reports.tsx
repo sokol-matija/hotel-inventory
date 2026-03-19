@@ -1,6 +1,8 @@
-import { createFileRoute } from '@tanstack/react-router';
-import ReportsPage from '@/components/hotel/frontdesk/ReportsPage';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/hotel/front-desk/reports')({
-  component: ReportsPage,
+  beforeLoad: () => {
+    throw redirect({ to: '/hotel/finance/revenue-analytics' });
+  },
+  component: () => null,
 });
