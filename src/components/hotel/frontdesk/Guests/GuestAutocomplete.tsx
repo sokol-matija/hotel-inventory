@@ -71,11 +71,6 @@ export default function GuestAutocomplete({
     }
   };
 
-  // Reset highlighted index when search results change
-  useEffect(() => {
-    setHighlightedIndex(-1);
-  }, [filteredGuests]);
-
   const handleGuestSelect = (guest: Guest) => {
     onGuestSelect(guest);
     setSearchQuery(guest.fullName);
@@ -173,6 +168,7 @@ export default function GuestAutocomplete({
               onChange={(e) => {
                 setSearchQuery(e.target.value);
                 setIsOpen(e.target.value.trim().length > 0);
+                setHighlightedIndex(-1);
               }}
               onKeyDown={handleKeyDown}
               onFocus={() => {

@@ -75,84 +75,82 @@ function SortableHeader({
   );
 }
 
-export default function ReservationsTable({
-  reservations,
-  sortState,
-  onSort,
+// Status badge color mapping — module scope to avoid re-creating on every render
+function getStatusBadge(status: string) {
+  const statusMap: Record<
+    string,
+    { variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: React.ReactNode }
+  > = {
+    confirmed: { variant: 'default', icon: <CheckCircle className="h-3 w-3" /> },
+    'checked-in': { variant: 'default', icon: <CheckCircle className="h-3 w-3" /> },
+    'checked-out': { variant: 'secondary', icon: <CheckCircle className="h-3 w-3" /> },
+    cancelled: { variant: 'destructive', icon: <XCircle className="h-3 w-3" /> },
+    'no-show': { variant: 'destructive', icon: <XCircle className="h-3 w-3" /> },
+    'room-closure': { variant: 'outline', icon: <Clock className="h-3 w-3" /> },
+    unallocated: { variant: 'outline', icon: <Clock className="h-3 w-3" /> },
+    'incomplete-payment': { variant: 'outline', icon: <DollarSign className="h-3 w-3" /> },
+  };
+
+  const config = statusMap[status] || statusMap['confirmed'];
+
+  return (
+    <Badge variant={config.variant} className="flex items-center gap-1">
+      {config.icon}
+      <span>{status}</span>
+    </Badge>
+  );
+}
+
+function getPaymentBadge(status?: string) {
+  if (!status) return null;
+
+  const statusMap: Record<string, 'default' | 'secondary' | 'destructive'> = {
+    paid: 'default',
+    partial: 'secondary',
+    pending: 'secondary',
+    refunded: 'destructive',
+    cancelled: 'destructive',
+  };
+
+  return (
+    <Badge variant={statusMap[status] || 'secondary'} className="text-xs">
+      {status}
+    </Badge>
+  );
+}
+
+function formatDate(date: Date) {
+  try {
+    return format(new Date(date), 'MMM dd, yyyy');
+  } catch {
+    return 'Invalid date';
+  }
+}
+
+function formatCurrency(amount: number) {
+  return new Intl.NumberFormat('hr-HR', {
+    style: 'currency',
+    currency: 'EUR',
+  }).format(amount);
+}
+
+interface MobileCardProps {
+  reservation: Reservation;
+  selectedIds: Set<string>;
+  onToggleSelection: (id: string) => void;
+  onViewDetails: (reservation: Reservation) => void;
+  onEdit?: (reservation: Reservation) => void;
+}
+
+function MobileCard({
+  reservation,
   selectedIds,
   onToggleSelection,
-  onToggleSelectAll,
   onViewDetails,
   onEdit,
-  onDelete,
-  isLoading = false,
-}: ReservationsTableProps) {
+}: MobileCardProps) {
   const { t } = useTranslation();
-
-  // Status badge color mapping
-  const getStatusBadge = (status: string) => {
-    const statusMap: Record<
-      string,
-      { variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: React.ReactNode }
-    > = {
-      confirmed: { variant: 'default', icon: <CheckCircle className="h-3 w-3" /> },
-      'checked-in': { variant: 'default', icon: <CheckCircle className="h-3 w-3" /> },
-      'checked-out': { variant: 'secondary', icon: <CheckCircle className="h-3 w-3" /> },
-      cancelled: { variant: 'destructive', icon: <XCircle className="h-3 w-3" /> },
-      'no-show': { variant: 'destructive', icon: <XCircle className="h-3 w-3" /> },
-      'room-closure': { variant: 'outline', icon: <Clock className="h-3 w-3" /> },
-      unallocated: { variant: 'outline', icon: <Clock className="h-3 w-3" /> },
-      'incomplete-payment': { variant: 'outline', icon: <DollarSign className="h-3 w-3" /> },
-    };
-
-    const config = statusMap[status] || statusMap['confirmed'];
-
-    return (
-      <Badge variant={config.variant} className="flex items-center gap-1">
-        {config.icon}
-        <span>{status}</span>
-      </Badge>
-    );
-  };
-
-  // Payment status badge
-  const getPaymentBadge = (status?: string) => {
-    if (!status) return null;
-
-    const statusMap: Record<string, 'default' | 'secondary' | 'destructive'> = {
-      paid: 'default',
-      partial: 'secondary',
-      pending: 'secondary',
-      refunded: 'destructive',
-      cancelled: 'destructive',
-    };
-
-    return (
-      <Badge variant={statusMap[status] || 'secondary'} className="text-xs">
-        {status}
-      </Badge>
-    );
-  };
-
-  // Format date helper
-  const formatDate = (date: Date) => {
-    try {
-      return format(new Date(date), 'MMM dd, yyyy');
-    } catch {
-      return 'Invalid date';
-    }
-  };
-
-  // Format currency
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('hr-HR', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(amount);
-  };
-
-  // Mobile card view for responsive design
-  const MobileCard = ({ reservation }: { reservation: Reservation }) => (
+  return (
     <Card className="mb-3 p-4">
       <div className="mb-3 flex items-start justify-between">
         <div className="flex items-center gap-3">
@@ -211,6 +209,21 @@ export default function ReservationsTable({
       </div>
     </Card>
   );
+}
+
+export default function ReservationsTable({
+  reservations,
+  sortState,
+  onSort,
+  selectedIds,
+  onToggleSelection,
+  onToggleSelectAll,
+  onViewDetails,
+  onEdit,
+  onDelete,
+  isLoading = false,
+}: ReservationsTableProps) {
+  const { t } = useTranslation();
 
   // Loading skeleton
   if (isLoading) {
@@ -245,7 +258,14 @@ export default function ReservationsTable({
       {/* Mobile View */}
       <div className="lg:hidden">
         {reservations.map((reservation) => (
-          <MobileCard key={reservation.id} reservation={reservation} />
+          <MobileCard
+            key={reservation.id}
+            reservation={reservation}
+            selectedIds={selectedIds}
+            onToggleSelection={onToggleSelection}
+            onViewDetails={onViewDetails}
+            onEdit={onEdit}
+          />
         ))}
       </div>
 

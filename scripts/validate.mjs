@@ -7,7 +7,7 @@ const steps = [
   { name: 'Semgrep',        cmd: 'semgrep scan --error --config p/security-audit --config p/typescript --config p/react --config p/owasp-top-ten' },
   { name: 'Typecheck',      cmd: 'npm run typecheck' },
   { name: 'Lint',           cmd: 'npm run lint' },
-  { name: 'React Doctor',   cmd: 'npx -y react-doctor@latest . --yes --fail-on none --offline' },
+  { name: 'React Doctor',   cmd: 'npx -y react-doctor@latest . --project hotel-inventory --fail-on error --offline' },
   { name: 'Unit Tests',     cmd: 'npm run test:unit' },
   { name: 'Build',          cmd: 'npm run build' },
 ];
