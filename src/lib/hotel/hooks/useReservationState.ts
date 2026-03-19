@@ -3,7 +3,11 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { CalendarEvent } from '../types';
-import { useHotel } from '../state/SupabaseHotelContext';
+import {
+  useReservations,
+  useUpdateReservationStatus,
+  useUpdateReservationNotes,
+} from '../../../lib/queries/hooks/useReservations';
 import { ReservationService, ReservationData, FiscalData } from '../services/ReservationService';
 
 export interface ReservationState {
@@ -12,15 +16,15 @@ export interface ReservationState {
   showPaymentDetails: boolean;
   showCheckInWorkflow: boolean;
   showCheckOutWorkflow: boolean;
-  
+
   // Data state
   editedNotes: string;
   fiscalData: FiscalData | null;
-  
+
   // Loading states
   isSendingEmail: boolean;
   isFiscalizing: boolean;
-  
+
   // Error state
   statusUpdateError: string | null;
 }
@@ -34,7 +38,7 @@ const initialState: ReservationState = {
   fiscalData: null,
   isSendingEmail: false,
   isFiscalizing: false,
-  statusUpdateError: null
+  statusUpdateError: null,
 };
 
 export function useReservationState(
@@ -42,9 +46,13 @@ export function useReservationState(
   onClose: () => void,
   onStatusChange?: (reservationId: string, newStatus: string) => void
 ) {
-  const { reservations, updateReservationStatus, updateReservationNotes, isUpdating } = useHotel();
+  const { data: reservations = [] } = useReservations();
+  const updateReservationStatusMutation = useUpdateReservationStatus();
+  const updateReservationNotesMutation = useUpdateReservationNotes();
+  const isUpdating =
+    updateReservationStatusMutation.isPending || updateReservationNotesMutation.isPending;
   const reservationService = ReservationService.getInstance();
-  
+
   const [state, setState] = useState<ReservationState>(initialState);
   const [reservationData, setReservationData] = useState<ReservationData | null>(null);
 
@@ -57,9 +65,10 @@ export function useReservationState(
   // Get reservation data asynchronously
   useEffect(() => {
     if (event && reservations.length > 0) {
-      reservationService.getReservationData(event, reservations)
-        .then(data => setReservationData(data))
-        .catch(error => {
+      reservationService
+        .getReservationData(event, reservations)
+        .then((data) => setReservationData(data))
+        .catch((error) => {
           console.error('Failed to get reservation data:', error);
           setReservationData(null);
         });
@@ -69,10 +78,8 @@ export function useReservationState(
   }, [event, reservations, reservationService]);
 
   // State updaters
-  const updateState = useCallback((
-    updates: Partial<ReservationState>
-  ) => {
-    setState(prev => ({ ...prev, ...updates }));
+  const updateState = useCallback((updates: Partial<ReservationState>) => {
+    setState((prev) => ({ ...prev, ...updates }));
   }, []);
 
   // Edit operations
@@ -90,38 +97,58 @@ export function useReservationState(
 
     try {
       updateState({ statusUpdateError: null });
-      await updateReservationNotes(reservationData.reservation.id, state.editedNotes);
+      await updateReservationNotesMutation.mutateAsync({
+        id: reservationData.reservation.id,
+        notes: state.editedNotes,
+      });
       updateState({ isEditing: false });
     } catch (error) {
       console.error('Failed to save notes:', error);
       updateState({ statusUpdateError: 'Failed to save notes. Please try again.' });
     }
-  }, [reservationData?.reservation, state.editedNotes, updateReservationNotes, updateState]);
+  }, [
+    reservationData?.reservation,
+    state.editedNotes,
+    updateReservationNotesMutation,
+    updateState,
+  ]);
 
   // Status management
-  const handleStatusUpdate = useCallback(async (newStatus: string) => {
-    if (!reservationData?.reservation) return;
+  const handleStatusUpdate = useCallback(
+    async (newStatus: string) => {
+      if (!reservationData?.reservation) return;
 
-    try {
-      updateState({ statusUpdateError: null });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await updateReservationStatus(reservationData.reservation.id, newStatus as any);
-      
-      // Call original callback if provided
-      if (onStatusChange) {
-        onStatusChange(reservationData.reservation.id, newStatus);
+      try {
+        updateState({ statusUpdateError: null });
+        await updateReservationStatusMutation.mutateAsync({
+          id: reservationData.reservation.id,
+          status: newStatus as import('../types').ReservationStatus,
+        });
+
+        // Call original callback if provided
+        if (onStatusChange) {
+          onStatusChange(reservationData.reservation.id, newStatus);
+        }
+
+        // Close popup after successful status change
+        setTimeout(() => {
+          onClose();
+        }, 1000);
+      } catch (error) {
+        console.error('Failed to update status:', error);
+        updateState({
+          statusUpdateError: 'Failed to update reservation status. Please try again.',
+        });
       }
-      
-      // Close popup after successful status change
-      setTimeout(() => {
-        onClose();
-      }, 1000);
-      
-    } catch (error) {
-      console.error('Failed to update status:', error);
-      updateState({ statusUpdateError: 'Failed to update reservation status. Please try again.' });
-    }
-  }, [reservationData?.reservation, updateReservationStatus, onStatusChange, onClose, updateState]);
+    },
+    [
+      reservationData?.reservation,
+      updateReservationStatusMutation,
+      onStatusChange,
+      onClose,
+      updateState,
+    ]
+  );
 
   // Email operations
   const handleSendWelcomeEmail = useCallback(async () => {
@@ -257,42 +284,42 @@ export function useReservationState(
   return {
     // State
     state,
-    
+
     // Data
     reservationData,
     isUpdating,
-    
+
     // Edit operations
     handleEditToggle,
     handleSaveEdit,
-    
+
     // Status management
     handleStatusUpdate,
-    
+
     // Email operations
     handleSendWelcomeEmail,
     handleSendReminderEmail,
-    
+
     // Fiscal operations
     handleGenerateFiscalInvoice,
     handleEmailFiscalReceipt,
     handlePrintThermalReceipt,
-    
+
     // Dialog management
     togglePaymentDetails,
     toggleCheckInWorkflow,
     toggleCheckOutWorkflow,
-    
+
     // Error management
     clearError,
-    
+
     // Helper functions
     getStatusActions,
     shouldShowCheckIn,
     shouldShowCheckOut,
     formatDates,
-    
+
     // Direct state updates (for complex cases)
-    updateState
+    updateState,
   };
 }

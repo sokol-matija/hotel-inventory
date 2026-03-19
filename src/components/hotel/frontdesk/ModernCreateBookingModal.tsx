@@ -16,12 +16,15 @@ import {
   Receipt,
   Home,
   Building2,
-  Tag
+  Tag,
 } from 'lucide-react';
 import { Room, Guest, GuestChild, RoomType } from '../../../lib/hotel/types';
 import hotelNotification from '../../../lib/notifications';
 import { supabase } from '../../../lib/supabase';
-import { useHotel } from '../../../lib/hotel/state/SupabaseHotelContext';
+import { useRooms } from '../../../lib/queries/hooks/useRooms';
+import { useCompanies } from '../../../lib/queries/hooks/useCompanies';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '../../../lib/queries/queryKeys';
 import LabelAutocomplete from '../shared/LabelAutocomplete';
 import GuestAutocomplete from './Guests/GuestAutocomplete';
 import { getSeasonalPeriod } from '../../../lib/hotel/pricingCalculator';
@@ -34,11 +37,10 @@ interface ModernCreateBookingModalProps {
   onClose: () => void;
   room: Room | null; // Now optional - null for unallocated mode
   currentDate?: Date;
-  preSelectedDates?: {checkIn: Date, checkOut: Date} | null;
+  preSelectedDates?: { checkIn: Date; checkOut: Date } | null;
   allowRoomSelection?: boolean; // Enable room dropdown
   unallocatedMode?: boolean; // Create unallocated reservation
 }
-
 
 export default function ModernCreateBookingModal({
   isOpen,
@@ -47,12 +49,16 @@ export default function ModernCreateBookingModal({
   currentDate,
   preSelectedDates,
   allowRoomSelection = false,
-  unallocatedMode = false
+  unallocatedMode = false,
 }: ModernCreateBookingModalProps) {
   // Console log to confirm this is the active modal
   console.log('🎯 MODERN CREATE BOOKING MODAL - Component mounted/rendered');
 
-  const { refreshData, rooms, companies } = useHotel();
+  const { data: rooms = [] } = useRooms();
+  const { data: companies = [] } = useCompanies();
+  const queryClient = useQueryClient();
+  const refreshData = () =>
+    queryClient.invalidateQueries({ queryKey: queryKeys.reservations.all() });
 
   // Get hotel ID (for single-hotel setup)
   const [hotelId, setHotelId] = useState<string>('');
@@ -60,11 +66,7 @@ export default function ModernCreateBookingModal({
   useEffect(() => {
     const fetchHotelId = async () => {
       // Since there's only one hotel, just fetch the first hotel's ID
-      const { data } = await supabase
-        .from('hotels')
-        .select('id')
-        .limit(1)
-        .single();
+      const { data } = await supabase.from('hotels').select('id').limit(1).single();
       if (data?.id) {
         setHotelId(data.id.toString());
       }
@@ -75,40 +77,43 @@ export default function ModernCreateBookingModal({
   // Room selection state for unallocated mode
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(room);
   const [isUnallocated, setIsUnallocated] = useState(unallocatedMode);
-  
+
   // Basic booking info
   const [checkInDate, setCheckInDate] = useState(
     preSelectedDates?.checkIn || currentDate || new Date()
   );
   const [checkOutDate, setCheckOutDate] = useState(
-    preSelectedDates?.checkOut || new Date((currentDate || new Date()).getTime() + 2 * 24 * 60 * 60 * 1000)
+    preSelectedDates?.checkOut ||
+      new Date((currentDate || new Date()).getTime() + 2 * 24 * 60 * 60 * 1000)
   );
-  
+
   // Enhanced guest management
-  const [bookingGuests, setBookingGuests] = useState<Array<{
-    id: string;
-    firstName: string;
-    lastName: string;
-    fullName: string;
-    email?: string;
-    phone?: string;
-    nationality?: string;
-    dateOfBirth?: string;
-    type: 'adult' | 'child';
-    age?: number;
-    isExisting: boolean;
-    existingGuestId?: number;
-    preferredLanguage: string;
-    dietaryRestrictions: string[];
-    hasPets: boolean;
-    isVip: boolean;
-    vipLevel: number;
-    children: GuestChild[];
-    totalStays: number;
-    createdAt: Date;
-    updatedAt: Date;
-  }>>([]);
-  
+  const [bookingGuests, setBookingGuests] = useState<
+    Array<{
+      id: string;
+      firstName: string;
+      lastName: string;
+      fullName: string;
+      email?: string;
+      phone?: string;
+      nationality?: string;
+      dateOfBirth?: string;
+      type: 'adult' | 'child';
+      age?: number;
+      isExisting: boolean;
+      existingGuestId?: number;
+      preferredLanguage: string;
+      dietaryRestrictions: string[];
+      hasPets: boolean;
+      isVip: boolean;
+      vipLevel: number;
+      children: GuestChild[];
+      totalStays: number;
+      createdAt: Date;
+      updatedAt: Date;
+    }>
+  >([]);
+
   // Initialize with one adult guest
   useEffect(() => {
     if (bookingGuests.length === 0) {
@@ -116,14 +121,14 @@ export default function ModernCreateBookingModal({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  
+
   // Simple booking-level services
   const [bookingServices, setBookingServices] = useState({
     needsParking: false,
     parkingSpots: 0,
     hasPets: false,
     petCount: 0,
-    specialRequests: ''
+    specialRequests: '',
   });
 
   // Company billing (R1) state
@@ -144,9 +149,9 @@ export default function ModernCreateBookingModal({
     parkingFee: 0,
     tourismTax: 0,
     vatAmount: 0,
-    total: 120
+    total: 120,
   });
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Helper function to create empty guest
@@ -170,7 +175,7 @@ export default function ModernCreateBookingModal({
     children: [],
     totalStays: 0,
     createdAt: new Date(),
-    updatedAt: new Date()
+    updatedAt: new Date(),
   });
 
   // Calculate pricing whenever dependencies change using HotelPricingEngine
@@ -190,7 +195,7 @@ export default function ModernCreateBookingModal({
         parkingFee: 0,
         tourismTax: 0,
         vatAmount: 0,
-        total: 0
+        total: 0,
       });
       return;
     }
@@ -199,8 +204,8 @@ export default function ModernCreateBookingModal({
 
     // Prepare guest children data for the pricing engine
     const children: GuestChild[] = bookingGuests
-      .filter(g => g.type === 'child' && g.age !== undefined)
-      .map(g => {
+      .filter((g) => g.type === 'child' && g.age !== undefined)
+      .map((g) => {
         // Calculate approximate DOB from age if not provided
         let dob: Date;
         if (g.dateOfBirth) {
@@ -213,11 +218,11 @@ export default function ModernCreateBookingModal({
         return {
           name: `${g.firstName} ${g.lastName}`.trim() || 'Child',
           age: g.age!,
-          dateOfBirth: dob
+          dateOfBirth: dob,
         };
       });
 
-    const adults = bookingGuests.filter(g => g.type === 'adult').length;
+    const adults = bookingGuests.filter((g) => g.type === 'adult').length;
 
     // Calculate detailed pricing using the engine
     const calculation = pricingEngine.calculatePricing({
@@ -230,7 +235,7 @@ export default function ModernCreateBookingModal({
       hasPets: bookingServices.hasPets,
       needsParking: bookingServices.needsParking,
       pricingTierId: '2026-standard', // Use default 2026 pricing
-      isRoom401: selectedRoom.number === '401'
+      isRoom401: selectedRoom.number === '401',
     });
 
     // Map the detailed calculation to the simpler pricing state format for the UI
@@ -244,7 +249,7 @@ export default function ModernCreateBookingModal({
       parkingFee: calculation.services.parking.total,
       tourismTax: calculation.services.tourism.total,
       vatAmount: calculation.vat.totalVAT,
-      total: calculation.grandTotal
+      total: calculation.grandTotal,
     });
   }, [checkInDate, checkOutDate, bookingGuests, bookingServices, selectedRoom, isUnallocated]);
 
@@ -265,33 +270,35 @@ export default function ModernCreateBookingModal({
 
   const removeGuest = (guestId: string) => {
     if (bookingGuests.length > 1) {
-      setBookingGuests(bookingGuests.filter(g => g.id !== guestId));
+      setBookingGuests(bookingGuests.filter((g) => g.id !== guestId));
     }
   };
 
   const updateGuest = (guestId: string, field: string, value: string | number | boolean) => {
-    setBookingGuests(bookingGuests.map(g => {
-      if (g.id === guestId) {
-        const updated = { ...g, [field]: value };
-        
-        // Update fullName when firstName or lastName changes
-        if (field === 'firstName' || field === 'lastName') {
-          updated.fullName = `${updated.firstName} ${updated.lastName}`.trim();
-        }
-        
-        // Auto-set age when changing type
-        if (field === 'type') {
-          if (value === 'child' && !updated.age) {
-            updated.age = 12;
-          } else if (value === 'adult') {
-            updated.age = undefined;
+    setBookingGuests(
+      bookingGuests.map((g) => {
+        if (g.id === guestId) {
+          const updated = { ...g, [field]: value };
+
+          // Update fullName when firstName or lastName changes
+          if (field === 'firstName' || field === 'lastName') {
+            updated.fullName = `${updated.firstName} ${updated.lastName}`.trim();
           }
+
+          // Auto-set age when changing type
+          if (field === 'type') {
+            if (value === 'child' && !updated.age) {
+              updated.age = 12;
+            } else if (value === 'adult') {
+              updated.age = undefined;
+            }
+          }
+
+          return updated;
         }
-        
-        return updated;
-      }
-      return g;
-    }));
+        return g;
+      })
+    );
   };
 
   // Handle selecting existing guest
@@ -318,7 +325,7 @@ export default function ModernCreateBookingModal({
       children: guest.children || [],
       totalStays: guest.totalStays || 0,
       createdAt: guest.createdAt || new Date(),
-      updatedAt: guest.updatedAt || new Date()
+      updatedAt: guest.updatedAt || new Date(),
     };
     setBookingGuests(updatedGuests);
   };
@@ -326,12 +333,12 @@ export default function ModernCreateBookingModal({
   // Form validation
   const validateForm = (): string[] => {
     const errors: string[] = [];
-    
+
     // Date validation
     if (checkOutDate <= checkInDate) {
       errors.push('Check-out date must be after check-in date');
     }
-    
+
     // Guest validation
     if (bookingGuests.length === 0) {
       errors.push('At least one guest is required');
@@ -360,13 +367,13 @@ export default function ModernCreateBookingModal({
         } else {
           usedEmails.add(email);
         }
-        
+
         if (!guest.email.includes('@')) {
           errors.push(`Guest ${index + 1} has invalid email format`);
         }
       }
     });
-    
+
     // Child age validation
     bookingGuests.forEach((guest, index) => {
       if (guest.type === 'child') {
@@ -375,17 +382,19 @@ export default function ModernCreateBookingModal({
         }
       }
     });
-    
+
     // Occupancy validation (skip for unallocated)
     if (selectedRoom && !isUnallocated && bookingGuests.length > selectedRoom.maxOccupancy) {
-      errors.push(`Total guests (${bookingGuests.length}) exceeds room capacity (${selectedRoom.maxOccupancy})`);
+      errors.push(
+        `Total guests (${bookingGuests.length}) exceeds room capacity (${selectedRoom.maxOccupancy})`
+      );
     }
 
     // Room selection validation
     if (!isUnallocated && !selectedRoom) {
       errors.push('Please select a room');
     }
-    
+
     // Service validation
     if (bookingServices.needsParking && bookingServices.parkingSpots <= 0) {
       errors.push('Please specify number of parking spots needed');
@@ -405,7 +414,7 @@ export default function ModernCreateBookingModal({
   // Create booking with normalized database
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     console.log('🎯🎯🎯 MODERN CREATE BOOKING MODAL - CREATE BOOKING BUTTON CLICKED! 🎯🎯🎯');
     console.log('📋 Modal Info:', {
       modalName: 'ModernCreateBookingModal',
@@ -413,11 +422,11 @@ export default function ModernCreateBookingModal({
       roomType: selectedRoom?.type || 'UNALLOC',
       checkIn: checkInDate,
       checkOut: checkOutDate,
-      guestsCount: bookingGuests.length
+      guestsCount: bookingGuests.length,
     });
-    
+
     if (isSubmitting) return;
-    
+
     const errors = validateForm();
     if (errors.length > 0) {
       hotelNotification.error('Validation Failed', errors.join(', '));
@@ -430,14 +439,15 @@ export default function ModernCreateBookingModal({
         setIsSubmitting(true);
 
         const primaryGuest = bookingGuests[0];
-        const temporaryName = `${primaryGuest.firstName} ${primaryGuest.lastName}`.trim() || 'Guest';
+        const temporaryName =
+          `${primaryGuest.firstName} ${primaryGuest.lastName}`.trim() || 'Guest';
 
         const result = await virtualRoomService.createUnallocatedReservation({
           temporaryGuestName: temporaryName,
           checkIn: checkInDate,
           checkOut: checkOutDate,
           numberOfPeople: bookingGuests.length,
-          notes: bookingServices.specialRequests
+          notes: bookingServices.specialRequests,
         });
 
         if (result.success) {
@@ -465,7 +475,7 @@ export default function ModernCreateBookingModal({
 
       const primaryGuest = bookingGuests[0];
       let primaryGuestId: number;
-      
+
       // Handle primary guest (create new or use existing)
       if (primaryGuest.isExisting && primaryGuest.existingGuestId) {
         primaryGuestId = primaryGuest.existingGuestId;
@@ -479,7 +489,7 @@ export default function ModernCreateBookingModal({
             email: primaryGuest.email?.trim() || `guest_${Date.now()}@placeholder.local`,
             phone: primaryGuest.phone || null,
             nationality: primaryGuest.nationality || null,
-            date_of_birth: primaryGuest.dateOfBirth || null
+            date_of_birth: primaryGuest.dateOfBirth || null,
           })
           .select()
           .single();
@@ -487,13 +497,13 @@ export default function ModernCreateBookingModal({
         if (guestError) throw guestError;
         primaryGuestId = createdGuest.id;
       }
-      
+
       // Create reservation
       const seasonalPeriod = getSeasonalPeriod(checkInDate);
 
       // Prepare reservation data for debugging
-      const adultsCount = bookingGuests.filter(g => g.type === 'adult').length;
-      const childrenCount = bookingGuests.filter(g => g.type === 'child').length;
+      const adultsCount = bookingGuests.filter((g) => g.type === 'adult').length;
+      const childrenCount = bookingGuests.filter((g) => g.type === 'child').length;
       const reservationData = {
         guest_id: primaryGuestId,
         room_id: selectedRoom!.id,
@@ -506,7 +516,12 @@ export default function ModernCreateBookingModal({
         seasonal_period: seasonalPeriod,
         base_room_rate: pricing.baseRate,
         number_of_nights: pricing.nights,
-        subtotal: pricing.roomTotal - pricing.childrenDiscount + pricing.shortStaySupplement + pricing.petFee + pricing.parkingFee,
+        subtotal:
+          pricing.roomTotal -
+          pricing.childrenDiscount +
+          pricing.shortStaySupplement +
+          pricing.petFee +
+          pricing.parkingFee,
         children_discounts: pricing.childrenDiscount,
         short_stay_supplement: pricing.shortStaySupplement,
         tourism_tax: pricing.tourismTax,
@@ -519,7 +534,7 @@ export default function ModernCreateBookingModal({
         parking_required: bookingServices.needsParking,
         is_r1: isCompanyBilling, // Company billing flag
         company_id: isCompanyBilling ? selectedCompanyId : null, // Company ID for R1 billing
-        label_id: selectedLabelId // Label/Group for tracking related reservations
+        label_id: selectedLabelId, // Label/Group for tracking related reservations
       };
 
       // console.log('📊 BOOKING MODAL DEBUG - Reservation Data:', {
@@ -540,18 +555,18 @@ export default function ModernCreateBookingModal({
       if (reservationError) {
         console.error('❌ BOOKING MODAL ERROR - Reservation creation failed:', {
           error: reservationError,
-          sentData: reservationData
+          sentData: reservationData,
         });
         throw reservationError;
       }
 
       // console.log('✅ BOOKING MODAL SUCCESS - Reservation created:', reservation);
-      
+
       // Create guest relationships and additional guests
       for (let i = 0; i < bookingGuests.length; i++) {
         const guest = bookingGuests[i];
         let guestId: number;
-        
+
         if (i === 0) {
           guestId = primaryGuestId;
         } else if (guest.isExisting && guest.existingGuestId) {
@@ -559,7 +574,7 @@ export default function ModernCreateBookingModal({
         } else {
           // Create additional guest
           const email = guest.email?.trim() || `guest_${Date.now()}_${i}@placeholder.local`;
-          
+
           const { data: additionalGuest, error: addGuestError } = await supabase
             .from('guests')
             .insert({
@@ -568,7 +583,7 @@ export default function ModernCreateBookingModal({
               email: email,
               phone: guest.phone || null,
               nationality: guest.nationality || null,
-              date_of_birth: guest.dateOfBirth || null
+              date_of_birth: guest.dateOfBirth || null,
             })
             .select()
             .single();
@@ -576,24 +591,20 @@ export default function ModernCreateBookingModal({
           if (addGuestError) throw addGuestError;
           guestId = additionalGuest.id;
         }
-        
+
         // Create reservation-guest relationship
-        await supabase
-          .from('reservation_guests')
-          .insert({
-            reservation_id: reservation.id,
-            guest_id: guestId
-          });
-        
+        await supabase.from('reservation_guests').insert({
+          reservation_id: reservation.id,
+          guest_id: guestId,
+        });
+
         // Create guest stay
-        await supabase
-          .from('guest_stays')
-          .insert({
-            reservation_id: reservation.id,
-            guest_id: guestId,
-            check_in: checkInDate.toISOString(),
-            check_out: checkOutDate.toISOString()
-          });
+        await supabase.from('guest_stays').insert({
+          reservation_id: reservation.id,
+          guest_id: guestId,
+          check_in: checkInDate.toISOString(),
+          check_out: checkOutDate.toISOString(),
+        });
 
         // Create guest children record if child
         if (guest.type === 'child' && guest.age !== undefined) {
@@ -604,32 +615,34 @@ export default function ModernCreateBookingModal({
           } else {
             // Calculate approximate DOB from age
             const today = new Date();
-            const dob = new Date(today.getFullYear() - guest.age, today.getMonth(), today.getDate());
+            const dob = new Date(
+              today.getFullYear() - guest.age,
+              today.getMonth(),
+              today.getDate()
+            );
             dateOfBirth = dob.toISOString().split('T')[0];
           }
 
-          await supabase
-            .from('guest_children')
-            .insert({
-              reservation_id: reservation.id,
-              guest_id: guestId,
-              name: `${guest.firstName} ${guest.lastName}`,
-              age: guest.age,
-              date_of_birth: dateOfBirth
-            });
+          await supabase.from('guest_children').insert({
+            reservation_id: reservation.id,
+            guest_id: guestId,
+            name: `${guest.firstName} ${guest.lastName}`,
+            age: guest.age,
+            date_of_birth: dateOfBirth,
+          });
         }
       }
-      
+
       const totalGuests = bookingGuests.length;
-      const adults = bookingGuests.filter(g => g.type === 'adult').length;
-      const children = bookingGuests.filter(g => g.type === 'child').length;
-      
+      const adults = bookingGuests.filter((g) => g.type === 'adult').length;
+      const children = bookingGuests.filter((g) => g.type === 'child').length;
+
       hotelNotification.success(
         'Booking Created Successfully!',
         `Reservation for ${primaryGuest.firstName} ${primaryGuest.lastName} ` +
-        `and ${totalGuests - 1} other guest${totalGuests > 2 ? 's' : ''} ` +
-        `(${adults} adult${adults !== 1 ? 's' : ''}, ${children} child${children !== 1 ? 'ren' : ''}) ` +
-        `in Room ${selectedRoom!.number} has been created.`
+          `and ${totalGuests - 1} other guest${totalGuests > 2 ? 's' : ''} ` +
+          `(${adults} adult${adults !== 1 ? 's' : ''}, ${children} child${children !== 1 ? 'ren' : ''}) ` +
+          `in Room ${selectedRoom!.number} has been created.`
       );
 
       // Send ntfy.sh notification for Room 401 bookings
@@ -641,19 +654,28 @@ export default function ModernCreateBookingModal({
           const notificationData: BookingNotificationData = {
             roomNumber: selectedRoom!.number,
             guestName: `${primaryGuest.firstName} ${primaryGuest.lastName}`,
-            checkIn: checkInDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-            checkOut: checkOutDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+            checkIn: checkInDate.toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+            }),
+            checkOut: checkOutDate.toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+            }),
             nights: pricing.nights,
             adults: adults,
             children: children,
             bookingSource: 'Front Desk - Modern Modal',
-            totalAmount: pricing.total
+            totalAmount: pricing.total,
           };
 
           console.log('📤 Sending notification to ntfy.sh/hotel-porec-room-401:', notificationData);
-          
-          const notificationSent = await ntfyService.sendRoom401BookingNotification(notificationData);
-          
+
+          const notificationSent =
+            await ntfyService.sendRoom401BookingNotification(notificationData);
+
           if (notificationSent) {
             console.log('✅ Ntfy notification sent successfully to ntfy.sh/hotel-porec-room-401');
           } else {
@@ -670,14 +692,13 @@ export default function ModernCreateBookingModal({
       await refreshData();
 
       onClose();
-      
     } catch (error: unknown) {
       console.error('Booking creation failed:', error);
 
       const dbError = error as { code?: string; message?: string };
       if (dbError?.code === '23505' && dbError?.message?.includes('guests_email_key')) {
         hotelNotification.error(
-          'Email Already Exists', 
+          'Email Already Exists',
           'This email address is already in use. Please use a different email.'
         );
       } else {
@@ -693,50 +714,61 @@ export default function ModernCreateBookingModal({
   // Log when modal is displayed
   console.log('🎯 MODERN CREATE BOOKING MODAL - Modal is now VISIBLE on screen');
 
-  const adultsCount = bookingGuests.filter(g => g.type === 'adult').length;
-  const childrenCount = bookingGuests.filter(g => g.type === 'child').length;
+  const adultsCount = bookingGuests.filter((g) => g.type === 'adult').length;
+  const childrenCount = bookingGuests.filter((g) => g.type === 'child').length;
 
   // Filter out virtual rooms from selection
-  const availableRooms = rooms.filter(r => r.floor !== 5);
+  const availableRooms = rooms.filter((r) => r.floor !== 5);
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-5xl max-h-[95vh] overflow-y-auto" data-testid="create-booking-modal">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <Card
+        className="max-h-[95vh] w-full max-w-5xl overflow-y-auto"
+        data-testid="create-booking-modal"
+      >
         <CardHeader>
-          <div className="flex justify-between items-center">
+          <div className="flex items-center justify-between">
             <CardTitle className="flex items-center space-x-2">
               <CalendarIcon className="h-5 w-5" />
               <span>
-                {isUnallocated ? 'Create Unallocated Reservation' : selectedRoom ? `Create Booking - Room ${selectedRoom.number}` : 'Create Booking'}
+                {isUnallocated
+                  ? 'Create Unallocated Reservation'
+                  : selectedRoom
+                    ? `Create Booking - Room ${selectedRoom.number}`
+                    : 'Create Booking'}
               </span>
               {selectedRoom && <Badge variant="outline">{selectedRoom.type}</Badge>}
-              {isUnallocated && <Badge variant="secondary" className="bg-blue-100 text-blue-800">Unallocated</Badge>}
+              {isUnallocated && (
+                <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                  Unallocated
+                </Badge>
+              )}
             </CardTitle>
             <Button variant="ghost" size="sm" onClick={onClose}>
               <X className="h-4 w-4" />
             </Button>
           </div>
-          <p className="text-gray-600 text-sm">
-            {adultsCount} adult{adultsCount !== 1 ? 's' : ''}, {childrenCount} child{childrenCount !== 1 ? 'ren' : ''}
+          <p className="text-sm text-gray-600">
+            {adultsCount} adult{adultsCount !== 1 ? 's' : ''}, {childrenCount} child
+            {childrenCount !== 1 ? 'ren' : ''}
             {selectedRoom && !isUnallocated && ` • Max occupancy: ${selectedRoom.maxOccupancy}`}
           </p>
         </CardHeader>
-        
+
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-
             {/* Room Selection & Unallocated Option */}
             {allowRoomSelection && (
               <Card className="border-blue-200 bg-blue-50/50">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-lg flex items-center">
-                    <Home className="h-4 w-4 mr-2" />
+                  <CardTitle className="flex items-center text-lg">
+                    <Home className="mr-2 h-4 w-4" />
                     Room Assignment
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* Unallocated Checkbox */}
-                  <div className="flex items-center space-x-3 p-3 bg-white rounded-md border">
+                  <div className="flex items-center space-x-3 rounded-md border bg-white p-3">
                     <input
                       type="checkbox"
                       id="unallocated"
@@ -747,13 +779,13 @@ export default function ModernCreateBookingModal({
                           setSelectedRoom(null);
                         }
                       }}
-                      className="h-4 w-4 text-blue-600 rounded"
+                      className="h-4 w-4 rounded text-blue-600"
                     />
                     <div className="flex-1">
-                      <Label htmlFor="unallocated" className="font-medium cursor-pointer">
+                      <Label htmlFor="unallocated" className="cursor-pointer font-medium">
                         Create as Unallocated Reservation
                       </Label>
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="mt-1 text-xs text-gray-500">
                         Place in virtual queue - assign room later
                       </p>
                     </div>
@@ -766,18 +798,19 @@ export default function ModernCreateBookingModal({
                       <select
                         value={selectedRoom?.id || ''}
                         onChange={(e) => {
-                          const room = availableRooms.find(r => r.id === e.target.value);
+                          const room = availableRooms.find((r) => r.id === e.target.value);
                           setSelectedRoom(room || null);
                         }}
-                        className="w-full p-2 border rounded-md"
+                        className="w-full rounded-md border p-2"
                         required={!isUnallocated}
                       >
                         <option value="">-- Select a room --</option>
                         {availableRooms
                           .sort((a, b) => a.number.localeCompare(b.number))
-                          .map(room => (
+                          .map((room) => (
                             <option key={room.id} value={room.id}>
-                              Room {room.number} - {room.type} (Floor {room.floor}, Max: {room.maxOccupancy})
+                              Room {room.number} - {room.type} (Floor {room.floor}, Max:{' '}
+                              {room.maxOccupancy})
                             </option>
                           ))}
                       </select>
@@ -790,8 +823,8 @@ export default function ModernCreateBookingModal({
             {/* Dates Section */}
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center">
-                  <CalendarIcon className="h-4 w-4 mr-2" />
+                <CardTitle className="flex items-center text-lg">
+                  <CalendarIcon className="mr-2 h-4 w-4" />
                   Booking Dates
                 </CardTitle>
               </CardHeader>
@@ -826,8 +859,8 @@ export default function ModernCreateBookingModal({
             <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg flex items-center">
-                    <Users className="h-4 w-4 mr-2" />
+                  <CardTitle className="flex items-center text-lg">
+                    <Users className="mr-2 h-4 w-4" />
                     Guests ({bookingGuests.length}/{selectedRoom?.maxOccupancy || 10})
                   </CardTitle>
                   <div className="flex space-x-2">
@@ -839,7 +872,7 @@ export default function ModernCreateBookingModal({
                       disabled={bookingGuests.length >= (selectedRoom?.maxOccupancy || 10)}
                       className="flex items-center"
                     >
-                      <UserPlus className="h-4 w-4 mr-1" />
+                      <UserPlus className="mr-1 h-4 w-4" />
                       Add Adult
                     </Button>
                     <Button
@@ -850,7 +883,7 @@ export default function ModernCreateBookingModal({
                       disabled={bookingGuests.length >= (selectedRoom?.maxOccupancy || 10)}
                       className="flex items-center"
                     >
-                      <Baby className="h-4 w-4 mr-1" />
+                      <Baby className="mr-1 h-4 w-4" />
                       Add Child
                     </Button>
                   </div>
@@ -859,8 +892,8 @@ export default function ModernCreateBookingModal({
               <CardContent>
                 <div className="space-y-4">
                   {bookingGuests.map((guest, index) => (
-                    <div key={guest.id} className="border rounded-lg p-4 bg-gray-50">
-                      <div className="flex items-center justify-between mb-3">
+                    <div key={guest.id} className="rounded-lg border bg-gray-50 p-4">
+                      <div className="mb-3 flex items-center justify-between">
                         <div className="flex items-center space-x-2">
                           {guest.type === 'adult' ? (
                             <User className="h-4 w-4 text-blue-600" />
@@ -875,7 +908,7 @@ export default function ModernCreateBookingModal({
                             {guest.type === 'adult' ? 'Adult' : 'Child'}
                           </Badge>
                           {guest.isExisting && (
-                            <Badge variant="outline" className="text-green-600 border-green-600">
+                            <Badge variant="outline" className="border-green-600 text-green-600">
                               Existing Guest
                             </Badge>
                           )}
@@ -885,13 +918,13 @@ export default function ModernCreateBookingModal({
                           <select
                             value={guest.type}
                             onChange={(e) => updateGuest(guest.id, 'type', e.target.value)}
-                            className="text-sm border rounded px-2 py-1"
+                            className="rounded border px-2 py-1 text-sm"
                             disabled={index === 0} // Primary guest must be adult
                           >
                             <option value="adult">Adult</option>
                             <option value="child">Child</option>
                           </select>
-                          
+
                           {index > 0 && (
                             <Button
                               type="button"
@@ -904,13 +937,15 @@ export default function ModernCreateBookingModal({
                           )}
                         </div>
                       </div>
-                      
+
                       {/* Guest Selection for Existing Guests */}
                       {!guest.isExisting && guest.type === 'adult' && (
                         <div className="mb-3">
                           <Label className="text-sm">Or select existing guest</Label>
                           <GuestAutocomplete
-                            onGuestSelect={(selectedGuest) => handleSelectExistingGuest(selectedGuest, index)}
+                            onGuestSelect={(selectedGuest) =>
+                              handleSelectExistingGuest(selectedGuest, index)
+                            }
                             onCreateNew={() => {}} // Not needed here
                             selectedGuest={null}
                             placeholder="Search existing guests..."
@@ -918,9 +953,9 @@ export default function ModernCreateBookingModal({
                           />
                         </div>
                       )}
-                      
+
                       {/* Guest Details Form */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
                         <div>
                           <Label className="text-sm">First Name *</Label>
                           <Input
@@ -943,7 +978,7 @@ export default function ModernCreateBookingModal({
                             disabled={guest.isExisting}
                           />
                         </div>
-                        
+
                         {guest.type === 'child' && (
                           <div>
                             <Label className="text-sm">Age *</Label>
@@ -953,12 +988,14 @@ export default function ModernCreateBookingModal({
                               min="0"
                               max="17"
                               value={guest.age || ''}
-                              onChange={(e) => updateGuest(guest.id, 'age', parseInt(e.target.value) || 0)}
+                              onChange={(e) =>
+                                updateGuest(guest.id, 'age', parseInt(e.target.value) || 0)
+                              }
                               className="h-9"
                             />
                           </div>
                         )}
-                        
+
                         <div>
                           <Label className="text-sm">Email</Label>
                           <Input
@@ -1005,7 +1042,7 @@ export default function ModernCreateBookingModal({
                           </div>
                         )}
                       </div>
-                      
+
                       {guest.isExisting && (
                         <Button
                           type="button"
@@ -1026,8 +1063,8 @@ export default function ModernCreateBookingModal({
             {/* Services Section */}
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center">
-                  <Car className="h-4 w-4 mr-2" />
+                <CardTitle className="flex items-center text-lg">
+                  <Car className="mr-2 h-4 w-4" />
                   Additional Services
                 </CardTitle>
               </CardHeader>
@@ -1039,24 +1076,30 @@ export default function ModernCreateBookingModal({
                       type="checkbox"
                       id="parking"
                       checked={bookingServices.needsParking}
-                      onChange={(e) => setBookingServices(prev => ({
-                        ...prev,
-                        needsParking: e.target.checked,
-                        parkingSpots: e.target.checked ? Math.max(1, prev.parkingSpots) : 0
-                      }))}
+                      onChange={(e) =>
+                        setBookingServices((prev) => ({
+                          ...prev,
+                          needsParking: e.target.checked,
+                          parkingSpots: e.target.checked ? Math.max(1, prev.parkingSpots) : 0,
+                        }))
+                      }
                       className="rounded"
                     />
-                    <Label htmlFor="parking" className="flex-1">Parking Required</Label>
+                    <Label htmlFor="parking" className="flex-1">
+                      Parking Required
+                    </Label>
                     {bookingServices.needsParking && (
                       <Input
                         type="number"
                         min="1"
                         max="3"
                         value={bookingServices.parkingSpots}
-                        onChange={(e) => setBookingServices(prev => ({
-                          ...prev,
-                          parkingSpots: parseInt(e.target.value) || 1
-                        }))}
+                        onChange={(e) =>
+                          setBookingServices((prev) => ({
+                            ...prev,
+                            parkingSpots: parseInt(e.target.value) || 1,
+                          }))
+                        }
                         className="w-16"
                       />
                     )}
@@ -1068,24 +1111,30 @@ export default function ModernCreateBookingModal({
                       type="checkbox"
                       id="pets"
                       checked={bookingServices.hasPets}
-                      onChange={(e) => setBookingServices(prev => ({
-                        ...prev,
-                        hasPets: e.target.checked,
-                        petCount: e.target.checked ? Math.max(1, prev.petCount) : 0
-                      }))}
+                      onChange={(e) =>
+                        setBookingServices((prev) => ({
+                          ...prev,
+                          hasPets: e.target.checked,
+                          petCount: e.target.checked ? Math.max(1, prev.petCount) : 0,
+                        }))
+                      }
                       className="rounded"
                     />
-                    <Label htmlFor="pets" className="flex-1">Traveling with Pets</Label>
+                    <Label htmlFor="pets" className="flex-1">
+                      Traveling with Pets
+                    </Label>
                     {bookingServices.hasPets && (
                       <Input
                         type="number"
                         min="1"
                         max="5"
                         value={bookingServices.petCount}
-                        onChange={(e) => setBookingServices(prev => ({
-                          ...prev,
-                          petCount: parseInt(e.target.value) || 1
-                        }))}
+                        onChange={(e) =>
+                          setBookingServices((prev) => ({
+                            ...prev,
+                            petCount: parseInt(e.target.value) || 1,
+                          }))
+                        }
                         className="w-16"
                       />
                     )}
@@ -1097,12 +1146,14 @@ export default function ModernCreateBookingModal({
                     <textarea
                       id="requests"
                       value={bookingServices.specialRequests}
-                      onChange={(e) => setBookingServices(prev => ({
-                        ...prev,
-                        specialRequests: e.target.value
-                      }))}
+                      onChange={(e) =>
+                        setBookingServices((prev) => ({
+                          ...prev,
+                          specialRequests: e.target.value,
+                        }))
+                      }
                       placeholder="Any special requests or notes..."
-                      className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                       rows={3}
                     />
                   </div>
@@ -1113,14 +1164,14 @@ export default function ModernCreateBookingModal({
             {/* Company Billing (R1) Section */}
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center">
-                  <Building2 className="h-4 w-4 mr-2" />
+                <CardTitle className="flex items-center text-lg">
+                  <Building2 className="mr-2 h-4 w-4" />
                   Company Billing (R1)
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Checkbox for company billing */}
-                <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-md border">
+                <div className="flex items-center space-x-3 rounded-md border bg-gray-50 p-3">
                   <input
                     type="checkbox"
                     id="companyBilling"
@@ -1131,13 +1182,13 @@ export default function ModernCreateBookingModal({
                         setSelectedCompanyId(null);
                       }
                     }}
-                    className="h-4 w-4 text-blue-600 rounded"
+                    className="h-4 w-4 rounded text-blue-600"
                   />
                   <div className="flex-1">
-                    <Label htmlFor="companyBilling" className="font-medium cursor-pointer">
+                    <Label htmlFor="companyBilling" className="cursor-pointer font-medium">
                       Bill to Company (R1 Billing)
                     </Label>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="mt-1 text-xs text-gray-500">
                       Invoice will be issued to the selected company instead of individual guest
                     </p>
                   </div>
@@ -1150,21 +1201,22 @@ export default function ModernCreateBookingModal({
                     <select
                       value={selectedCompanyId || ''}
                       onChange={(e) => setSelectedCompanyId(e.target.value)}
-                      className="w-full p-2 border rounded-md bg-white"
+                      className="w-full rounded-md border bg-white p-2"
                       required={isCompanyBilling}
                     >
                       <option value="">-- Select a company --</option>
                       {companies
-                        .filter(c => c.isActive)
+                        .filter((c) => c.isActive)
                         .sort((a, b) => a.name.localeCompare(b.name))
-                        .map(company => (
+                        .map((company) => (
                           <option key={company.id} value={company.id}>
                             {company.name} (OIB: {company.oib})
                           </option>
                         ))}
                     </select>
-                    <p className="text-xs text-gray-500 mt-2">
-                      {companies.filter(c => c.isActive).length} active compan{companies.filter(c => c.isActive).length === 1 ? 'y' : 'ies'} available
+                    <p className="mt-2 text-xs text-gray-500">
+                      {companies.filter((c) => c.isActive).length} active compan
+                      {companies.filter((c) => c.isActive).length === 1 ? 'y' : 'ies'} available
                     </p>
                   </div>
                 )}
@@ -1174,15 +1226,15 @@ export default function ModernCreateBookingModal({
             {/* Label/Group Section */}
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center">
-                  <Tag className="h-4 w-4 mr-2" />
+                <CardTitle className="flex items-center text-lg">
+                  <Tag className="mr-2 h-4 w-4" />
                   Reservation Label/Group
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div>
                   <Label>Label (Optional)</Label>
-                  <p className="text-xs text-gray-500 mb-2">
+                  <p className="mb-2 text-xs text-gray-500">
                     Group related reservations together (e.g., "german-bikers" for a tour group)
                   </p>
                   {hotelId ? (
@@ -1202,8 +1254,8 @@ export default function ModernCreateBookingModal({
             {/* Pricing Summary */}
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center">
-                  <Receipt className="h-4 w-4 mr-2" />
+                <CardTitle className="flex items-center text-lg">
+                  <Receipt className="mr-2 h-4 w-4" />
                   Pricing Summary
                 </CardTitle>
               </CardHeader>
@@ -1211,22 +1263,30 @@ export default function ModernCreateBookingModal({
                 <div className="space-y-2">
                   {/* Base Accommodation */}
                   <div className="flex justify-between">
-                    <span>Base Accommodation ({adultsCount + childrenCount} guest{(adultsCount + childrenCount) !== 1 ? 's' : ''} × {pricing.nights} night{pricing.nights !== 1 ? 's' : ''})</span>
+                    <span>
+                      Base Accommodation ({adultsCount + childrenCount} guest
+                      {adultsCount + childrenCount !== 1 ? 's' : ''} × {pricing.nights} night
+                      {pricing.nights !== 1 ? 's' : ''})
+                    </span>
                     <span>€{pricing.roomTotal.toFixed(2)}</span>
                   </div>
 
                   {/* Children Discounts */}
                   {pricing.childrenDiscount > 0 && (
                     <div className="flex justify-between text-green-600">
-                      <span>Children Discount ({childrenCount} child{childrenCount !== 1 ? 'ren' : ''})</span>
+                      <span>
+                        Children Discount ({childrenCount} child{childrenCount !== 1 ? 'ren' : ''})
+                      </span>
                       <span>-€{pricing.childrenDiscount.toFixed(2)}</span>
                     </div>
                   )}
 
                   {/* Accommodation Subtotal */}
-                  <div className="flex justify-between text-sm border-t pt-1">
+                  <div className="flex justify-between border-t pt-1 text-sm">
                     <span className="font-medium">Accommodation Subtotal</span>
-                    <span className="font-medium">€{(pricing.roomTotal - pricing.childrenDiscount).toFixed(2)}</span>
+                    <span className="font-medium">
+                      €{(pricing.roomTotal - pricing.childrenDiscount).toFixed(2)}
+                    </span>
                   </div>
 
                   {/* Short Stay Supplement */}
@@ -1238,9 +1298,16 @@ export default function ModernCreateBookingModal({
                   )}
 
                   {/* Accommodation Total */}
-                  <div className="flex justify-between text-sm border-t pt-1">
+                  <div className="flex justify-between border-t pt-1 text-sm">
                     <span className="font-medium">Accommodation Total (incl. VAT)</span>
-                    <span className="font-medium">€{(pricing.roomTotal - pricing.childrenDiscount + pricing.shortStaySupplement).toFixed(2)}</span>
+                    <span className="font-medium">
+                      €
+                      {(
+                        pricing.roomTotal -
+                        pricing.childrenDiscount +
+                        pricing.shortStaySupplement
+                      ).toFixed(2)}
+                    </span>
                   </div>
 
                   {/* Additional Services */}
@@ -1259,18 +1326,27 @@ export default function ModernCreateBookingModal({
 
                   {/* Tourism Tax */}
                   <div className="flex justify-between">
-                    <span>Tourism Tax ({adultsCount} adult{adultsCount !== 1 ? 's' : ''}{childrenCount > 0 ? ` + ${childrenCount} child` + (childrenCount !== 1 ? 'ren' : '') : ''})</span>
+                    <span>
+                      Tourism Tax ({adultsCount} adult{adultsCount !== 1 ? 's' : ''}
+                      {childrenCount > 0
+                        ? ` + ${childrenCount} child` + (childrenCount !== 1 ? 'ren' : '')
+                        : ''}
+                      )
+                    </span>
                     <span>€{pricing.tourismTax.toFixed(2)}</span>
                   </div>
 
                   {/* VAT Breakdown (for info only) */}
-                  <div className="flex justify-between text-xs text-gray-500 italic border-t pt-1">
-                    <span>VAT breakdown (13% accommodation, 25% services - already included in prices above)</span>
+                  <div className="flex justify-between border-t pt-1 text-xs text-gray-500 italic">
+                    <span>
+                      VAT breakdown (13% accommodation, 25% services - already included in prices
+                      above)
+                    </span>
                     <span>€{pricing.vatAmount.toFixed(2)}</span>
                   </div>
 
                   {/* Grand Total */}
-                  <div className="border-t-2 pt-2 flex justify-between font-bold text-lg">
+                  <div className="flex justify-between border-t-2 pt-2 text-lg font-bold">
                     <span>Total Amount</span>
                     <span>€{pricing.total.toFixed(2)}</span>
                   </div>
@@ -1289,7 +1365,9 @@ export default function ModernCreateBookingModal({
                 className="flex items-center"
                 data-testid="submit-booking"
               >
-                {isSubmitting && <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />}
+                {isSubmitting && (
+                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                )}
                 {isSubmitting ? 'Creating Booking...' : 'Create Booking'}
               </Button>
             </div>

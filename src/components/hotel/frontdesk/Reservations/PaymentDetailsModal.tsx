@@ -1,10 +1,5 @@
 import React, { useState } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '../../../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
 import { Button } from '../../../ui/button';
 import { Badge } from '../../../ui/badge';
@@ -16,12 +11,12 @@ import {
   Calculator,
   Users,
   Calendar,
-  CheckCircle
+  CheckCircle,
 } from 'lucide-react';
-import { Reservation, Guest, Room, Company } from '../../../../lib/hotel/types';
+import { Reservation, Guest, Room, Company, Invoice } from '../../../../lib/hotel/types';
 // Note: Legacy pricing calculator removed - using stored reservation pricing data
 import { generatePDFInvoice, generateInvoiceNumber } from '../../../../lib/pdfInvoiceGenerator';
-import { useHotel } from '../../../../lib/hotel/state/SupabaseHotelContext';
+import { useUpdateReservation } from '../../../../lib/queries/hooks/useReservations';
 import hotelNotification from '../../../../lib/notifications';
 import { supabase } from '../../../../lib/supabase';
 
@@ -38,9 +33,19 @@ export default function PaymentDetailsModal({
   onClose,
   reservation,
   guest,
-  room
+  room,
 }: PaymentDetailsModalProps) {
-  const { updateReservation, generateInvoice: createInvoice, addPayment } = useHotel();
+  // Stubs — invoice/payment creation not yet implemented
+  const createInvoice = async (_reservationId: string): Promise<Invoice> => {
+    throw new Error('Invoice generation not implemented');
+  };
+  const addPayment = async (_payment: unknown) => {
+    throw new Error('Payment management not implemented');
+  };
+  const updateReservationMutation = useUpdateReservation();
+  const updateReservation = async (id: string, updates: Partial<Reservation>) => {
+    await updateReservationMutation.mutateAsync({ id, updates });
+  };
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState(reservation.status);
 
@@ -51,8 +56,8 @@ export default function PaymentDetailsModal({
     subtotal: reservation.subtotal,
     discounts: {
       children0to3: 0,
-      children3to7: 0, 
-      children7to14: 0
+      children3to7: 0,
+      children7to14: 0,
     },
     totalDiscounts: reservation.childrenDiscounts || 0,
     fees: {
@@ -61,12 +66,16 @@ export default function PaymentDetailsModal({
       pets: reservation.petFee,
       parking: reservation.parkingFee,
       shortStay: reservation.shortStaySuplement || 0,
-      additional: reservation.additionalCharges
+      additional: reservation.additionalCharges,
     },
-    totalFees: (reservation.tourismTax || 0) + (reservation.vatAmount || 0) + 
-               (reservation.petFee || 0) + (reservation.parkingFee || 0) + 
-               (reservation.shortStaySuplement || 0) + (reservation.additionalCharges || 0),
-    grandTotal: reservation.totalAmount
+    totalFees:
+      (reservation.tourismTax || 0) +
+      (reservation.vatAmount || 0) +
+      (reservation.petFee || 0) +
+      (reservation.parkingFee || 0) +
+      (reservation.shortStaySuplement || 0) +
+      (reservation.additionalCharges || 0),
+    grandTotal: reservation.totalAmount,
   };
 
   const handlePrintInvoice = async () => {
@@ -79,7 +88,8 @@ export default function PaymentDetailsModal({
 
       // Fetch company data if this is an R1 reservation
       let company: Company | undefined;
-      const reservationExt = reservation as Record<string, unknown>;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const reservationExt = reservation as any;
       if (reservationExt.is_r1 && reservationExt.company_id) {
         const { data: companyData, error: companyError } = await supabase
           .from('companies')
@@ -89,7 +99,10 @@ export default function PaymentDetailsModal({
 
         if (companyError) {
           console.error('Error fetching company data:', companyError);
-          hotelNotification.error('Company Data Error', 'Could not fetch company information for R1 invoice.');
+          hotelNotification.error(
+            'Company Data Error',
+            'Could not fetch company information for R1 invoice.'
+          );
         } else if (companyData) {
           // Transform database format to Company type
           company = {
@@ -100,7 +113,7 @@ export default function PaymentDetailsModal({
               street: companyData.address,
               city: companyData.city,
               postalCode: companyData.postal_code,
-              country: companyData.country
+              country: companyData.country,
             },
             contactPerson: companyData.contact_person,
             email: companyData.email,
@@ -111,7 +124,7 @@ export default function PaymentDetailsModal({
             isActive: companyData.is_active,
             notes: companyData.notes,
             createdAt: companyData.created_at,
-            updatedAt: companyData.updated_at
+            updatedAt: companyData.updated_at,
           };
         }
       }
@@ -123,15 +136,21 @@ export default function PaymentDetailsModal({
         room,
         invoiceNumber,
         invoiceDate,
-        company // Pass company data for R1 billing
+        company, // Pass company data for R1 billing
       });
 
       // Show success notification
       const invoiceType = company ? 'R1 Company Invoice' : 'Invoice';
-      hotelNotification.success(`${invoiceType} Generated`, `PDF invoice saved as Hotel_Porec_Invoice_${invoiceNumber}_${guest.fullName.replace(/\s+/g, '_')}.pdf`);
+      hotelNotification.success(
+        `${invoiceType} Generated`,
+        `PDF invoice saved as Hotel_Porec_Invoice_${invoiceNumber}_${guest.fullName.replace(/\s+/g, '_')}.pdf`
+      );
     } catch (error) {
       console.error('Error generating PDF invoice:', error);
-      hotelNotification.error('PDF Generation Failed', 'There was an error generating the PDF invoice. Please try again.');
+      hotelNotification.error(
+        'PDF Generation Failed',
+        'There was an error generating the PDF invoice. Please try again.'
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -140,16 +159,16 @@ export default function PaymentDetailsModal({
   const handleMarkAsPaid = async () => {
     try {
       setIsProcessing(true);
-      
+
       // Update reservation status to checked-out (indicating payment complete)
       await updateReservation(reservation.id, { status: 'checked-out' });
       setPaymentStatus('checked-out');
-      
+
       // Automatically generate invoice when payment is marked as paid
       try {
         console.log('Auto-generating invoice for paid guest...');
         const invoice = await createInvoice(reservation.id);
-        
+
         // Process payment for the full amount
         await addPayment({
           invoiceId: invoice.id,
@@ -161,9 +180,9 @@ export default function PaymentDetailsModal({
           processedDate: new Date(),
           processedBy: 'Front Desk Staff',
           notes: `Payment processed via payment breakdown - ${guest.fullName}`,
-          referenceNumber: `PAYMENT-${Date.now()}`
+          referenceNumber: `PAYMENT-${Date.now()}`,
         });
-        
+
         hotelNotification.success(
           'Payment Processed & Invoice Created',
           `Payment marked as paid for ${guest.fullName}. Invoice ${invoice.invoiceNumber} created and available in Finance module.`,
@@ -199,7 +218,7 @@ export default function PaymentDetailsModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <Calculator className="h-5 w-5" />
@@ -214,19 +233,22 @@ export default function PaymentDetailsModal({
               <CardTitle className="text-lg">Booking Summary</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                   <div className="text-sm text-gray-500">Guest</div>
                   <div className="font-medium">{guest.fullName}</div>
                 </div>
                 <div>
                   <div className="text-sm text-gray-500">Room</div>
-                  <div className="font-medium">{room.number} - {room.nameEnglish}</div>
+                  <div className="font-medium">
+                    {room.number} - {room.nameEnglish}
+                  </div>
                 </div>
                 <div>
                   <div className="text-sm text-gray-500">Dates</div>
                   <div className="font-medium">
-                    {new Date(reservation.checkIn).toLocaleDateString()} - {new Date(reservation.checkOut).toLocaleDateString()}
+                    {new Date(reservation.checkIn).toLocaleDateString()} -{' '}
+                    {new Date(reservation.checkOut).toLocaleDateString()}
                   </div>
                 </div>
                 <div>
@@ -234,7 +256,7 @@ export default function PaymentDetailsModal({
                   <div className="font-medium">{reservation.numberOfNights} nights</div>
                 </div>
               </div>
-              
+
               <div className="flex items-center space-x-4 pt-2">
                 <div className="flex items-center space-x-1">
                   <Users className="h-4 w-4 text-gray-500" />
@@ -245,7 +267,9 @@ export default function PaymentDetailsModal({
                   <span className="text-sm">Season {reservation.seasonalPeriod}</span>
                 </div>
                 {guest.hasPets && (
-                  <Badge variant="outline" className="text-xs">🐕 Pet</Badge>
+                  <Badge variant="outline" className="text-xs">
+                    🐕 Pet
+                  </Badge>
                 )}
               </div>
             </CardContent>
@@ -257,7 +281,7 @@ export default function PaymentDetailsModal({
               <CardTitle className="text-lg">Room Charges</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="flex justify-between items-center">
+              <div className="flex items-center justify-between">
                 <div>
                   <div className="font-medium">Base Room Rate</div>
                   <div className="text-sm text-gray-500">
@@ -268,30 +292,40 @@ export default function PaymentDetailsModal({
               </div>
 
               {reservation.childrenDiscounts > 0 && (
-                <div className="flex justify-between items-center text-green-600">
+                <div className="flex items-center justify-between text-green-600">
                   <div>
                     <div className="font-medium">Children Discounts</div>
                     <div className="text-sm">Age-based pricing discounts</div>
                   </div>
-                  <div className="font-medium">-{formatCurrency(reservation.childrenDiscounts)}</div>
+                  <div className="font-medium">
+                    -{formatCurrency(reservation.childrenDiscounts)}
+                  </div>
                 </div>
               )}
 
               {reservation.shortStaySuplement > 0 && (
-                <div className="flex justify-between items-center text-orange-600">
+                <div className="flex items-center justify-between text-orange-600">
                   <div>
                     <div className="font-medium">Short Stay Supplement</div>
                     <div className="text-sm">+20% for stays under 3 nights</div>
                   </div>
-                  <div className="font-medium">+{formatCurrency(reservation.shortStaySuplement)}</div>
+                  <div className="font-medium">
+                    +{formatCurrency(reservation.shortStaySuplement)}
+                  </div>
                 </div>
               )}
 
               <hr className="my-3" />
-              
-              <div className="flex justify-between items-center font-medium">
+
+              <div className="flex items-center justify-between font-medium">
                 <div>Room Subtotal</div>
-                <div>{formatCurrency(reservation.subtotal - reservation.childrenDiscounts + reservation.shortStaySuplement)}</div>
+                <div>
+                  {formatCurrency(
+                    reservation.subtotal -
+                      reservation.childrenDiscounts +
+                      reservation.shortStaySuplement
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -302,17 +336,23 @@ export default function PaymentDetailsModal({
               <CardTitle className="text-lg">Croatian Taxes & Fees</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="flex justify-between items-center">
+              <div className="flex items-center justify-between">
                 <div>
                   <div className="font-medium">Tourism Tax</div>
                   <div className="text-sm text-gray-500">
-                    {pricingDetails.fees.tourism / (reservation.numberOfGuests * reservation.numberOfNights) === 1.10 ? '€1.10' : '€1.50'} per person per night × {reservation.numberOfGuests} guests × {reservation.numberOfNights} nights
+                    {pricingDetails.fees.tourism /
+                      (reservation.numberOfGuests * reservation.numberOfNights) ===
+                    1.1
+                      ? '€1.10'
+                      : '€1.50'}{' '}
+                    per person per night × {reservation.numberOfGuests} guests ×{' '}
+                    {reservation.numberOfNights} nights
                   </div>
                 </div>
                 <div className="font-medium">{formatCurrency(reservation.tourismTax)}</div>
               </div>
 
-              <div className="flex justify-between items-center">
+              <div className="flex items-center justify-between">
                 <div>
                   <div className="font-medium">VAT (25%)</div>
                   <div className="text-sm text-gray-500">Croatian Value Added Tax</div>
@@ -321,7 +361,7 @@ export default function PaymentDetailsModal({
               </div>
 
               {reservation.petFee > 0 && (
-                <div className="flex justify-between items-center">
+                <div className="flex items-center justify-between">
                   <div>
                     <div className="font-medium">Pet Fee</div>
                     <div className="text-sm text-gray-500">€20.00 per stay</div>
@@ -331,17 +371,19 @@ export default function PaymentDetailsModal({
               )}
 
               {reservation.parkingFee > 0 && (
-                <div className="flex justify-between items-center">
+                <div className="flex items-center justify-between">
                   <div>
                     <div className="font-medium">Parking Fee</div>
-                    <div className="text-sm text-gray-500">€7.00 per night × {reservation.numberOfNights} nights</div>
+                    <div className="text-sm text-gray-500">
+                      €7.00 per night × {reservation.numberOfNights} nights
+                    </div>
                   </div>
                   <div className="font-medium">{formatCurrency(reservation.parkingFee)}</div>
                 </div>
               )}
 
               {reservation.additionalCharges > 0 && (
-                <div className="flex justify-between items-center">
+                <div className="flex items-center justify-between">
                   <div>
                     <div className="font-medium">Additional Charges</div>
                     <div className="text-sm text-gray-500">Miscellaneous charges</div>
@@ -360,11 +402,12 @@ export default function PaymentDetailsModal({
               </CardHeader>
               <CardContent className="space-y-3">
                 {reservation.roomServiceItems.map((item) => (
-                  <div key={item.id} className="flex justify-between items-center">
+                  <div key={item.id} className="flex items-center justify-between">
                     <div>
                       <div className="font-medium">{item.itemName}</div>
                       <div className="text-sm text-gray-500">
-                        {item.quantity}x €{item.unitPrice.toFixed(2)} • {new Date(item.orderedAt).toLocaleDateString()}
+                        {item.quantity}x €{item.unitPrice.toFixed(2)} •{' '}
+                        {new Date(item.orderedAt).toLocaleDateString()}
                       </div>
                     </div>
                     <div className="font-medium">{formatCurrency(item.totalPrice)}</div>
@@ -377,7 +420,7 @@ export default function PaymentDetailsModal({
           {/* Total Amount */}
           <Card className="bg-blue-50">
             <CardContent className="pt-6">
-              <div className="flex justify-between items-center">
+              <div className="flex items-center justify-between">
                 <div>
                   <div className="text-xl font-bold">Total Amount</div>
                   <div className="text-sm text-gray-600">All taxes and fees included</div>
@@ -408,20 +451,18 @@ export default function PaymentDetailsModal({
                   </div>
                 </div>
                 <div className="flex items-center space-x-3">
-                  <Badge
-                    variant={paymentStatus === 'checked-out' ? 'default' : 'destructive'}
-                  >
+                  <Badge variant={paymentStatus === 'checked-out' ? 'default' : 'destructive'}>
                     {paymentStatus === 'checked-out' ? 'PAID' : 'PENDING'}
                   </Badge>
-                  
+
                   {paymentStatus !== 'checked-out' && (
                     <Button
                       onClick={handleMarkAsPaid}
                       disabled={isProcessing}
                       size="sm"
-                      className="bg-green-600 hover:bg-green-700 text-white"
+                      className="bg-green-600 text-white hover:bg-green-700"
                     >
-                      <CheckCircle className="h-4 w-4 mr-2" />
+                      <CheckCircle className="mr-2 h-4 w-4" />
                       {isProcessing ? 'Processing...' : 'Mark as Paid'}
                     </Button>
                   )}
@@ -431,7 +472,7 @@ export default function PaymentDetailsModal({
           </Card>
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row">
             <Button
               onClick={handlePrintInvoice}
               className="flex items-center space-x-2"
@@ -440,7 +481,7 @@ export default function PaymentDetailsModal({
               <Download className="h-4 w-4" />
               <span>Print PDF Invoice</span>
             </Button>
-            
+
             <Button
               onClick={handleSendEmail}
               className="flex items-center space-x-2"
@@ -450,20 +491,17 @@ export default function PaymentDetailsModal({
               <span>Send Reminder Email</span>
             </Button>
 
-            <Button
-              onClick={onClose}
-              variant="outline"
-              className="flex items-center space-x-2"
-            >
+            <Button onClick={onClose} variant="outline" className="flex items-center space-x-2">
               <FileText className="h-4 w-4" />
               <span>Close</span>
             </Button>
           </div>
 
           {/* Croatian Legal Notice */}
-          <div className="text-xs text-gray-500 p-3 bg-gray-50 rounded-md">
+          <div className="rounded-md bg-gray-50 p-3 text-xs text-gray-500">
             <strong>Hotel Porec</strong> • OIB: 87246357068 • 52440 Poreč, Croatia, R Konoba 1<br />
-            Phone: +385(0)52/451 611 • Email: hotelporec@pu.t-com.hr<br />
+            Phone: +385(0)52/451 611 • Email: hotelporec@pu.t-com.hr
+            <br />
             VAT included at 25% rate. Tourism tax collected per Croatian Law.
           </div>
         </div>

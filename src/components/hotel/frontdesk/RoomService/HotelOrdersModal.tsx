@@ -5,17 +5,11 @@ import { Button } from '../../../ui/button';
 import { Input } from '../../../ui/input';
 import { Label } from '../../../ui/label';
 import { Badge } from '../../../ui/badge';
-import {
-  ShoppingCart,
-  Plus,
-  Minus,
-  Search,
-  DollarSign
-} from 'lucide-react';
+import { ShoppingCart, Plus, Minus, Search, DollarSign } from 'lucide-react';
 import { supabase } from '../../../../lib/supabase';
 import { Reservation } from '../../../../lib/hotel/types';
 import { formatRoomNumber } from '../../../../lib/hotel/calendarUtils';
-import { useHotel } from '../../../../lib/hotel/state/SupabaseHotelContext';
+import { useRooms } from '../../../../lib/queries/hooks/useRooms';
 import { SAMPLE_GUESTS } from '../../../../lib/hotel/sampleData';
 
 interface OrderItem {
@@ -63,9 +57,9 @@ export default function HotelOrdersModal({
   reservation,
   isOpen,
   onClose,
-  onOrderComplete
+  onOrderComplete,
 }: HotelOrdersModalProps) {
-  const { rooms } = useHotel();
+  const { data: rooms = [] } = useRooms();
   // State - reusing the same structure as OrdersPage
   const [availableItems, setAvailableItems] = useState<InventoryItem[]>([]);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
@@ -83,11 +77,12 @@ export default function HotelOrdersModal({
   const loadAvailableItems = async () => {
     try {
       setIsLoading(true);
-      
+
       // Fetch items with inventory - reusing existing database structure from OrdersPage
       const { data: items, error } = await supabase
         .from('items')
-        .select(`
+        .select(
+          `
           id,
           name,
           description,
@@ -102,40 +97,46 @@ export default function HotelOrdersModal({
             expiration_date,
             location:locations(id, name)
           )
-        `)
+        `
+        )
         .eq('is_active', true)
         .eq('categories.name', 'Food & Beverage'); // Focus on food & beverage
 
       if (error) throw error;
 
       // Transform data - exact same logic as OrdersPage
-      const inventoryItems: InventoryItem[] = items?.map(item => {
-        const totalStock = item.inventory?.reduce((sum, inv) => sum + (inv.quantity || 0), 0) || 0;
-        
-        return {
-          id: item.id,
-          name: item.name,
-          description: item.description,
-          category: {
-            id: (item.category as Record<string, unknown>).id as number,
-            name: (item.category as Record<string, unknown>).name as string,
-            requires_expiration: (item.category as Record<string, unknown>).requires_expiration as boolean
-          },
-          unit: item.unit,
-          price: item.price || 0,
-          minimum_stock: item.minimum_stock,
-          is_active: item.is_active,
-          totalStock,
-          locations: item.inventory?.map(inv => ({
-            locationId: inv.location_id,
-            locationName: ((inv.location as Record<string, unknown>)?.name as string) || 'Unknown',
-            quantity: inv.quantity || 0,
-            expiration_date: inv.expiration_date
-          })) || []
-        };
-      }) || [];
+      const inventoryItems: InventoryItem[] =
+        items?.map((item) => {
+          const totalStock =
+            item.inventory?.reduce((sum, inv) => sum + (inv.quantity || 0), 0) || 0;
 
-      setAvailableItems(inventoryItems.filter(item => item.totalStock > 0));
+          return {
+            id: item.id,
+            name: item.name,
+            description: item.description,
+            category: {
+              id: (item.category as Record<string, unknown>).id as number,
+              name: (item.category as Record<string, unknown>).name as string,
+              requires_expiration: (item.category as Record<string, unknown>)
+                .requires_expiration as boolean,
+            },
+            unit: item.unit,
+            price: item.price || 0,
+            minimum_stock: item.minimum_stock,
+            is_active: item.is_active,
+            totalStock,
+            locations:
+              item.inventory?.map((inv) => ({
+                locationId: inv.location_id,
+                locationName:
+                  ((inv.location as Record<string, unknown>)?.name as string) || 'Unknown',
+                quantity: inv.quantity || 0,
+                expiration_date: inv.expiration_date,
+              })) || [],
+          };
+        }) || [];
+
+      setAvailableItems(inventoryItems.filter((item) => item.totalStock > 0));
     } catch (error) {
       console.error('Error loading items:', error);
     } finally {
@@ -149,8 +150,8 @@ export default function HotelOrdersModal({
       alert('Please set a price for this item first in the Items section.');
       return;
     }
-    const existingOrderItem = orderItems.find(oi => oi.itemId === item.id);
-    
+    const existingOrderItem = orderItems.find((oi) => oi.itemId === item.id);
+
     if (existingOrderItem) {
       updateOrderItemQuantity(item.id, existingOrderItem.quantity + 1);
     } else {
@@ -163,7 +164,7 @@ export default function HotelOrdersModal({
         quantity: 1,
         totalPrice: item.price,
         unit: item.unit,
-        availableStock: item.totalStock
+        availableStock: item.totalStock,
       };
       setOrderItems([...orderItems, newOrderItem]);
     }
@@ -171,19 +172,21 @@ export default function HotelOrdersModal({
 
   const updateOrderItemQuantity = (itemId: number, newQuantity: number) => {
     if (newQuantity <= 0) {
-      setOrderItems(orderItems.filter(item => item.itemId !== itemId));
+      setOrderItems(orderItems.filter((item) => item.itemId !== itemId));
       return;
     }
 
-    setOrderItems(orderItems.map(item => 
-      item.itemId === itemId 
-        ? { ...item, quantity: newQuantity, totalPrice: item.price * newQuantity }
-        : item
-    ));
+    setOrderItems(
+      orderItems.map((item) =>
+        item.itemId === itemId
+          ? { ...item, quantity: newQuantity, totalPrice: item.price * newQuantity }
+          : item
+      )
+    );
   };
 
   const removeFromOrder = (itemId: number) => {
-    setOrderItems(orderItems.filter(item => item.itemId !== itemId));
+    setOrderItems(orderItems.filter((item) => item.itemId !== itemId));
   };
 
   const calculateOrderTotal = () => {
@@ -195,14 +198,14 @@ export default function HotelOrdersModal({
 
   const handleAddToRoomBill = async () => {
     if (orderItems.length === 0) return;
-    
+
     try {
       setIsLoading(true);
-      
+
       // Deduct inventory (FIFO - oldest expiration first) - same logic as OrdersPage
       for (const orderItem of orderItems) {
         let remainingQuantity = orderItem.quantity;
-        
+
         // Get inventory for this item, sorted by expiration date (FIFO)
         const { data: inventoryRecords } = await supabase
           .from('inventory')
@@ -214,18 +217,18 @@ export default function HotelOrdersModal({
         if (inventoryRecords) {
           for (const record of inventoryRecords) {
             if (remainingQuantity <= 0) break;
-            
+
             const deductQuantity = Math.min(remainingQuantity, record.quantity);
             const newQuantity = record.quantity - deductQuantity;
-            
+
             await supabase
               .from('inventory')
-              .update({ 
+              .update({
                 quantity: newQuantity,
-                updated_at: new Date().toISOString()
+                updated_at: new Date().toISOString(),
               })
               .eq('id', record.id);
-            
+
             remainingQuantity -= deductQuantity;
           }
         }
@@ -233,7 +236,7 @@ export default function HotelOrdersModal({
 
       const totals = calculateOrderTotal();
       onOrderComplete(orderItems, totals.total);
-      
+
       // Reset and close
       setOrderItems([]);
       setSearchTerm('');
@@ -255,29 +258,29 @@ export default function HotelOrdersModal({
     onClose();
   };
 
-  const filteredItems = availableItems.filter(item =>
-    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.category.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredItems = availableItems.filter(
+    (item) =>
+      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.category.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const totals = calculateOrderTotal();
 
   if (!isOpen) return null;
 
-  const room = rooms.find(r => r.id === reservation.roomId);
-  const guest = SAMPLE_GUESTS.find(g => g.id === reservation.guestId);
+  const room = rooms.find((r) => r.id === reservation.roomId);
+  const guest = SAMPLE_GUESTS.find((g) => g.id === reservation.guestId);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
+    <div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black">
+      <div className="max-h-[90vh] w-full max-w-6xl overflow-hidden rounded-lg bg-white shadow-xl">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+        <div className="flex items-center justify-between border-b bg-gradient-to-r from-blue-500 to-blue-600 p-6 text-white">
           <div>
-            <h2 className="text-xl font-semibold flex items-center">
-              🛎️ Room Service Order
-            </h2>
-            <p className="text-blue-100 text-sm">
-              Room {room ? formatRoomNumber(room) : reservation.roomId} • {guest?.fullName || 'Unknown Guest'}
+            <h2 className="flex items-center text-xl font-semibold">🛎️ Room Service Order</h2>
+            <p className="text-sm text-blue-100">
+              Room {room ? formatRoomNumber(room) : reservation.roomId} •{' '}
+              {guest?.fullName || 'Unknown Guest'}
             </p>
           </div>
           <Button
@@ -292,7 +295,7 @@ export default function HotelOrdersModal({
 
         <div className="flex h-full max-h-[calc(90vh-80px)]">
           {/* Left Column - Items Catalog - Same layout as OrdersPage */}
-          <div className="flex-1 p-6 border-r overflow-y-auto">
+          <div className="flex-1 overflow-y-auto border-r p-6">
             <Card>
               <CardHeader>
                 <CardTitle>Food & Beverage Menu</CardTitle>
@@ -308,21 +311,21 @@ export default function HotelOrdersModal({
               </CardHeader>
               <CardContent>
                 {isLoading ? (
-                  <div className="text-center py-8">Loading items...</div>
+                  <div className="py-8 text-center">Loading items...</div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
-                    {filteredItems.map(item => (
-                      <div key={item.id} className="border rounded-lg p-4 hover:bg-gray-50">
-                        <div className="flex justify-between items-start mb-2">
+                  <div className="grid max-h-96 grid-cols-1 gap-4 overflow-y-auto md:grid-cols-2">
+                    {filteredItems.map((item) => (
+                      <div key={item.id} className="rounded-lg border p-4 hover:bg-gray-50">
+                        <div className="mb-2 flex items-start justify-between">
                           <h4 className="font-medium">{item.name}</h4>
                           <Badge variant="secondary">{item.category.name}</Badge>
                         </div>
-                        
+
                         {item.description && (
-                          <p className="text-sm text-gray-600 mb-2">{item.description}</p>
+                          <p className="mb-2 text-sm text-gray-600">{item.description}</p>
                         )}
-                        
-                        <div className="flex justify-between items-center mb-3">
+
+                        <div className="mb-3 flex items-center justify-between">
                           <span className="font-semibold text-blue-600">
                             €{item.price.toFixed(2)} / {item.unit}
                           </span>
@@ -330,13 +333,13 @@ export default function HotelOrdersModal({
                             Stock: {item.totalStock} {item.unit}
                           </span>
                         </div>
-                        
+
                         <Button
                           onClick={() => addToOrder(item)}
                           className="w-full"
                           disabled={item.totalStock === 0 || item.price === 0}
                         >
-                          <Plus className="h-4 w-4 mr-2" />
+                          <Plus className="mr-2 h-4 w-4" />
                           Add to Order
                         </Button>
                       </div>
@@ -348,7 +351,7 @@ export default function HotelOrdersModal({
           </div>
 
           {/* Right Column - Order Summary - Same layout as OrdersPage */}
-          <div className="w-80 p-6 bg-gray-50">
+          <div className="w-80 bg-gray-50 p-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
@@ -358,41 +361,46 @@ export default function HotelOrdersModal({
               </CardHeader>
               <CardContent className="space-y-4">
                 {orderItems.length === 0 ? (
-                  <div className="text-center text-gray-500 py-8">
-                    No items in order
-                  </div>
+                  <div className="py-8 text-center text-gray-500">No items in order</div>
                 ) : (
                   <>
-                    <div className="space-y-3 max-h-64 overflow-y-auto">
-                      {orderItems.map(item => (
-                        <div key={item.id} className="flex items-center justify-between p-2 border rounded">
+                    <div className="max-h-64 space-y-3 overflow-y-auto">
+                      {orderItems.map((item) => (
+                        <div
+                          key={item.id}
+                          className="flex items-center justify-between rounded border p-2"
+                        >
                           <div className="flex-1">
-                            <h5 className="font-medium text-sm">{item.itemName}</h5>
+                            <h5 className="text-sm font-medium">{item.itemName}</h5>
                             <p className="text-xs text-gray-500">
                               €{item.price.toFixed(2)} / {item.unit}
                             </p>
                           </div>
-                          
+
                           <div className="flex items-center space-x-2">
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => updateOrderItemQuantity(item.itemId, item.quantity - 1)}
+                              onClick={() =>
+                                updateOrderItemQuantity(item.itemId, item.quantity - 1)
+                              }
                             >
                               <Minus className="h-3 w-3" />
                             </Button>
-                            
+
                             <span className="w-8 text-center text-sm">{item.quantity}</span>
-                            
+
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => updateOrderItemQuantity(item.itemId, item.quantity + 1)}
+                              onClick={() =>
+                                updateOrderItemQuantity(item.itemId, item.quantity + 1)
+                              }
                               disabled={item.quantity >= item.availableStock}
                             >
                               <Plus className="h-3 w-3" />
                             </Button>
-                            
+
                             <Button
                               variant="ghost"
                               size="sm"
@@ -407,7 +415,7 @@ export default function HotelOrdersModal({
                     </div>
 
                     {/* Order Totals */}
-                    <div className="border-t pt-3 space-y-2">
+                    <div className="space-y-2 border-t pt-3">
                       <div className="flex justify-between text-sm">
                         <span>Subtotal:</span>
                         <span>€{totals.subtotal.toFixed(2)}</span>
@@ -416,7 +424,7 @@ export default function HotelOrdersModal({
                         <span>VAT (25%):</span>
                         <span>€{totals.tax.toFixed(2)}</span>
                       </div>
-                      <div className="flex justify-between font-semibold text-lg">
+                      <div className="flex justify-between text-lg font-semibold">
                         <span>Total:</span>
                         <span className="text-blue-600">€{totals.total.toFixed(2)}</span>
                       </div>
@@ -429,7 +437,7 @@ export default function HotelOrdersModal({
                         value={orderNotes}
                         onChange={(e) => setOrderNotes(e.target.value)}
                         placeholder="Special instructions, allergies, etc."
-                        className="w-full p-2 border border-gray-300 rounded-md text-sm"
+                        className="w-full rounded-md border border-gray-300 p-2 text-sm"
                         rows={2}
                       />
                     </div>
@@ -438,10 +446,10 @@ export default function HotelOrdersModal({
                     <Button
                       onClick={handleAddToRoomBill}
                       disabled={orderItems.length === 0 || isLoading}
-                      className="w-full bg-blue-500 hover:bg-blue-600 text-white"
+                      className="w-full bg-blue-500 text-white hover:bg-blue-600"
                       size="lg"
                     >
-                      <DollarSign className="h-4 w-4 mr-2" />
+                      <DollarSign className="mr-2 h-4 w-4" />
                       Add to Room Bill (€{totals.total.toFixed(2)})
                     </Button>
                   </>

@@ -1,10 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '../../../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
 import { Button } from '../../../ui/button';
 import { Badge } from '../../../ui/badge';
@@ -23,10 +18,11 @@ import {
   Baby,
   Wifi,
   Car,
-  CheckCheck
+  CheckCheck,
 } from 'lucide-react';
 import { Reservation } from '../../../../lib/hotel/types';
-import { useHotel } from '../../../../lib/hotel/state/SupabaseHotelContext';
+import { useUpdateReservationStatus } from '../../../../lib/queries/hooks/useReservations';
+import { useRooms } from '../../../../lib/queries/hooks/useRooms';
 import { SAMPLE_GUESTS } from '../../../../lib/hotel/sampleData';
 import { HotelEmailService } from '../../../../lib/emailService';
 // Removed static HOTEL_POREC_ROOMS import - now using dynamic rooms from context
@@ -46,12 +42,16 @@ interface CheckInStep {
   icon: React.ComponentType<{ className?: string }>;
 }
 
-export default function CheckInWorkflow({
-  isOpen,
-  onClose,
-  reservation
-}: CheckInWorkflowProps) {
-  const { rooms, updateReservationStatus, isUpdating } = useHotel();
+export default function CheckInWorkflow({ isOpen, onClose, reservation }: CheckInWorkflowProps) {
+  const { data: rooms = [] } = useRooms();
+  const updateReservationStatusMutation = useUpdateReservationStatus();
+  const isUpdating = updateReservationStatusMutation.isPending;
+  const updateReservationStatus = async (id: string, status: string) => {
+    await updateReservationStatusMutation.mutateAsync({
+      id,
+      status: status as import('../../../../lib/hotel/types').ReservationStatus,
+    });
+  };
   const [checkInSteps, setCheckInSteps] = useState<CheckInStep[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [checkInNotes, setCheckInNotes] = useState('');
@@ -64,8 +64,8 @@ export default function CheckInWorkflow({
   } | null>(null);
 
   // Find associated guest and room data
-  const guest = reservation ? SAMPLE_GUESTS.find(g => g.id === reservation.guestId) : null;
-  const room = reservation ? rooms.find(r => r.id === reservation.roomId) : null;
+  const guest = reservation ? SAMPLE_GUESTS.find((g) => g.id === reservation.guestId) : null;
+  const room = reservation ? rooms.find((r) => r.id === reservation.roomId) : null;
 
   // Initialize check-in steps
   useEffect(() => {
@@ -78,7 +78,7 @@ export default function CheckInWorkflow({
         description: 'Check passport/ID and confirm guest details',
         completed: false,
         required: true,
-        icon: User
+        icon: User,
       },
       {
         id: 'payment',
@@ -86,7 +86,7 @@ export default function CheckInWorkflow({
         description: `Payment status: ${reservation.status === 'checked-out' ? 'Already paid' : 'Will pay at checkout'}`,
         completed: true, // Always completed since payment is not required for check-in
         required: false, // Not required - guests can pay at checkout
-        icon: CreditCard
+        icon: CreditCard,
       },
       {
         id: 'room-ready',
@@ -94,7 +94,7 @@ export default function CheckInWorkflow({
         description: 'Ensure room is cleaned and prepared for guest',
         completed: false,
         required: true,
-        icon: CheckCircle
+        icon: CheckCircle,
       },
       {
         id: 'room-key',
@@ -102,7 +102,7 @@ export default function CheckInWorkflow({
         description: `Provide key/keycard for Room ${room?.number}`,
         completed: roomKeyIssued,
         required: true,
-        icon: Key
+        icon: Key,
       },
       {
         id: 'amenities',
@@ -110,7 +110,7 @@ export default function CheckInWorkflow({
         description: 'Brief guest on hotel facilities and services',
         completed: false,
         required: true,
-        icon: MapPin
+        icon: MapPin,
       },
       {
         id: 'wifi',
@@ -118,8 +118,8 @@ export default function CheckInWorkflow({
         description: 'Share WiFi network name and password',
         completed: wifiInfoProvided,
         required: false,
-        icon: Wifi
-      }
+        icon: Wifi,
+      },
     ];
 
     // Add parking step if guest has children (likely to have car) or is VIP
@@ -130,22 +130,22 @@ export default function CheckInWorkflow({
         description: 'Provide parking space if requested',
         completed: parkingAssigned,
         required: false,
-        icon: Car
+        icon: Car,
       });
     }
 
     setCheckInSteps(steps);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reservation, guest, roomKeyIssued, wifiInfoProvided, parkingAssigned]);
 
   const handleStepToggle = (stepId: string) => {
-    setCheckInSteps(prev => prev.map(step =>
-      step.id === stepId ? { ...step, completed: !step.completed } : step
-    ));
+    setCheckInSteps((prev) =>
+      prev.map((step) => (step.id === stepId ? { ...step, completed: !step.completed } : step))
+    );
   };
 
   const handleCheckAll = () => {
-    setCheckInSteps(prev => prev.map(step => ({ ...step, completed: true })));
+    setCheckInSteps((prev) => prev.map((step) => ({ ...step, completed: true })));
     // Also set individual state items
     setRoomKeyIssued(true);
     setWifiInfoProvided(true);
@@ -153,7 +153,7 @@ export default function CheckInWorkflow({
   };
 
   const canCompleteCheckIn = () => {
-    return checkInSteps.filter(step => step.required).every(step => step.completed);
+    return checkInSteps.filter((step) => step.required).every((step) => step.completed);
   };
 
   const handleCompleteCheckIn = async () => {
@@ -167,7 +167,11 @@ export default function CheckInWorkflow({
 
       // Send welcome email
       console.log(`📧 Sending welcome email to ${guest?.email}...`);
-      const emailResult = await HotelEmailService.sendWelcomeEmail(reservation, guest ?? undefined, room ?? undefined);
+      const emailResult = await HotelEmailService.sendWelcomeEmail(
+        reservation,
+        guest ?? undefined,
+        room ?? undefined
+      );
       setEmailSendResult(emailResult);
 
       if (emailResult.success) {
@@ -180,10 +184,12 @@ export default function CheckInWorkflow({
       console.log(`Check-in completed for ${guest?.fullName} in Room ${room?.number}`);
 
       // Close workflow after showing feedback
-      setTimeout(() => {
-        onClose();
-      }, emailResult.success ? 2000 : 3000); // Longer delay if email failed
-
+      setTimeout(
+        () => {
+          onClose();
+        },
+        emailResult.success ? 2000 : 3000
+      ); // Longer delay if email failed
     } catch (error) {
       console.error('Failed to complete check-in:', error);
       alert('Failed to complete check-in. Please try again.');
@@ -194,7 +200,7 @@ export default function CheckInWorkflow({
   };
 
   const getProgressPercentage = () => {
-    const completedSteps = checkInSteps.filter(step => step.completed).length;
+    const completedSteps = checkInSteps.filter((step) => step.completed).length;
     return checkInSteps.length > 0 ? (completedSteps / checkInSteps.length) * 100 : 0;
   };
 
@@ -205,13 +211,15 @@ export default function CheckInWorkflow({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-3">
             <LogIn className="h-6 w-6 text-green-600" />
             <span>Check-In Workflow</span>
-            <Badge variant={isEarlyCheckIn ? "secondary" : isLateCheckIn ? "destructive" : "default"}>
-              {isEarlyCheckIn ? "Early Arrival" : isLateCheckIn ? "Late Arrival" : "On Time"}
+            <Badge
+              variant={isEarlyCheckIn ? 'secondary' : isLateCheckIn ? 'destructive' : 'default'}
+            >
+              {isEarlyCheckIn ? 'Early Arrival' : isLateCheckIn ? 'Late Arrival' : 'On Time'}
             </Badge>
           </DialogTitle>
         </DialogHeader>
@@ -223,9 +231,9 @@ export default function CheckInWorkflow({
               <span>Check-in Progress</span>
               <span>{Math.round(getProgressPercentage())}% Complete</span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-green-600 h-2 rounded-full transition-all duration-300"
+            <div className="h-2 w-full rounded-full bg-gray-200">
+              <div
+                className="h-2 rounded-full bg-green-600 transition-all duration-300"
                 style={{ width: `${getProgressPercentage()}%` }}
               />
             </div>
@@ -240,13 +248,11 @@ export default function CheckInWorkflow({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <div className="flex items-center space-x-2">
                     <span className="font-medium">{guest.fullName}</span>
-                    {guest.isVip && (
-                      <Badge variant="secondary">VIP</Badge>
-                    )}
+                    {guest.isVip && <Badge variant="secondary">VIP</Badge>}
                   </div>
                   <div className="text-sm text-gray-600">
                     {guest.email} • {guest.phone}
@@ -274,7 +280,8 @@ export default function CheckInWorkflow({
                   <div className="flex items-center space-x-2">
                     <Calendar className="h-4 w-4 text-gray-500" />
                     <span className="text-sm">
-                      {reservation.checkIn.toLocaleDateString()} - {reservation.checkOut.toLocaleDateString()}
+                      {reservation.checkIn.toLocaleDateString()} -{' '}
+                      {reservation.checkOut.toLocaleDateString()}
                     </span>
                   </div>
                 </div>
@@ -284,7 +291,9 @@ export default function CheckInWorkflow({
 
           {/* Time Alerts */}
           {(isEarlyCheckIn || isLateCheckIn) && (
-            <Card className={`border-l-4 ${isEarlyCheckIn ? 'border-l-blue-500 bg-blue-50' : 'border-l-red-500 bg-red-50'}`}>
+            <Card
+              className={`border-l-4 ${isEarlyCheckIn ? 'border-l-blue-500 bg-blue-50' : 'border-l-red-500 bg-red-50'}`}
+            >
               <CardContent className="p-4">
                 <div className="flex items-center space-x-2">
                   {isEarlyCheckIn ? (
@@ -293,11 +302,13 @@ export default function CheckInWorkflow({
                     <AlertCircle className="h-5 w-5 text-red-600" />
                   )}
                   <div>
-                    <p className={`font-medium ${isEarlyCheckIn ? 'text-blue-800' : 'text-red-800'}`}>
+                    <p
+                      className={`font-medium ${isEarlyCheckIn ? 'text-blue-800' : 'text-red-800'}`}
+                    >
                       {isEarlyCheckIn ? 'Early Arrival' : 'Late Arrival'}
                     </p>
                     <p className={`text-sm ${isEarlyCheckIn ? 'text-blue-600' : 'text-red-600'}`}>
-                      {isEarlyCheckIn 
+                      {isEarlyCheckIn
                         ? 'Guest arrived before official check-in time. Room may not be ready.'
                         : 'Guest arrived significantly after expected check-in time. Consider calling guest.'}
                     </p>
@@ -316,9 +327,9 @@ export default function CheckInWorkflow({
                   variant="outline"
                   size="sm"
                   onClick={handleCheckAll}
-                  className="bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700"
+                  className="border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100"
                 >
-                  <CheckCheck className="h-4 w-4 mr-2" />
+                  <CheckCheck className="mr-2 h-4 w-4" />
                   Check All (Experienced Staff)
                 </Button>
               </div>
@@ -330,20 +341,20 @@ export default function CheckInWorkflow({
                   return (
                     <div
                       key={step.id}
-                      className={`flex items-center space-x-4 p-4 rounded-lg border transition-colors cursor-pointer ${
-                        step.completed 
-                          ? 'bg-green-50 border-green-200' 
-                          : step.required 
-                            ? 'bg-white border-gray-200 hover:bg-gray-50' 
-                            : 'bg-gray-50 border-gray-100 hover:bg-gray-100'
+                      className={`flex cursor-pointer items-center space-x-4 rounded-lg border p-4 transition-colors ${
+                        step.completed
+                          ? 'border-green-200 bg-green-50'
+                          : step.required
+                            ? 'border-gray-200 bg-white hover:bg-gray-50'
+                            : 'border-gray-100 bg-gray-50 hover:bg-gray-100'
                       }`}
                       onClick={() => handleStepToggle(step.id)}
                     >
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                        step.completed 
-                          ? 'bg-green-600 text-white' 
-                          : 'bg-gray-200 text-gray-600'
-                      }`}>
+                      <div
+                        className={`flex h-8 w-8 items-center justify-center rounded-full ${
+                          step.completed ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'
+                        }`}
+                      >
                         {step.completed ? (
                           <CheckCircle className="h-4 w-4" />
                         ) : (
@@ -354,14 +365,14 @@ export default function CheckInWorkflow({
                         <div className="flex items-center space-x-2">
                           <h4 className="font-medium">{step.title}</h4>
                           {step.required && !step.completed && (
-                            <Badge variant="destructive" className="text-xs">Required</Badge>
+                            <Badge variant="destructive" className="text-xs">
+                              Required
+                            </Badge>
                           )}
                         </div>
                         <p className="text-sm text-gray-600">{step.description}</p>
                       </div>
-                      <div className="text-2xl">
-                        {step.completed ? '✅' : '⭕'}
-                      </div>
+                      <div className="text-2xl">{step.completed ? '✅' : '⭕'}</div>
                     </div>
                   );
                 })}
@@ -379,7 +390,7 @@ export default function CheckInWorkflow({
             </CardHeader>
             <CardContent>
               <textarea
-                className="w-full p-3 border border-gray-300 rounded-md resize-none focus:ring-2 focus:ring-blue-500"
+                className="w-full resize-none rounded-md border border-gray-300 p-3 focus:ring-2 focus:ring-blue-500"
                 rows={3}
                 placeholder="Add any notes about the check-in process, guest requests, or special circumstances..."
                 value={checkInNotes}
@@ -389,16 +400,14 @@ export default function CheckInWorkflow({
           </Card>
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-between pt-4 border-t">
+          <div className="flex items-center justify-between border-t pt-4">
             <Button variant="outline" onClick={onClose} disabled={isProcessing}>
               Cancel
             </Button>
 
             <div className="flex items-center space-x-3">
               {!canCompleteCheckIn() && (
-                <span className="text-sm text-red-600">
-                  Complete all required steps to proceed
-                </span>
+                <span className="text-sm text-red-600">Complete all required steps to proceed</span>
               )}
 
               <Button
@@ -407,9 +416,9 @@ export default function CheckInWorkflow({
                 className="bg-green-600 hover:bg-green-700"
               >
                 {isProcessing || isUpdating ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
                 ) : (
-                  <LogIn className="h-4 w-4 mr-2" />
+                  <LogIn className="mr-2 h-4 w-4" />
                 )}
                 {isProcessing || isUpdating ? 'Processing...' : 'Complete Check-In'}
               </Button>
@@ -418,20 +427,24 @@ export default function CheckInWorkflow({
 
           {/* Email Send Feedback */}
           {emailSendResult && (
-            <div className={`mt-4 p-4 rounded-lg ${
-              emailSendResult.success
-                ? 'bg-green-50 border border-green-200'
-                : 'bg-yellow-50 border border-yellow-200'
-            }`}>
+            <div
+              className={`mt-4 rounded-lg p-4 ${
+                emailSendResult.success
+                  ? 'border border-green-200 bg-green-50'
+                  : 'border border-yellow-200 bg-yellow-50'
+              }`}
+            >
               <div className="flex items-center space-x-2">
                 {emailSendResult.success ? (
                   <CheckCircle className="h-5 w-5 text-green-600" />
                 ) : (
                   <AlertCircle className="h-5 w-5 text-yellow-600" />
                 )}
-                <p className={`text-sm font-medium ${
-                  emailSendResult.success ? 'text-green-800' : 'text-yellow-800'
-                }`}>
+                <p
+                  className={`text-sm font-medium ${
+                    emailSendResult.success ? 'text-green-800' : 'text-yellow-800'
+                  }`}
+                >
                   {emailSendResult.message}
                 </p>
               </div>

@@ -1,10 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '../../../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
 import { Button } from '../../../ui/button';
 import { Badge } from '../../../ui/badge';
@@ -19,10 +14,10 @@ import {
   X,
   Edit,
   Star,
-  Baby
+  Baby,
 } from 'lucide-react';
 import { Guest, GuestChild } from '../../../../lib/hotel/types';
-import { useHotel } from '../../../../lib/hotel/state/SupabaseHotelContext';
+import { useCreateGuest, useUpdateGuest } from '../../../../lib/queries/hooks/useGuests';
 
 interface GuestProfileModalProps {
   isOpen: boolean;
@@ -40,9 +35,21 @@ interface GuestProfileModalProps {
 }
 
 const NATIONALITIES = [
-  'German', 'Italian', 'Austrian', 'Croatian', 'French', 'Swiss', 
-  'Dutch', 'Belgian', 'Czech', 'Slovenian', 'Hungarian', 'Polish',
-  'British', 'Spanish', 'Other'
+  'German',
+  'Italian',
+  'Austrian',
+  'Croatian',
+  'French',
+  'Swiss',
+  'Dutch',
+  'Belgian',
+  'Czech',
+  'Slovenian',
+  'Hungarian',
+  'Polish',
+  'British',
+  'Spanish',
+  'Other',
 ];
 
 const LANGUAGES = [
@@ -51,7 +58,7 @@ const LANGUAGES = [
   { code: 'it', name: 'Italian' },
   { code: 'fr', name: 'French' },
   { code: 'hr', name: 'Croatian' },
-  { code: 'other', name: 'Other' }
+  { code: 'other', name: 'Other' },
 ];
 
 export default function GuestProfileModal({
@@ -60,9 +67,10 @@ export default function GuestProfileModal({
   guest,
   initialData,
   mode,
-  onSave
+  onSave,
 }: GuestProfileModalProps) {
-  const { createGuest, updateGuest } = useHotel();
+  const createGuestMutation = useCreateGuest();
+  const updateGuestMutation = useUpdateGuest();
   const [isEditing, setIsEditing] = useState(mode === 'edit' || mode === 'create');
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState<Partial<Guest>>({});
@@ -86,28 +94,28 @@ export default function GuestProfileModal({
         children: [],
         totalStays: 0,
         isVip: false,
-        emergencyContactName: ''
+        emergencyContactName: '',
       });
       setChildren([]);
     }
   }, [guest, initialData, isOpen]);
 
   const handleInputChange = (field: keyof Guest, value: unknown) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const addChild = () => {
-    setChildren(prev => [...prev, { name: '', age: 0, dateOfBirth: new Date() }]);
+    setChildren((prev) => [...prev, { name: '', age: 0, dateOfBirth: new Date() }]);
   };
 
   const updateChild = (index: number, field: keyof GuestChild, value: unknown) => {
-    setChildren(prev => prev.map((child, i) => 
-      i === index ? { ...child, [field]: value } : child
-    ));
+    setChildren((prev) =>
+      prev.map((child, i) => (i === index ? { ...child, [field]: value } : child))
+    );
   };
 
   const removeChild = (index: number) => {
-    setChildren(prev => prev.filter((_, i) => i !== index));
+    setChildren((prev) => prev.filter((_, i) => i !== index));
   };
 
   const calculateAge = (dateOfBirth: Date): number => {
@@ -115,7 +123,7 @@ export default function GuestProfileModal({
     const birth = new Date(dateOfBirth);
     const age = today.getFullYear() - birth.getFullYear();
     const monthDiff = today.getMonth() - birth.getMonth();
-    
+
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
       return age - 1;
     }
@@ -134,11 +142,11 @@ export default function GuestProfileModal({
 
       // Process children data
       const processedChildren: GuestChild[] = children
-        .filter(child => child.name && child.dateOfBirth)
-        .map(child => ({
+        .filter((child) => child.name && child.dateOfBirth)
+        .map((child) => ({
           name: child.name!,
           dateOfBirth: new Date(child.dateOfBirth!),
-          age: child.dateOfBirth ? calculateAge(new Date(child.dateOfBirth)) : 0
+          age: child.dateOfBirth ? calculateAge(new Date(child.dateOfBirth)) : 0,
         }));
 
       const guestData: Guest = {
@@ -159,13 +167,13 @@ export default function GuestProfileModal({
         isVip: formData.isVip || false,
         vipLevel: 0,
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       if (mode === 'create') {
-        await createGuest(guestData);
+        await createGuestMutation.mutateAsync(guestData);
       } else {
-        await updateGuest(guestData.id, guestData);
+        await updateGuestMutation.mutateAsync({ id: guestData.id, updates: guestData });
       }
 
       if (onSave) {
@@ -190,34 +198,41 @@ export default function GuestProfileModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <User className="h-6 w-6" />
               <span>
-                {mode === 'create' ? 'Create New Guest' : 
-                 isEditing ? 'Edit Guest Profile' : 'Guest Profile'}
+                {mode === 'create'
+                  ? 'Create New Guest'
+                  : isEditing
+                    ? 'Edit Guest Profile'
+                    : 'Guest Profile'}
               </span>
             </div>
             <div className="flex items-center space-x-2">
               {mode !== 'create' && !isEditing && (
                 <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
-                  <Edit className="h-4 w-4 mr-1" />
+                  <Edit className="mr-1 h-4 w-4" />
                   Edit
                 </Button>
               )}
               {isEditing && (
                 <>
-                  <Button variant="outline" size="sm" onClick={() => {
-                    setIsEditing(false);
-                    if (mode === 'create') onClose();
-                  }}>
-                    <X className="h-4 w-4 mr-1" />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setIsEditing(false);
+                      if (mode === 'create') onClose();
+                    }}
+                  >
+                    <X className="mr-1 h-4 w-4" />
                     Cancel
                   </Button>
                   <Button size="sm" onClick={handleSave} disabled={isSaving}>
-                    <Save className="h-4 w-4 mr-1" />
+                    <Save className="mr-1 h-4 w-4" />
                     {isSaving ? 'Saving...' : 'Save'}
                   </Button>
                 </>
@@ -235,22 +250,22 @@ export default function GuestProfileModal({
                 <span>Basic Information</span>
                 {formData.isVip && (
                   <Badge variant="secondary" className="ml-2">
-                    <Star className="h-3 w-3 mr-1" />
+                    <Star className="mr-1 h-3 w-3" />
                     VIP
                   </Badge>
                 )}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="mb-1 block text-sm font-medium text-gray-700">
                     Full Name *
                   </label>
                   {isEditing ? (
                     <input
                       type="text"
-                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                      className="w-full rounded-md border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500"
                       value={formData.fullName || ''}
                       onChange={(e) => handleInputChange('fullName', e.target.value)}
                       placeholder="Enter full name"
@@ -261,13 +276,13 @@ export default function GuestProfileModal({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="mb-1 block text-sm font-medium text-gray-700">
                     Email Address *
                   </label>
                   {isEditing ? (
                     <input
                       type="email"
-                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                      className="w-full rounded-md border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500"
                       value={formData.email || ''}
                       onChange={(e) => handleInputChange('email', e.target.value)}
                       placeholder="guest@example.com"
@@ -281,13 +296,13 @@ export default function GuestProfileModal({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="mb-1 block text-sm font-medium text-gray-700">
                     Phone Number *
                   </label>
                   {isEditing ? (
                     <input
                       type="tel"
-                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                      className="w-full rounded-md border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500"
                       value={formData.phone || ''}
                       onChange={(e) => handleInputChange('phone', e.target.value)}
                       placeholder="+49-30-12345678"
@@ -301,34 +316,38 @@ export default function GuestProfileModal({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="mb-1 block text-sm font-medium text-gray-700">
                     Emergency Contact
                   </label>
                   {isEditing ? (
                     <input
                       type="text"
-                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                      className="w-full rounded-md border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500"
                       value={formData.emergencyContactName || ''}
                       onChange={(e) => handleInputChange('emergencyContactName', e.target.value)}
                       placeholder="Contact person and phone"
                     />
                   ) : (
-                    <p className="p-2 text-gray-700">{formData.emergencyContactName || 'Not provided'}</p>
+                    <p className="p-2 text-gray-700">
+                      {formData.emergencyContactName || 'Not provided'}
+                    </p>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="mb-1 block text-sm font-medium text-gray-700">
                     Nationality
                   </label>
                   {isEditing ? (
                     <select
-                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                      className="w-full rounded-md border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500"
                       value={formData.nationality || ''}
                       onChange={(e) => handleInputChange('nationality', e.target.value)}
                     >
-                      {NATIONALITIES.map(nationality => (
-                        <option key={nationality} value={nationality}>{nationality}</option>
+                      {NATIONALITIES.map((nationality) => (
+                        <option key={nationality} value={nationality}>
+                          {nationality}
+                        </option>
                       ))}
                     </select>
                   ) : (
@@ -340,37 +359,40 @@ export default function GuestProfileModal({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="mb-1 block text-sm font-medium text-gray-700">
                     Preferred Language
                   </label>
                   {isEditing ? (
                     <select
-                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                      className="w-full rounded-md border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500"
                       value={formData.preferredLanguage || ''}
                       onChange={(e) => handleInputChange('preferredLanguage', e.target.value)}
                     >
-                      {LANGUAGES.map(lang => (
-                        <option key={lang.code} value={lang.code}>{lang.name}</option>
+                      {LANGUAGES.map((lang) => (
+                        <option key={lang.code} value={lang.code}>
+                          {lang.name}
+                        </option>
                       ))}
                     </select>
                   ) : (
                     <p className="p-2 text-gray-700">
-                      {LANGUAGES.find(l => l.code === formData.preferredLanguage)?.name || formData.preferredLanguage}
+                      {LANGUAGES.find((l) => l.code === formData.preferredLanguage)?.name ||
+                        formData.preferredLanguage}
                     </p>
                   )}
                 </div>
               </div>
 
               {/* Special Preferences */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="flex items-center space-x-2">
                   {isEditing ? (
-                    <label className="flex items-center space-x-2 cursor-pointer">
+                    <label className="flex cursor-pointer items-center space-x-2">
                       <input
                         type="checkbox"
                         checked={formData.hasPets || false}
                         onChange={(e) => handleInputChange('hasPets', e.target.checked)}
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
                       <span>Travels with pets</span>
                     </label>
@@ -386,19 +408,19 @@ export default function GuestProfileModal({
 
                 <div className="flex items-center space-x-2">
                   {isEditing ? (
-                    <label className="flex items-center space-x-2 cursor-pointer">
+                    <label className="flex cursor-pointer items-center space-x-2">
                       <input
                         type="checkbox"
                         checked={formData.isVip || false}
                         onChange={(e) => handleInputChange('isVip', e.target.checked)}
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
                       <span>VIP Status</span>
                     </label>
                   ) : (
                     formData.isVip && (
                       <Badge variant="secondary">
-                        <Star className="h-3 w-3 mr-1" />
+                        <Star className="mr-1 h-3 w-3" />
                         VIP Guest
                       </Badge>
                     )
@@ -425,35 +447,47 @@ export default function GuestProfileModal({
             </CardHeader>
             <CardContent>
               {children.length === 0 ? (
-                <p className="text-gray-500 text-center py-4">No children registered</p>
+                <p className="py-4 text-center text-gray-500">No children registered</p>
               ) : (
                 <div className="space-y-3">
                   {children.map((child, index) => (
-                    <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                    <div
+                      key={index}
+                      className="flex items-center space-x-3 rounded-lg bg-gray-50 p-3"
+                    >
                       {isEditing ? (
                         <>
                           <input
                             type="text"
-                            className="flex-1 p-2 border border-gray-300 rounded-md"
+                            className="flex-1 rounded-md border border-gray-300 p-2"
                             placeholder="Child's name"
                             value={child.name || ''}
                             onChange={(e) => updateChild(index, 'name', e.target.value)}
                           />
                           <input
                             type="date"
-                            className="p-2 border border-gray-300 rounded-md"
-                            value={child.dateOfBirth ? new Date(child.dateOfBirth).toISOString().split('T')[0] : ''}
-                            onChange={(e) => updateChild(index, 'dateOfBirth', new Date(e.target.value))}
+                            className="rounded-md border border-gray-300 p-2"
+                            value={
+                              child.dateOfBirth
+                                ? new Date(child.dateOfBirth).toISOString().split('T')[0]
+                                : ''
+                            }
+                            onChange={(e) =>
+                              updateChild(index, 'dateOfBirth', new Date(e.target.value))
+                            }
                           />
                           <Button variant="ghost" size="sm" onClick={() => removeChild(index)}>
                             <X className="h-4 w-4" />
                           </Button>
                         </>
                       ) : (
-                        <div className="flex items-center justify-between w-full">
+                        <div className="flex w-full items-center justify-between">
                           <span className="font-medium">{child.name}</span>
                           <span className="text-sm text-gray-600">
-                            Age {child.age} • Born {child.dateOfBirth ? new Date(child.dateOfBirth).toLocaleDateString() : 'Unknown'}
+                            Age {child.age} • Born{' '}
+                            {child.dateOfBirth
+                              ? new Date(child.dateOfBirth).toLocaleDateString()
+                              : 'Unknown'}
                           </span>
                         </div>
                       )}
@@ -481,7 +515,7 @@ export default function GuestProfileModal({
                   </div>
                   {guest.isVip && (
                     <Badge variant="secondary">
-                      <Star className="h-3 w-3 mr-1" />
+                      <Star className="mr-1 h-3 w-3" />
                       VIP Guest
                     </Badge>
                   )}

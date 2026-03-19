@@ -4,7 +4,7 @@ import { Badge } from '../../../ui/badge';
 import { Button } from '../../../ui/button';
 import { Card, CardContent } from '../../../ui/card';
 import { Guest } from '../../../../lib/hotel/types';
-import { useHotel } from '../../../../lib/hotel/state/SupabaseHotelContext';
+import { useGuests } from '../../../../lib/queries/hooks/useGuests';
 
 interface GuestAutocompleteProps {
   onGuestSelect: (guest: Guest) => void;
@@ -17,11 +17,11 @@ interface GuestAutocompleteProps {
 export default function GuestAutocomplete({
   onGuestSelect,
   onCreateNew,
-  placeholder = "Search guests by name, email, or phone...",
+  placeholder = 'Search guests by name, email, or phone...',
   selectedGuest,
-  className = ""
+  className = '',
 }: GuestAutocompleteProps) {
-  const { guests } = useHotel();
+  const { data: guests = [] } = useGuests();
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredGuests, setFilteredGuests] = useState<Guest[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -38,12 +38,15 @@ export default function GuestAutocomplete({
     }
 
     const query = searchQuery.toLowerCase().trim();
-    const filtered = guests.filter(guest => 
-      guest.fullName.toLowerCase().includes(query) ||
-      (guest.email && guest.email.toLowerCase().includes(query)) ||
-      (guest.phone && guest.phone.toLowerCase().includes(query)) ||
-      (guest.nationality && guest.nationality.toLowerCase().includes(query))
-    ).slice(0, 8); // Limit to 8 results
+    const filtered = guests
+      .filter(
+        (guest) =>
+          guest.fullName.toLowerCase().includes(query) ||
+          (guest.email && guest.email.toLowerCase().includes(query)) ||
+          (guest.phone && guest.phone.toLowerCase().includes(query)) ||
+          (guest.nationality && guest.nationality.toLowerCase().includes(query))
+      )
+      .slice(0, 8); // Limit to 8 results
 
     setFilteredGuests(filtered);
     setIsOpen(filtered.length > 0);
@@ -57,13 +60,11 @@ export default function GuestAutocomplete({
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
-        setHighlightedIndex(prev => 
-          prev < filteredGuests.length - 1 ? prev + 1 : prev
-        );
+        setHighlightedIndex((prev) => (prev < filteredGuests.length - 1 ? prev + 1 : prev));
         break;
       case 'ArrowUp':
         e.preventDefault();
-        setHighlightedIndex(prev => prev > 0 ? prev - 1 : prev);
+        setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : prev));
         break;
       case 'Enter':
         e.preventDefault();
@@ -119,24 +120,28 @@ export default function GuestAutocomplete({
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
                   <User className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
                   <div className="flex items-center space-x-2">
                     <h4 className="font-semibold">{selectedGuest.fullName}</h4>
                     {selectedGuest.isVip && (
-                      <Badge variant="secondary" className="text-xs">VIP</Badge>
+                      <Badge variant="secondary" className="text-xs">
+                        VIP
+                      </Badge>
                     )}
                   </div>
-                  <div className="flex items-center space-x-4 text-sm text-gray-600 mt-1">
+                  <div className="mt-1 flex items-center space-x-4 text-sm text-gray-600">
                     <div className="flex items-center space-x-1">
                       <Mail className="h-3 w-3" />
                       <span>{selectedGuest.email}</span>
                     </div>
                     <div className="flex items-center space-x-1">
                       <Phone className="h-3 w-3" />
-                      <span>{selectedGuest.phone ? formatPhoneNumber(selectedGuest.phone) : 'No phone'}</span>
+                      <span>
+                        {selectedGuest.phone ? formatPhoneNumber(selectedGuest.phone) : 'No phone'}
+                      </span>
                     </div>
                     <div className="flex items-center space-x-1">
                       <Globe className="h-3 w-3" />
@@ -144,7 +149,7 @@ export default function GuestAutocomplete({
                     </div>
                   </div>
                   {selectedGuest.children.length > 0 && (
-                    <div className="flex items-center space-x-1 text-sm text-gray-600 mt-1">
+                    <div className="mt-1 flex items-center space-x-1 text-sm text-gray-600">
                       <Users className="h-3 w-3" />
                       <span>{selectedGuest.children.length} children</span>
                     </div>
@@ -163,11 +168,11 @@ export default function GuestAutocomplete({
       {!selectedGuest || isOpen ? (
         <div className="relative">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
             <input
               ref={inputRef}
               type="text"
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full rounded-lg border border-gray-300 py-3 pr-4 pl-10 focus:border-transparent focus:ring-2 focus:ring-blue-500"
               placeholder={placeholder}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -182,36 +187,36 @@ export default function GuestAutocomplete({
 
           {/* Dropdown Results */}
           {isOpen && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto">
+            <div className="absolute top-full right-0 left-0 z-50 mt-1 max-h-80 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg">
               {filteredGuests.map((guest, index) => (
                 <div
                   key={guest.id}
-                  className={`p-4 cursor-pointer border-b border-gray-100 last:border-b-0 hover:bg-gray-50 ${
+                  className={`cursor-pointer border-b border-gray-100 p-4 last:border-b-0 hover:bg-gray-50 ${
                     index === highlightedIndex ? 'bg-blue-50' : ''
                   }`}
                   onClick={() => handleGuestSelect(guest)}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100">
                         <User className="h-4 w-4 text-blue-600" />
                       </div>
                       <div>
                         <div className="flex items-center space-x-2">
                           <span className="font-medium">{guest.fullName}</span>
                           {guest.isVip && (
-                            <Badge variant="secondary" className="text-xs">VIP</Badge>
+                            <Badge variant="secondary" className="text-xs">
+                              VIP
+                            </Badge>
                           )}
-                          {guest.hasPets && (
-                            <span className="text-xs">🐕</span>
-                          )}
+                          {guest.hasPets && <span className="text-xs">🐕</span>}
                         </div>
-                        <div className="flex items-center space-x-3 text-xs text-gray-600 mt-1">
+                        <div className="mt-1 flex items-center space-x-3 text-xs text-gray-600">
                           <span>{guest.email}</span>
                           <span>{guest.phone ? formatPhoneNumber(guest.phone) : 'No phone'}</span>
                           <span>🌍 {guest.nationality}</span>
                         </div>
-                        <div className="flex items-center space-x-3 text-xs text-gray-500 mt-1">
+                        <div className="mt-1 flex items-center space-x-3 text-xs text-gray-500">
                           <span>{guest.totalStays} stays</span>
                           {guest.children.length > 0 && (
                             <span>{guest.children.length} children</span>
@@ -225,7 +230,7 @@ export default function GuestAutocomplete({
 
               {/* Create New Guest Option */}
               <div
-                className="p-4 cursor-pointer border-t border-gray-200 bg-blue-50 hover:bg-blue-100 text-blue-700"
+                className="cursor-pointer border-t border-gray-200 bg-blue-50 p-4 text-blue-700 hover:bg-blue-100"
                 onClick={() => {
                   onCreateNew();
                   setIsOpen(false);
@@ -235,7 +240,7 @@ export default function GuestAutocomplete({
                   <User className="h-4 w-4" />
                   <span className="font-medium">Create new guest profile</span>
                 </div>
-                <p className="text-xs text-blue-600 mt-1">
+                <p className="mt-1 text-xs text-blue-600">
                   {searchQuery ? `for "${searchQuery}"` : 'Add a new guest to the database'}
                 </p>
               </div>

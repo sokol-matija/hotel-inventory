@@ -4,7 +4,7 @@ import { Input } from '../../ui/input';
 import { Label } from '../../ui/label';
 import { Textarea } from '../../ui/textarea';
 import { Switch } from '../../ui/switch';
-import { useHotel } from '../../../lib/hotel/state/SupabaseHotelContext';
+import { useUpdatePricingTier } from '../../../lib/queries/hooks/usePricingTiers';
 import { PricingTier, RoomType } from '../../../lib/hotel/types';
 import { X, Plus, Minus } from 'lucide-react';
 
@@ -42,13 +42,23 @@ interface FormData {
 }
 
 const ROOM_TYPE_OPTIONS: RoomType[] = [
-  'big-double', 'big-single', 'double', 'triple', 'single', 
-  'family', 'apartment', 'rooftop-apartment'
+  'big-double',
+  'big-single',
+  'double',
+  'triple',
+  'single',
+  'family',
+  'apartment',
+  'rooftop-apartment',
 ];
 
-export default function EditPricingTierModal({ isOpen, tier, onClose, onSuccess }: EditPricingTierModalProps) {
-  const { updatePricingTier } = useHotel();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+export default function EditPricingTierModal({
+  isOpen,
+  tier,
+  onClose,
+  onSuccess,
+}: EditPricingTierModalProps) {
+  const updatePricingTierMutation = useUpdatePricingTier();
 
   const [formData, setFormData] = useState<FormData>({
     name: '',
@@ -73,7 +83,7 @@ export default function EditPricingTierModal({ isOpen, tier, onClose, onSuccess 
     validTo: '',
     isActive: true,
     isDefault: false,
-    notes: ''
+    notes: '',
   });
 
   // Initialize form data when tier changes
@@ -87,119 +97,115 @@ export default function EditPricingTierModal({ isOpen, tier, onClose, onSuccess 
         roomTypes: [],
         minimumStay: tier.minimumStayRequirement || 1,
         maximumStay: 30,
-        validFrom: tier.validFrom ? tier.validFrom.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-        validTo: tier.validTo ? tier.validTo.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        validFrom: tier.validFrom
+          ? tier.validFrom.toISOString().split('T')[0]
+          : new Date().toISOString().split('T')[0],
+        validTo: tier.validTo
+          ? tier.validTo.toISOString().split('T')[0]
+          : new Date().toISOString().split('T')[0],
         isActive: tier.isActive,
         isDefault: tier.isDefault,
-        notes: tier.notes || ''
+        notes: tier.notes || '',
       });
     }
   }, [tier]);
 
   const handleInputChange = (field: keyof FormData, value: unknown) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
   const handleRateModifierChange = (period: keyof FormData['seasonalRates'], value: number) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       seasonalRates: {
         ...prev.seasonalRates,
-        [period]: value
-      }
+        [period]: value,
+      },
     }));
   };
 
   const handleFeeModifierChange = (fee: keyof FormData['feeModifiers'], value: number) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       feeModifiers: {
         ...prev.feeModifiers,
-        [fee]: value
-      }
+        [fee]: value,
+      },
     }));
   };
 
   const handleRoomTypeToggle = (roomType: RoomType) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       roomTypes: prev.roomTypes.includes(roomType)
-        ? prev.roomTypes.filter(type => type !== roomType)
-        : [...prev.roomTypes, roomType]
+        ? prev.roomTypes.filter((type) => type !== roomType)
+        : [...prev.roomTypes, roomType],
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return;
+    if (updatePricingTierMutation.isPending) return;
 
-    // Validation
     if (!formData.name.trim()) {
       alert('Please enter a pricing tier name.');
       return;
     }
-
     if (!formData.description.trim()) {
       alert('Please enter a description.');
       return;
     }
-
     if (formData.roomTypes.length === 0) {
       alert('Please select at least one room type.');
       return;
     }
-
     if (new Date(formData.validFrom) >= new Date(formData.validTo)) {
       alert('Valid to date must be after valid from date.');
       return;
     }
 
-    setIsSubmitting(true);
+    const updates: Partial<PricingTier> = {
+      name: formData.name.trim(),
+      description: formData.description.trim(),
+      seasonalRates: formData.seasonalRates,
+      minimumStayRequirement: formData.minimumStay,
+      validFrom: new Date(formData.validFrom),
+      validTo: new Date(formData.validTo),
+      isActive: formData.isActive,
+      isDefault: formData.isDefault,
+      notes: formData.notes.trim(),
+    };
 
-    try {
-      const updates: Partial<PricingTier> = {
-        name: formData.name.trim(),
-        description: formData.description.trim(),
-        seasonalRates: formData.seasonalRates,
-        minimumStayRequirement: formData.minimumStay,
-        validFrom: new Date(formData.validFrom),
-        validTo: new Date(formData.validTo),
-        isActive: formData.isActive,
-        isDefault: formData.isDefault,
-        notes: formData.notes.trim()
-      };
-
-      await updatePricingTier(tier.id, updates);
-      onSuccess();
-    } catch (error) {
-      console.error('Failed to update pricing tier:', error);
-      alert('Failed to update pricing tier. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
+    updatePricingTierMutation.mutate(
+      { id: tier.id, updates },
+      {
+        onSuccess: () => onSuccess(),
+        onError: (error) => {
+          console.error('Failed to update pricing tier:', error);
+          alert('Failed to update pricing tier. Please try again.');
+        },
+      }
+    );
   };
 
   if (!isOpen || !tier) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-lg w-full max-w-4xl max-h-[95vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+    <div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black p-4">
+      <div className="max-h-[95vh] w-full max-w-4xl overflow-y-auto rounded-lg bg-white shadow-lg">
+        <div className="flex items-center justify-between border-b border-gray-200 p-6">
           <h2 className="text-xl font-semibold text-gray-900">Edit Pricing Tier</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X className="w-6 h-6" />
+          <button onClick={onClose} className="text-gray-400 transition-colors hover:text-gray-600">
+            <X className="h-6 w-6" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6 p-6">
           {/* Basic Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="name">Pricing Tier Name *</Label>
               <Input
@@ -225,7 +231,7 @@ export default function EditPricingTierModal({ isOpen, tier, onClose, onSuccess 
           {/* Rate Modifiers */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium text-gray-900">Seasonal Rate Modifiers (%)</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
               <div className="space-y-2">
                 <Label>Period A (Winter/Early Spring)</Label>
                 <div className="flex items-center space-x-2">
@@ -235,7 +241,7 @@ export default function EditPricingTierModal({ isOpen, tier, onClose, onSuccess 
                     size="sm"
                     onClick={() => handleRateModifierChange('A', formData.seasonalRates.A - 5)}
                   >
-                    <Minus className="w-4 h-4" />
+                    <Minus className="h-4 w-4" />
                   </Button>
                   <Input
                     type="number"
@@ -250,7 +256,7 @@ export default function EditPricingTierModal({ isOpen, tier, onClose, onSuccess 
                     size="sm"
                     onClick={() => handleRateModifierChange('A', formData.seasonalRates.A + 5)}
                   >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
@@ -263,7 +269,7 @@ export default function EditPricingTierModal({ isOpen, tier, onClose, onSuccess 
                     size="sm"
                     onClick={() => handleRateModifierChange('B', formData.seasonalRates.B - 5)}
                   >
-                    <Minus className="w-4 h-4" />
+                    <Minus className="h-4 w-4" />
                   </Button>
                   <Input
                     type="number"
@@ -278,7 +284,7 @@ export default function EditPricingTierModal({ isOpen, tier, onClose, onSuccess 
                     size="sm"
                     onClick={() => handleRateModifierChange('B', formData.seasonalRates.B + 5)}
                   >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
@@ -291,7 +297,7 @@ export default function EditPricingTierModal({ isOpen, tier, onClose, onSuccess 
                     size="sm"
                     onClick={() => handleRateModifierChange('C', formData.seasonalRates.C - 5)}
                   >
-                    <Minus className="w-4 h-4" />
+                    <Minus className="h-4 w-4" />
                   </Button>
                   <Input
                     type="number"
@@ -306,7 +312,7 @@ export default function EditPricingTierModal({ isOpen, tier, onClose, onSuccess 
                     size="sm"
                     onClick={() => handleRateModifierChange('C', formData.seasonalRates.C + 5)}
                   >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
@@ -319,7 +325,7 @@ export default function EditPricingTierModal({ isOpen, tier, onClose, onSuccess 
                     size="sm"
                     onClick={() => handleRateModifierChange('D', formData.seasonalRates.D - 5)}
                   >
-                    <Minus className="w-4 h-4" />
+                    <Minus className="h-4 w-4" />
                   </Button>
                   <Input
                     type="number"
@@ -334,7 +340,7 @@ export default function EditPricingTierModal({ isOpen, tier, onClose, onSuccess 
                     size="sm"
                     onClick={() => handleRateModifierChange('D', formData.seasonalRates.D + 5)}
                   >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
@@ -344,13 +350,15 @@ export default function EditPricingTierModal({ isOpen, tier, onClose, onSuccess 
           {/* Fee Modifiers */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium text-gray-900">Fee Modifiers (€)</h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
               <div className="space-y-2">
                 <Label>Tourism Tax Adjustment</Label>
                 <Input
                   type="number"
                   value={formData.feeModifiers.tourismTax}
-                  onChange={(e) => handleFeeModifierChange('tourismTax', parseFloat(e.target.value) || 0)}
+                  onChange={(e) =>
+                    handleFeeModifierChange('tourismTax', parseFloat(e.target.value) || 0)
+                  }
                   step="0.10"
                 />
               </div>
@@ -368,7 +376,9 @@ export default function EditPricingTierModal({ isOpen, tier, onClose, onSuccess 
                 <Input
                   type="number"
                   value={formData.feeModifiers.parking}
-                  onChange={(e) => handleFeeModifierChange('parking', parseFloat(e.target.value) || 0)}
+                  onChange={(e) =>
+                    handleFeeModifierChange('parking', parseFloat(e.target.value) || 0)
+                  }
                   step="1.00"
                 />
               </div>
@@ -377,7 +387,9 @@ export default function EditPricingTierModal({ isOpen, tier, onClose, onSuccess 
                 <Input
                   type="number"
                   value={formData.feeModifiers.shortStay}
-                  onChange={(e) => handleFeeModifierChange('shortStay', parseFloat(e.target.value) || 0)}
+                  onChange={(e) =>
+                    handleFeeModifierChange('shortStay', parseFloat(e.target.value) || 0)
+                  }
                   step="0.1"
                 />
               </div>
@@ -386,7 +398,9 @@ export default function EditPricingTierModal({ isOpen, tier, onClose, onSuccess 
                 <Input
                   type="number"
                   value={formData.feeModifiers.additional}
-                  onChange={(e) => handleFeeModifierChange('additional', parseFloat(e.target.value) || 0)}
+                  onChange={(e) =>
+                    handleFeeModifierChange('additional', parseFloat(e.target.value) || 0)
+                  }
                   step="1.00"
                 />
               </div>
@@ -396,9 +410,9 @@ export default function EditPricingTierModal({ isOpen, tier, onClose, onSuccess 
           {/* Room Types */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium text-gray-900">Applicable Room Types *</h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
               {ROOM_TYPE_OPTIONS.map((roomType) => (
-                <label key={roomType} className="flex items-center space-x-2 cursor-pointer">
+                <label key={roomType} className="flex cursor-pointer items-center space-x-2">
                   <input
                     type="checkbox"
                     checked={formData.roomTypes.includes(roomType)}
@@ -491,21 +505,21 @@ export default function EditPricingTierModal({ isOpen, tier, onClose, onSuccess 
           </div>
 
           {/* Submit Buttons */}
-          <div className="flex items-center justify-end space-x-4 pt-4 border-t border-gray-200">
+          <div className="flex items-center justify-end space-x-4 border-t border-gray-200 pt-4">
             <Button
               type="button"
               variant="outline"
               onClick={onClose}
-              disabled={isSubmitting}
+              disabled={updatePricingTierMutation.isPending}
             >
               Cancel
             </Button>
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={updatePricingTierMutation.isPending}
               className="bg-blue-600 hover:bg-blue-700"
             >
-              {isSubmitting ? 'Updating...' : 'Update Pricing Tier'}
+              {updatePricingTierMutation.isPending ? 'Updating...' : 'Update Pricing Tier'}
             </Button>
           </div>
         </form>

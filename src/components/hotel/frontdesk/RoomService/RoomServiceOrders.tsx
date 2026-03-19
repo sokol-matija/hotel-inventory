@@ -4,49 +4,49 @@ import { Button } from '../../../ui/button';
 import { Input } from '../../../ui/input';
 import { Label } from '../../../ui/label';
 import { Badge } from '../../../ui/badge';
-import { 
-  ShoppingCart, 
-  Plus, 
-  Minus, 
-  Printer, 
-  CreditCard, 
-  DollarSign, 
+import {
+  ShoppingCart,
+  Plus,
+  Minus,
+  Printer,
+  CreditCard,
+  DollarSign,
   Search,
   Package,
-  AlertTriangle
+  AlertTriangle,
 } from 'lucide-react';
 import { Room } from '../../../../lib/hotel/types';
-import { useHotel } from '../../../../lib/hotel/state/SupabaseHotelContext';
-import { 
-  InventoryItem, 
-  OrderItem, 
+import { useRooms } from '../../../../lib/queries/hooks/useRooms';
+import { useGuests } from '../../../../lib/queries/hooks/useGuests';
+import {
+  InventoryItem,
+  OrderItem,
   RoomServiceOrder,
-  OrderValidationResult 
+  OrderValidationResult,
 } from '../../../../lib/hotel/orderTypes';
-import { 
+import {
   getFoodAndBeverageItems,
   validateOrder,
   calculateOrderTotal,
   processRoomServiceOrder,
   formatCurrency,
-  getAvailableRooms
+  getAvailableRooms,
 } from '../../../../lib/hotel/orderService';
 import { printReceipt as printBixolonReceipt } from '../../../../lib/printers/bixolonPrinter';
 import { HOTEL_POREC } from '../../../../lib/hotel/hotelData';
 
-interface RoomServiceOrdersProps {
-  rooms: Room[];
-}
+export default function RoomServiceOrders() {
+  const { data: rooms = [] } = useRooms();
+  const { data: guests = [] } = useGuests();
 
-export default function RoomServiceOrders({ rooms }: RoomServiceOrdersProps) {
-  const { guests } = useHotel();
-  
   // State
   const [availableItems, setAvailableItems] = useState<InventoryItem[]>([]);
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'room_bill' | 'immediate_cash' | 'immediate_card'>('room_bill');
+  const [paymentMethod, setPaymentMethod] = useState<
+    'room_bill' | 'immediate_cash' | 'immediate_card'
+  >('room_bill');
   const [orderNotes, setOrderNotes] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [validationResult, setValidationResult] = useState<OrderValidationResult | null>(null);
@@ -78,14 +78,15 @@ export default function RoomServiceOrders({ rooms }: RoomServiceOrdersProps) {
     }
   };
 
-  const filteredItems = availableItems.filter(item =>
-    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.category.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredItems = availableItems.filter(
+    (item) =>
+      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.category.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const addToOrder = (item: InventoryItem) => {
-    const existingOrderItem = orderItems.find(oi => oi.itemId === item.id);
-    
+    const existingOrderItem = orderItems.find((oi) => oi.itemId === item.id);
+
     if (existingOrderItem) {
       // Increase quantity if item already in order
       updateOrderItemQuantity(item.id, existingOrderItem.quantity + 1);
@@ -100,7 +101,7 @@ export default function RoomServiceOrders({ rooms }: RoomServiceOrdersProps) {
         quantity: 1,
         totalPrice: item.price,
         unit: item.unit,
-        availableStock: item.totalStock
+        availableStock: item.totalStock,
       };
       setOrderItems([...orderItems, newOrderItem]);
     }
@@ -108,19 +109,21 @@ export default function RoomServiceOrders({ rooms }: RoomServiceOrdersProps) {
 
   const updateOrderItemQuantity = (itemId: number, newQuantity: number) => {
     if (newQuantity <= 0) {
-      setOrderItems(orderItems.filter(item => item.itemId !== itemId));
+      setOrderItems(orderItems.filter((item) => item.itemId !== itemId));
       return;
     }
 
-    setOrderItems(orderItems.map(item => 
-      item.itemId === itemId 
-        ? { ...item, quantity: newQuantity, totalPrice: item.price * newQuantity }
-        : item
-    ));
+    setOrderItems(
+      orderItems.map((item) =>
+        item.itemId === itemId
+          ? { ...item, quantity: newQuantity, totalPrice: item.price * newQuantity }
+          : item
+      )
+    );
   };
 
   const removeFromOrder = (itemId: number) => {
-    setOrderItems(orderItems.filter(item => item.itemId !== itemId));
+    setOrderItems(orderItems.filter((item) => item.itemId !== itemId));
   };
 
   const processOrder = async () => {
@@ -130,8 +133,8 @@ export default function RoomServiceOrders({ rooms }: RoomServiceOrdersProps) {
 
     try {
       setIsLoading(true);
-      
-      const guestName = guests.find(g => g.id === selectedRoom.id)?.fullName || 'Unknown Guest';
+
+      const guestName = guests.find((g) => g.id === selectedRoom.id)?.fullName || 'Unknown Guest';
       const totals = calculateOrderTotal(orderItems);
 
       const orderData: Omit<RoomServiceOrder, 'id' | 'orderNumber' | 'orderedAt'> = {
@@ -147,20 +150,19 @@ export default function RoomServiceOrders({ rooms }: RoomServiceOrdersProps) {
         orderStatus: 'pending',
         notes: orderNotes,
         orderedBy: 'Front Desk Staff', // TODO: Get actual staff member
-        printedReceipt: false
+        printedReceipt: false,
       };
 
       const processedOrder = await processRoomServiceOrder(orderData);
       setLastOrder(processedOrder);
-      
+
       // Reset form
       setOrderItems([]);
       setOrderNotes('');
       setSelectedRoom(null);
-      
+
       // Reload items to update stock quantities
       await loadFoodAndBeverageItems();
-      
     } catch (error) {
       console.error('Error processing order:', error);
       alert('Error processing order: ' + error);
@@ -178,9 +180,9 @@ export default function RoomServiceOrders({ rooms }: RoomServiceOrdersProps) {
             name: HOTEL_POREC.name,
             address: HOTEL_POREC.address,
             phone: HOTEL_POREC.phone,
-            email: HOTEL_POREC.email
+            email: HOTEL_POREC.email,
           },
-          timestamp: new Date()
+          timestamp: new Date(),
         };
 
         const success = await printBixolonReceipt(printData);
@@ -198,9 +200,9 @@ export default function RoomServiceOrders({ rooms }: RoomServiceOrdersProps) {
   const availableRooms = getAvailableRooms(rooms);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+    <div className="grid h-full grid-cols-1 gap-6 lg:grid-cols-3">
       {/* Left Column - Room Selection & Item Catalog */}
-      <div className="lg:col-span-2 space-y-6">
+      <div className="space-y-6 lg:col-span-2">
         {/* Room Selection */}
         <Card>
           <CardHeader>
@@ -210,28 +212,28 @@ export default function RoomServiceOrders({ rooms }: RoomServiceOrdersProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
                 <Label>Select Room</Label>
                 <select
                   value={selectedRoom?.id || ''}
                   onChange={(e) => {
-                    const room = availableRooms.find(r => r.id === e.target.value);
+                    const room = availableRooms.find((r) => r.id === e.target.value);
                     setSelectedRoom(room || null);
                   }}
-                  className="w-full p-2 border border-gray-300 rounded-md"
+                  className="w-full rounded-md border border-gray-300 p-2"
                 >
                   <option value="">Choose a room...</option>
-                  {availableRooms.map(room => (
+                  {availableRooms.map((room) => (
                     <option key={room.id} value={room.id}>
                       Room {room.number} - {room.type}
                     </option>
                   ))}
                 </select>
               </div>
-              
+
               {selectedRoom && (
-                <div className="p-3 bg-blue-50 rounded-md">
+                <div className="rounded-md bg-blue-50 p-3">
                   <h4 className="font-medium">Room {selectedRoom.number}</h4>
                   <p className="text-sm text-gray-600">{selectedRoom.type}</p>
                   <p className="text-sm text-gray-600">Max {selectedRoom.maxOccupancy} guests</p>
@@ -257,21 +259,21 @@ export default function RoomServiceOrders({ rooms }: RoomServiceOrdersProps) {
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="text-center py-8">Loading items...</div>
+              <div className="py-8 text-center">Loading items...</div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
-                {filteredItems.map(item => (
-                  <div key={item.id} className="border rounded-lg p-4 hover:bg-gray-50">
-                    <div className="flex justify-between items-start mb-2">
+              <div className="grid max-h-96 grid-cols-1 gap-4 overflow-y-auto md:grid-cols-2">
+                {filteredItems.map((item) => (
+                  <div key={item.id} className="rounded-lg border p-4 hover:bg-gray-50">
+                    <div className="mb-2 flex items-start justify-between">
                       <h4 className="font-medium">{item.name}</h4>
                       <Badge variant="secondary">{item.category.name}</Badge>
                     </div>
-                    
+
                     {item.description && (
-                      <p className="text-sm text-gray-600 mb-2">{item.description}</p>
+                      <p className="mb-2 text-sm text-gray-600">{item.description}</p>
                     )}
-                    
-                    <div className="flex justify-between items-center mb-3">
+
+                    <div className="mb-3 flex items-center justify-between">
                       <span className="font-semibold text-blue-600">
                         {formatCurrency(item.price)} / {item.unit}
                       </span>
@@ -279,14 +281,14 @@ export default function RoomServiceOrders({ rooms }: RoomServiceOrdersProps) {
                         Stock: {item.totalStock} {item.unit}
                       </span>
                     </div>
-                    
+
                     <Button
                       onClick={() => addToOrder(item)}
                       disabled={item.totalStock === 0 || !selectedRoom}
                       className="w-full"
                       size="sm"
                     >
-                      <Plus className="h-4 w-4 mr-1" />
+                      <Plus className="mr-1 h-4 w-4" />
                       Add to Order
                     </Button>
                   </div>
@@ -308,21 +310,22 @@ export default function RoomServiceOrders({ rooms }: RoomServiceOrdersProps) {
           </CardHeader>
           <CardContent className="space-y-4">
             {orderItems.length === 0 ? (
-              <div className="text-center text-gray-500 py-8">
-                No items in order
-              </div>
+              <div className="py-8 text-center text-gray-500">No items in order</div>
             ) : (
               <>
-                <div className="space-y-3 max-h-64 overflow-y-auto">
-                  {orderItems.map(item => (
-                    <div key={item.id} className="flex items-center justify-between p-2 border rounded">
+                <div className="max-h-64 space-y-3 overflow-y-auto">
+                  {orderItems.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between rounded border p-2"
+                    >
                       <div className="flex-1">
-                        <h5 className="font-medium text-sm">{item.itemName}</h5>
+                        <h5 className="text-sm font-medium">{item.itemName}</h5>
                         <p className="text-xs text-gray-500">
                           {formatCurrency(item.price)} / {item.unit}
                         </p>
                       </div>
-                      
+
                       <div className="flex items-center space-x-2">
                         <Button
                           variant="outline"
@@ -331,9 +334,9 @@ export default function RoomServiceOrders({ rooms }: RoomServiceOrdersProps) {
                         >
                           <Minus className="h-3 w-3" />
                         </Button>
-                        
+
                         <span className="w-8 text-center text-sm">{item.quantity}</span>
-                        
+
                         <Button
                           variant="outline"
                           size="sm"
@@ -342,7 +345,7 @@ export default function RoomServiceOrders({ rooms }: RoomServiceOrdersProps) {
                         >
                           <Plus className="h-3 w-3" />
                         </Button>
-                        
+
                         <Button
                           variant="ghost"
                           size="sm"
@@ -360,25 +363,29 @@ export default function RoomServiceOrders({ rooms }: RoomServiceOrdersProps) {
                 {validationResult && (
                   <div className="space-y-2">
                     {validationResult.errors.length > 0 && (
-                      <div className="p-2 bg-red-50 border border-red-200 rounded text-sm">
+                      <div className="rounded border border-red-200 bg-red-50 p-2 text-sm">
                         <div className="flex items-center space-x-1 text-red-700">
                           <AlertTriangle className="h-4 w-4" />
                           <span className="font-medium">Errors:</span>
                         </div>
                         {validationResult.errors.map((error, index) => (
-                          <p key={index} className="text-red-600 text-xs">{error}</p>
+                          <p key={index} className="text-xs text-red-600">
+                            {error}
+                          </p>
                         ))}
                       </div>
                     )}
-                    
+
                     {validationResult.warnings.length > 0 && (
-                      <div className="p-2 bg-yellow-50 border border-yellow-200 rounded text-sm">
+                      <div className="rounded border border-yellow-200 bg-yellow-50 p-2 text-sm">
                         <div className="flex items-center space-x-1 text-yellow-700">
                           <AlertTriangle className="h-4 w-4" />
                           <span className="font-medium">Warnings:</span>
                         </div>
                         {validationResult.warnings.map((warning, index) => (
-                          <p key={index} className="text-yellow-600 text-xs">{warning}</p>
+                          <p key={index} className="text-xs text-yellow-600">
+                            {warning}
+                          </p>
                         ))}
                       </div>
                     )}
@@ -386,7 +393,7 @@ export default function RoomServiceOrders({ rooms }: RoomServiceOrdersProps) {
                 )}
 
                 {/* Order Totals */}
-                <div className="border-t pt-3 space-y-2">
+                <div className="space-y-2 border-t pt-3">
                   <div className="flex justify-between text-sm">
                     <span>Subtotal:</span>
                     <span>{formatCurrency(totals.subtotal)}</span>
@@ -406,8 +413,12 @@ export default function RoomServiceOrders({ rooms }: RoomServiceOrdersProps) {
                   <Label>Payment Method</Label>
                   <select
                     value={paymentMethod}
-                    onChange={(e) => setPaymentMethod(e.target.value as 'room_bill' | 'immediate_cash' | 'immediate_card')}
-                    className="w-full p-2 border border-gray-300 rounded-md text-sm"
+                    onChange={(e) =>
+                      setPaymentMethod(
+                        e.target.value as 'room_bill' | 'immediate_cash' | 'immediate_card'
+                      )
+                    }
+                    className="w-full rounded-md border border-gray-300 p-2 text-sm"
                   >
                     <option value="room_bill">Add to Room Bill</option>
                     <option value="immediate_cash">Immediate Payment - Cash</option>
@@ -422,7 +433,7 @@ export default function RoomServiceOrders({ rooms }: RoomServiceOrdersProps) {
                     value={orderNotes}
                     onChange={(e) => setOrderNotes(e.target.value)}
                     placeholder="Special instructions, allergies, etc."
-                    className="w-full p-2 border border-gray-300 rounded-md text-sm"
+                    className="w-full rounded-md border border-gray-300 p-2 text-sm"
                     rows={2}
                   />
                 </div>
@@ -434,9 +445,9 @@ export default function RoomServiceOrders({ rooms }: RoomServiceOrdersProps) {
                   className="w-full"
                 >
                   {paymentMethod === 'room_bill' ? (
-                    <DollarSign className="h-4 w-4 mr-2" />
+                    <DollarSign className="mr-2 h-4 w-4" />
                   ) : (
-                    <CreditCard className="h-4 w-4 mr-2" />
+                    <CreditCard className="mr-2 h-4 w-4" />
                   )}
                   {isLoading ? 'Processing...' : 'Process Order'}
                 </Button>
@@ -453,18 +464,22 @@ export default function RoomServiceOrders({ rooms }: RoomServiceOrdersProps) {
             </CardHeader>
             <CardContent>
               <div className="space-y-2 text-sm">
-                <p><strong>Order #:</strong> {lastOrder.orderNumber}</p>
-                <p><strong>Room:</strong> {lastOrder.roomNumber}</p>
-                <p><strong>Total:</strong> {formatCurrency(lastOrder.totalAmount)}</p>
-                <p><strong>Payment:</strong> {lastOrder.paymentMethod.replace('_', ' ')}</p>
+                <p>
+                  <strong>Order #:</strong> {lastOrder.orderNumber}
+                </p>
+                <p>
+                  <strong>Room:</strong> {lastOrder.roomNumber}
+                </p>
+                <p>
+                  <strong>Total:</strong> {formatCurrency(lastOrder.totalAmount)}
+                </p>
+                <p>
+                  <strong>Payment:</strong> {lastOrder.paymentMethod.replace('_', ' ')}
+                </p>
               </div>
-              
-              <Button
-                onClick={printReceipt}
-                className="w-full mt-4"
-                variant="outline"
-              >
-                <Printer className="h-4 w-4 mr-2" />
+
+              <Button onClick={printReceipt} className="mt-4 w-full" variant="outline">
+                <Printer className="mr-2 h-4 w-4" />
                 Print Receipt
               </Button>
             </CardContent>

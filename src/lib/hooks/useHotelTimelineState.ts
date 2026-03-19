@@ -2,9 +2,17 @@
 // Manages all timeline modes, dates, UI states, and drag operations
 
 import { useState, useMemo, useCallback } from 'react';
-import { HotelTimelineService, DragCreateState, DragCreatePreview, RoomChangeDialog, DrinkModalState, OccupancyData } from '../hotel/services/HotelTimelineService';
+import {
+  HotelTimelineService,
+  DragCreateState,
+  DragCreatePreview,
+  RoomChangeDialog,
+  DrinkModalState,
+  OccupancyData,
+} from '../hotel/services/HotelTimelineService';
 import { CalendarEvent, Reservation, Room } from '../hotel/types';
-import { useHotel } from '../hotel/state/SupabaseHotelContext';
+import { useReservations } from '../queries/hooks/useReservations';
+import { useRooms } from '../queries/hooks/useRooms';
 
 export interface HotelTimelineState {
   // Date management
@@ -62,7 +70,7 @@ export interface HotelTimelineActions {
 
   // Overview period toggle
   toggleOverviewPeriod: (period: 'AM' | 'PM') => void;
-  
+
   // Modal and popup actions
   handleReservationClick: (reservation: Reservation) => void;
   handleRoomClick: (room: Room) => void;
@@ -72,73 +80,79 @@ export interface HotelTimelineActions {
   closeRoomChangeDialog: () => void;
   handleShowDrinksModal: (reservationId: string) => void;
   closeDrinksModal: () => void;
-  
+
   // Mode toggles
   toggleDragCreateMode: () => void;
   toggleExpansionMode: () => void;
   toggleMoveMode: () => void;
   exitAllModes: () => void;
-  
+
   // Drag create operations
   handleDragCreateStart: (roomId: string, dayIndex: number) => void;
   handleDragCreateMove: (roomId: string, dayIndex: number) => void;
   handleDragCreateEnd: () => void;
   clearDragCreate: () => void;
-  
+
   // Utility functions
   positionContextMenu: (x: number, y: number) => { x: number; y: number };
-  validateReservationMove: (reservation: Reservation, targetRoomId: string) => { valid: boolean; error?: string };
+  validateReservationMove: (
+    reservation: Reservation,
+    targetRoomId: string
+  ) => { valid: boolean; error?: string };
 }
 
 export function useHotelTimelineState(): HotelTimelineState & HotelTimelineActions {
   const timelineService = HotelTimelineService.getInstance();
-  const { reservations, rooms } = useHotel();
-  
+  const { data: reservations = [] } = useReservations();
+  const { data: rooms = [] } = useRooms();
+
   // Date states
   const [currentDate, setCurrentDate] = useState(new Date());
   const [overviewDate, setOverviewDate] = useState(new Date());
-  
+
   // Floor expansion states
   const [expandedFloors, setExpandedFloors] = useState<Record<number, boolean>>({
     1: true,
     2: true,
     3: true,
-    4: true
+    4: true,
   });
-  
+
   const [expandedOverviewFloors, setExpandedOverviewFloors] = useState<Record<number, boolean>>({
     1: true,
     2: true,
     3: true,
-    4: true
+    4: true,
   });
-  
+
   // Modal and popup states
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
   const [showReservationPopup, setShowReservationPopup] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [showCreateBooking, setShowCreateBooking] = useState(false);
-  
+
   const [roomChangeDialog, setRoomChangeDialog] = useState<RoomChangeDialog>({
     show: false,
     reservationId: '',
     fromRoomId: '',
-    toRoomId: ''
+    toRoomId: '',
   });
-  
+
   const [drinkModal, setDrinkModal] = useState<DrinkModalState>({
     show: false,
-    reservationId: ''
+    reservationId: '',
   });
-  
+
   // Drag create mode states
   const [isDragCreateMode, setIsDragCreateMode] = useState(false);
   const [isDragCreating, setIsDragCreating] = useState(false);
   const [dragCreateStart, setDragCreateStart] = useState<DragCreateState | null>(null);
   const [dragCreateEnd, setDragCreateEnd] = useState<DragCreateState | null>(null);
   const [dragCreatePreview, setDragCreatePreview] = useState<DragCreatePreview | null>(null);
-  const [dragCreateDates, setDragCreateDates] = useState<{ checkIn: Date; checkOut: Date } | null>(null);
-  
+  const [dragCreateDates, setDragCreateDates] = useState<{ checkIn: Date; checkOut: Date } | null>(
+    null
+  );
+
   // Timeline mode states
   const [isExpansionMode, setIsExpansionMode] = useState(false);
   const [isMoveMode, setIsMoveMode] = useState(false);
@@ -147,53 +161,67 @@ export function useHotelTimelineState(): HotelTimelineState & HotelTimelineActio
   const [overviewPeriod, setOverviewPeriod] = useState<'AM' | 'PM'>('AM');
 
   // Computed states
-  const roomsByFloor = useMemo(() => timelineService.getRoomsByFloor(rooms),
+  const roomsByFloor = useMemo(
+    () => timelineService.getRoomsByFloor(rooms),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [rooms]);
+    [rooms]
+  );
 
-  const calendarEvents = useMemo(() =>
-    timelineService.generateCalendarEvents(reservations, currentDate, rooms),
+  const calendarEvents = useMemo(
+    () => timelineService.generateCalendarEvents(reservations, currentDate, rooms),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [reservations, currentDate, rooms]
   );
 
-  const currentOccupancy = useMemo(() =>
-    timelineService.calculateOccupancyDataByPeriod(reservations, overviewDate, rooms, overviewPeriod),
+  const currentOccupancy = useMemo(
+    () =>
+      timelineService.calculateOccupancyDataByPeriod(
+        reservations,
+        overviewDate,
+        rooms,
+        overviewPeriod
+      ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [reservations, overviewDate, rooms, overviewPeriod]
   );
 
-  const timelineStats = useMemo(() =>
-    timelineService.getTimelineStats(reservations, currentDate, rooms),
+  const timelineStats = useMemo(
+    () => timelineService.getTimelineStats(reservations, currentDate, rooms),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [reservations, currentDate, rooms]
   );
-  
+
   // Date navigation actions
-  const handleNavigate = useCallback((action: 'PREV' | 'NEXT' | 'TODAY') => {
-    const newDate = timelineService.navigateTimeline(currentDate, action);
-    setCurrentDate(newDate);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentDate]);
-  
-  const handleOverviewNavigate = useCallback((action: 'PREV' | 'NEXT' | 'TODAY') => {
-    const newDate = timelineService.navigateOverview(overviewDate, action);
-    setOverviewDate(newDate);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [overviewDate]);
-  
+  const handleNavigate = useCallback(
+    (action: 'PREV' | 'NEXT' | 'TODAY') => {
+      const newDate = timelineService.navigateTimeline(currentDate, action);
+      setCurrentDate(newDate);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    },
+    [currentDate]
+  );
+
+  const handleOverviewNavigate = useCallback(
+    (action: 'PREV' | 'NEXT' | 'TODAY') => {
+      const newDate = timelineService.navigateOverview(overviewDate, action);
+      setOverviewDate(newDate);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    },
+    [overviewDate]
+  );
+
   // Floor expansion actions
   const toggleFloor = useCallback((floor: number) => {
-    setExpandedFloors(prev => ({
+    setExpandedFloors((prev) => ({
       ...prev,
-      [floor]: !prev[floor]
+      [floor]: !prev[floor],
     }));
   }, []);
-  
+
   const toggleOverviewFloor = useCallback((floor: number) => {
-    setExpandedOverviewFloors(prev => ({
+    setExpandedOverviewFloors((prev) => ({
       ...prev,
-      [floor]: !prev[floor]
+      [floor]: !prev[floor],
     }));
   }, []);
 
@@ -206,54 +234,57 @@ export function useHotelTimelineState(): HotelTimelineState & HotelTimelineActio
     setSelectedReservation(reservation);
     setShowReservationPopup(true);
   }, []);
-  
+
   const handleRoomClick = useCallback((room: Room) => {
     setSelectedRoom(room);
     setShowCreateBooking(true);
   }, []);
-  
+
   const closeReservationPopup = useCallback(() => {
     setShowReservationPopup(false);
     setSelectedReservation(null);
   }, []);
-  
+
   const closeCreateBooking = useCallback(() => {
     setShowCreateBooking(false);
     setSelectedRoom(null);
   }, []);
-  
-  const showRoomChangeDialog = useCallback((reservationId: string, fromRoomId: string, toRoomId: string) => {
-    setRoomChangeDialog({
-      show: true,
-      reservationId,
-      fromRoomId,
-      toRoomId
-    });
-  }, []);
-  
+
+  const showRoomChangeDialog = useCallback(
+    (reservationId: string, fromRoomId: string, toRoomId: string) => {
+      setRoomChangeDialog({
+        show: true,
+        reservationId,
+        fromRoomId,
+        toRoomId,
+      });
+    },
+    []
+  );
+
   const closeRoomChangeDialog = useCallback(() => {
     setRoomChangeDialog({
       show: false,
       reservationId: '',
       fromRoomId: '',
-      toRoomId: ''
+      toRoomId: '',
     });
   }, []);
-  
+
   const handleShowDrinksModal = useCallback((reservationId: string) => {
     setDrinkModal({
       show: true,
-      reservationId
+      reservationId,
     });
   }, []);
-  
+
   const closeDrinksModal = useCallback(() => {
     setDrinkModal({
       show: false,
-      reservationId: ''
+      reservationId: '',
     });
   }, []);
-  
+
   // Mode toggle actions
   const exitAllModes = useCallback(() => {
     setIsDragCreateMode(false);
@@ -265,11 +296,11 @@ export function useHotelTimelineState(): HotelTimelineState & HotelTimelineActio
     setDragCreatePreview(null);
     setDragCreateDates(null);
   }, []);
-  
+
   const toggleDragCreateMode = useCallback(() => {
     const newMode = !isDragCreateMode;
     setIsDragCreateMode(newMode);
-    
+
     if (newMode) {
       // Entering drag create mode - disable others
       setIsExpansionMode(false);
@@ -283,11 +314,11 @@ export function useHotelTimelineState(): HotelTimelineState & HotelTimelineActio
       setDragCreateDates(null);
     }
   }, [isDragCreateMode]);
-  
+
   const toggleExpansionMode = useCallback(() => {
     const newMode = !isExpansionMode;
     setIsExpansionMode(newMode);
-    
+
     if (newMode) {
       // Entering expansion mode - disable others
       setIsDragCreateMode(false);
@@ -298,11 +329,11 @@ export function useHotelTimelineState(): HotelTimelineState & HotelTimelineActio
       setDragCreatePreview(null);
     }
   }, [isExpansionMode]);
-  
+
   const toggleMoveMode = useCallback(() => {
     const newMode = !isMoveMode;
     setIsMoveMode(newMode);
-    
+
     if (newMode) {
       // Entering move mode - disable others
       setIsDragCreateMode(false);
@@ -313,45 +344,65 @@ export function useHotelTimelineState(): HotelTimelineState & HotelTimelineActio
       setDragCreatePreview(null);
     }
   }, [isMoveMode]);
-  
+
   // Drag create operations
-  const handleDragCreateStart = useCallback((roomId: string, dayIndex: number) => {
-    if (!isDragCreateMode) return;
+  const handleDragCreateStart = useCallback(
+    (roomId: string, dayIndex: number) => {
+      if (!isDragCreateMode) return;
 
-    setIsDragCreating(true);
-    setDragCreateStart({ roomId, dayIndex });
-    setDragCreateEnd({ roomId, dayIndex });
+      setIsDragCreating(true);
+      setDragCreateStart({ roomId, dayIndex });
+      setDragCreateEnd({ roomId, dayIndex });
 
-    const preview = timelineService.calculateDragCreatePreview({ roomId, dayIndex }, { roomId, dayIndex });
-    setDragCreatePreview(preview);
+      const preview = timelineService.calculateDragCreatePreview(
+        { roomId, dayIndex },
+        { roomId, dayIndex }
+      );
+      setDragCreatePreview(preview);
 
-    if (preview) {
-      const dates = timelineService.convertDayIndexToDates(preview.startDay, preview.endDay, currentDate);
-      setDragCreateDates(dates);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDragCreateMode, currentDate]);
-  
-  const handleDragCreateMove = useCallback((roomId: string, dayIndex: number) => {
-    if (!isDragCreating || !dragCreateStart) return;
+      if (preview) {
+        const dates = timelineService.convertDayIndexToDates(
+          preview.startDay,
+          preview.endDay,
+          currentDate
+        );
+        setDragCreateDates(dates);
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    },
+    [isDragCreateMode, currentDate]
+  );
 
-    setDragCreateEnd({ roomId, dayIndex });
+  const handleDragCreateMove = useCallback(
+    (roomId: string, dayIndex: number) => {
+      if (!isDragCreating || !dragCreateStart) return;
 
-    const preview = timelineService.calculateDragCreatePreview(dragCreateStart, { roomId, dayIndex });
-    setDragCreatePreview(preview);
+      setDragCreateEnd({ roomId, dayIndex });
 
-    if (preview) {
-      const dates = timelineService.convertDayIndexToDates(preview.startDay, preview.endDay, currentDate);
-      setDragCreateDates(dates);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDragCreating, dragCreateStart, currentDate]);
-  
+      const preview = timelineService.calculateDragCreatePreview(dragCreateStart, {
+        roomId,
+        dayIndex,
+      });
+      setDragCreatePreview(preview);
+
+      if (preview) {
+        const dates = timelineService.convertDayIndexToDates(
+          preview.startDay,
+          preview.endDay,
+          currentDate
+        );
+        setDragCreateDates(dates);
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    },
+    [isDragCreating, dragCreateStart, currentDate]
+  );
+
   const handleDragCreateEnd = useCallback(() => {
     setIsDragCreating(false);
     // Keep preview and dates for booking creation
   }, []);
-  
+
   const clearDragCreate = useCallback(() => {
     setIsDragCreating(false);
     setDragCreateStart(null);
@@ -359,18 +410,26 @@ export function useHotelTimelineState(): HotelTimelineState & HotelTimelineActio
     setDragCreatePreview(null);
     setDragCreateDates(null);
   }, []);
-  
+
   // Utility functions
   const positionContextMenu = useCallback((x: number, y: number) => {
     return timelineService.positionContextMenu(x, y);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  
-  const validateReservationMove = useCallback((reservation: Reservation, targetRoomId: string) => {
-    return timelineService.validateReservationMove(reservation, targetRoomId, reservations, rooms);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reservations, rooms]);
-  
+
+  const validateReservationMove = useCallback(
+    (reservation: Reservation, targetRoomId: string) => {
+      return timelineService.validateReservationMove(
+        reservation,
+        targetRoomId,
+        reservations,
+        rooms
+      );
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    },
+    [reservations, rooms]
+  );
+
   // Return combined state and actions
   return {
     // State
@@ -421,6 +480,6 @@ export function useHotelTimelineState(): HotelTimelineState & HotelTimelineActio
     handleDragCreateEnd,
     clearDragCreate,
     positionContextMenu,
-    validateReservationMove
+    validateReservationMove,
   };
 }

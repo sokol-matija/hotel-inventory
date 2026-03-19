@@ -1,21 +1,23 @@
 import React, { useState } from 'react';
-import { useHotel } from '../../../lib/hotel/state/SupabaseHotelContext';
+import { useInvoices } from '../../../lib/queries/hooks/useInvoices';
+import { useGuests } from '../../../lib/queries/hooks/useGuests';
+import { useRooms } from '../../../lib/queries/hooks/useRooms';
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import { Badge } from '../../ui/badge';
 import { Button } from '../../ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../ui/dialog';
-import { 
-  Calendar, 
-  DollarSign, 
-  FileText, 
-  Search, 
+import {
+  Calendar,
+  DollarSign,
+  FileText,
+  Search,
   Filter,
   Download,
   Eye,
   CreditCard,
   X,
   Clock,
-  CheckCircle
+  CheckCircle,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Invoice, Company } from '../../../lib/hotel/types';
@@ -25,50 +27,56 @@ import hotelNotification from '../../../lib/notifications';
 import { supabase } from '../../../lib/supabase';
 
 export default function InvoiceHistoryPage() {
-  const { invoices, guests, rooms, getInvoicesByDateRange, getUnpaidInvoices } = useHotel();
+  const { data: invoices = [] } = useInvoices();
+  const { data: guests = [] } = useGuests();
+  const { data: rooms = [] } = useRooms();
+  const getInvoicesByDateRange = (start: Date, end: Date) =>
+    invoices.filter((inv) => inv.issueDate >= start && inv.issueDate <= end);
+  const getUnpaidInvoices = () => invoices.filter((inv) => inv.status !== 'paid');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [showInvoiceDetails, setShowInvoiceDetails] = useState(false);
 
   // Filter invoices based on search and status
-  const filteredInvoices = invoices.filter(invoice => {
-    const guest = guests.find(g => g.id === invoice.guestId);
+  const filteredInvoices = invoices.filter((invoice) => {
+    const guest = guests.find((g) => g.id === invoice.guestId);
     // Get room through reservation since invoice no longer has direct roomId
-    const reservation = SAMPLE_RESERVATIONS.find(r => r.id === invoice.reservationId);
-    const room = reservation ? rooms.find(r => r.id === reservation.roomId) : undefined;
-    
-    const matchesSearch = !searchTerm || 
+    const reservation = SAMPLE_RESERVATIONS.find((r) => r.id === invoice.reservationId);
+    const room = reservation ? rooms.find((r) => r.id === reservation.roomId) : undefined;
+
+    const matchesSearch =
+      !searchTerm ||
       invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
       guest?.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       room?.number.includes(searchTerm);
-    
+
     const matchesStatus = statusFilter === 'all' || invoice.status === statusFilter;
-    
+
     return matchesSearch && matchesStatus;
   });
 
   const unpaidInvoices = getUnpaidInvoices();
   const totalRevenue = invoices
-    .filter(inv => inv.status === 'paid')
+    .filter((inv) => inv.status === 'paid')
     .reduce((sum, inv) => sum + inv.totalAmount, 0);
 
   const statusColors = {
-    'draft': 'bg-gray-100 text-gray-800',
-    'sent': 'bg-blue-100 text-blue-800',
-    'paid': 'bg-green-100 text-green-800',
-    'overdue': 'bg-red-100 text-red-800',
-    'cancelled': 'bg-gray-100 text-gray-600'
+    draft: 'bg-gray-100 text-gray-800',
+    sent: 'bg-blue-100 text-blue-800',
+    paid: 'bg-green-100 text-green-800',
+    overdue: 'bg-red-100 text-red-800',
+    cancelled: 'bg-gray-100 text-gray-600',
   };
 
   const getGuestName = (guestId: string) => {
-    return guests.find(g => g.id === guestId)?.fullName || 'Unknown Guest';
+    return guests.find((g) => g.id === guestId)?.fullName || 'Unknown Guest';
   };
 
   const getRoomNumber = (invoice: Invoice) => {
-    const reservation = SAMPLE_RESERVATIONS.find(r => r.id === invoice.reservationId);
+    const reservation = SAMPLE_RESERVATIONS.find((r) => r.id === invoice.reservationId);
     if (!reservation) return 'Unknown Room';
-    return rooms.find(r => r.id === reservation.roomId)?.number || 'Unknown Room';
+    return rooms.find((r) => r.id === reservation.roomId)?.number || 'Unknown Room';
   };
 
   const handleViewInvoice = (invoice: Invoice) => {
@@ -79,9 +87,9 @@ export default function InvoiceHistoryPage() {
   const handleDownloadPDF = async (invoice: Invoice) => {
     try {
       // Find related reservation
-      const reservation = SAMPLE_RESERVATIONS.find(r => r.id === invoice.reservationId);
-      const guest = guests.find(g => g.id === invoice.guestId);
-      const room = reservation ? rooms.find(r => r.id === reservation.roomId) : undefined;
+      const reservation = SAMPLE_RESERVATIONS.find((r) => r.id === invoice.reservationId);
+      const guest = guests.find((g) => g.id === invoice.guestId);
+      const room = reservation ? rooms.find((r) => r.id === reservation.roomId) : undefined;
 
       if (!reservation || !guest || !room) {
         hotelNotification.error(
@@ -113,7 +121,7 @@ export default function InvoiceHistoryPage() {
               street: companyData.address,
               city: companyData.city,
               postalCode: companyData.postal_code,
-              country: companyData.country
+              country: companyData.country,
             },
             contactPerson: companyData.contact_person,
             email: companyData.email,
@@ -124,7 +132,7 @@ export default function InvoiceHistoryPage() {
             isActive: companyData.is_active,
             notes: companyData.notes,
             createdAt: companyData.created_at,
-            updatedAt: companyData.updated_at
+            updatedAt: companyData.updated_at,
           };
         }
       }
@@ -136,7 +144,7 @@ export default function InvoiceHistoryPage() {
         room,
         invoiceNumber: invoice.invoiceNumber,
         invoiceDate: invoice.issueDate,
-        company // Pass company data for R1 billing
+        company, // Pass company data for R1 billing
       });
 
       const invoiceType = company ? 'R1 Company Invoice' : 'Invoice';
@@ -156,33 +164,31 @@ export default function InvoiceHistoryPage() {
   };
 
   const getReservationDetails = (invoice: Invoice) => {
-    return SAMPLE_RESERVATIONS.find(r => r.id === invoice.reservationId);
+    return SAMPLE_RESERVATIONS.find((r) => r.id === invoice.reservationId);
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="mx-auto max-w-7xl p-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Invoice History</h1>
-          <p className="text-gray-600 mt-1">
-            Manage and track all guest invoices and payments
-          </p>
+          <p className="mt-1 text-gray-600">Manage and track all guest invoices and payments</p>
         </div>
-        <div className="flex space-x-3 mt-4 sm:mt-0">
+        <div className="mt-4 flex space-x-3 sm:mt-0">
           <Button variant="outline" size="sm">
-            <Download className="w-4 h-4 mr-2" />
+            <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
           <Button size="sm">
-            <FileText className="w-4 h-4 mr-2" />
+            <FileText className="mr-2 h-4 w-4" />
             New Invoice
           </Button>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+      <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-4">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -190,7 +196,7 @@ export default function InvoiceHistoryPage() {
                 <p className="text-sm font-medium text-gray-600">Total Invoices</p>
                 <p className="text-2xl font-bold text-gray-900">{invoices.length}</p>
               </div>
-              <FileText className="w-8 h-8 text-blue-600" />
+              <FileText className="h-8 w-8 text-blue-600" />
             </div>
           </CardContent>
         </Card>
@@ -202,7 +208,7 @@ export default function InvoiceHistoryPage() {
                 <p className="text-sm font-medium text-gray-600">Total Revenue</p>
                 <p className="text-2xl font-bold text-green-600">€{totalRevenue.toFixed(2)}</p>
               </div>
-              <DollarSign className="w-8 h-8 text-green-600" />
+              <DollarSign className="h-8 w-8 text-green-600" />
             </div>
           </CardContent>
         </Card>
@@ -214,7 +220,7 @@ export default function InvoiceHistoryPage() {
                 <p className="text-sm font-medium text-gray-600">Unpaid Invoices</p>
                 <p className="text-2xl font-bold text-red-600">{unpaidInvoices.length}</p>
               </div>
-              <CreditCard className="w-8 h-8 text-red-600" />
+              <CreditCard className="h-8 w-8 text-red-600" />
             </div>
           </CardContent>
         </Card>
@@ -225,13 +231,15 @@ export default function InvoiceHistoryPage() {
               <div>
                 <p className="text-sm font-medium text-gray-600">This Month</p>
                 <p className="text-2xl font-bold text-blue-600">
-                  {getInvoicesByDateRange(
-                    new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-                    new Date()
-                  ).length}
+                  {
+                    getInvoicesByDateRange(
+                      new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+                      new Date()
+                    ).length
+                  }
                 </p>
               </div>
-              <Calendar className="w-8 h-8 text-blue-600" />
+              <Calendar className="h-8 w-8 text-blue-600" />
             </div>
           </CardContent>
         </Card>
@@ -240,25 +248,25 @@ export default function InvoiceHistoryPage() {
       {/* Filters */}
       <Card className="mb-6">
         <CardContent className="p-6">
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col gap-4 sm:flex-row">
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
                 <input
                   type="text"
                   placeholder="Search by invoice number, guest name, or room..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full rounded-lg border border-gray-300 py-2 pr-4 pl-10 focus:border-transparent focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
             <div className="flex items-center space-x-2">
-              <Filter className="w-4 h-4 text-gray-500" />
+              <Filter className="h-4 w-4 text-gray-500" />
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All Status</option>
                 <option value="draft">Draft</option>
@@ -282,45 +290,45 @@ export default function InvoiceHistoryPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Invoice #</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Guest</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Room</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Issue Date</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Amount</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Status</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Actions</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600">Invoice #</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600">Guest</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600">Room</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600">Issue Date</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600">Amount</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600">Status</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredInvoices.slice(0, 10).map((invoice) => (
                   <tr key={invoice.id} className="border-b hover:bg-gray-50">
-                    <td className="py-3 px-4 font-medium">{invoice.invoiceNumber}</td>
-                    <td className="py-3 px-4">{getGuestName(invoice.guestId)}</td>
-                    <td className="py-3 px-4">{getRoomNumber(invoice)}</td>
-                    <td className="py-3 px-4">{format(invoice.issueDate, 'MMM dd, yyyy')}</td>
-                    <td className="py-3 px-4 font-medium">€{invoice.totalAmount.toFixed(2)}</td>
-                    <td className="py-3 px-4">
+                    <td className="px-4 py-3 font-medium">{invoice.invoiceNumber}</td>
+                    <td className="px-4 py-3">{getGuestName(invoice.guestId)}</td>
+                    <td className="px-4 py-3">{getRoomNumber(invoice)}</td>
+                    <td className="px-4 py-3">{format(invoice.issueDate, 'MMM dd, yyyy')}</td>
+                    <td className="px-4 py-3 font-medium">€{invoice.totalAmount.toFixed(2)}</td>
+                    <td className="px-4 py-3">
                       <Badge className={statusColors[invoice.status]}>
                         {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
                       </Badge>
                     </td>
-                    <td className="py-3 px-4">
+                    <td className="px-4 py-3">
                       <div className="flex space-x-2">
-                        <Button 
-                          variant="ghost" 
+                        <Button
+                          variant="ghost"
                           size="sm"
                           onClick={() => handleViewInvoice(invoice)}
                           className="hover:bg-blue-50"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="h-4 w-4" />
                         </Button>
-                        <Button 
-                          variant="ghost" 
+                        <Button
+                          variant="ghost"
                           size="sm"
                           onClick={() => handleDownloadPDF(invoice)}
                           className="hover:bg-green-50"
                         >
-                          <Download className="w-4 h-4" />
+                          <Download className="h-4 w-4" />
                         </Button>
                       </div>
                     </td>
@@ -329,10 +337,10 @@ export default function InvoiceHistoryPage() {
               </tbody>
             </table>
           </div>
-          
+
           {filteredInvoices.length === 0 && (
-            <div className="text-center py-8">
-              <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <div className="py-8 text-center">
+              <FileText className="mx-auto mb-4 h-12 w-12 text-gray-400" />
               <p className="text-gray-500">No invoices found matching your criteria</p>
             </div>
           )}
@@ -341,16 +349,12 @@ export default function InvoiceHistoryPage() {
 
       {/* Invoice Details Modal */}
       <Dialog open={showInvoiceDetails} onOpenChange={setShowInvoiceDetails}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               <span>Invoice Details - {selectedInvoice?.invoiceNumber}</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowInvoiceDetails(false)}
-              >
-                <X className="w-4 h-4" />
+              <Button variant="ghost" size="sm" onClick={() => setShowInvoiceDetails(false)}>
+                <X className="h-4 w-4" />
               </Button>
             </DialogTitle>
           </DialogHeader>
@@ -358,7 +362,7 @@ export default function InvoiceHistoryPage() {
           {selectedInvoice && (
             <div className="space-y-6">
               {/* Invoice Header */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg">Invoice Information</CardTitle>
@@ -370,16 +374,21 @@ export default function InvoiceHistoryPage() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Issue Date:</span>
-                      <span className="font-medium">{format(selectedInvoice.issueDate, 'MMM dd, yyyy')}</span>
+                      <span className="font-medium">
+                        {format(selectedInvoice.issueDate, 'MMM dd, yyyy')}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Due Date:</span>
-                      <span className="font-medium">{format(selectedInvoice.dueDate, 'MMM dd, yyyy')}</span>
+                      <span className="font-medium">
+                        {format(selectedInvoice.dueDate, 'MMM dd, yyyy')}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Status:</span>
                       <Badge className={statusColors[selectedInvoice.status]}>
-                        {selectedInvoice.status.charAt(0).toUpperCase() + selectedInvoice.status.slice(1)}
+                        {selectedInvoice.status.charAt(0).toUpperCase() +
+                          selectedInvoice.status.slice(1)}
                       </Badge>
                     </div>
                   </CardContent>
@@ -404,16 +413,23 @@ export default function InvoiceHistoryPage() {
                         <>
                           <div className="flex justify-between">
                             <span className="text-gray-600">Check-in:</span>
-                            <span className="font-medium">{format(reservation.checkIn, 'MMM dd, yyyy')}</span>
+                            <span className="font-medium">
+                              {format(reservation.checkIn, 'MMM dd, yyyy')}
+                            </span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-gray-600">Check-out:</span>
-                            <span className="font-medium">{format(reservation.checkOut, 'MMM dd, yyyy')}</span>
+                            <span className="font-medium">
+                              {format(reservation.checkOut, 'MMM dd, yyyy')}
+                            </span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-gray-600">Nights:</span>
                             <span className="font-medium">
-                              {Math.ceil((reservation.checkOut.getTime() - reservation.checkIn.getTime()) / (1000 * 60 * 60 * 24))}
+                              {Math.ceil(
+                                (reservation.checkOut.getTime() - reservation.checkIn.getTime()) /
+                                  (1000 * 60 * 60 * 24)
+                              )}
                             </span>
                           </div>
                         </>
@@ -474,7 +490,13 @@ export default function InvoiceHistoryPage() {
                     </div>
                     <div className="flex justify-between text-lg">
                       <span>Remaining Balance:</span>
-                      <span className={selectedInvoice.remainingAmount > 0 ? 'text-red-600 font-medium' : 'text-green-600'}>
+                      <span
+                        className={
+                          selectedInvoice.remainingAmount > 0
+                            ? 'font-medium text-red-600'
+                            : 'text-green-600'
+                        }
+                      >
                         €{selectedInvoice.remainingAmount.toFixed(2)}
                       </span>
                     </div>
@@ -491,28 +513,32 @@ export default function InvoiceHistoryPage() {
                   {selectedInvoice.payments && selectedInvoice.payments.length > 0 ? (
                     <div className="space-y-3">
                       {selectedInvoice.payments.map((payment, index) => (
-                        <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div
+                          key={index}
+                          className="flex items-center justify-between rounded-lg bg-gray-50 p-3"
+                        >
                           <div className="flex items-center space-x-3">
-                            <CheckCircle className="w-5 h-5 text-green-600" />
+                            <CheckCircle className="h-5 w-5 text-green-600" />
                             <div>
                               <p className="font-medium">€{payment.amount.toFixed(2)}</p>
                               <p className="text-sm text-gray-600">
-                                {payment.method.charAt(0).toUpperCase() + payment.method.slice(1)} • {format(payment.receivedDate, 'MMM dd, yyyy')}
+                                {payment.method.charAt(0).toUpperCase() + payment.method.slice(1)} •{' '}
+                                {format(payment.receivedDate, 'MMM dd, yyyy')}
                               </p>
                               {payment.notes && (
                                 <p className="text-xs text-gray-500">{payment.notes}</p>
                               )}
                             </div>
                           </div>
-                          <Badge variant="outline" className="text-green-600 border-green-600">
+                          <Badge variant="outline" className="border-green-600 text-green-600">
                             {payment.status.charAt(0).toUpperCase() + payment.status.slice(1)}
                           </Badge>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-6">
-                      <Clock className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                    <div className="py-6 text-center">
+                      <Clock className="mx-auto mb-3 h-12 w-12 text-gray-400" />
                       <p className="text-gray-500">No payments recorded for this invoice</p>
                     </div>
                   )}
@@ -539,22 +565,22 @@ export default function InvoiceHistoryPage() {
                         <span className="text-gray-600">ZKI (Security Code):</span>
                         <span className="font-mono text-sm">{selectedInvoice.fiscalData.zki}</span>
                       </div>
-                        {selectedInvoice.fiscalData.fiscalReceiptUrl && (
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Fiscal Receipt:</span>
-                            <a 
-                              href={selectedInvoice.fiscalData.fiscalReceiptUrl} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:underline text-sm"
-                            >
-                              View Receipt
-                            </a>
-                          </div>
-                        )}
+                      {selectedInvoice.fiscalData.fiscalReceiptUrl && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Fiscal Receipt:</span>
+                          <a
+                            href={selectedInvoice.fiscalData.fiscalReceiptUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-blue-600 hover:underline"
+                          >
+                            View Receipt
+                          </a>
+                        </div>
+                      )}
                     </>
                   ) : (
-                    <div className="text-center py-4 text-gray-500">
+                    <div className="py-4 text-center text-gray-500">
                       No fiscal data available for this invoice
                     </div>
                   )}
@@ -562,20 +588,16 @@ export default function InvoiceHistoryPage() {
               </Card>
 
               {/* Action Buttons */}
-              <div className="flex justify-end space-x-3 pt-4 border-t">
+              <div className="flex justify-end space-x-3 border-t pt-4">
                 <Button
                   variant="outline"
                   onClick={() => handleDownloadPDF(selectedInvoice)}
                   className="flex items-center space-x-2"
                 >
-                  <Download className="w-4 h-4" />
+                  <Download className="h-4 w-4" />
                   <span>Download PDF</span>
                 </Button>
-                <Button
-                  onClick={() => setShowInvoiceDetails(false)}
-                >
-                  Close
-                </Button>
+                <Button onClick={() => setShowInvoiceDetails(false)}>Close</Button>
               </div>
             </div>
           )}

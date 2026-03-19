@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
-import { useHotel } from '../../../lib/hotel/state/SupabaseHotelContext';
+import { useInvoices } from '../../../lib/queries/hooks/useInvoices';
+import { useGuests } from '../../../lib/queries/hooks/useGuests';
+import { useRooms } from '../../../lib/queries/hooks/useRooms';
+import { useReservations } from '../../../lib/queries/hooks/useReservations';
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import { Badge } from '../../ui/badge';
 import { Button } from '../../ui/button';
@@ -17,17 +20,22 @@ import {
   Building2,
   Globe,
   TrendingUp,
-  Shield
+  Shield,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { QRCodeSVG } from 'qrcode.react';
-import { Invoice, Company } from '../../../lib/hotel/types';
+import { Invoice, Company, Payment } from '../../../lib/hotel/types';
 import { generatePDFInvoice } from '../../../lib/pdfInvoiceGenerator';
 import hotelNotification from '../../../lib/notifications';
 import { supabase } from '../../../lib/supabase';
 
 export default function InvoicePaymentPage() {
-  const { invoices, payments, guests, rooms, reservations, getUnpaidInvoices } = useHotel();
+  const { data: invoices = [] } = useInvoices();
+  const { data: guests = [] } = useGuests();
+  const { data: rooms = [] } = useRooms();
+  const { data: reservations = [] } = useReservations();
+  const payments: Payment[] = []; // payments not loaded from DB
+  const getUnpaidInvoices = () => invoices.filter((inv) => inv.status !== 'paid');
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -37,21 +45,22 @@ export default function InvoicePaymentPage() {
 
   // Payment methods configuration
   const paymentMethods = {
-    'cash': { icon: Banknote, label: 'Cash', color: 'text-green-600' },
-    'card': { icon: CreditCard, label: 'Card', color: 'text-blue-600' },
-    'bank_transfer': { icon: Building2, label: 'Bank Transfer', color: 'text-purple-600' },
-    'online': { icon: Globe, label: 'Online', color: 'text-orange-600' },
-    'other': { icon: Clock, label: 'Other', color: 'text-gray-600' }
+    cash: { icon: Banknote, label: 'Cash', color: 'text-green-600' },
+    card: { icon: CreditCard, label: 'Card', color: 'text-blue-600' },
+    bank_transfer: { icon: Building2, label: 'Bank Transfer', color: 'text-purple-600' },
+    online: { icon: Globe, label: 'Online', color: 'text-orange-600' },
+    other: { icon: Clock, label: 'Other', color: 'text-gray-600' },
   };
 
   // Filter invoices based on search and status
-  const filteredInvoices = invoices.filter(invoice => {
-    const guest = guests.find(g => g.id === invoice.guestId);
+  const filteredInvoices = invoices.filter((invoice) => {
+    const guest = guests.find((g) => g.id === invoice.guestId);
     // Get room through reservation - use real reservations from context
-    const reservation = reservations.find(r => r.id === invoice.reservationId);
-    const room = reservation ? rooms.find(r => r.id === reservation.roomId) : undefined;
+    const reservation = reservations.find((r) => r.id === invoice.reservationId);
+    const room = reservation ? rooms.find((r) => r.id === reservation.roomId) : undefined;
 
-    const matchesSearch = !searchTerm ||
+    const matchesSearch =
+      !searchTerm ||
       invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
       guest?.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       room?.number.includes(searchTerm);
@@ -63,34 +72,34 @@ export default function InvoicePaymentPage() {
 
   const unpaidInvoices = getUnpaidInvoices();
   const totalRevenue = invoices
-    .filter(inv => inv.status === 'paid')
+    .filter((inv) => inv.status === 'paid')
     .reduce((sum, inv) => sum + inv.totalAmount, 0);
 
   const statusColors = {
-    'draft': 'bg-gray-100 text-gray-800',
-    'sent': 'bg-blue-100 text-blue-800',
-    'paid': 'bg-green-100 text-green-800',
-    'overdue': 'bg-red-100 text-red-800',
-    'cancelled': 'bg-gray-100 text-gray-600',
-    'pending': 'bg-yellow-100 text-yellow-800',
-    'partial': 'bg-blue-100 text-blue-800',
-    'refunded': 'bg-red-100 text-red-800'
+    draft: 'bg-gray-100 text-gray-800',
+    sent: 'bg-blue-100 text-blue-800',
+    paid: 'bg-green-100 text-green-800',
+    overdue: 'bg-red-100 text-red-800',
+    cancelled: 'bg-gray-100 text-gray-600',
+    pending: 'bg-yellow-100 text-yellow-800',
+    partial: 'bg-blue-100 text-blue-800',
+    refunded: 'bg-red-100 text-red-800',
   };
 
   const getGuestName = (guestId: string) => {
-    return guests.find(g => g.id === guestId)?.fullName || 'Unknown Guest';
+    return guests.find((g) => g.id === guestId)?.fullName || 'Unknown Guest';
   };
 
   const getRoomNumber = (invoiceId: string) => {
-    const invoice = invoices.find(inv => inv.id === invoiceId);
+    const invoice = invoices.find((inv) => inv.id === invoiceId);
     if (!invoice) return 'Unknown Room';
-    const reservation = reservations.find(r => r.id === invoice.reservationId);
+    const reservation = reservations.find((r) => r.id === invoice.reservationId);
     if (!reservation) return 'Unknown Room';
-    return rooms.find(r => r.id === reservation.roomId)?.number || 'Unknown Room';
+    return rooms.find((r) => r.id === reservation.roomId)?.number || 'Unknown Room';
   };
 
   const getInvoiceNumber = (invoiceId: string) => {
-    return invoices.find(inv => inv.id === invoiceId)?.invoiceNumber || 'Unknown';
+    return invoices.find((inv) => inv.id === invoiceId)?.invoiceNumber || 'Unknown';
   };
 
   const handleViewInvoice = (invoice: Invoice) => {
@@ -103,7 +112,7 @@ export default function InvoicePaymentPage() {
       // Use reservation data from invoice (loaded via JOIN)
       const reservation = invoice.reservation;
       const guest = invoice.guest;
-      const room = reservation ? rooms.find(r => r.id === reservation.roomId) : undefined;
+      const room = reservation ? rooms.find((r) => r.id === reservation.roomId) : undefined;
 
       if (!reservation || !guest || !room) {
         hotelNotification.error(
@@ -135,7 +144,7 @@ export default function InvoicePaymentPage() {
               street: companyData.address,
               city: companyData.city,
               postalCode: companyData.postal_code,
-              country: companyData.country
+              country: companyData.country,
             },
             contactPerson: companyData.contact_person,
             email: companyData.email,
@@ -146,7 +155,7 @@ export default function InvoicePaymentPage() {
             isActive: companyData.is_active,
             notes: companyData.notes,
             createdAt: companyData.created_at,
-            updatedAt: companyData.updated_at
+            updatedAt: companyData.updated_at,
           };
         }
       }
@@ -161,7 +170,7 @@ export default function InvoicePaymentPage() {
         jir: invoice.fiscalData?.jir,
         zki: invoice.fiscalData?.zki,
         qrCodeData: invoice.fiscalData?.qrCodeData,
-        company // Pass company data for R1 billing
+        company, // Pass company data for R1 billing
       });
 
       const invoiceType = company ? 'R1 Company Invoice' : 'Invoice';
@@ -184,29 +193,27 @@ export default function InvoicePaymentPage() {
   const totalPaid = payments.reduce((sum, payment) => sum + payment.amount, 0);
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="mx-auto max-w-7xl p-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Invoice & Payment Management</h1>
-          <p className="text-gray-600 mt-1">
-            Manage invoices, track payments, and download PDFs
-          </p>
+          <p className="mt-1 text-gray-600">Manage invoices, track payments, and download PDFs</p>
         </div>
-        <div className="flex space-x-3 mt-4 sm:mt-0">
+        <div className="mt-4 flex space-x-3 sm:mt-0">
           <Button variant="outline" size="sm">
-            <Download className="w-4 h-4 mr-2" />
+            <Download className="mr-2 h-4 w-4" />
             Export Data
           </Button>
           <Button size="sm">
-            <FileText className="w-4 h-4 mr-2" />
+            <FileText className="mr-2 h-4 w-4" />
             New Invoice
           </Button>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+      <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-4">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -214,7 +221,7 @@ export default function InvoicePaymentPage() {
                 <p className="text-sm font-medium text-gray-600">Total Invoices</p>
                 <p className="text-2xl font-bold text-gray-900">{invoices.length}</p>
               </div>
-              <FileText className="w-8 h-8 text-blue-600" />
+              <FileText className="h-8 w-8 text-blue-600" />
             </div>
           </CardContent>
         </Card>
@@ -226,7 +233,7 @@ export default function InvoicePaymentPage() {
                 <p className="text-sm font-medium text-gray-600">Total Revenue</p>
                 <p className="text-2xl font-bold text-green-600">€{totalRevenue.toFixed(2)}</p>
               </div>
-              <DollarSign className="w-8 h-8 text-green-600" />
+              <DollarSign className="h-8 w-8 text-green-600" />
             </div>
           </CardContent>
         </Card>
@@ -238,7 +245,7 @@ export default function InvoicePaymentPage() {
                 <p className="text-sm font-medium text-gray-600">Unpaid Invoices</p>
                 <p className="text-2xl font-bold text-red-600">{unpaidInvoices.length}</p>
               </div>
-              <CreditCard className="w-8 h-8 text-red-600" />
+              <CreditCard className="h-8 w-8 text-red-600" />
             </div>
           </CardContent>
         </Card>
@@ -250,19 +257,19 @@ export default function InvoicePaymentPage() {
                 <p className="text-sm font-medium text-gray-600">Total Payments</p>
                 <p className="text-2xl font-bold text-blue-600">€{totalPaid.toFixed(2)}</p>
               </div>
-              <TrendingUp className="w-8 h-8 text-blue-600" />
+              <TrendingUp className="h-8 w-8 text-blue-600" />
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex space-x-1 mb-6 border-b">
+      <div className="mb-6 flex space-x-1 border-b">
         <button
           onClick={() => setActiveTab('invoices')}
-          className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
+          className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
             activeTab === 'invoices'
-              ? 'border-blue-500 text-blue-600 bg-blue-50'
+              ? 'border-blue-500 bg-blue-50 text-blue-600'
               : 'border-transparent text-gray-500 hover:text-gray-700'
           }`}
         >
@@ -270,9 +277,9 @@ export default function InvoicePaymentPage() {
         </button>
         <button
           onClick={() => setActiveTab('payments')}
-          className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
+          className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
             activeTab === 'payments'
-              ? 'border-blue-500 text-blue-600 bg-blue-50'
+              ? 'border-blue-500 bg-blue-50 text-blue-600'
               : 'border-transparent text-gray-500 hover:text-gray-700'
           }`}
         >
@@ -283,25 +290,25 @@ export default function InvoicePaymentPage() {
       {/* Filters */}
       <Card className="mb-6">
         <CardContent className="p-6">
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col gap-4 sm:flex-row">
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
                 <input
                   type="text"
                   placeholder="Search by invoice number, guest name, or room..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full rounded-lg border border-gray-300 py-2 pr-4 pl-10 focus:border-transparent focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
             <div className="flex items-center space-x-2">
-              <Filter className="w-4 h-4 text-gray-500" />
+              <Filter className="h-4 w-4 text-gray-500" />
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All Status</option>
                 <option value="draft">Draft</option>
@@ -326,27 +333,27 @@ export default function InvoicePaymentPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 font-medium text-gray-600">Invoice #</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-600">Guest</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-600">Room</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-600">Amount</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-600">JIR</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-600">Status</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-600">Date</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-600">Actions</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-600">Invoice #</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-600">Guest</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-600">Room</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-600">Amount</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-600">JIR</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-600">Status</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-600">Date</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-600">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredInvoices.map((invoice) => (
                     <tr key={invoice.id} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="py-3 px-4 font-mono text-sm">{invoice.invoiceNumber}</td>
-                      <td className="py-3 px-4">{getGuestName(invoice.guestId)}</td>
-                      <td className="py-3 px-4">{getRoomNumber(invoice.id)}</td>
-                      <td className="py-3 px-4 font-medium">€{invoice.totalAmount.toFixed(2)}</td>
-                      <td className="py-3 px-4 font-mono text-xs">
+                      <td className="px-4 py-3 font-mono text-sm">{invoice.invoiceNumber}</td>
+                      <td className="px-4 py-3">{getGuestName(invoice.guestId)}</td>
+                      <td className="px-4 py-3">{getRoomNumber(invoice.id)}</td>
+                      <td className="px-4 py-3 font-medium">€{invoice.totalAmount.toFixed(2)}</td>
+                      <td className="px-4 py-3 font-mono text-xs">
                         {invoice.fiscalData?.jir ? (
                           <span
-                            className="text-green-600 cursor-help"
+                            className="cursor-help text-green-600"
                             title={invoice.fiscalData.jir}
                           >
                             {invoice.fiscalData.jir.slice(0, 8)}...
@@ -355,29 +362,31 @@ export default function InvoicePaymentPage() {
                           <span className="text-gray-400">Not fiscalized</span>
                         )}
                       </td>
-                      <td className="py-3 px-4">
-                        <Badge className={`text-xs ${statusColors[invoice.status as keyof typeof statusColors]}`}>
+                      <td className="px-4 py-3">
+                        <Badge
+                          className={`text-xs ${statusColors[invoice.status as keyof typeof statusColors]}`}
+                        >
                           {invoice.status.toUpperCase()}
                         </Badge>
                       </td>
-                      <td className="py-3 px-4 text-sm text-gray-600">
+                      <td className="px-4 py-3 text-sm text-gray-600">
                         {format(invoice.issueDate, 'MMM dd, yyyy')}
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="px-4 py-3">
                         <div className="flex items-center space-x-2">
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => handleViewInvoice(invoice)}
                           >
-                            <Eye className="w-4 h-4" />
+                            <Eye className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => handleDownloadPDF(invoice)}
                           >
-                            <Download className="w-4 h-4" />
+                            <Download className="h-4 w-4" />
                           </Button>
                         </div>
                       </td>
@@ -386,7 +395,7 @@ export default function InvoicePaymentPage() {
                 </tbody>
               </table>
               {filteredInvoices.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
+                <div className="py-8 text-center text-gray-500">
                   No invoices found matching your criteria.
                 </div>
               )}
@@ -403,38 +412,48 @@ export default function InvoicePaymentPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 font-medium text-gray-600">Payment ID</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-600">Invoice #</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-600">Amount</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-600">Method</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-600">Status</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-600">Date</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-600">Reference</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-600">Payment ID</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-600">Invoice #</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-600">Amount</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-600">Method</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-600">Status</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-600">Date</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-600">Reference</th>
                   </tr>
                 </thead>
                 <tbody>
                   {payments.map((payment) => {
-                    const PaymentIcon = paymentMethods[payment.method as keyof typeof paymentMethods]?.icon || Clock;
+                    const PaymentIcon =
+                      paymentMethods[payment.method as keyof typeof paymentMethods]?.icon || Clock;
                     return (
                       <tr key={payment.id} className="border-b border-gray-100 hover:bg-gray-50">
-                        <td className="py-3 px-4 font-mono text-sm">{payment.id.slice(-8)}</td>
-                        <td className="py-3 px-4 font-mono text-sm">{getInvoiceNumber(payment.invoiceId)}</td>
-                        <td className="py-3 px-4 font-medium">€{payment.amount.toFixed(2)}</td>
-                        <td className="py-3 px-4">
+                        <td className="px-4 py-3 font-mono text-sm">{payment.id.slice(-8)}</td>
+                        <td className="px-4 py-3 font-mono text-sm">
+                          {getInvoiceNumber(payment.invoiceId)}
+                        </td>
+                        <td className="px-4 py-3 font-medium">€{payment.amount.toFixed(2)}</td>
+                        <td className="px-4 py-3">
                           <div className="flex items-center space-x-2">
-                            <PaymentIcon className={`w-4 h-4 ${paymentMethods[payment.method as keyof typeof paymentMethods]?.color || 'text-gray-600'}`} />
-                            <span className="text-sm">{paymentMethods[payment.method as keyof typeof paymentMethods]?.label || payment.method}</span>
+                            <PaymentIcon
+                              className={`h-4 w-4 ${paymentMethods[payment.method as keyof typeof paymentMethods]?.color || 'text-gray-600'}`}
+                            />
+                            <span className="text-sm">
+                              {paymentMethods[payment.method as keyof typeof paymentMethods]
+                                ?.label || payment.method}
+                            </span>
                           </div>
                         </td>
-                        <td className="py-3 px-4">
-                          <Badge className={`text-xs ${statusColors[payment.status as keyof typeof statusColors]}`}>
+                        <td className="px-4 py-3">
+                          <Badge
+                            className={`text-xs ${statusColors[payment.status as keyof typeof statusColors]}`}
+                          >
                             {payment.status.toUpperCase()}
                           </Badge>
                         </td>
-                        <td className="py-3 px-4 text-sm text-gray-600">
+                        <td className="px-4 py-3 text-sm text-gray-600">
                           {format(payment.receivedDate, 'MMM dd, yyyy')}
                         </td>
-                        <td className="py-3 px-4 text-sm text-gray-600">
+                        <td className="px-4 py-3 text-sm text-gray-600">
                           {payment.referenceNumber || '-'}
                         </td>
                       </tr>
@@ -443,9 +462,7 @@ export default function InvoicePaymentPage() {
                 </tbody>
               </table>
               {payments.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  No payments found.
-                </div>
+                <div className="py-8 text-center text-gray-500">No payments found.</div>
               )}
             </div>
           </CardContent>
@@ -454,7 +471,7 @@ export default function InvoicePaymentPage() {
 
       {/* Invoice Details Dialog */}
       <Dialog open={showInvoiceDetails} onOpenChange={setShowInvoiceDetails}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               <span>Invoice Details</span>
@@ -463,7 +480,7 @@ export default function InvoicePaymentPage() {
                 size="sm"
                 onClick={() => selectedInvoice && handleDownloadPDF(selectedInvoice)}
               >
-                <Download className="w-4 h-4 mr-2" />
+                <Download className="mr-2 h-4 w-4" />
                 Download PDF
               </Button>
             </DialogTitle>
@@ -477,7 +494,9 @@ export default function InvoicePaymentPage() {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-600">Status</label>
-                  <Badge className={`text-xs ${statusColors[selectedInvoice.status as keyof typeof statusColors]}`}>
+                  <Badge
+                    className={`text-xs ${statusColors[selectedInvoice.status as keyof typeof statusColors]}`}
+                  >
                     {selectedInvoice.status.toUpperCase()}
                   </Badge>
                 </div>
@@ -502,26 +521,34 @@ export default function InvoicePaymentPage() {
               {/* Fiscal Information Section */}
               {selectedInvoice.fiscalData && (
                 <div className="border-t pt-4">
-                  <h4 className="font-medium mb-3 flex items-center text-green-700">
-                    <Shield className="w-5 h-5 mr-2" />
+                  <h4 className="mb-3 flex items-center font-medium text-green-700">
+                    <Shield className="mr-2 h-5 w-5" />
                     Croatian Fiscal Information
                   </h4>
-                  <div className="space-y-3 bg-green-50 p-4 rounded-lg border border-green-200">
+                  <div className="space-y-3 rounded-lg border border-green-200 bg-green-50 p-4">
                     <div>
-                      <label className="text-sm font-medium text-gray-600">JIR (Unique Invoice Identifier)</label>
-                      <p className="font-mono text-sm break-all text-green-800">{selectedInvoice.fiscalData.jir}</p>
+                      <label className="text-sm font-medium text-gray-600">
+                        JIR (Unique Invoice Identifier)
+                      </label>
+                      <p className="font-mono text-sm break-all text-green-800">
+                        {selectedInvoice.fiscalData.jir}
+                      </p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-600">ZKI (Security Code)</label>
-                      <p className="font-mono text-sm break-all text-green-800">{selectedInvoice.fiscalData.zki}</p>
+                      <label className="text-sm font-medium text-gray-600">
+                        ZKI (Security Code)
+                      </label>
+                      <p className="font-mono text-sm break-all text-green-800">
+                        {selectedInvoice.fiscalData.zki}
+                      </p>
                     </div>
                     {selectedInvoice.fiscalData.qrCodeData && (
                       <div>
                         <label className="text-sm font-medium text-gray-600">QR Code</label>
-                        <div className="mt-2 p-3 bg-white rounded border inline-block">
+                        <div className="mt-2 inline-block rounded border bg-white p-3">
                           <QRCodeSVG value={selectedInvoice.fiscalData.qrCodeData} size={128} />
                         </div>
-                        <p className="text-xs text-gray-500 mt-2">Scan to verify fiscalization</p>
+                        <p className="mt-2 text-xs text-gray-500">Scan to verify fiscalization</p>
                       </div>
                     )}
                   </div>
@@ -529,7 +556,7 @@ export default function InvoicePaymentPage() {
               )}
 
               <div className="border-t pt-4">
-                <h4 className="font-medium mb-2">Financial Breakdown</h4>
+                <h4 className="mb-2 font-medium">Financial Breakdown</h4>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span>Subtotal:</span>
@@ -543,7 +570,7 @@ export default function InvoicePaymentPage() {
                     <span>Tourism Tax:</span>
                     <span>€{selectedInvoice.tourismTax.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between font-bold border-t pt-2">
+                  <div className="flex justify-between border-t pt-2 font-bold">
                     <span>Total Amount:</span>
                     <span>€{selectedInvoice.totalAmount.toFixed(2)}</span>
                   </div>

@@ -3,19 +3,16 @@ import { X, Plus, Minus, Search, ShoppingCart, AlertTriangle } from 'lucide-reac
 import { Button } from '../../../ui/button';
 import { Input } from '../../../ui/input';
 import { Badge } from '../../../ui/badge';
+import { OrderItem, OrderValidationResult } from '../../../../lib/hotel/orderTypes';
 import {
-  OrderItem,
-  OrderValidationResult
-} from '../../../../lib/hotel/orderTypes';
-import { 
   validateOrder,
   calculateOrderTotal,
-  formatCurrency
+  formatCurrency,
 } from '../../../../lib/hotel/orderService';
 import { supabase } from '../../../../lib/supabase';
 import { Reservation } from '../../../../lib/hotel/types';
 import { formatRoomNumber } from '../../../../lib/hotel/calendarUtils';
-import { useHotel } from '../../../../lib/hotel/state/SupabaseHotelContext';
+import { useRooms } from '../../../../lib/queries/hooks/useRooms';
 import { SAMPLE_GUESTS } from '../../../../lib/hotel/sampleData';
 
 interface DrinksSelectionModalProps {
@@ -58,15 +55,15 @@ export default function DrinksSelectionModal({
   reservation,
   isOpen,
   onClose,
-  onOrderComplete
+  onOrderComplete,
 }: DrinksSelectionModalProps) {
-  const { rooms } = useHotel();
+  const { data: rooms = [] } = useRooms();
   const [availableItems, setAvailableItems] = useState<FridgeInventoryItem[]>([]);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [validationResult, setValidationResult] = useState<OrderValidationResult | null>(null);
-  
+
   // Basket state to track quantity changes before committing
   const [basketQuantities, setBasketQuantities] = useState<Record<number, number>>({});
 
@@ -89,11 +86,12 @@ export default function DrinksSelectionModal({
   const loadDrinksItems = async () => {
     try {
       setIsLoading(true);
-      
+
       // Fetch beverages from fridge locations (refrigerated locations)
       const { data: items, error } = await supabase
         .from('items')
-        .select(`
+        .select(
+          `
           id,
           name,
           description,
@@ -109,28 +107,36 @@ export default function DrinksSelectionModal({
             expiration_date,
             location:locations(id, name, is_refrigerated)
           )
-        `)
+        `
+        )
         .eq('is_active', true)
         .in('categories.name', [
-          'Beverage', 'Drinks', 'Bar', 'Restaurant', 
-          'Alcohol', 'Coffee', 'Tea', 'Cocktails'
+          'Beverage',
+          'Drinks',
+          'Bar',
+          'Restaurant',
+          'Alcohol',
+          'Coffee',
+          'Tea',
+          'Cocktails',
         ]);
 
       if (error) throw error;
 
       // Process and filter items from refrigerated locations only
       const fridgeItems: FridgeInventoryItem[] = items
-        ?.map(item => {
+        ?.map((item) => {
           // Only include inventory from refrigerated locations
-          const fridgeInventory = item.inventory?.filter(inv => {
-            const loc = inv.location as Record<string, unknown> | null;
-            return loc?.is_refrigerated && inv.quantity > 0;
-          }) || [];
+          const fridgeInventory =
+            item.inventory?.filter((inv) => {
+              const loc = inv.location as Record<string, unknown> | null;
+              return loc?.is_refrigerated && inv.quantity > 0;
+            }) || [];
 
           if (fridgeInventory.length === 0) return null;
 
           const totalStock = fridgeInventory.reduce((sum, inv) => sum + (inv.quantity || 0), 0);
-          
+
           return {
             id: item.id,
             name: item.name,
@@ -138,13 +144,14 @@ export default function DrinksSelectionModal({
             category: {
               id: (item.category as Record<string, unknown>).id as number,
               name: (item.category as Record<string, unknown>).name as string,
-              requires_expiration: (item.category as Record<string, unknown>).requires_expiration as boolean
+              requires_expiration: (item.category as Record<string, unknown>)
+                .requires_expiration as boolean,
             },
             unit: item.unit,
             price: item.price || 0,
             minimum_stock: item.minimum_stock,
             is_active: item.is_active,
-            inventory: fridgeInventory.map(inv => ({
+            inventory: fridgeInventory.map((inv) => ({
               id: inv.id,
               location_id: inv.location_id,
               quantity: inv.quantity,
@@ -152,14 +159,14 @@ export default function DrinksSelectionModal({
               expiration_date: inv.expiration_date,
               location: {
                 id: (inv.location as Record<string, unknown>).id as number,
-                name: (inv.location as Record<string, unknown>).name as string
-              }
+                name: (inv.location as Record<string, unknown>).name as string,
+              },
             })),
             totalStock,
-            availableStock: totalStock
+            availableStock: totalStock,
           };
         })
-        .filter(item => item !== null) as FridgeInventoryItem[];
+        .filter((item) => item !== null) as FridgeInventoryItem[];
 
       setAvailableItems(fridgeItems);
     } catch (error) {
@@ -169,19 +176,20 @@ export default function DrinksSelectionModal({
     }
   };
 
-  const filteredItems = availableItems.filter(item =>
-    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.category.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredItems = availableItems.filter(
+    (item) =>
+      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.category.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Update available stock calculation based on basket quantities
   const updateAvailableStock = () => {
-    setAvailableItems(prevItems => 
-      prevItems.map(item => {
+    setAvailableItems((prevItems) =>
+      prevItems.map((item) => {
         const basketQty = basketQuantities[item.id] || 0;
         return {
           ...item,
-          availableStock: item.totalStock - basketQty
+          availableStock: item.totalStock - basketQty,
         };
       })
     );
@@ -194,14 +202,14 @@ export default function DrinksSelectionModal({
   }, [basketQuantities]);
 
   const addToOrder = (item: FridgeInventoryItem) => {
-    const existingOrderItem = orderItems.find(oi => oi.itemId === item.id);
+    const existingOrderItem = orderItems.find((oi) => oi.itemId === item.id);
     const currentBasketQty = basketQuantities[item.id] || 0;
-    
+
     // Check if we can add more (don't exceed available stock)
     if (currentBasketQty >= item.totalStock) {
       return; // Can't add more than total stock
     }
-    
+
     if (existingOrderItem) {
       // Increase quantity if item already in order
       updateOrderItemQuantity(item.id, existingOrderItem.quantity + 1);
@@ -216,73 +224,75 @@ export default function DrinksSelectionModal({
         quantity: 1,
         totalPrice: item.price,
         unit: item.unit,
-        availableStock: item.availableStock
+        availableStock: item.availableStock,
       };
       setOrderItems([...orderItems, newOrderItem]);
     }
-    
+
     // Update basket quantities to reflect the change
-    setBasketQuantities(prev => ({
+    setBasketQuantities((prev) => ({
       ...prev,
-      [item.id]: currentBasketQty + 1
+      [item.id]: currentBasketQty + 1,
     }));
   };
 
   const updateOrderItemQuantity = (itemId: number, newQuantity: number) => {
-    const currentOrderItem = orderItems.find(item => item.itemId === itemId);
+    const currentOrderItem = orderItems.find((item) => item.itemId === itemId);
     if (!currentOrderItem) return;
-    
+
     const currentQuantityDiff = currentOrderItem.quantity;
     const newQuantityDiff = newQuantity;
     const quantityChange = newQuantityDiff - currentQuantityDiff;
-    
+
     const currentBasketQty = basketQuantities[itemId] || 0;
     const newBasketQty = Math.max(0, currentBasketQty + quantityChange);
-    
+
     // Get item to check total stock
-    const item = availableItems.find(item => item.id === itemId);
+    const item = availableItems.find((item) => item.id === itemId);
     if (item && newBasketQty > item.totalStock) {
       return; // Can't exceed total stock
     }
-    
+
     if (newQuantity <= 0) {
-      setOrderItems(orderItems.filter(item => item.itemId !== itemId));
+      setOrderItems(orderItems.filter((item) => item.itemId !== itemId));
       // Reset basket quantity for this item
-      setBasketQuantities(prev => ({
+      setBasketQuantities((prev) => ({
         ...prev,
-        [itemId]: 0
+        [itemId]: 0,
       }));
       return;
     }
 
-    setOrderItems(orderItems.map(item => 
-      item.itemId === itemId 
-        ? { ...item, quantity: newQuantity, totalPrice: item.price * newQuantity }
-        : item
-    ));
-    
+    setOrderItems(
+      orderItems.map((item) =>
+        item.itemId === itemId
+          ? { ...item, quantity: newQuantity, totalPrice: item.price * newQuantity }
+          : item
+      )
+    );
+
     // Update basket quantities
-    setBasketQuantities(prev => ({
+    setBasketQuantities((prev) => ({
       ...prev,
-      [itemId]: newBasketQty
+      [itemId]: newBasketQty,
     }));
   };
 
   const removeFromOrder = (itemId: number) => {
-    setOrderItems(orderItems.filter(item => item.itemId !== itemId));
+    setOrderItems(orderItems.filter((item) => item.itemId !== itemId));
     // Reset basket quantity for this item
-    setBasketQuantities(prev => ({
+    setBasketQuantities((prev) => ({
       ...prev,
-      [itemId]: 0
+      [itemId]: 0,
     }));
   };
 
   const handleAddToRoomBill = () => {
     if (orderItems.length === 0 || !validationResult?.isValid) return;
-    
+
     const totals = calculateOrderTotal(orderItems);
     onOrderComplete(orderItems, totals.total);
-    
+
     // Reset everything and close
     resetModal();
     onClose();
@@ -306,20 +316,19 @@ export default function DrinksSelectionModal({
 
   if (!isOpen) return null;
 
-  const room = rooms.find(r => r.id === reservation.roomId);
-  const guest = SAMPLE_GUESTS.find(g => g.id === reservation.guestId);
+  const room = rooms.find((r) => r.id === reservation.roomId);
+  const guest = SAMPLE_GUESTS.find((g) => g.id === reservation.guestId);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+    <div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black">
+      <div className="max-h-[90vh] w-full max-w-4xl overflow-hidden rounded-lg bg-white shadow-xl">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b bg-gradient-to-r from-green-500 to-green-600 text-white">
+        <div className="flex items-center justify-between border-b bg-gradient-to-r from-green-500 to-green-600 p-6 text-white">
           <div>
-            <h2 className="text-xl font-semibold flex items-center">
-              🍹 Add Drinks to Room Bill
-            </h2>
-            <p className="text-green-100 text-sm">
-              Room {room ? formatRoomNumber(room) : reservation.roomId} • {guest?.fullName || 'Unknown Guest'}
+            <h2 className="flex items-center text-xl font-semibold">🍹 Add Drinks to Room Bill</h2>
+            <p className="text-sm text-green-100">
+              Room {room ? formatRoomNumber(room) : reservation.roomId} •{' '}
+              {guest?.fullName || 'Unknown Guest'}
             </p>
           </div>
           <Button
@@ -334,7 +343,7 @@ export default function DrinksSelectionModal({
 
         <div className="flex h-full max-h-[calc(90vh-80px)]">
           {/* Left Column - Drinks Menu */}
-          <div className="flex-1 p-6 border-r overflow-y-auto">
+          <div className="flex-1 overflow-y-auto border-r p-6">
             {/* Search */}
             <div className="mb-4">
               <div className="flex items-center space-x-2">
@@ -350,36 +359,38 @@ export default function DrinksSelectionModal({
 
             {/* Drinks Grid */}
             {isLoading ? (
-              <div className="text-center py-8">Loading drinks...</div>
+              <div className="py-8 text-center">Loading drinks...</div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {filteredItems.map(item => (
-                  <div key={item.id} className="border rounded-lg p-4 hover:bg-gray-50">
-                    <div className="flex justify-between items-start mb-2">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {filteredItems.map((item) => (
+                  <div key={item.id} className="rounded-lg border p-4 hover:bg-gray-50">
+                    <div className="mb-2 flex items-start justify-between">
                       <h4 className="font-medium">{item.name}</h4>
                       <Badge variant="secondary">{item.category.name}</Badge>
                     </div>
-                    
+
                     {item.description && (
-                      <p className="text-sm text-gray-600 mb-2">{item.description}</p>
+                      <p className="mb-2 text-sm text-gray-600">{item.description}</p>
                     )}
-                    
-                    <div className="flex justify-between items-center mb-3">
+
+                    <div className="mb-3 flex items-center justify-between">
                       <span className="font-semibold text-green-600">
                         {formatCurrency(item.price)} / {item.unit}
                       </span>
-                      <span className={`text-sm ${item.availableStock > 0 ? 'text-gray-500' : 'text-red-500'}`}>
+                      <span
+                        className={`text-sm ${item.availableStock > 0 ? 'text-gray-500' : 'text-red-500'}`}
+                      >
                         Available: {item.availableStock} / {item.totalStock}
                       </span>
                     </div>
-                    
+
                     <Button
                       onClick={() => addToOrder(item)}
                       disabled={item.availableStock === 0}
                       className="w-full bg-green-500 hover:bg-green-600 disabled:bg-gray-300"
                       size="sm"
                     >
-                      <Plus className="h-4 w-4 mr-1" />
+                      <Plus className="mr-1 h-4 w-4" />
                       {item.availableStock === 0 ? 'Out of Stock' : 'Add to Order'}
                     </Button>
                   </div>
@@ -389,29 +400,30 @@ export default function DrinksSelectionModal({
           </div>
 
           {/* Right Column - Order Summary */}
-          <div className="w-80 p-6 bg-gray-50">
-            <div className="flex items-center space-x-2 mb-4">
+          <div className="w-80 bg-gray-50 p-6">
+            <div className="mb-4 flex items-center space-x-2">
               <ShoppingCart className="h-5 w-5" />
               <h3 className="text-lg font-semibold">Order Summary</h3>
             </div>
 
             {orderItems.length === 0 ? (
-              <div className="text-center text-gray-500 py-8">
-                No drinks selected
-              </div>
+              <div className="py-8 text-center text-gray-500">No drinks selected</div>
             ) : (
               <div className="space-y-4">
                 {/* Order Items */}
-                <div className="space-y-3 max-h-64 overflow-y-auto">
-                  {orderItems.map(item => (
-                    <div key={item.id} className="flex items-center justify-between p-2 bg-white rounded border">
+                <div className="max-h-64 space-y-3 overflow-y-auto">
+                  {orderItems.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between rounded border bg-white p-2"
+                    >
                       <div className="flex-1">
-                        <h5 className="font-medium text-sm">{item.itemName}</h5>
+                        <h5 className="text-sm font-medium">{item.itemName}</h5>
                         <p className="text-xs text-gray-500">
                           {formatCurrency(item.price)} / {item.unit}
                         </p>
                       </div>
-                      
+
                       <div className="flex items-center space-x-2">
                         <Button
                           variant="outline"
@@ -420,9 +432,9 @@ export default function DrinksSelectionModal({
                         >
                           <Minus className="h-3 w-3" />
                         </Button>
-                        
+
                         <span className="w-8 text-center text-sm">{item.quantity}</span>
-                        
+
                         <Button
                           variant="outline"
                           size="sm"
@@ -431,7 +443,7 @@ export default function DrinksSelectionModal({
                         >
                           <Plus className="h-3 w-3" />
                         </Button>
-                        
+
                         <Button
                           variant="ghost"
                           size="sm"
@@ -447,31 +459,35 @@ export default function DrinksSelectionModal({
 
                 {/* Validation Messages */}
                 {validationResult && validationResult.errors.length > 0 && (
-                  <div className="p-2 bg-red-50 border border-red-200 rounded text-sm">
+                  <div className="rounded border border-red-200 bg-red-50 p-2 text-sm">
                     <div className="flex items-center space-x-1 text-red-700">
                       <AlertTriangle className="h-4 w-4" />
                       <span className="font-medium">Errors:</span>
                     </div>
                     {validationResult.errors.map((error, index) => (
-                      <p key={index} className="text-red-600 text-xs">{error}</p>
+                      <p key={index} className="text-xs text-red-600">
+                        {error}
+                      </p>
                     ))}
                   </div>
                 )}
 
                 {validationResult && validationResult.warnings.length > 0 && (
-                  <div className="p-2 bg-yellow-50 border border-yellow-200 rounded text-sm">
+                  <div className="rounded border border-yellow-200 bg-yellow-50 p-2 text-sm">
                     <div className="flex items-center space-x-1 text-yellow-700">
                       <AlertTriangle className="h-4 w-4" />
                       <span className="font-medium">Warnings:</span>
                     </div>
                     {validationResult.warnings.map((warning, index) => (
-                      <p key={index} className="text-yellow-600 text-xs">{warning}</p>
+                      <p key={index} className="text-xs text-yellow-600">
+                        {warning}
+                      </p>
                     ))}
                   </div>
                 )}
 
                 {/* Totals */}
-                <div className="border-t pt-3 space-y-2">
+                <div className="space-y-2 border-t pt-3">
                   <div className="flex justify-between text-sm">
                     <span>Subtotal:</span>
                     <span>{formatCurrency(totals.subtotal)}</span>
@@ -480,7 +496,7 @@ export default function DrinksSelectionModal({
                     <span>VAT (25%):</span>
                     <span>{formatCurrency(totals.tax)}</span>
                   </div>
-                  <div className="flex justify-between font-semibold text-lg">
+                  <div className="flex justify-between text-lg font-semibold">
                     <span>Total:</span>
                     <span className="text-green-600">{formatCurrency(totals.total)}</span>
                   </div>
@@ -490,7 +506,7 @@ export default function DrinksSelectionModal({
                 <Button
                   onClick={handleAddToRoomBill}
                   disabled={!validationResult?.isValid || isLoading}
-                  className="w-full bg-green-500 hover:bg-green-600 text-white"
+                  className="w-full bg-green-500 text-white hover:bg-green-600"
                   size="lg"
                 >
                   Add to Room Bill ({formatCurrency(totals.total)})

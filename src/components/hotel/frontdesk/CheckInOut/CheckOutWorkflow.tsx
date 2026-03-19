@@ -1,10 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '../../../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
 import { Button } from '../../../ui/button';
 import { Badge } from '../../../ui/badge';
@@ -21,10 +16,14 @@ import {
   Car,
   Star,
   MessageSquare,
-  Mail
+  Mail,
 } from 'lucide-react';
-import { Reservation } from '../../../../lib/hotel/types';
-import { useHotel } from '../../../../lib/hotel/state/SupabaseHotelContext';
+import { Reservation, Invoice } from '../../../../lib/hotel/types';
+import { useRooms } from '../../../../lib/queries/hooks/useRooms';
+import {
+  useUpdateReservation,
+  useUpdateReservationStatus,
+} from '../../../../lib/queries/hooks/useReservations';
 import hotelNotification from '../../../../lib/notifications';
 import { SAMPLE_GUESTS } from '../../../../lib/hotel/sampleData';
 // Removed static HOTEL_POREC_ROOMS import - now using dynamic rooms from context
@@ -44,12 +43,29 @@ interface CheckOutStep {
   icon: React.ComponentType<{ className?: string }>;
 }
 
-export default function CheckOutWorkflow({
-  isOpen,
-  onClose,
-  reservation
-}: CheckOutWorkflowProps) {
-  const { rooms, updateReservationStatus, updateReservation, isUpdating, generateInvoice: createInvoice, addPayment } = useHotel();
+export default function CheckOutWorkflow({ isOpen, onClose, reservation }: CheckOutWorkflowProps) {
+  const { data: rooms = [] } = useRooms();
+  // Stubs — invoice/payment creation not yet implemented
+  const createInvoice = async (_reservationId: string): Promise<Invoice> => {
+    throw new Error('Invoice generation not implemented');
+  };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const addPayment = async (_payment: any) => {
+    throw new Error('Payment management not implemented');
+  };
+  const updateReservationMutation = useUpdateReservation();
+  const updateReservationStatusMutation = useUpdateReservationStatus();
+  const isUpdating =
+    updateReservationMutation.isPending || updateReservationStatusMutation.isPending;
+  const updateReservation = async (id: string, updates: Partial<Reservation>) => {
+    await updateReservationMutation.mutateAsync({ id, updates });
+  };
+  const updateReservationStatus = async (id: string, status: string) => {
+    await updateReservationStatusMutation.mutateAsync({
+      id,
+      status: status as import('../../../../lib/hotel/types').ReservationStatus,
+    });
+  };
   const [checkOutSteps, setCheckOutSteps] = useState<CheckOutStep[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [checkOutNotes, setCheckOutNotes] = useState('');
@@ -57,11 +73,13 @@ export default function CheckOutWorkflow({
   const [additionalCharges, setAdditionalCharges] = useState(0);
   const [guestSatisfaction, setGuestSatisfaction] = useState<number>(5);
   const [generateInvoice, setGenerateInvoice] = useState(false);
-  const [paymentStatus, setPaymentStatus] = useState<string>(reservation?.status || 'incomplete-payment');
+  const [paymentStatus, setPaymentStatus] = useState<string>(
+    reservation?.status || 'incomplete-payment'
+  );
 
   // Find associated guest and room data
-  const guest = reservation ? SAMPLE_GUESTS.find(g => g.id === reservation.guestId) : null;
-  const room = reservation ? rooms.find(r => r.id === reservation.roomId) : null;
+  const guest = reservation ? SAMPLE_GUESTS.find((g) => g.id === reservation.guestId) : null;
+  const room = reservation ? rooms.find((r) => r.id === reservation.roomId) : null;
 
   // Update payment status when reservation changes
   useEffect(() => {
@@ -81,7 +99,7 @@ export default function CheckOutWorkflow({
         description: 'Check room condition and note any damages',
         completed: false,
         required: true,
-        icon: CheckCircle
+        icon: CheckCircle,
       },
       {
         id: 'minibar',
@@ -89,7 +107,7 @@ export default function CheckOutWorkflow({
         description: 'Verify minibar consumption and add charges',
         completed: false,
         required: true,
-        icon: ShoppingBag
+        icon: ShoppingBag,
       },
       {
         id: 'additional-services',
@@ -97,7 +115,7 @@ export default function CheckOutWorkflow({
         description: 'Review any additional services used (spa, restaurant, etc.)',
         completed: false,
         required: true,
-        icon: Star
+        icon: Star,
       },
       {
         id: 'key-return',
@@ -105,7 +123,7 @@ export default function CheckOutWorkflow({
         description: `Collect room key/keycard for Room ${room?.number}`,
         completed: roomKeyReturned,
         required: true,
-        icon: Key
+        icon: Key,
       },
       {
         id: 'final-payment',
@@ -113,7 +131,7 @@ export default function CheckOutWorkflow({
         description: 'Process any outstanding balance or additional charges',
         completed: additionalCharges === 0,
         required: true,
-        icon: CreditCard
+        icon: CreditCard,
       },
       {
         id: 'satisfaction-survey',
@@ -121,7 +139,7 @@ export default function CheckOutWorkflow({
         description: 'Collect feedback about the stay',
         completed: false,
         required: false,
-        icon: MessageSquare
+        icon: MessageSquare,
       },
       {
         id: 'parking',
@@ -129,36 +147,36 @@ export default function CheckOutWorkflow({
         description: 'Handle parking fees if applicable',
         completed: false,
         required: false,
-        icon: Car
-      }
+        icon: Car,
+      },
     ];
 
     setCheckOutSteps(steps);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reservation, guest, roomKeyReturned, additionalCharges]);
 
   const handleStepToggle = (stepId: string) => {
-    setCheckOutSteps(prev => prev.map(step =>
-      step.id === stepId ? { ...step, completed: !step.completed } : step
-    ));
+    setCheckOutSteps((prev) =>
+      prev.map((step) => (step.id === stepId ? { ...step, completed: !step.completed } : step))
+    );
   };
 
   const handleMarkAsPaid = async () => {
     if (!reservation) return;
-    
+
     try {
       setIsProcessing(true);
-      
+
       // Update reservation payment status
       await updateReservation(reservation.id, { status: 'checked-in' }); // Mark payment as complete
       setPaymentStatus('checked-in'); // Update local state
-      
+
       // Automatically generate invoice when payment is marked as paid
       try {
         console.log('Auto-generating invoice for paid guest...');
         const invoice = await createInvoice(reservation.id);
         console.log('Invoice generated successfully:', invoice.invoiceNumber);
-        
+
         // Process payment for the full amount
         await addPayment({
           invoiceId: invoice.id,
@@ -170,11 +188,11 @@ export default function CheckOutWorkflow({
           processedDate: new Date(),
           processedBy: 'Front Desk Staff',
           notes: `Payment processed during stay - ${guest?.fullName}`,
-          referenceNumber: `PAYMENT-${Date.now()}`
+          referenceNumber: `PAYMENT-${Date.now()}`,
         });
-        
+
         console.log('Payment processed and invoice created:', invoice.invoiceNumber);
-        
+
         hotelNotification.success(
           'Payment Processed & Invoice Created',
           `Payment marked as paid for ${guest?.fullName}. Invoice ${invoice.invoiceNumber} created and available in Finance module.`,
@@ -210,7 +228,7 @@ export default function CheckOutWorkflow({
   };
 
   const canCompleteCheckOut = () => {
-    return checkOutSteps.filter(step => step.required).every(step => step.completed);
+    return checkOutSteps.filter((step) => step.required).every((step) => step.completed);
   };
 
   const handleCompleteCheckOut = async () => {
@@ -218,20 +236,20 @@ export default function CheckOutWorkflow({
 
     try {
       setIsProcessing(true);
-      
+
       // Update reservation status to checked-out
       await updateReservationStatus(reservation.id, 'checked-out');
-      
+
       // Log check-out completion
       console.log(`Check-out completed for ${guest?.fullName} from Room ${room?.number}`);
-      
+
       // Generate invoice if requested
       if (generateInvoice) {
         try {
           console.log('Generating invoice for guest...');
           const invoice = await createInvoice(reservation.id);
           console.log('Invoice generated successfully:', invoice.invoiceNumber);
-          
+
           // Show success notification - invoice created but payment still pending
           hotelNotification.success(
             'Invoice Generated',
@@ -247,12 +265,11 @@ export default function CheckOutWorkflow({
           );
         }
       }
-      
+
       // Close workflow
       setTimeout(() => {
         onClose();
       }, 1500);
-      
     } catch (error) {
       console.error('Failed to complete check-out:', error);
       alert('Failed to complete check-out. Please try again.');
@@ -262,7 +279,7 @@ export default function CheckOutWorkflow({
   };
 
   const getProgressPercentage = () => {
-    const completedSteps = checkOutSteps.filter(step => step.completed).length;
+    const completedSteps = checkOutSteps.filter((step) => step.completed).length;
     return checkOutSteps.length > 0 ? (completedSteps / checkOutSteps.length) * 100 : 0;
   };
 
@@ -277,13 +294,15 @@ export default function CheckOutWorkflow({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-3">
             <LogOut className="h-6 w-6 text-blue-600" />
             <span>Check-Out Workflow</span>
-            <Badge variant={isEarlyCheckOut ? "secondary" : isLateCheckOut ? "destructive" : "default"}>
-              {isEarlyCheckOut ? "Early Departure" : isLateCheckOut ? "Late Departure" : "On Time"}
+            <Badge
+              variant={isEarlyCheckOut ? 'secondary' : isLateCheckOut ? 'destructive' : 'default'}
+            >
+              {isEarlyCheckOut ? 'Early Departure' : isLateCheckOut ? 'Late Departure' : 'On Time'}
             </Badge>
           </DialogTitle>
         </DialogHeader>
@@ -295,15 +314,15 @@ export default function CheckOutWorkflow({
               <span>Check-out Progress</span>
               <span>{Math.round(getProgressPercentage())}% Complete</span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+            <div className="h-2 w-full rounded-full bg-gray-200">
+              <div
+                className="h-2 rounded-full bg-blue-600 transition-all duration-300"
                 style={{ width: `${getProgressPercentage()}%` }}
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             {/* Left Column - Guest Info & Payment */}
             <div className="space-y-6">
               {/* Guest Information Summary */}
@@ -319,10 +338,17 @@ export default function CheckOutWorkflow({
                     <span className="font-medium">{guest.fullName}</span>
                     {guest.isVip && <Badge variant="secondary">VIP</Badge>}
                   </div>
-                  <div className="text-sm text-gray-600 space-y-1">
-                    <div>Room {room.number} • {room.nameEnglish}</div>
-                    <div>{reservation.numberOfGuests} guests • {reservation.numberOfNights} nights</div>
-                    <div>{reservation.checkIn.toLocaleDateString()} - {reservation.checkOut.toLocaleDateString()}</div>
+                  <div className="space-y-1 text-sm text-gray-600">
+                    <div>
+                      Room {room.number} • {room.nameEnglish}
+                    </div>
+                    <div>
+                      {reservation.numberOfGuests} guests • {reservation.numberOfNights} nights
+                    </div>
+                    <div>
+                      {reservation.checkIn.toLocaleDateString()} -{' '}
+                      {reservation.checkOut.toLocaleDateString()}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -337,16 +363,18 @@ export default function CheckOutWorkflow({
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* Payment Status Display */}
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
+                  <div className="flex items-center justify-between rounded-lg bg-gray-50 p-3">
                     <div className="flex items-center space-x-2">
                       <CreditCard className="h-4 w-4" />
                       <span className="text-sm font-medium">Payment Status:</span>
                     </div>
-                    <Badge 
-                      variant={paymentStatus === 'incomplete-payment' ? "destructive" : "default"}
+                    <Badge
+                      variant={paymentStatus === 'incomplete-payment' ? 'destructive' : 'default'}
                       className="text-xs"
                     >
-                      {paymentStatus === 'incomplete-payment' ? 'PAYMENT PENDING' : 'PAYMENT COMPLETE'}
+                      {paymentStatus === 'incomplete-payment'
+                        ? 'PAYMENT PENDING'
+                        : 'PAYMENT COMPLETE'}
                     </Badge>
                   </div>
 
@@ -355,19 +383,19 @@ export default function CheckOutWorkflow({
                       <span>Original Booking</span>
                       <span>€{reservation.totalAmount.toFixed(2)}</span>
                     </div>
-                    
+
                     <div className="flex justify-between">
                       <span>Additional Charges</span>
                       <input
                         type="number"
                         step="0.01"
                         min="0"
-                        className="w-20 px-2 py-1 text-right border border-gray-300 rounded text-sm"
+                        className="w-20 rounded border border-gray-300 px-2 py-1 text-right text-sm"
                         value={additionalCharges}
                         onChange={(e) => setAdditionalCharges(parseFloat(e.target.value) || 0)}
                       />
                     </div>
-                    
+
                     <hr />
                     <div className="flex justify-between font-bold">
                       <span>Total Amount</span>
@@ -376,37 +404,37 @@ export default function CheckOutWorkflow({
                   </div>
 
                   {/* Payment Actions */}
-                  <div className="space-y-3 pt-2 border-t">
+                  <div className="space-y-3 border-t pt-2">
                     {paymentStatus === 'incomplete-payment' && (
                       <Button
                         onClick={handleMarkAsPaid}
                         disabled={isProcessing}
-                        className="w-full bg-green-600 hover:bg-green-700 text-white"
+                        className="w-full bg-green-600 text-white hover:bg-green-700"
                         size="sm"
                       >
-                        <CheckCircle className="h-4 w-4 mr-2" />
+                        <CheckCircle className="mr-2 h-4 w-4" />
                         Mark as Paid (After POS Payment)
                       </Button>
                     )}
-                    
+
                     <Button
                       onClick={handleSendInvoiceEmail}
                       variant="outline"
                       className="w-full"
                       size="sm"
                     >
-                      <Mail className="h-4 w-4 mr-2" />
+                      <Mail className="mr-2 h-4 w-4" />
                       Send PDF Invoice to Email
                     </Button>
                   </div>
-                  
+
                   <div className="mt-4">
-                    <label className="flex items-center space-x-2 cursor-pointer">
+                    <label className="flex cursor-pointer items-center space-x-2">
                       <input
                         type="checkbox"
                         checked={generateInvoice}
                         onChange={(e) => setGenerateInvoice(e.target.checked)}
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
                       <span className="text-sm">Generate invoice</span>
                     </label>
@@ -425,7 +453,7 @@ export default function CheckOutWorkflow({
                 <CardContent>
                   <div className="space-y-3">
                     <div>
-                      <label className="block text-sm font-medium mb-2">
+                      <label className="mb-2 block text-sm font-medium">
                         Rate the stay (1-5 stars)
                       </label>
                       <div className="flex space-x-1">
@@ -460,20 +488,22 @@ export default function CheckOutWorkflow({
                       return (
                         <div
                           key={step.id}
-                          className={`flex items-center space-x-4 p-4 rounded-lg border transition-colors cursor-pointer ${
-                            step.completed 
-                              ? 'bg-green-50 border-green-200' 
-                              : step.required 
-                                ? 'bg-white border-gray-200 hover:bg-gray-50' 
-                                : 'bg-gray-50 border-gray-100 hover:bg-gray-100'
+                          className={`flex cursor-pointer items-center space-x-4 rounded-lg border p-4 transition-colors ${
+                            step.completed
+                              ? 'border-green-200 bg-green-50'
+                              : step.required
+                                ? 'border-gray-200 bg-white hover:bg-gray-50'
+                                : 'border-gray-100 bg-gray-50 hover:bg-gray-100'
                           }`}
                           onClick={() => handleStepToggle(step.id)}
                         >
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                            step.completed 
-                              ? 'bg-green-600 text-white' 
-                              : 'bg-gray-200 text-gray-600'
-                          }`}>
+                          <div
+                            className={`flex h-8 w-8 items-center justify-center rounded-full ${
+                              step.completed
+                                ? 'bg-green-600 text-white'
+                                : 'bg-gray-200 text-gray-600'
+                            }`}
+                          >
                             {step.completed ? (
                               <CheckCircle className="h-4 w-4" />
                             ) : (
@@ -484,14 +514,14 @@ export default function CheckOutWorkflow({
                             <div className="flex items-center space-x-2">
                               <h4 className="font-medium">{step.title}</h4>
                               {step.required && !step.completed && (
-                                <Badge variant="destructive" className="text-xs">Required</Badge>
+                                <Badge variant="destructive" className="text-xs">
+                                  Required
+                                </Badge>
                               )}
                             </div>
                             <p className="text-sm text-gray-600">{step.description}</p>
                           </div>
-                          <div className="text-2xl">
-                            {step.completed ? '✅' : '⭕'}
-                          </div>
+                          <div className="text-2xl">{step.completed ? '✅' : '⭕'}</div>
                         </div>
                       );
                     })}
@@ -503,7 +533,9 @@ export default function CheckOutWorkflow({
 
           {/* Time Alerts */}
           {(isEarlyCheckOut || isLateCheckOut) && (
-            <Card className={`border-l-4 ${isEarlyCheckOut ? 'border-l-blue-500 bg-blue-50' : 'border-l-red-500 bg-red-50'}`}>
+            <Card
+              className={`border-l-4 ${isEarlyCheckOut ? 'border-l-blue-500 bg-blue-50' : 'border-l-red-500 bg-red-50'}`}
+            >
               <CardContent className="p-4">
                 <div className="flex items-center space-x-2">
                   {isEarlyCheckOut ? (
@@ -512,11 +544,13 @@ export default function CheckOutWorkflow({
                     <AlertCircle className="h-5 w-5 text-red-600" />
                   )}
                   <div>
-                    <p className={`font-medium ${isEarlyCheckOut ? 'text-blue-800' : 'text-red-800'}`}>
+                    <p
+                      className={`font-medium ${isEarlyCheckOut ? 'text-blue-800' : 'text-red-800'}`}
+                    >
                       {isEarlyCheckOut ? 'Early Departure' : 'Late Departure'}
                     </p>
                     <p className={`text-sm ${isEarlyCheckOut ? 'text-blue-600' : 'text-red-600'}`}>
-                      {isEarlyCheckOut 
+                      {isEarlyCheckOut
                         ? 'Guest is leaving before scheduled check-out time.'
                         : 'Guest is departing after standard check-out time. Late fees may apply.'}
                     </p>
@@ -536,7 +570,7 @@ export default function CheckOutWorkflow({
             </CardHeader>
             <CardContent>
               <textarea
-                className="w-full p-3 border border-gray-300 rounded-md resize-none focus:ring-2 focus:ring-blue-500"
+                className="w-full resize-none rounded-md border border-gray-300 p-3 focus:ring-2 focus:ring-blue-500"
                 rows={3}
                 placeholder="Add any notes about room condition, guest feedback, or issues encountered..."
                 value={checkOutNotes}
@@ -546,27 +580,25 @@ export default function CheckOutWorkflow({
           </Card>
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-between pt-4 border-t">
+          <div className="flex items-center justify-between border-t pt-4">
             <Button variant="outline" onClick={onClose} disabled={isProcessing}>
               Cancel
             </Button>
-            
+
             <div className="flex items-center space-x-3">
               {!canCompleteCheckOut() && (
-                <span className="text-sm text-red-600">
-                  Complete all required steps to proceed
-                </span>
+                <span className="text-sm text-red-600">Complete all required steps to proceed</span>
               )}
-              
+
               <Button
                 onClick={handleCompleteCheckOut}
                 disabled={!canCompleteCheckOut() || isProcessing || isUpdating}
                 className="bg-blue-600 hover:bg-blue-700"
               >
                 {isProcessing || isUpdating ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
                 ) : (
-                  <LogOut className="h-4 w-4 mr-2" />
+                  <LogOut className="mr-2 h-4 w-4" />
                 )}
                 {isProcessing || isUpdating ? 'Processing...' : 'Complete Check-Out'}
               </Button>
