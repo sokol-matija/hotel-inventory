@@ -28,19 +28,7 @@ export async function getFoodAndBeverageItems(): Promise<InventoryItem[]> {
         )
       `
       )
-      .eq('is_active', true)
-      .in('categories.name', [
-        'Food',
-        'Beverage',
-        'Drinks',
-        'Bar',
-        'Restaurant',
-        'Alcohol',
-        'Coffee',
-        'Tea',
-        'Snacks',
-        'foodbeverage',
-      ]);
+      .eq('is_active', true);
 
     if (error) throw error;
 
@@ -185,8 +173,19 @@ export async function processRoomServiceOrder(
       await reduceInventoryQuantity(orderItem.itemId, orderItem.quantity);
     }
 
-    // TODO: Store order in database (would need to create room_service_orders table)
-    // For now, we'll just return the order object
+    // Persist line items to room_service_orders if we have a reservation ID
+    const reservationId = order.reservationId ? parseInt(order.reservationId) : NaN;
+    if (!isNaN(reservationId)) {
+      const rows = order.items.map((item) => ({
+        reservation_id: reservationId,
+        item_name: item.itemName,
+        category: item.category,
+        quantity: item.quantity,
+        unit_price: item.price,
+        total_price: item.totalPrice,
+      }));
+      await supabase.from('room_service_orders').insert(rows);
+    }
 
     return completeOrder;
   } catch (error) {

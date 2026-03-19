@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
 import { Button } from '../../../ui/button';
@@ -10,7 +10,6 @@ import { supabase } from '../../../../lib/supabase';
 import { Reservation } from '../../../../lib/hotel/types';
 import { formatRoomNumber } from '../../../../lib/hotel/calendarUtils';
 import { useRooms } from '../../../../lib/queries/hooks/useRooms';
-import { SAMPLE_GUESTS } from '../../../../lib/hotel/sampleData';
 
 interface OrderItem {
   id: string;
@@ -99,8 +98,7 @@ export default function HotelOrdersModal({
           )
         `
         )
-        .eq('is_active', true)
-        .eq('categories.name', 'Food & Beverage'); // Focus on food & beverage
+        .eq('is_active', true);
 
       if (error) throw error;
 
@@ -235,6 +233,20 @@ export default function HotelOrdersModal({
         }
       }
 
+      // Persist to room_service_orders (one row per line item)
+      const reservationId = parseInt(reservation.id);
+      if (!isNaN(reservationId)) {
+        const rows = orderItems.map((item) => ({
+          reservation_id: reservationId,
+          item_name: item.itemName,
+          category: item.category,
+          quantity: item.quantity,
+          unit_price: item.price,
+          total_price: item.totalPrice,
+        }));
+        await supabase.from('room_service_orders').insert(rows);
+      }
+
       const totals = calculateOrderTotal();
       onOrderComplete(orderItems, totals.total);
 
@@ -270,7 +282,7 @@ export default function HotelOrdersModal({
   if (!isOpen) return null;
 
   const room = rooms.find((r) => r.id === reservation.roomId);
-  const guest = SAMPLE_GUESTS.find((g) => g.id === reservation.guestId);
+  const guest = reservation.guest;
 
   return (
     <div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black">
