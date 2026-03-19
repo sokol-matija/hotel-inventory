@@ -88,7 +88,6 @@ interface CurrentDBGuest {
   average_rating: number | null;
   last_stay_date: string | null;
   notes: string | null;
-  phobs_guest_id: string | null;
   country_code: string | null;
   full_name: string | null;
 }
@@ -345,7 +344,6 @@ export class DatabaseAdapter {
           room_id: parseInt(reservationData.roomId),
           check_in_date: reservationData.checkIn.toISOString().split('T')[0],
           check_out_date: reservationData.checkOut.toISOString().split('T')[0],
-          number_of_nights: reservationData.numberOfNights,
           number_of_guests: reservationData.numberOfGuests,
           adults: reservationData.adults,
           children_count: reservationData.children?.length || 0,
@@ -442,7 +440,6 @@ export class DatabaseAdapter {
         .insert({
           first_name: guestData.firstName,
           last_name: guestData.lastName,
-          full_name: guestData.fullName || `${guestData.firstName} ${guestData.lastName}`,
           email: guestData.email || null,
           phone: guestData.phone || null,
           nationality: guestData.nationality || null,
@@ -516,7 +513,7 @@ export class DatabaseAdapter {
   private mapReservationFromCurrentDB(
     reservation: CurrentDBReservation,
     guestLookup: Map<number, CurrentDBGuest>,
-    roomLookup: Map<number, CurrentDBRoom>,
+    _roomLookup: Map<number, CurrentDBRoom>,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     labelLookup?: Map<string, any>
   ): Reservation {

@@ -784,7 +784,7 @@ export default function HotelTimeline({
     try {
       const room = rooms.find((r) => r.id === hotelOrdersReservation.roomId);
       const roomServiceItems = orderItems.map((item) => ({
-        id: `rs-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        id: `rs-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
         itemName: item.itemName,
         category: item.category,
         quantity: item.quantity,
