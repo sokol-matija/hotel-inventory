@@ -52,7 +52,7 @@
         "-y",
         "@supabase/mcp-server-supabase@latest",
         "--access-token",
-        "sbp_7f2e3a317a0454701c4fbfe6fce5248010bf7199"
+        "sbp_0cca8694be6967349c2e2f057370d94ad8ad9c17"
       ],
       "env": {}
     },
