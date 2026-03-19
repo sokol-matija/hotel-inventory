@@ -1,9 +1,9 @@
 /**
  * Unified Pricing Service - Single Source of Truth
- * 
+ *
  * Fixes VAT double-charging and provides consistent pricing calculations
  * across all features including day-by-day breakdown.
- * 
+ *
  * Croatian Tax Compliance:
  * - Room rates already include 25% VAT (Croatian law)
  * - Tourism tax separate (€1.10-€1.50 per person per night)
@@ -17,14 +17,14 @@ import { SeasonalPeriod, GuestChild } from '../types';
 export interface PricingConfig {
   vatRate: number; // 0.25 for Croatia
   vatIncludedInRates: boolean; // true for Croatia
-  tourismTaxRates: { 
+  tourismTaxRates: {
     high: number; // €1.50 Apr-Sep
-    low: number;  // €1.10 Oct-Mar
+    low: number; // €1.10 Oct-Mar
   };
   serviceFees: {
-    petFeePerStay: number;      // €20.00 per stay
+    petFeePerStay: number; // €20.00 per stay
     parkingFeePerNight: number; // €7.00 per night
-    towelRentalPerDay: number;  // €5.00 per towel per day
+    towelRentalPerDay: number; // €5.00 per towel per day
     shortStaySupplementRate: number; // 0.20 (20% for < 3 nights)
   };
   childDiscounts: {
@@ -37,18 +37,18 @@ export interface PricingConfig {
 const DEFAULT_CONFIG: PricingConfig = {
   vatRate: 0.25,
   vatIncludedInRates: true,
-  tourismTaxRates: { high: 1.50, low: 1.10 },
+  tourismTaxRates: { high: 1.5, low: 1.1 },
   serviceFees: {
-    petFeePerStay: 20.00,
-    parkingFeePerNight: 7.00,
-    towelRentalPerDay: 5.00,
-    shortStaySupplementRate: 0.20
+    petFeePerStay: 20.0,
+    parkingFeePerNight: 7.0,
+    towelRentalPerDay: 5.0,
+    shortStaySupplementRate: 0.2,
   },
   childDiscounts: {
     age0to3: 1.0,
     age3to7: 0.5,
-    age7to14: 0.3
-  }
+    age7to14: 0.3,
+  },
 };
 
 export interface ReservationPricingParams {
@@ -186,10 +186,12 @@ export class UnifiedPricingService {
       // Get room and pricing data
       const { data: room, error: roomError } = await supabase
         .from('rooms')
-        .select(`
+        .select(
+          `
           *,
           room_types (*)
-        `)
+        `
+        )
         .eq('id', params.roomId)
         .single();
 
@@ -206,7 +208,11 @@ export class UnifiedPricingService {
 
       // Get seasonal period and rate
       const seasonalPeriod = this.getSeasonalPeriod(params.checkInDate);
-      const baseRate = await this.getRoomSeasonalRate(params.roomId, seasonalPeriod, params.pricingTierId);
+      const baseRate = await this.getRoomSeasonalRate(
+        params.roomId,
+        seasonalPeriod,
+        params.pricingTierId
+      );
 
       // Special handling for Room 401 (apartment)
       const isApartment = room.number === '401';
@@ -232,14 +238,14 @@ export class UnifiedPricingService {
 
       // Apply short stay supplement if applicable
       const isShortStay = numberOfNights < 3;
-      const shortStaySuplement = isShortStay 
-        ? accommodation.netAccommodation * this.config.serviceFees.shortStaySupplementRate 
+      const shortStaySuplement = isShortStay
+        ? accommodation.netAccommodation * this.config.serviceFees.shortStaySupplementRate
         : 0;
 
       const totals = {
         accommodationTotal: accommodation.netAccommodation,
         servicesTotal: services.total + shortStaySuplement,
-        grandTotal: accommodation.netAccommodation + services.total + shortStaySuplement
+        grandTotal: accommodation.netAccommodation + services.total + shortStaySuplement,
       };
 
       return {
@@ -247,17 +253,16 @@ export class UnifiedPricingService {
         services: {
           ...services,
           shortStaySuplement,
-          total: services.total + shortStaySuplement
+          total: services.total + shortStaySuplement,
         },
         totals,
         breakdown: {
           seasonalPeriod,
           numberOfNights,
           isShortStay,
-          vatCompliant: true
-        }
+          vatCompliant: true,
+        },
       };
-
     } catch (error) {
       console.error('Error calculating reservation pricing:', error);
       throw error;
@@ -272,11 +277,13 @@ export class UnifiedPricingService {
       // Get reservation details
       const { data: reservation, error: reservationError } = await supabase
         .from('reservations')
-        .select(`
+        .select(
+          `
           *,
           rooms (*),
           pricing_tiers (*)
-        `)
+        `
+        )
         .eq('id', params.reservationId)
         .single();
 
@@ -284,7 +291,7 @@ export class UnifiedPricingService {
 
       // Get or create daily details
       let dailyDetails = await this.getReservationDailyDetails(params.reservationId);
-      
+
       if (params.dailyDetails) {
         // Update with provided daily details
         dailyDetails = await this.updateDailyDetails(params.reservationId, params.dailyDetails);
@@ -292,7 +299,7 @@ export class UnifiedPricingService {
 
       // Calculate pricing for each day
       const dailyBreakdown = [];
-      
+
       for (const day of dailyDetails) {
         const breakdown = await this.calculateSingleDayPricing(reservation, day);
         dailyBreakdown.push(breakdown);
@@ -301,17 +308,19 @@ export class UnifiedPricingService {
       // Calculate summary
       const summary = {
         totalNights: dailyBreakdown.length,
-        totalAccommodation: dailyBreakdown.reduce((sum, day) => sum + day.pricing.netAccommodation, 0),
+        totalAccommodation: dailyBreakdown.reduce(
+          (sum, day) => sum + day.pricing.netAccommodation,
+          0
+        ),
         totalServices: dailyBreakdown.reduce((sum, day) => sum + day.pricing.serviceFees.total, 0),
-        grandTotal: dailyBreakdown.reduce((sum, day) => sum + day.pricing.dailyTotal, 0)
+        grandTotal: dailyBreakdown.reduce((sum, day) => sum + day.pricing.dailyTotal, 0),
       };
 
       return {
         reservationId: params.reservationId,
         dailyBreakdown,
-        summary
+        summary,
       };
-
     } catch (error) {
       console.error('Error calculating day-by-day breakdown:', error);
       throw error;
@@ -324,9 +333,8 @@ export class UnifiedPricingService {
   async updateGuestDayPresence(params: GuestDayPresenceParams): Promise<void> {
     try {
       // Update daily detail record
-      const { error } = await supabase
-        .from('reservation_daily_details')
-        .upsert({
+      const { error } = await supabase.from('reservation_daily_details').upsert(
+        {
           reservation_id: params.reservationId,
           stay_date: params.stayDate.toISOString().split('T')[0],
           adults_present: params.adultsPresent,
@@ -335,16 +343,17 @@ export class UnifiedPricingService {
           pets_present: params.hasPets,
           pet_count: params.petCount || 0,
           towel_rentals: params.towelRentals,
-          notes: params.notes
-        }, {
-          onConflict: 'reservation_id,stay_date'
-        });
+          notes: params.notes,
+        },
+        {
+          onConflict: 'reservation_id,stay_date',
+        }
+      );
 
       if (error) throw error;
 
       // Recalculate pricing for this day
       await this.recalculateDayPricing(params.reservationId, params.stayDate);
-
     } catch (error) {
       console.error('Error updating guest day presence:', error);
       throw error;
@@ -358,11 +367,11 @@ export class UnifiedPricingService {
     // Croatian room rates already include VAT
     // This method extracts the VAT portion for reporting purposes only
     const vatAmount = baseAmount * (this.config.vatRate / (1 + this.config.vatRate));
-    
+
     return {
       baseAmount,
       vatAmount, // For reporting only
-      totalAmount: baseAmount // No additional VAT charged
+      totalAmount: baseAmount, // No additional VAT charged
     };
   }
 
@@ -387,7 +396,7 @@ export class UnifiedPricingService {
       // Regular rooms: Per person pricing
       const totalGuests = adults + children.length;
       subtotal = baseRate * totalGuests * numberOfNights;
-      
+
       // Calculate child discounts
       for (const child of children) {
         const childRate = baseRate * numberOfNights;
@@ -410,7 +419,7 @@ export class UnifiedPricingService {
       subtotal,
       childDiscounts,
       netAccommodation,
-      vatIncluded
+      vatIncluded,
     };
   }
 
@@ -429,11 +438,11 @@ export class UnifiedPricingService {
     // Tourism tax
     const tourismTaxRate = this.getTourismTaxRate(checkInDate);
     let tourismTax = adults * tourismTaxRate * numberOfNights;
-    
+
     // Add tourism tax for children 12+
     for (const child of children) {
       if (child.age >= 12 && child.age < 18) {
-        tourismTax += (tourismTaxRate * 0.5) * numberOfNights; // 50% for 12-18
+        tourismTax += tourismTaxRate * 0.5 * numberOfNights; // 50% for 12-18
       } else if (child.age >= 18) {
         tourismTax += tourismTaxRate * numberOfNights; // Full rate for 18+
       }
@@ -448,7 +457,8 @@ export class UnifiedPricingService {
         const extraSpaces = Math.max(0, services.parkingSpots - 3);
         parkingFees = extraSpaces * this.config.serviceFees.parkingFeePerNight * numberOfNights;
       } else {
-        parkingFees = services.parkingSpots * this.config.serviceFees.parkingFeePerNight * numberOfNights;
+        parkingFees =
+          services.parkingSpots * this.config.serviceFees.parkingFeePerNight * numberOfNights;
       }
     }
 
@@ -456,14 +466,15 @@ export class UnifiedPricingService {
     const petFees = services.hasPets ? this.config.serviceFees.petFeePerStay : 0;
 
     // Towel rentals
-    const towelRentals = (services.towelRentals || 0) * this.config.serviceFees.towelRentalPerDay * numberOfNights;
+    const towelRentals =
+      (services.towelRentals || 0) * this.config.serviceFees.towelRentalPerDay * numberOfNights;
 
     return {
       tourismTax,
       parkingFees,
       petFees,
       towelRentals,
-      total: tourismTax + parkingFees + petFees + towelRentals
+      total: tourismTax + parkingFees + petFees + towelRentals,
     };
   }
 
@@ -472,13 +483,13 @@ export class UnifiedPricingService {
    */
   private getSeasonalPeriod(date: Date): SeasonalPeriod {
     const month = date.getMonth() + 1;
-    
+
     // Simplified Croatian seasonal logic
     if (month <= 4 || month === 12) return 'A'; // Winter/Early Spring
-    if (month === 5 || month >= 10) return 'B'; // Spring/Late Fall  
+    if (month === 5 || month >= 10) return 'B'; // Spring/Late Fall
     if (month === 6 || month === 9) return 'C'; // Early Summer/Early Fall
     if (month >= 7 && month <= 8) return 'D'; // Peak Summer
-    
+
     return 'A';
   }
 
@@ -487,12 +498,12 @@ export class UnifiedPricingService {
    */
   private getTourismTaxRate(date: Date): number {
     const month = date.getMonth() + 1;
-    
+
     // April-September: €1.50
     if (month >= 4 && month <= 9) {
       return this.config.tourismTaxRates.high;
     }
-    
+
     // October-March: €1.10
     return this.config.tourismTaxRates.low;
   }
@@ -500,7 +511,11 @@ export class UnifiedPricingService {
   /**
    * Get room seasonal rate with pricing tier discount
    */
-  private async getRoomSeasonalRate(roomId: string, seasonalPeriod: SeasonalPeriod, pricingTierId?: string): Promise<number> {
+  private async getRoomSeasonalRate(
+    roomId: string,
+    seasonalPeriod: SeasonalPeriod,
+    pricingTierId?: string
+  ): Promise<number> {
     try {
       // Get base seasonal rate
       const { data: rateData, error: rateError } = await supabase
@@ -511,8 +526,10 @@ export class UnifiedPricingService {
         .single();
 
       if (rateError) {
-        console.warn(`No seasonal rate found for room ${roomId} period ${seasonalPeriod}, using fallback`);
-        return 100.00; // Fallback rate
+        console.warn(
+          `No seasonal rate found for room ${roomId} period ${seasonalPeriod}, using fallback`
+        );
+        return 100.0; // Fallback rate
       }
 
       let finalRate = rateData.rate;
@@ -537,10 +554,9 @@ export class UnifiedPricingService {
       }
 
       return finalRate;
-
     } catch (error) {
       console.error('Error getting room seasonal rate:', error);
-      return 100.00; // Fallback rate
+      return 100.0; // Fallback rate
     }
   }
 
@@ -565,7 +581,6 @@ export class UnifiedPricingService {
 
       // Create initial daily details from reservation
       return await this.createInitialDailyDetails(reservationId);
-
     } catch (error) {
       console.error('Error getting reservation daily details:', error);
       throw error;
@@ -581,10 +596,12 @@ export class UnifiedPricingService {
       // Get reservation data
       const { data: reservation, error: reservationError } = await supabase
         .from('reservations')
-        .select(`
+        .select(
+          `
           *,
           guest_children (id, name, age)
-        `)
+        `
+        )
         .eq('id', reservationId)
         .single();
 
@@ -608,7 +625,7 @@ export class UnifiedPricingService {
           parking_spots_needed: reservation.parking_required ? 1 : 0,
           pets_present: reservation.has_pets || false,
           pet_count: reservation.pet_count || 0,
-          towel_rentals: 0
+          towel_rentals: 0,
         };
 
         dailyDetails.push(dailyDetail);
@@ -623,7 +640,6 @@ export class UnifiedPricingService {
       if (insertError) throw insertError;
 
       return insertedDetails || dailyDetails;
-
     } catch (error) {
       console.error('Error creating initial daily details:', error);
       throw error;
@@ -638,8 +654,8 @@ export class UnifiedPricingService {
     try {
       const seasonalPeriod = this.getSeasonalPeriod(new Date(dailyDetail.stay_date));
       const baseRate = await this.getRoomSeasonalRate(
-        reservation.room_id, 
-        seasonalPeriod, 
+        reservation.room_id,
+        seasonalPeriod,
         reservation.pricing_tier_id
       );
 
@@ -695,7 +711,7 @@ export class UnifiedPricingService {
         date: new Date(dailyDetail.stay_date),
         occupancy: {
           adults: dailyDetail.adults_present,
-          children: childrenPresent
+          children: childrenPresent,
         },
         pricing: {
           seasonalPeriod,
@@ -704,11 +720,10 @@ export class UnifiedPricingService {
           childDiscounts,
           netAccommodation,
           serviceFees,
-          dailyTotal: netAccommodation + serviceFees.total
+          dailyTotal: netAccommodation + serviceFees.total,
         },
-        editable: true
+        editable: true,
       };
-
     } catch (error) {
       console.error('Error calculating single day pricing:', error);
       throw error;
@@ -728,9 +743,9 @@ export class UnifiedPricingService {
     isApartment: boolean
   ) {
     // Tourism tax
-    const tourismTaxRate = 1.50; // Summer rate - can be refined based on date
+    const tourismTaxRate = 1.5; // Summer rate - can be refined based on date
     let tourism = adults * tourismTaxRate;
-    tourism += children.filter(child => child.age >= 12).length * tourismTaxRate;
+    tourism += children.filter((child) => child.age >= 12).length * tourismTaxRate;
 
     // Parking
     let parking = 0;
@@ -754,7 +769,7 @@ export class UnifiedPricingService {
       pets,
       towels,
       tourism,
-      total: parking + pets + towels + tourism
+      total: parking + pets + towels + tourism,
     };
   }
 
@@ -764,14 +779,14 @@ export class UnifiedPricingService {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async updateDailyDetails(reservationId: string, dailyDetails: any[]): Promise<any[]> {
     try {
-      const updates = dailyDetails.map(detail => ({
+      const updates = dailyDetails.map((detail) => ({
         reservation_id: reservationId,
         stay_date: detail.date.toISOString().split('T')[0],
         adults_present: detail.adultsPresent,
         children_present: detail.childrenPresent,
         parking_spots_needed: detail.parkingSpots,
         pets_present: detail.hasPets,
-        towel_rentals: detail.towelRentals
+        towel_rentals: detail.towelRentals,
       }));
 
       const { data: updatedDetails, error } = await supabase
@@ -782,7 +797,6 @@ export class UnifiedPricingService {
       if (error) throw error;
 
       return updatedDetails || [];
-
     } catch (error) {
       console.error('Error updating daily details:', error);
       throw error;
@@ -823,12 +837,13 @@ export class UnifiedPricingService {
           child_discounts: pricingBreakdown.pricing.childDiscounts,
           service_fees: pricingBreakdown.pricing.serviceFees,
           daily_total: pricingBreakdown.pricing.dailyTotal,
-          vat_included_in_rates: this.calculateVATCompliantPricing(pricingBreakdown.pricing.netAccommodation).vatAmount
+          vat_included_in_rates: this.calculateVATCompliantPricing(
+            pricingBreakdown.pricing.netAccommodation
+          ).vatAmount,
         })
         .eq('id', dailyDetail.id);
 
       if (updateError) throw updateError;
-
     } catch (error) {
       console.error('Error recalculating day pricing:', error);
       throw error;

@@ -34,7 +34,7 @@ export const testMocks = {
   localStorage: mockLocalStorage,
   fetch: mockFetch as jest.MockedFunction<typeof fetch>,
   console: global.console,
-  
+
   // Reset all mocks between tests
   resetAll: () => {
     jest.clearAllMocks();
@@ -43,7 +43,7 @@ export const testMocks = {
     mockLocalStorage.removeItem.mockClear();
     mockLocalStorage.clear.mockClear();
   },
-  
+
   // Mock successful API responses
   mockSuccessfulApiCall: (data: any) => {
     mockFetch.mockResolvedValueOnce({
@@ -53,7 +53,7 @@ export const testMocks = {
       text: async () => JSON.stringify({ success: true, data }),
     } as Response);
   },
-  
+
   // Mock failed API responses
   mockFailedApiCall: (status: number, error: string) => {
     mockFetch.mockResolvedValueOnce({
@@ -63,14 +63,12 @@ export const testMocks = {
       text: async () => JSON.stringify({ success: false, error }),
     } as Response);
   },
-  
+
   // Mock network error
   mockNetworkError: () => {
-    mockFetch.mockRejectedValueOnce(
-      new Error('Network error: Connection refused')
-    );
+    mockFetch.mockRejectedValueOnce(new Error('Network error: Connection refused'));
   },
-  
+
   // Mock rate limit error
   mockRateLimitError: () => {
     mockFetch.mockResolvedValueOnce({
@@ -85,26 +83,27 @@ export const testMocks = {
 // Global test utilities
 export const testUtils = {
   // Wait for promises to resolve
-  flushPromises: () => new Promise(resolve => setTimeout(resolve, 0)),
-  
+  flushPromises: () => new Promise((resolve) => setTimeout(resolve, 0)),
+
   // Wait for specific amount of time
-  wait: (ms: number) => new Promise(resolve => setTimeout(resolve, ms)),
-  
+  wait: (ms: number) => new Promise((resolve) => setTimeout(resolve, ms)),
+
   // Generate test IDs
   generateTestId: () => `test_${Date.now()}_${Math.random().toString(36).substring(2)}`,
-  
+
   // Create test dates
   createTestDate: (daysFromNow: number = 0) => {
     const date = new Date();
     date.setDate(date.getDate() + daysFromNow);
     return date;
   },
-  
+
   // Format currency for tests
-  formatTestCurrency: (amount: number) => new Intl.NumberFormat('hr-HR', {
-    style: 'currency',
-    currency: 'EUR'
-  }).format(amount),
+  formatTestCurrency: (amount: number) =>
+    new Intl.NumberFormat('hr-HR', {
+      style: 'currency',
+      currency: 'EUR',
+    }).format(amount),
 };
 
 // Setup global test constants
@@ -114,21 +113,15 @@ export const testConstants = {
   TEST_API_SECRET: 'test_api_secret_789',
   TEST_WEBHOOK_SECRET: 'test_webhook_secret_abc',
   TEST_BASE_URL: 'https://api.phobs.test/v1',
-  
-  MOCK_CHANNELS: [
-    'booking.com',
-    'expedia', 
-    'airbnb',
-    'agoda',
-    'hotels.com'
-  ] as const,
-  
+
+  MOCK_CHANNELS: ['booking.com', 'expedia', 'airbnb', 'agoda', 'hotels.com'] as const,
+
   MOCK_OPERATIONS: [
     'authenticate',
     'sync_reservations',
     'sync_inventory',
     'process_webhook',
-    'test_connection'
+    'test_connection',
   ] as const,
 };
 

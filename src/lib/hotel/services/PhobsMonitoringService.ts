@@ -9,7 +9,7 @@ export enum LogLevel {
   INFO = 1,
   WARN = 2,
   ERROR = 3,
-  FATAL = 4
+  FATAL = 4,
 }
 
 export interface LogEntry {
@@ -103,7 +103,7 @@ export class PhobsMonitoringService {
   private alertRules: AlertRule[] = [];
   private activeTraces: Map<string, PerformanceTrace> = new Map();
   private systemStartTime: Date = new Date();
-  
+
   private readonly MAX_LOG_ENTRIES = 10000;
   private readonly LOG_RETENTION_DAYS = 7;
   private readonly HEALTH_CHECK_INTERVAL = 60000; // 1 minute
@@ -148,7 +148,7 @@ export class PhobsMonitoringService {
       error,
       correlationId: this.generateCorrelationId(),
       hotelId: this.getCurrentHotelId(),
-      userId: this.getCurrentUserId()
+      userId: this.getCurrentUserId(),
     };
 
     this.logs.push(logEntry);
@@ -180,21 +180,39 @@ export class PhobsMonitoringService {
   /**
    * Info level logging
    */
-  info(operation: string, message: string, data?: unknown, channel?: OTAChannel, duration?: number): void {
+  info(
+    operation: string,
+    message: string,
+    data?: unknown,
+    channel?: OTAChannel,
+    duration?: number
+  ): void {
     this.log(LogLevel.INFO, operation, message, data, channel, duration);
   }
 
   /**
    * Warning level logging
    */
-  warn(operation: string, message: string, data?: unknown, channel?: OTAChannel, error?: PhobsError): void {
+  warn(
+    operation: string,
+    message: string,
+    data?: unknown,
+    channel?: OTAChannel,
+    error?: PhobsError
+  ): void {
     this.log(LogLevel.WARN, operation, message, data, channel, undefined, error);
   }
 
   /**
    * Error level logging
    */
-  error(operation: string, message: string, error?: PhobsError, data?: unknown, channel?: OTAChannel): void {
+  error(
+    operation: string,
+    message: string,
+    error?: PhobsError,
+    data?: unknown,
+    channel?: OTAChannel
+  ): void {
     this.log(LogLevel.ERROR, operation, message, data, channel, undefined, error);
   }
 
@@ -218,7 +236,7 @@ export class PhobsMonitoringService {
       traceId,
       operationName,
       startTime: new Date(),
-      steps: []
+      steps: [],
     };
 
     this.activeTraces.set(traceId, trace);
@@ -237,7 +255,7 @@ export class PhobsMonitoringService {
     trace.steps.push({
       name: stepName,
       startTime: new Date(),
-      metadata
+      metadata,
     });
   }
 
@@ -248,7 +266,7 @@ export class PhobsMonitoringService {
     const trace = this.activeTraces.get(traceId);
     if (!trace) return;
 
-    const step = trace.steps.find(s => s.name === stepName && !s.endTime);
+    const step = trace.steps.find((s) => s.name === stepName && !s.endTime);
     if (step) {
       step.endTime = new Date();
       step.duration = step.endTime.getTime() - step.startTime.getTime();
@@ -268,7 +286,7 @@ export class PhobsMonitoringService {
     trace.error = error;
 
     // Complete any open steps
-    trace.steps.forEach(step => {
+    trace.steps.forEach((step) => {
       if (!step.endTime) {
         step.endTime = trace.endTime!;
         step.duration = step.endTime.getTime() - step.startTime.getTime();
@@ -285,7 +303,7 @@ export class PhobsMonitoringService {
         duration: trace.duration,
         success,
         stepCount: trace.steps.length,
-        steps: trace.steps.map(s => ({ name: s.name, duration: s.duration }))
+        steps: trace.steps.map((s) => ({ name: s.name, duration: s.duration })),
       },
       undefined,
       trace.duration
@@ -326,15 +344,21 @@ export class PhobsMonitoringService {
   getSystemHealthMetrics(): SystemHealthMetrics {
     const now = new Date();
     const uptime = now.getTime() - this.systemStartTime.getTime();
-    
-    const totalOps = Array.from(this.operationMetrics.values())
-      .reduce((sum, metrics) => sum + metrics.totalInvocations, 0);
-    
-    const totalErrors = Array.from(this.operationMetrics.values())
-      .reduce((sum, metrics) => sum + metrics.failedInvocations, 0);
-    
-    const avgResponseTime = Array.from(this.operationMetrics.values())
-      .reduce((sum, metrics, _, arr) => sum + metrics.averageDuration / arr.length, 0);
+
+    const totalOps = Array.from(this.operationMetrics.values()).reduce(
+      (sum, metrics) => sum + metrics.totalInvocations,
+      0
+    );
+
+    const totalErrors = Array.from(this.operationMetrics.values()).reduce(
+      (sum, metrics) => sum + metrics.failedInvocations,
+      0
+    );
+
+    const avgResponseTime = Array.from(this.operationMetrics.values()).reduce(
+      (sum, metrics, _, arr) => sum + metrics.averageDuration / arr.length,
+      0
+    );
 
     return {
       uptime: uptime,
@@ -345,7 +369,7 @@ export class PhobsMonitoringService {
       memoryUsage: this.getMemoryUsage(),
       activeConnections: this.getActiveConnections(),
       queueLength: this.getQueueLength(),
-      lastHealthCheck: now
+      lastHealthCheck: now,
     };
   }
 
@@ -361,15 +385,15 @@ export class PhobsMonitoringService {
     let filteredLogs = this.logs;
 
     if (level !== undefined) {
-      filteredLogs = filteredLogs.filter(log => log.level >= level);
+      filteredLogs = filteredLogs.filter((log) => log.level >= level);
     }
 
     if (operation) {
-      filteredLogs = filteredLogs.filter(log => log.operation === operation);
+      filteredLogs = filteredLogs.filter((log) => log.operation === operation);
     }
 
     if (channel) {
-      filteredLogs = filteredLogs.filter(log => log.channel === channel);
+      filteredLogs = filteredLogs.filter((log) => log.channel === channel);
     }
 
     return filteredLogs
@@ -393,7 +417,7 @@ export class PhobsMonitoringService {
    * Remove alert rule
    */
   removeAlertRule(ruleId: string): boolean {
-    const index = this.alertRules.findIndex(rule => rule.id === ruleId);
+    const index = this.alertRules.findIndex((rule) => rule.id === ruleId);
     if (index !== -1) {
       const removedRule = this.alertRules.splice(index, 1)[0];
       this.info('alert_management', `Removed alert rule: ${removedRule.name}`, { ruleId });
@@ -420,7 +444,7 @@ export class PhobsMonitoringService {
     errorType?: PhobsErrorType
   ): void {
     let metrics = this.operationMetrics.get(operation);
-    
+
     if (!metrics) {
       metrics = {
         operationName: operation,
@@ -432,7 +456,7 @@ export class PhobsMonitoringService {
         maxDuration: 0,
         lastInvocation: null,
         successRate: 0,
-        errorsByType: {}
+        errorsByType: {},
       };
       this.operationMetrics.set(operation, metrics);
     }
@@ -450,18 +474,19 @@ export class PhobsMonitoringService {
     }
 
     // Update duration metrics
-    metrics.averageDuration = 
-      ((metrics.averageDuration * (metrics.totalInvocations - 1)) + duration) / metrics.totalInvocations;
+    metrics.averageDuration =
+      (metrics.averageDuration * (metrics.totalInvocations - 1) + duration) /
+      metrics.totalInvocations;
     metrics.minDuration = Math.min(metrics.minDuration, duration);
     metrics.maxDuration = Math.max(metrics.maxDuration, duration);
-    
+
     // Update success rate
     metrics.successRate = (metrics.successfulInvocations / metrics.totalInvocations) * 100;
   }
 
   private updateChannelMetrics(channel: OTAChannel, success: boolean, duration?: number): void {
     let metrics = this.channelMetrics.get(channel);
-    
+
     if (!metrics) {
       metrics = {
         channel,
@@ -473,7 +498,7 @@ export class PhobsMonitoringService {
         errorRate: 0,
         reservationsSynced: 0,
         conflictsDetected: 0,
-        dataTransferred: 0
+        dataTransferred: 0,
       };
       this.channelMetrics.set(channel, metrics);
     }
@@ -488,8 +513,9 @@ export class PhobsMonitoringService {
     }
 
     if (duration !== undefined) {
-      metrics.averageResponseTime = 
-        ((metrics.averageResponseTime * (metrics.totalOperations - 1)) + duration) / metrics.totalOperations;
+      metrics.averageResponseTime =
+        (metrics.averageResponseTime * (metrics.totalOperations - 1) + duration) /
+        metrics.totalOperations;
     }
 
     metrics.errorRate = (metrics.failedOperations / metrics.totalOperations) * 100;
@@ -497,7 +523,7 @@ export class PhobsMonitoringService {
 
   private checkAlertConditions(logEntry: LogEntry): void {
     // Check alert rules against current metrics and log entry
-    this.alertRules.forEach(rule => {
+    this.alertRules.forEach((rule) => {
       if (!rule.isEnabled) return;
 
       let shouldTrigger = false;
@@ -508,13 +534,13 @@ export class PhobsMonitoringService {
           shouldTrigger = metrics.errorRate > rule.threshold;
           break;
         }
-        
+
         case 'response_time':
           if (logEntry.duration && logEntry.duration > rule.threshold) {
             shouldTrigger = true;
           }
           break;
-        
+
         case 'operation_failure':
           if (logEntry.level >= LogLevel.ERROR) {
             shouldTrigger = true;
@@ -540,21 +566,17 @@ export class PhobsMonitoringService {
 
     rule.lastTriggered = now;
 
-    this.warn(
-      'alert_triggered',
-      `Alert triggered: ${rule.name}`,
-      {
-        rule: rule.name,
-        condition: rule.condition,
-        threshold: rule.threshold,
-        triggerEvent: {
-          operation: logEntry.operation,
-          message: logEntry.message,
-          level: LogLevel[logEntry.level],
-          timestamp: logEntry.timestamp
-        }
-      }
-    );
+    this.warn('alert_triggered', `Alert triggered: ${rule.name}`, {
+      rule: rule.name,
+      condition: rule.condition,
+      threshold: rule.threshold,
+      triggerEvent: {
+        operation: logEntry.operation,
+        message: logEntry.message,
+        level: LogLevel[logEntry.level],
+        timestamp: logEntry.timestamp,
+      },
+    });
 
     // Here you would implement actual notification sending
     // e.g., email, webhook, push notification
@@ -576,7 +598,7 @@ export class PhobsMonitoringService {
         threshold: 10, // 10% error rate
         duration: 5, // 5 minutes
         isEnabled: true,
-        notificationMethods: ['notification']
+        notificationMethods: ['notification'],
       },
       {
         id: 'slow_response_time',
@@ -585,17 +607,17 @@ export class PhobsMonitoringService {
         threshold: 30000, // 30 seconds
         duration: 1, // 1 minute
         isEnabled: true,
-        notificationMethods: ['notification']
-      }
+        notificationMethods: ['notification'],
+      },
     ];
 
-    defaultAlerts.forEach(alert => this.addAlertRule(alert));
+    defaultAlerts.forEach((alert) => this.addAlertRule(alert));
   }
 
   private enforceLogRetention(): void {
     // Remove old logs
     const cutoffDate = new Date(Date.now() - this.LOG_RETENTION_DAYS * 24 * 60 * 60 * 1000);
-    this.logs = this.logs.filter(log => log.timestamp > cutoffDate);
+    this.logs = this.logs.filter((log) => log.timestamp > cutoffDate);
 
     // Limit total entries
     if (this.logs.length > this.MAX_LOG_ENTRIES) {
@@ -605,7 +627,7 @@ export class PhobsMonitoringService {
 
   private logToConsole(logEntry: LogEntry): void {
     const message = `[${LogLevel[logEntry.level]}] ${logEntry.operation}: ${logEntry.message}`;
-    
+
     switch (logEntry.level) {
       case LogLevel.DEBUG:
         console.debug(message, logEntry.data);
@@ -647,7 +669,7 @@ export class PhobsMonitoringService {
 
   private calculateOperationsPerMinute(): number {
     const oneMinuteAgo = new Date(Date.now() - 60 * 1000);
-    const recentLogs = this.logs.filter(log => log.timestamp > oneMinuteAgo);
+    const recentLogs = this.logs.filter((log) => log.timestamp > oneMinuteAgo);
     return recentLogs.length;
   }
 

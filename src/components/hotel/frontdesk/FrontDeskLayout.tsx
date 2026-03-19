@@ -11,44 +11,37 @@ function FrontDeskContent() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <div className="flex h-screen bg-gray-50 relative">
+    <div className="relative flex h-screen bg-gray-50">
       {/* Background decorative image */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <img 
-          src="/mozaik_gp1.png" 
-          alt="Decorative background" 
-          className="absolute bottom-0 right-0 w-full h-64 object-cover opacity-10"
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <img
+          src="/mozaik_gp1.png"
+          alt="Decorative background"
+          className="absolute right-0 bottom-0 h-64 w-full object-cover opacity-10"
         />
       </div>
-      
+
       {/* Desktop Sidebar */}
-      <div className="hidden lg:block relative z-10">
+      <div className="relative z-10 hidden lg:block">
         <HotelSidebar />
       </div>
 
       {/* Mobile Navigation */}
-      <MobileNav 
-        isOpen={isMobileMenuOpen} 
-        onClose={() => setIsMobileMenuOpen(false)}
-      />
+      <MobileNav isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
 
       {/* Main Content with Internal Routing */}
-      <main className="flex-1 flex flex-col relative z-10">
+      <main className="relative z-10 flex flex-1 flex-col">
         {/* Mobile Header */}
-        <div className="lg:hidden bg-white shadow-sm border-b p-4 flex items-center justify-between">
+        <div className="flex items-center justify-between border-b bg-white p-4 shadow-sm lg:hidden">
           <div className="flex items-center space-x-3">
-            <img 
-              src="/Icon_512x512.png" 
-              alt="Hotel Logo" 
-              className="w-8 h-8"
-            />
+            <img src="/Icon_512x512.png" alt="Hotel Logo" className="h-8 w-8" />
             <h1 className="text-lg font-semibold text-gray-900">Front Desk</h1>
           </div>
           <button
             onClick={() => setIsMobileMenuOpen(true)}
-            className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+            className="rounded-md p-2 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
           >
-            <Menu className="w-6 h-6" />
+            <Menu className="h-6 w-6" />
           </button>
         </div>
 

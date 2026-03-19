@@ -117,14 +117,10 @@ export class LabelService {
         hotel_id: labelData.hotelId,
         name: normalizedName,
         color: labelData.color || randomColor.text,
-        bg_color: labelData.bgColor || randomColor.bg
+        bg_color: labelData.bgColor || randomColor.bg,
       };
 
-      const { data, error } = await supabase
-        .from('labels')
-        .insert(insertData)
-        .select()
-        .single();
+      const { data, error } = await supabase.from('labels').insert(insertData).select().single();
 
       if (error) {
         // Check for unique constraint violation
@@ -153,11 +149,7 @@ export class LabelService {
    */
   async getLabelById(labelId: string): Promise<Label | null> {
     try {
-      const { data, error } = await supabase
-        .from('labels')
-        .select('*')
-        .eq('id', labelId)
-        .single();
+      const { data, error } = await supabase.from('labels').select('*').eq('id', labelId).single();
 
       if (error) {
         if (error.code === 'PGRST116') {
@@ -257,10 +249,7 @@ export class LabelService {
    */
   async deleteLabel(labelId: string): Promise<void> {
     try {
-      const { error } = await supabase
-        .from('labels')
-        .delete()
-        .eq('id', labelId);
+      const { error } = await supabase.from('labels').delete().eq('id', labelId);
 
       if (error) {
         console.error('Error deleting label:', error);
@@ -286,7 +275,7 @@ export class LabelService {
       color: data.color || '#000000',
       bgColor: data.bg_color || '#FFFFFF',
       createdAt: new Date(data.created_at),
-      updatedAt: new Date(data.updated_at)
+      updatedAt: new Date(data.updated_at),
     };
   }
 
@@ -297,7 +286,7 @@ export class LabelService {
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mapLabels(data: any[]): Label[] {
-    return data.map(item => this.mapLabel(item));
+    return data.map((item) => this.mapLabel(item));
   }
 }
 

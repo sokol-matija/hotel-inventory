@@ -1,78 +1,78 @@
 // Admin Testing Page
 // Manual triggers for automated system functions
 
-import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { supabase } from '@/lib/supabase'
-import { RefreshCw, CheckCircle2, XCircle, Clock, Info, Loader2 } from 'lucide-react'
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { supabase } from '@/lib/supabase';
+import { RefreshCw, CheckCircle2, XCircle, Clock, Info, Loader2 } from 'lucide-react';
 
 interface ResetResult {
-  success: boolean
-  message?: string
-  roomsReset?: number
-  executionTime?: string
-  triggerSource?: string
-  error?: string
+  success: boolean;
+  message?: string;
+  roomsReset?: number;
+  executionTime?: string;
+  triggerSource?: string;
+  error?: string;
 }
 
 interface RoomCleaningLog {
-  id: number
-  rooms_reset: number
-  executed_at: string
-  triggered_by: string
+  id: number;
+  rooms_reset: number;
+  executed_at: string;
+  triggered_by: string;
 }
 
 export const AdminTestingPage = () => {
-  const [isResetting, setIsResetting] = useState(false)
-  const [lastResult, setLastResult] = useState<ResetResult | null>(null)
-  const [recentLogs, setRecentLogs] = useState<RoomCleaningLog[]>([])
-  const [isLoadingLogs, setIsLoadingLogs] = useState(true)
+  const [isResetting, setIsResetting] = useState(false);
+  const [lastResult, setLastResult] = useState<ResetResult | null>(null);
+  const [recentLogs, setRecentLogs] = useState<RoomCleaningLog[]>([]);
+  const [isLoadingLogs, setIsLoadingLogs] = useState(true);
 
   // Load recent reset logs on mount
   useEffect(() => {
-    loadRecentLogs()
-  }, [])
+    loadRecentLogs();
+  }, []);
 
   const loadRecentLogs = async () => {
-    setIsLoadingLogs(true)
+    setIsLoadingLogs(true);
     try {
       const { data, error } = await supabase
         .from('room_cleaning_reset_log')
         .select('*')
         .order('executed_at', { ascending: false })
-        .limit(10)
+        .limit(10);
 
-      if (error) throw error
-      setRecentLogs(data || [])
+      if (error) throw error;
+      setRecentLogs(data || []);
     } catch (error) {
-      console.error('Failed to load logs:', error)
+      console.error('Failed to load logs:', error);
     } finally {
-      setIsLoadingLogs(false)
+      setIsLoadingLogs(false);
     }
-  }
+  };
 
   const handleResetRoomCleaning = async () => {
-    setIsResetting(true)
-    setLastResult(null)
+    setIsResetting(true);
+    setLastResult(null);
 
     try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
       if (!supabaseUrl || !supabaseAnonKey) {
-        throw new Error('Missing Supabase configuration')
+        throw new Error('Missing Supabase configuration');
       }
 
       // Get the current user's session for authentication
       const {
         data: { session },
-      } = await supabase.auth.getSession()
+      } = await supabase.auth.getSession();
 
       if (!session) {
-        throw new Error('Not authenticated')
+        throw new Error('Not authenticated');
       }
 
       // Call the Edge Function
@@ -83,12 +83,12 @@ export const AdminTestingPage = () => {
           Authorization: `Bearer ${session.access_token}`,
           apikey: supabaseAnonKey,
         },
-      })
+      });
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to reset room cleaning')
+        throw new Error(result.error || 'Failed to reset room cleaning');
       }
 
       setLastResult({
@@ -97,20 +97,20 @@ export const AdminTestingPage = () => {
         roomsReset: result.roomsReset,
         executionTime: result.executionTime,
         triggerSource: result.triggerSource,
-      })
+      });
 
       // Reload logs to show the new entry
-      setTimeout(() => loadRecentLogs(), 500)
+      setTimeout(() => loadRecentLogs(), 500);
     } catch (error) {
-      console.error('Reset failed:', error)
+      console.error('Reset failed:', error);
       setLastResult({
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
-      })
+      });
     } finally {
-      setIsResetting(false)
+      setIsResetting(false);
     }
-  }
+  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString('en-US', {
@@ -119,14 +119,14 @@ export const AdminTestingPage = () => {
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
-    })
-  }
+    });
+  };
 
   return (
-    <div className="container mx-auto py-8 space-y-6">
+    <div className="container mx-auto space-y-6 py-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold mb-2">Admin Testing</h1>
+        <h1 className="mb-2 text-3xl font-bold">Admin Testing</h1>
         <p className="text-gray-600 dark:text-gray-400">
           Manual triggers for automated system functions
         </p>
@@ -198,14 +198,12 @@ export const AdminTestingPage = () => {
               ) : (
                 <XCircle className="h-4 w-4" />
               )}
-              <AlertTitle>
-                {lastResult.success ? 'Success!' : 'Error'}
-              </AlertTitle>
+              <AlertTitle>{lastResult.success ? 'Success!' : 'Error'}</AlertTitle>
               <AlertDescription>
                 {lastResult.success ? (
                   <div className="space-y-1">
                     <p className="font-medium">{lastResult.message}</p>
-                    <div className="text-sm space-y-0.5">
+                    <div className="space-y-0.5 text-sm">
                       <p>Rooms affected: {lastResult.roomsReset}</p>
                       <p>Execution time: {formatDate(lastResult.executionTime!)}</p>
                       <p>Trigger source: {lastResult.triggerSource}</p>
@@ -248,7 +246,7 @@ export const AdminTestingPage = () => {
               <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
             </div>
           ) : recentLogs.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="py-8 text-center text-gray-500">
               No execution logs yet. Trigger a reset to see logs here.
             </div>
           ) : (
@@ -256,7 +254,7 @@ export const AdminTestingPage = () => {
               {recentLogs.map((log) => (
                 <div
                   key={log.id}
-                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  className="flex items-center justify-between rounded-lg border p-3 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
                   <div className="flex items-center gap-3">
                     <CheckCircle2 className="h-4 w-4 text-green-600" />
@@ -288,5 +286,5 @@ export const AdminTestingPage = () => {
         </CardHeader>
       </Card>
     </div>
-  )
-}
+  );
+};

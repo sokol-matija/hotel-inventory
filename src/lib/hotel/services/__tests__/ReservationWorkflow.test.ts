@@ -6,15 +6,15 @@ import { ReservationService } from '../ReservationService';
 import { hotelPricingEngine } from '../../pricingEngine';
 import { PhobsReservationSyncService } from '../PhobsReservationSyncService';
 import { PhobsDataMapperService } from '../PhobsDataMapperService';
-import { 
-  Reservation, 
-  Guest, 
-  Room, 
-  ReservationStatus, 
-  BookingSource, 
+import {
+  Reservation,
+  Guest,
+  Room,
+  ReservationStatus,
+  BookingSource,
   SeasonalPeriod,
   PaymentMethod,
-  PaymentStatus 
+  PaymentStatus,
 } from '../../types';
 import { PhobsReservation } from '../phobsTypes';
 
@@ -80,7 +80,7 @@ describe('Reservation Workflow End-to-End Tests', () => {
     emergencyContactName: 'Jane Doe',
     emergencyContactPhone: '+385987654321',
     createdAt: new Date(),
-    updatedAt: new Date()
+    updatedAt: new Date(),
   };
 
   const testRoom: Room = {
@@ -91,14 +91,14 @@ describe('Reservation Workflow End-to-End Tests', () => {
     nameCroatian: 'Dvokrevetna soba',
     nameEnglish: 'Double Room',
     seasonalRates: {
-      A: 80,  // Winter
+      A: 80, // Winter
       B: 100, // Spring/Fall
       C: 120, // Early Summer
-      D: 150  // Peak Summer
+      D: 150, // Peak Summer
     },
     maxOccupancy: 2,
     isPremium: false,
-    amenities: ['WiFi', 'TV', 'Air Conditioning', 'Mini Bar']
+    amenities: ['WiFi', 'TV', 'Air Conditioning', 'Mini Bar'],
   };
 
   const testReservation: Omit<Reservation, 'id' | 'bookingDate' | 'lastModified'> = {
@@ -126,13 +126,13 @@ describe('Reservation Workflow End-to-End Tests', () => {
     roomServiceItems: [],
     totalAmount: 571.5,
     paymentStatus: 'pending',
-    notes: 'Test reservation for workflow testing'
+    notes: 'Test reservation for workflow testing',
   };
 
   beforeEach(() => {
     // Reset all mocks
     jest.clearAllMocks();
-    
+
     // Get service instances
     hotelDataService = HotelDataService.getInstance();
     reservationService = ReservationService.getInstance();
@@ -168,7 +168,7 @@ describe('Reservation Workflow End-to-End Tests', () => {
         {
           hasPets: testReservation.petFee > 0,
           needsParking: testReservation.parkingFee > 0,
-          additionalCharges: testReservation.additionalCharges
+          additionalCharges: testReservation.additionalCharges,
         }
       );
 
@@ -205,7 +205,7 @@ describe('Reservation Workflow End-to-End Tests', () => {
           totalBookings: 1,
           totalRevenue: 0,
           isVip: false,
-          lastUpdated: new Date()
+          lastUpdated: new Date(),
         },
         channel: 'booking.com',
         bookingReference: 'BDC-123456789',
@@ -224,7 +224,7 @@ describe('Reservation Workflow End-to-End Tests', () => {
         bookingDate: new Date('2025-08-15'),
         lastModified: new Date('2025-08-15'),
         syncStatus: 'pending',
-        syncErrors: []
+        syncErrors: [],
       };
 
       // Verify data mapping
@@ -256,7 +256,10 @@ describe('Reservation Workflow End-to-End Tests', () => {
   describe('3. Reservation Management Tests', () => {
     test('should provide available status actions for reservations', () => {
       const confirmedReservation = { ...testReservation, status: 'confirmed' as ReservationStatus };
-      const checkedInReservation = { ...testReservation, status: 'checked-in' as ReservationStatus };
+      const checkedInReservation = {
+        ...testReservation,
+        status: 'checked-in' as ReservationStatus,
+      };
 
       const confirmedActions = reservationService.getStatusActions(confirmedReservation);
       const checkedInActions = reservationService.getStatusActions(checkedInReservation);
@@ -271,7 +274,10 @@ describe('Reservation Workflow End-to-End Tests', () => {
 
     test('should determine workflow visibility based on status', () => {
       const confirmedReservation = { ...testReservation, status: 'confirmed' as ReservationStatus };
-      const checkedInReservation = { ...testReservation, status: 'checked-in' as ReservationStatus };
+      const checkedInReservation = {
+        ...testReservation,
+        status: 'checked-in' as ReservationStatus,
+      };
 
       expect(reservationService.shouldShowCheckInWorkflow(confirmedReservation)).toBe(true);
       expect(reservationService.shouldShowCheckOutWorkflow(checkedInReservation)).toBe(true);
@@ -303,14 +309,14 @@ describe('Reservation Workflow End-to-End Tests', () => {
     test('should validate payment methods', () => {
       const validPaymentMethods: PaymentMethod[] = [
         'cash',
-        'card', 
+        'card',
         'bank_transfer',
         'online',
         'booking-com',
-        'other'
+        'other',
       ];
 
-      validPaymentMethods.forEach(method => {
+      validPaymentMethods.forEach((method) => {
         expect(method).toBeDefined();
         expect(typeof method).toBe('string');
       });
@@ -336,24 +342,24 @@ describe('Reservation Workflow End-to-End Tests', () => {
     test('should calculate tourism tax based on seasonal rates', () => {
       // High season (periods IV-IX): EUR 1.50 per person per night
       // Low season (periods I-III, X-XII): EUR 1.10 per person per night
-      
-      const highSeasonRate = 1.50;
-      const lowSeasonRate = 1.10;
+
+      const highSeasonRate = 1.5;
+      const lowSeasonRate = 1.1;
       const nights = 3;
       const adults = 2;
 
       const highSeasonTax = highSeasonRate * adults * nights; // �9.00
-      const lowSeasonTax = lowSeasonRate * adults * nights;   // �6.60
+      const lowSeasonTax = lowSeasonRate * adults * nights; // �6.60
 
-      expect(highSeasonTax).toBe(9.00);
-      expect(lowSeasonTax).toBe(6.60);
+      expect(highSeasonTax).toBe(9.0);
+      expect(lowSeasonTax).toBe(6.6);
     });
   });
 
   describe('5. OTA Channel Integration Tests', () => {
     test('should track Phobs sync status', () => {
       const syncStatus = phobsService.getSyncStatus();
-      
+
       expect(syncStatus).toBeDefined();
       expect(typeof syncStatus.totalReservationsSynced).toBe('number');
       expect(typeof syncStatus.queueLength).toBe('number');
@@ -362,8 +368,8 @@ describe('Reservation Workflow End-to-End Tests', () => {
 
     test('should calculate commission for different channels', () => {
       const bookingComCommission = 0.15; // 15%
-      const expediaCommission = 0.18;    // 18%
-      const airbnbCommission = 0.14;     // 14%
+      const expediaCommission = 0.18; // 18%
+      const airbnbCommission = 0.14; // 14%
 
       const totalAmount = 571.5;
 
@@ -374,12 +380,12 @@ describe('Reservation Workflow End-to-End Tests', () => {
 
     test('should handle booking reference management', () => {
       const bookingReferences = [
-        'BDC-123456789',    // Booking.com
-        'EXP-987654321',    // Expedia
-        'ABB-456789123'     // Airbnb
+        'BDC-123456789', // Booking.com
+        'EXP-987654321', // Expedia
+        'ABB-456789123', // Airbnb
       ];
 
-      bookingReferences.forEach(ref => {
+      bookingReferences.forEach((ref) => {
         expect(ref).toMatch(/^[A-Z]{2,3}-\d{9}$/);
       });
     });
@@ -389,10 +395,15 @@ describe('Reservation Workflow End-to-End Tests', () => {
     test('should prevent double booking', async () => {
       // Mock existing reservation for the same dates
       const mockSupabase = supabase as any;
-      mockSupabase.from().select().eq().not().or.mockResolvedValueOnce({
-        data: [{ id: 'existing-reservation', room_id: testRoom.id }],
-        error: null
-      });
+      mockSupabase
+        .from()
+        .select()
+        .eq()
+        .not()
+        .or.mockResolvedValueOnce({
+          data: [{ id: 'existing-reservation', room_id: testRoom.id }],
+          error: null,
+        });
 
       const isAvailable = await hotelDataService.checkRoomAvailability(
         testRoom.id,
@@ -406,7 +417,7 @@ describe('Reservation Workflow End-to-End Tests', () => {
     test('should validate date ranges', () => {
       const invalidDates = {
         checkIn: new Date('2025-08-25'),
-        checkOut: new Date('2025-08-20') // Check-out before check-in
+        checkOut: new Date('2025-08-20'), // Check-out before check-in
       };
 
       expect(invalidDates.checkOut.getTime()).toBeLessThan(invalidDates.checkIn.getTime());
@@ -421,7 +432,7 @@ describe('Reservation Workflow End-to-End Tests', () => {
 
     test('should apply short stay supplement correctly', () => {
       const shortStayNights = 2; // Less than 3 nights
-      const shortStaySupplementRate = 0.20; // 20% supplement
+      const shortStaySupplementRate = 0.2; // 20% supplement
 
       if (shortStayNights < 3) {
         const baseAmount = 300; // 2 nights � �150
@@ -434,13 +445,17 @@ describe('Reservation Workflow End-to-End Tests', () => {
   describe('7. Error Scenarios and Edge Cases', () => {
     test('should handle database constraint violations', async () => {
       const mockSupabase = supabase as any;
-      mockSupabase.from().insert().select().single.mockResolvedValueOnce({
-        data: null,
-        error: { 
-          code: '23505', 
-          message: 'duplicate key value violates unique constraint' 
-        }
-      });
+      mockSupabase
+        .from()
+        .insert()
+        .select()
+        .single.mockResolvedValueOnce({
+          data: null,
+          error: {
+            code: '23505',
+            message: 'duplicate key value violates unique constraint',
+          },
+        });
 
       await expect(hotelDataService.createReservation(testReservation)).rejects.toThrow();
     });
@@ -458,7 +473,7 @@ describe('Reservation Workflow End-to-End Tests', () => {
       const malformedReservation = {
         ...testReservation,
         checkIn: 'invalid-date' as any,
-        totalAmount: 'not-a-number' as any
+        totalAmount: 'not-a-number' as any,
       };
 
       await expect(hotelDataService.createReservation(malformedReservation)).rejects.toThrow();
@@ -469,17 +484,23 @@ describe('Reservation Workflow End-to-End Tests', () => {
     test('should maintain foreign key relationships', async () => {
       // Test that guest ID exists before creating reservation
       const mockSupabase = supabase as any;
-      mockSupabase.from().select().eq().single.mockResolvedValueOnce({
-        data: null,
-        error: { message: 'Foreign key constraint violation' }
-      });
+      mockSupabase
+        .from()
+        .select()
+        .eq()
+        .single.mockResolvedValueOnce({
+          data: null,
+          error: { message: 'Foreign key constraint violation' },
+        });
 
       const reservationWithInvalidGuestId = {
         ...testReservation,
-        guestId: 'non-existent-guest-id'
+        guestId: 'non-existent-guest-id',
       };
 
-      await expect(hotelDataService.createReservation(reservationWithInvalidGuestId)).rejects.toThrow();
+      await expect(
+        hotelDataService.createReservation(reservationWithInvalidGuestId)
+      ).rejects.toThrow();
     });
 
     test('should handle concurrent reservation scenarios', async () => {
@@ -488,14 +509,14 @@ describe('Reservation Workflow End-to-End Tests', () => {
         hotelDataService.createReservation(testReservation),
         hotelDataService.createReservation({
           ...testReservation,
-          guestId: 'different-guest-id'
-        })
+          guestId: 'different-guest-id',
+        }),
       ];
 
       // One should succeed, one should fail
       const results = await Promise.allSettled(promises);
-      const rejectedCount = results.filter(r => r.status === 'rejected').length;
-      
+      const rejectedCount = results.filter((r) => r.status === 'rejected').length;
+
       // Expect at least one to be rejected due to room conflict
       expect(rejectedCount).toBeGreaterThanOrEqual(0); // Due to mocking, this is flexible
     });
@@ -506,22 +527,25 @@ describe('Reservation Workflow End-to-End Tests', () => {
       const bulkReservations = Array.from({ length: 10 }, (_, i) => ({
         ...testReservation,
         guestId: `guest-${i}`,
-        roomId: `room-${100 + i}`
+        roomId: `room-${100 + i}`,
       }));
 
       const startTime = Date.now();
-      
+
       // Mock successful bulk operations
       const mockSupabase = supabase as any;
-      mockSupabase.from().insert().select.mockResolvedValue({
-        data: bulkReservations.map((r, i) => ({ id: `reservation-${i}`, ...r })),
-        error: null
-      });
+      mockSupabase
+        .from()
+        .insert()
+        .select.mockResolvedValue({
+          data: bulkReservations.map((r, i) => ({ id: `reservation-${i}`, ...r })),
+          error: null,
+        });
 
-      const promises = bulkReservations.map(reservation => 
+      const promises = bulkReservations.map((reservation) =>
         hotelDataService.createReservation(reservation)
       );
-      
+
       await Promise.allSettled(promises);
       const endTime = Date.now();
       const processingTime = endTime - startTime;
@@ -535,18 +559,24 @@ describe('Reservation Workflow End-to-End Tests', () => {
       const endDate = new Date('2025-12-31');
 
       const mockSupabase = supabase as any;
-      mockSupabase.from().select().eq().gte().lte().order.mockResolvedValue({
-        data: Array.from({ length: 1000 }, (_, i) => ({
-          id: `reservation-${i}`,
-          ...testReservation
-        })),
-        error: null
-      });
+      mockSupabase
+        .from()
+        .select()
+        .eq()
+        .gte()
+        .lte()
+        .order.mockResolvedValue({
+          data: Array.from({ length: 1000 }, (_, i) => ({
+            id: `reservation-${i}`,
+            ...testReservation,
+          })),
+          error: null,
+        });
 
       const startTime = Date.now();
       const reservations = await hotelDataService.getReservationsForDateRange(startDate, endDate);
       const endTime = Date.now();
-      
+
       expect(reservations).toBeDefined();
       expect(endTime - startTime).toBeLessThan(2000); // 2 seconds for large query
     });
@@ -555,12 +585,16 @@ describe('Reservation Workflow End-to-End Tests', () => {
   describe('10. Integration Test Scenarios', () => {
     test('should complete guest journey: creation � booking � check-in � check-out', async () => {
       const mockSupabase = supabase as any;
-      
+
       // Mock guest creation
-      mockSupabase.from().insert().select().single.mockResolvedValueOnce({
-        data: { id: 'guest-journey-123', ...testGuest },
-        error: null
-      });
+      mockSupabase
+        .from()
+        .insert()
+        .select()
+        .single.mockResolvedValueOnce({
+          data: { id: 'guest-journey-123', ...testGuest },
+          error: null,
+        });
 
       // 1. Create guest
       const guest = await hotelDataService.createGuest({
@@ -576,48 +610,62 @@ describe('Reservation Workflow End-to-End Tests', () => {
         emergencyContactPhone: testGuest.emergencyContactPhone,
         dietaryRestrictions: testGuest.dietaryRestrictions,
         specialNeeds: testGuest.specialNeeds,
-        children: testGuest.children
+        children: testGuest.children,
       });
 
       expect(guest).toBeDefined();
 
       // Mock reservation creation
-      mockSupabase.from().insert().select().single.mockResolvedValueOnce({
-        data: { id: 'reservation-journey-456', ...testReservation },
-        error: null
-      });
+      mockSupabase
+        .from()
+        .insert()
+        .select()
+        .single.mockResolvedValueOnce({
+          data: { id: 'reservation-journey-456', ...testReservation },
+          error: null,
+        });
 
       // 2. Create reservation
       const reservation = await hotelDataService.createReservation({
         ...testReservation,
-        guestId: guest.id
+        guestId: guest.id,
       });
 
       expect(reservation).toBeDefined();
       expect(reservation.status).toBe('confirmed');
 
       // Mock check-in
-      mockSupabase.from().update().eq.mockResolvedValueOnce({
-        data: { ...reservation, status: 'checked-in', checked_in_at: new Date().toISOString() },
-        error: null
-      });
+      mockSupabase
+        .from()
+        .update()
+        .eq.mockResolvedValueOnce({
+          data: { ...reservation, status: 'checked-in', checked_in_at: new Date().toISOString() },
+          error: null,
+        });
 
       // 3. Check-in
       const checkedInReservation = await hotelDataService.updateReservation(reservation.id, {
-        status: 'checked-in'
+        status: 'checked-in',
       });
 
       expect(checkedInReservation.status).toBe('checked-in');
 
       // Mock check-out
-      mockSupabase.from().update().eq.mockResolvedValueOnce({
-        data: { ...checkedInReservation, status: 'checked-out', checked_out_at: new Date().toISOString() },
-        error: null
-      });
+      mockSupabase
+        .from()
+        .update()
+        .eq.mockResolvedValueOnce({
+          data: {
+            ...checkedInReservation,
+            status: 'checked-out',
+            checked_out_at: new Date().toISOString(),
+          },
+          error: null,
+        });
 
       // 4. Check-out
       const checkedOutReservation = await hotelDataService.updateReservation(reservation.id, {
-        status: 'checked-out'
+        status: 'checked-out',
       });
 
       expect(checkedOutReservation.status).toBe('checked-out');
@@ -651,14 +699,14 @@ describe('Reservation Workflow End-to-End Tests', () => {
           totalBookings: 3,
           totalRevenue: 1500,
           isVip: true,
-          lastUpdated: new Date()
+          lastUpdated: new Date(),
         },
         channel: 'expedia',
         bookingReference: 'EXP-987654321',
         status: 'confirmed',
         totalAmount: 642.75,
         currency: 'EUR',
-        commission: 115.70, // 18% commission for Expedia
+        commission: 115.7, // 18% commission for Expedia
         netAmount: 527.05,
         roomRate: 150,
         taxes: 112.5,
@@ -670,16 +718,16 @@ describe('Reservation Workflow End-to-End Tests', () => {
         bookingDate: new Date(),
         lastModified: new Date(),
         syncStatus: 'pending',
-        syncErrors: []
+        syncErrors: [],
       };
 
       // 1. Webhook receives data
       expect(mockPhobsReservation.channel).toBe('expedia');
-      
+
       // 2. Validate incoming data
       const mappingResult = dataMapperService.mapPhobsReservationToInternal(mockPhobsReservation);
       expect(mappingResult.success).toBe(true);
-      
+
       if (mappingResult.data) {
         expect(mappingResult.data.bookingSource).toBe('other'); // Mapped from 'expedia'
         expect(mappingResult.data.totalAmount).toBe(642.75);

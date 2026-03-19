@@ -1,16 +1,16 @@
 /**
  * OptimisticUpdateService - Provides instant UI feedback with automatic rollback capability
- * 
+ *
  * This service enables smooth user experience by immediately updating the UI for user actions
  * while handling server failures gracefully with automatic rollback functionality.
- * 
+ *
  * Features:
  * - Instant UI feedback for reservation operations (create, update, move, delete)
  * - Automatic rollback on server failures to maintain UI consistency
  * - Operation tracking with status monitoring (pending, success, failed, rolled_back)
  * - Comprehensive error handling and recovery mechanisms
  * - Statistics and debugging capabilities for operation monitoring
- * 
+ *
  * Usage:
  * ```typescript
  * const optimisticService = OptimisticUpdateService.getInstance();
@@ -22,7 +22,7 @@
  *   // UI automatically rolled back, show error to user
  * }
  * ```
- * 
+ *
  * @author Hotel Management System v2.7
  * @since August 2025
  */
@@ -86,7 +86,7 @@ export class OptimisticUpdateService {
       originalData: operation.originalData,
       newData: operation.newData,
       timestamp: Date.now(),
-      status: 'pending'
+      status: 'pending',
     };
 
     this.pendingOperations.set(operationId, optimisticOp);
@@ -95,33 +95,32 @@ export class OptimisticUpdateService {
     // Apply optimistic update immediately
     try {
       operation.optimisticUpdate();
-      
+
       // Attempt server update
       const result = await operation.serverUpdate();
-      
+
       // Success - mark as completed
       optimisticOp.status = 'success';
       this.pendingOperations.delete(operationId);
       this.rollbackCallbacks.delete(operationId);
-      
+
       return { success: true, data: result };
-      
     } catch (error) {
       console.error(`Optimistic update failed for ${operationId}:`, error);
-      
+
       // Rollback the optimistic update
       operation.rollbackUpdate();
       optimisticOp.status = 'rolled_back';
-      
+
       // Keep in map for debugging/retry
       setTimeout(() => {
         this.pendingOperations.delete(operationId);
         this.rollbackCallbacks.delete(operationId);
       }, 5000); // Clean up after 5 seconds
-      
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Update failed' 
+
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Update failed',
       };
     }
   }
@@ -139,11 +138,11 @@ export class OptimisticUpdateService {
     serverUpdate: () => Promise<void>
   ): Promise<{ success: boolean; error?: string }> {
     const operationId = `move-${reservationId}-${Date.now()}`;
-    
+
     const newData = {
       roomId: newRoomId,
       checkIn: newCheckIn,
-      checkOut: newCheckOut
+      checkOut: newCheckOut,
     };
 
     return this.executeOptimisticUpdate(operationId, {
@@ -152,7 +151,7 @@ export class OptimisticUpdateService {
       originalData: {
         roomId: originalReservation.roomId,
         checkIn: originalReservation.checkIn,
-        checkOut: originalReservation.checkOut
+        checkOut: originalReservation.checkOut,
       },
       newData,
       optimisticUpdate: () => {
@@ -164,10 +163,10 @@ export class OptimisticUpdateService {
         updateReservationInState(reservationId, {
           roomId: originalReservation.roomId,
           checkIn: originalReservation.checkIn,
-          checkOut: originalReservation.checkOut
+          checkOut: originalReservation.checkOut,
         });
       },
-      serverUpdate: serverUpdate
+      serverUpdate: serverUpdate,
     });
   }
 
@@ -182,7 +181,7 @@ export class OptimisticUpdateService {
     serverUpdate: () => Promise<void>
   ): Promise<{ success: boolean; error?: string }> {
     const operationId = `update-${reservationId}-${Date.now()}`;
-    
+
     return this.executeOptimisticUpdate(operationId, {
       type: 'update',
       entity: 'reservation',
@@ -195,7 +194,7 @@ export class OptimisticUpdateService {
         // Restore original reservation
         updateReservationInState(reservationId, originalReservation);
       },
-      serverUpdate: serverUpdate
+      serverUpdate: serverUpdate,
     });
   }
 
@@ -209,7 +208,7 @@ export class OptimisticUpdateService {
     serverCreate: () => Promise<Reservation>
   ): Promise<{ success: boolean; data?: Reservation; error?: string }> {
     const operationId = `create-${tempReservation.id}-${Date.now()}`;
-    
+
     return this.executeOptimisticUpdate(operationId, {
       type: 'create',
       entity: 'reservation',
@@ -220,7 +219,7 @@ export class OptimisticUpdateService {
       rollbackUpdate: () => {
         removeReservationFromState(tempReservation.id);
       },
-      serverUpdate: serverCreate
+      serverUpdate: serverCreate,
     });
   }
 
@@ -234,7 +233,7 @@ export class OptimisticUpdateService {
     serverDelete: () => Promise<void>
   ): Promise<{ success: boolean; error?: string }> {
     const operationId = `delete-${reservation.id}-${Date.now()}`;
-    
+
     return this.executeOptimisticUpdate(operationId, {
       type: 'delete',
       entity: 'reservation',
@@ -245,7 +244,7 @@ export class OptimisticUpdateService {
       rollbackUpdate: () => {
         addReservationToState(reservation);
       },
-      serverUpdate: serverDelete
+      serverUpdate: serverDelete,
     });
   }
 
@@ -260,7 +259,7 @@ export class OptimisticUpdateService {
    * Get operations by status
    */
   getOperationsByStatus(status: OptimisticOperation['status']): OptimisticOperation[] {
-    return this.getPendingOperations().filter(op => op.status === status);
+    return this.getPendingOperations().filter((op) => op.status === status);
   }
 
   /**
@@ -269,7 +268,7 @@ export class OptimisticUpdateService {
   forceRollback(operationId: string): boolean {
     const operation = this.pendingOperations.get(operationId);
     const rollbackCallback = this.rollbackCallbacks.get(operationId);
-    
+
     if (operation && rollbackCallback && operation.status === 'pending') {
       try {
         rollbackCallback();
@@ -282,7 +281,7 @@ export class OptimisticUpdateService {
         return false;
       }
     }
-    
+
     return false;
   }
 
@@ -305,7 +304,7 @@ export class OptimisticUpdateService {
     return {
       success: rolledBack === pendingOps.length,
       error: lastError,
-      operationsRolledBack: rolledBack
+      operationsRolledBack: rolledBack,
     };
   }
 
@@ -313,10 +312,11 @@ export class OptimisticUpdateService {
    * Clear completed operations (cleanup)
    */
   clearCompletedOperations(): number {
-    const completed = this.getOperationsByStatus('success')
-      .concat(this.getOperationsByStatus('rolled_back'));
-    
-    completed.forEach(op => {
+    const completed = this.getOperationsByStatus('success').concat(
+      this.getOperationsByStatus('rolled_back')
+    );
+
+    completed.forEach((op) => {
       this.pendingOperations.delete(op.id);
       this.rollbackCallbacks.delete(op.id);
     });
@@ -335,10 +335,10 @@ export class OptimisticUpdateService {
       success: 0,
       failed: 0,
       rolledBack: 0,
-      oldestOperation: 0
+      oldestOperation: 0,
     };
 
-    operations.forEach(op => {
+    operations.forEach((op) => {
       if (op.status === 'rolled_back') {
         stats.rolledBack++;
       } else if (op.status in stats) {

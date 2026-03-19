@@ -2,12 +2,7 @@
 // Reduced from 810 lines to ~400 lines with clean architecture
 
 import React, { useState, useEffect } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '../../../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
 import { Button } from '../../../ui/button';
 import { Badge } from '../../../ui/badge';
@@ -31,7 +26,7 @@ import {
   Receipt,
   Printer,
   Download,
-  Building2
+  Building2,
 } from 'lucide-react';
 import { CalendarEvent, Company } from '../../../../lib/hotel/types';
 import { useReservationState } from '../../../../lib/hotel/hooks/useReservationState';
@@ -52,14 +47,14 @@ export default function ReservationPopup({
   isOpen,
   onClose,
   event,
-  onStatusChange
+  onStatusChange,
 }: ReservationPopupProps) {
   const {
     // State
     state,
     reservationData,
     isUpdating,
-    
+
     // Operations
     handleEditToggle,
     handleSaveEdit,
@@ -69,19 +64,19 @@ export default function ReservationPopup({
     handleGenerateFiscalInvoice,
     handleEmailFiscalReceipt,
     handlePrintThermalReceipt,
-    
+
     // Dialog management
     togglePaymentDetails,
     toggleCheckInWorkflow,
     toggleCheckOutWorkflow,
-    
+
     // Helpers
     clearError,
     getStatusActions,
     formatDates,
-    
+
     // Direct state updates
-    updateState
+    updateState,
   } = useReservationState(event, onClose, onStatusChange);
 
   // State for company data (R1 billing)
@@ -115,7 +110,7 @@ export default function ReservationPopup({
                 street: companyData.address,
                 city: companyData.city,
                 postalCode: companyData.postal_code,
-                country: companyData.country
+                country: companyData.country,
               },
               contactPerson: companyData.contact_person,
               email: companyData.email,
@@ -126,7 +121,7 @@ export default function ReservationPopup({
               isActive: companyData.is_active,
               notes: companyData.notes,
               createdAt: companyData.created_at,
-              updatedAt: companyData.updated_at
+              updatedAt: companyData.updated_at,
             });
           }
         } catch (error) {
@@ -179,15 +174,11 @@ export default function ReservationPopup({
               <CardContent className="space-y-3">
                 <div className="flex items-center space-x-2">
                   <Calendar className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm text-gray-600">
-                    {formatDates()}
-                  </span>
+                  <span className="text-sm text-gray-600">{formatDates()}</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <FileText className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm text-gray-600">
-                    {reservation.specialRequests}
-                  </span>
+                  <span className="text-sm text-gray-600">{reservation.specialRequests}</span>
                 </div>
               </CardContent>
             </Card>
@@ -202,7 +193,7 @@ export default function ReservationPopup({
 
   // Render status action buttons
   const renderStatusActions = () => {
-    return statusActions.map(action => (
+    return statusActions.map((action) => (
       <Button
         key={action.status}
         variant={action.variant}
@@ -210,10 +201,10 @@ export default function ReservationPopup({
         onClick={() => handleStatusUpdate(action.status)}
         disabled={isUpdating}
       >
-        {action.icon === 'log-in' && <LogIn className="h-4 w-4 mr-1" />}
-        {action.icon === 'log-out' && <LogOut className="h-4 w-4 mr-1" />}
-        {action.icon === 'check' && <Check className="h-4 w-4 mr-1" />}
-        {action.icon === 'x' && <X className="h-4 w-4 mr-1" />}
+        {action.icon === 'log-in' && <LogIn className="mr-1 h-4 w-4" />}
+        {action.icon === 'log-out' && <LogOut className="mr-1 h-4 w-4" />}
+        {action.icon === 'check' && <Check className="mr-1 h-4 w-4" />}
+        {action.icon === 'x' && <X className="mr-1 h-4 w-4" />}
         {action.label}
       </Button>
     ));
@@ -222,16 +213,16 @@ export default function ReservationPopup({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <span>Room {room.number}</span>
                 <Badge
-                  style={{ 
+                  style={{
                     backgroundColor: statusColors.backgroundColor,
                     color: statusColors.textColor,
-                    borderColor: statusColors.borderColor
+                    borderColor: statusColors.borderColor,
                   }}
                   className="border"
                 >
@@ -239,11 +230,7 @@ export default function ReservationPopup({
                 </Badge>
               </div>
               <div className="flex items-center space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleEditToggle}
-                >
+                <Button variant="outline" size="sm" onClick={handleEditToggle}>
                   {state.isEditing ? <X className="h-4 w-4" /> : <Edit className="h-4 w-4" />}
                   {state.isEditing ? 'Cancel' : 'Edit'}
                 </Button>
@@ -255,23 +242,21 @@ export default function ReservationPopup({
           <div className="space-y-6">
             {/* Error Display */}
             {state.statusUpdateError && (
-              <div className="bg-red-50 border border-red-200 rounded-md p-3">
+              <div className="rounded-md border border-red-200 bg-red-50 p-3">
                 <div className="flex">
                   <div className="flex-shrink-0">
                     <X className="h-5 w-5 text-red-400" />
                   </div>
                   <div className="ml-3">
                     <h3 className="text-sm font-medium text-red-800">Error</h3>
-                    <div className="mt-2 text-sm text-red-700">
-                      {state.statusUpdateError}
-                    </div>
+                    <div className="mt-2 text-sm text-red-700">{state.statusUpdateError}</div>
                   </div>
                   <div className="ml-auto pl-3">
                     <button
                       onClick={clearError}
-                      className="inline-flex bg-red-50 rounded-md p-1.5 text-red-500 hover:bg-red-100"
+                      className="inline-flex rounded-md bg-red-50 p-1.5 text-red-500 hover:bg-red-100"
                     >
-                      <X className="w-3 h-3" />
+                      <X className="h-3 w-3" />
                     </button>
                   </div>
                 </div>
@@ -285,30 +270,33 @@ export default function ReservationPopup({
                   <CardTitle className="flex items-center space-x-2">
                     <Building2 className="h-5 w-5 text-blue-600" />
                     <span>Company Billing (R1)</span>
-                    <Badge variant="outline" className="ml-2 bg-blue-100 text-blue-800 border-blue-300">
+                    <Badge
+                      variant="outline"
+                      className="ml-2 border-blue-300 bg-blue-100 text-blue-800"
+                    >
                       Corporate
                     </Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div className="space-y-3">
                       <div className="flex items-start space-x-2">
-                        <Building2 className="h-4 w-4 text-blue-600 mt-0.5" />
+                        <Building2 className="mt-0.5 h-4 w-4 text-blue-600" />
                         <div>
                           <p className="font-semibold text-gray-900">{company.name}</p>
                           <p className="text-xs text-gray-500">Company Name</p>
                         </div>
                       </div>
                       <div className="flex items-start space-x-2">
-                        <FileText className="h-4 w-4 text-blue-600 mt-0.5" />
+                        <FileText className="mt-0.5 h-4 w-4 text-blue-600" />
                         <div>
                           <p className="font-medium text-gray-900">{company.oib}</p>
                           <p className="text-xs text-gray-500">OIB (Tax Number)</p>
                         </div>
                       </div>
                       <div className="flex items-start space-x-2">
-                        <MapPin className="h-4 w-4 text-blue-600 mt-0.5" />
+                        <MapPin className="mt-0.5 h-4 w-4 text-blue-600" />
                         <div>
                           <p className="text-sm text-gray-700">{company.address.street}</p>
                           <p className="text-sm text-gray-700">
@@ -324,7 +312,7 @@ export default function ReservationPopup({
                     <div className="space-y-3">
                       {company.contactPerson && (
                         <div className="flex items-start space-x-2">
-                          <User className="h-4 w-4 text-blue-600 mt-0.5" />
+                          <User className="mt-0.5 h-4 w-4 text-blue-600" />
                           <div>
                             <p className="text-sm text-gray-700">{company.contactPerson}</p>
                             <p className="text-xs text-gray-500">Contact Person</p>
@@ -333,7 +321,7 @@ export default function ReservationPopup({
                       )}
                       {company.email && (
                         <div className="flex items-start space-x-2">
-                          <Mail className="h-4 w-4 text-blue-600 mt-0.5" />
+                          <Mail className="mt-0.5 h-4 w-4 text-blue-600" />
                           <div>
                             <p className="text-sm text-gray-700">{company.email}</p>
                             <p className="text-xs text-gray-500">Email</p>
@@ -342,7 +330,7 @@ export default function ReservationPopup({
                       )}
                       {company.phone && (
                         <div className="flex items-start space-x-2">
-                          <Phone className="h-4 w-4 text-blue-600 mt-0.5" />
+                          <Phone className="mt-0.5 h-4 w-4 text-blue-600" />
                           <div>
                             <p className="text-sm text-gray-700">{company.phone}</p>
                             <p className="text-xs text-gray-500">Phone</p>
@@ -364,7 +352,7 @@ export default function ReservationPopup({
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div className="space-y-3">
                     <div className="flex items-center space-x-2">
                       <User className="h-4 w-4 text-gray-500" />
@@ -387,7 +375,8 @@ export default function ReservationPopup({
                     <div className="flex items-center space-x-2">
                       <Users className="h-4 w-4 text-gray-500" />
                       <span className="text-sm text-gray-600">
-                        {reservation.adults} Adults{guest.children.length > 0 && `, ${guest.children.length} Children`}
+                        {reservation.adults} Adults
+                        {guest.children.length > 0 && `, ${guest.children.length} Children`}
                       </span>
                     </div>
                   </div>
@@ -395,8 +384,8 @@ export default function ReservationPopup({
 
                 {/* Email Actions - Only for confirmed or checked-in reservations */}
                 {(reservation.status === 'confirmed' || reservation.status === 'checked-in') && (
-                  <div className="pt-4 border-t">
-                    <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="border-t pt-4">
+                    <div className="flex flex-col gap-3 sm:flex-row">
                       <Button
                         onClick={handleSendWelcomeEmail}
                         disabled={state.isSendingEmail || !guest.email}
@@ -404,13 +393,13 @@ export default function ReservationPopup({
                         className="border-blue-200 text-blue-700 hover:bg-blue-50"
                       >
                         {state.isSendingEmail ? (
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                          <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-blue-600"></div>
                         ) : (
-                          <Send className="h-4 w-4 mr-2" />
+                          <Send className="mr-2 h-4 w-4" />
                         )}
                         Send Welcome Email
                       </Button>
-                      
+
                       <Button
                         onClick={handleSendReminderEmail}
                         disabled={state.isSendingEmail || !guest.email}
@@ -418,9 +407,9 @@ export default function ReservationPopup({
                         className="border-orange-200 text-orange-700 hover:bg-orange-50"
                       >
                         {state.isSendingEmail ? (
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-600 mr-2"></div>
+                          <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-orange-600"></div>
                         ) : (
-                          <Mail className="h-4 w-4 mr-2" />
+                          <Mail className="mr-2 h-4 w-4" />
                         )}
                         Send Reminder
                       </Button>
@@ -448,20 +437,20 @@ export default function ReservationPopup({
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="flex flex-col gap-3 sm:flex-row">
                     <Button
                       onClick={handleGenerateFiscalInvoice}
                       disabled={state.isFiscalizing}
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                      className="bg-indigo-600 text-white hover:bg-indigo-700"
                     >
                       {state.isFiscalizing ? (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
                       ) : (
-                        <Download className="h-4 w-4 mr-2" />
+                        <Download className="mr-2 h-4 w-4" />
                       )}
                       Generate Fiscal Invoice
                     </Button>
-                    
+
                     <Button
                       onClick={handlePrintThermalReceipt}
                       disabled={state.isFiscalizing}
@@ -469,9 +458,9 @@ export default function ReservationPopup({
                       className="border-indigo-200 text-indigo-700 hover:bg-indigo-50"
                     >
                       {state.isFiscalizing ? (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600 mr-2"></div>
+                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-indigo-600"></div>
                       ) : (
-                        <Printer className="h-4 w-4 mr-2" />
+                        <Printer className="mr-2 h-4 w-4" />
                       )}
                       Print Thermal Receipt
                     </Button>
@@ -482,23 +471,34 @@ export default function ReservationPopup({
                       variant="outline"
                       className="border-green-200 text-green-700 hover:bg-green-50"
                     >
-                      {(state.isSendingEmail || state.isFiscalizing) ? (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600 mr-2"></div>
+                      {state.isSendingEmail || state.isFiscalizing ? (
+                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-green-600"></div>
                       ) : (
-                        <Mail className="h-4 w-4 mr-2" />
+                        <Mail className="mr-2 h-4 w-4" />
                       )}
                       Email Fiscal Receipt
                     </Button>
                   </div>
-                  
+
                   <div className="mt-3 text-sm text-gray-600">
-                    <p>🧾 <strong>Fiscal Invoice:</strong> Croatian Tax Authority compliant PDF with QR code and JIR</p>
-                    <p className="mt-1">🖨️ <strong>Thermal Receipt:</strong> 80mm format for receipt printers with fiscal data</p>
-                    <p className="mt-1">📧 <strong>Email Receipt:</strong> Send professional fiscal invoice to guest automatically</p>
+                    <p>
+                      🧾 <strong>Fiscal Invoice:</strong> Croatian Tax Authority compliant PDF with
+                      QR code and JIR
+                    </p>
+                    <p className="mt-1">
+                      🖨️ <strong>Thermal Receipt:</strong> 80mm format for receipt printers with
+                      fiscal data
+                    </p>
+                    <p className="mt-1">
+                      📧 <strong>Email Receipt:</strong> Send professional fiscal invoice to guest
+                      automatically
+                    </p>
                     {state.fiscalData && (
-                      <div className="mt-2 p-2 bg-green-50 rounded-lg">
-                        <p className="text-green-800 font-medium">✅ Fiscalized with Croatian Tax Authority</p>
-                        <p className="text-green-700 text-xs">JIR: {state.fiscalData.jir}</p>
+                      <div className="mt-2 rounded-lg bg-green-50 p-2">
+                        <p className="font-medium text-green-800">
+                          ✅ Fiscalized with Croatian Tax Authority
+                        </p>
+                        <p className="text-xs text-green-700">JIR: {state.fiscalData.jir}</p>
                       </div>
                     )}
                     {!guest?.email && (
@@ -518,7 +518,7 @@ export default function ReservationPopup({
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <div className="text-sm text-gray-500">Check-in</div>
                     <div className="font-medium">{reservation.checkIn.toLocaleDateString()}</div>
@@ -550,11 +550,11 @@ export default function ReservationPopup({
                       />
                       <div className="flex space-x-2">
                         <Button size="sm" onClick={handleSaveEdit}>
-                          <Save className="h-4 w-4 mr-1" />
+                          <Save className="mr-1 h-4 w-4" />
                           Save
                         </Button>
                         <Button size="sm" variant="outline" onClick={handleEditToggle}>
-                          <X className="h-4 w-4 mr-1" />
+                          <X className="mr-1 h-4 w-4" />
                           Cancel
                         </Button>
                       </div>
@@ -577,17 +577,12 @@ export default function ReservationPopup({
               <CardContent>
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-lg font-bold">
-                      €{reservation.totalAmount.toFixed(2)}
-                    </div>
+                    <div className="text-lg font-bold">€{reservation.totalAmount.toFixed(2)}</div>
                     <div className="text-sm text-gray-500">
                       Total Amount • {reservation.numberOfNights} nights
                     </div>
                   </div>
-                  <Button
-                    variant="outline"
-                    onClick={togglePaymentDetails}
-                  >
+                  <Button variant="outline" onClick={togglePaymentDetails}>
                     View Breakdown
                   </Button>
                 </div>

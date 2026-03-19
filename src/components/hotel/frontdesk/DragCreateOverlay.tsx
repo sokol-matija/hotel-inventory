@@ -1,6 +1,6 @@
 /**
  * DragCreateOverlay Component
- * 
+ *
  * Provides visual feedback during drag-to-create operations.
  * Shows a growing reservation box that expands as the user hovers over cells.
  */
@@ -26,22 +26,26 @@ interface OverlayRect {
 export const DragCreateOverlay: React.FC<DragCreateOverlayProps> = ({
   dragCreateState,
   timelineRef,
-  cellRefs
+  cellRefs,
 }) => {
   const overlayRef = useRef<HTMLDivElement>(null);
 
   // Calculate overlay position and size
   const calculateOverlayRect = (): OverlayRect | null => {
-    if (!dragCreateState.isSelecting || !dragCreateState.currentSelection || !dragCreateState.hoverPreview) {
+    if (
+      !dragCreateState.isSelecting ||
+      !dragCreateState.currentSelection ||
+      !dragCreateState.hoverPreview
+    ) {
       return null;
     }
 
     const { currentSelection, hoverPreview } = dragCreateState;
-    
+
     // Get start cell (PM cell where drag started)
     const startKey = `${currentSelection.roomId}-${currentSelection.checkInDate.toISOString().split('T')[0]}-PM`;
     const startCell = cellRefs.get(startKey);
-    
+
     // Get end cell (current hover position)
     const endKey = `${hoverPreview.roomId}-${hoverPreview.hoverDate.toISOString().split('T')[0]}-${hoverPreview.isAM ? 'AM' : 'PM'}`;
     const endCell = cellRefs.get(endKey);
@@ -64,7 +68,7 @@ export const DragCreateOverlay: React.FC<DragCreateOverlayProps> = ({
       left,
       top,
       width: right - left,
-      height: bottom - top
+      height: bottom - top,
     };
   };
 
@@ -73,7 +77,7 @@ export const DragCreateOverlay: React.FC<DragCreateOverlayProps> = ({
     if (!overlayRef.current) return;
 
     const rect = calculateOverlayRect();
-    
+
     if (rect) {
       const overlay = overlayRef.current;
       overlay.style.left = `${rect.left}px`;
@@ -114,7 +118,7 @@ export const DragCreateOverlay: React.FC<DragCreateOverlayProps> = ({
     const numberOfNights = getNumberOfNights();
     const checkInDate = dragCreateState.currentSelection.checkInDate;
     const checkOutDate = new Date(dragCreateState.hoverPreview.hoverDate);
-    
+
     if (dragCreateState.hoverPreview.isAM) {
       // AM cell is checkout - use as-is
     } else {
@@ -123,7 +127,7 @@ export const DragCreateOverlay: React.FC<DragCreateOverlayProps> = ({
     }
 
     return (
-      <div className="absolute inset-0 flex flex-col items-center justify-center text-white text-center p-2">
+      <div className="absolute inset-0 flex flex-col items-center justify-center p-2 text-center text-white">
         <div className="text-lg font-bold">New Reservation</div>
         <div className="text-sm opacity-90">
           {format(checkInDate, 'MMM dd')} → {format(checkOutDate, 'MMM dd')}
@@ -148,14 +152,14 @@ export const DragCreateOverlay: React.FC<DragCreateOverlayProps> = ({
   return createPortal(
     <div
       ref={overlayRef}
-      className="absolute z-50 pointer-events-none transition-all duration-150 ease-out"
+      className="pointer-events-none absolute z-50 transition-all duration-150 ease-out"
       style={{
         backgroundColor: 'rgba(59, 130, 246, 0.8)', // Blue with transparency
         border: '2px solid rgb(59, 130, 246)',
         borderRadius: '6px',
         opacity: '0', // Initially hidden, will be shown by useEffect
         boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
-        backdropFilter: 'blur(2px)'
+        backdropFilter: 'blur(2px)',
       }}
     >
       {getOverlayContent()}

@@ -13,7 +13,6 @@ export interface CertificateInfo {
   error?: string;
 }
 
-
 export class CertificateManager {
   private static instance: CertificateManager;
   private xmlSigner: FiscalXMLSigner | null = null;
@@ -32,7 +31,9 @@ export class CertificateManager {
   private async getXMLSigner(): Promise<FiscalXMLSigner> {
     // Check if running in browser
     if (typeof window !== 'undefined') {
-      throw new Error('Certificate operations are not available in browser. Use API endpoint instead.');
+      throw new Error(
+        'Certificate operations are not available in browser. Use API endpoint instead.'
+      );
     }
 
     if (!this.xmlSigner) {
@@ -59,7 +60,7 @@ export class CertificateManager {
    */
   public getCertificateConfig() {
     const environment = getCurrentEnvironment();
-    
+
     return {
       certificateFile: HOTEL_FISCAL_CONFIG.certificate.file,
       certificatePassword: HOTEL_FISCAL_CONFIG.certificate.password,
@@ -161,7 +162,9 @@ export class CertificateManager {
       return zki;
     } catch (error) {
       console.error('❌ ZKI generation failed:', error);
-      throw new Error(`ZKI generation failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `ZKI generation failed: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -170,7 +173,10 @@ export class CertificateManager {
    * Used by FiscalizationService for Croatian Tax Authority communication
    * SERVER-SIDE ONLY
    */
-  public async signSOAPEnvelope(soapXml: string, refId: string): Promise<{ success: boolean; signedXml?: string; error?: string }> {
+  public async signSOAPEnvelope(
+    soapXml: string,
+    refId: string
+  ): Promise<{ success: boolean; signedXml?: string; error?: string }> {
     try {
       const signer = await this.getXMLSigner();
       return signer.signSOAPEnvelope(soapXml, refId);
@@ -178,7 +184,7 @@ export class CertificateManager {
       console.error('❌ SOAP signing failed:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       };
     }
   }
@@ -197,20 +203,28 @@ export class CertificateManager {
     const fallbackPassword = config.certificate.passwordBackup || 'Marvel2479@$&('; // Fallback
 
     console.log('🔐 Testing FINA certificate passwords...');
-    console.log(`Primary: ${primaryPassword.substring(0, 3)}...${primaryPassword.substring(primaryPassword.length - 3)}`);
-    console.log(`Fallback: ${fallbackPassword.substring(0, 3)}...${fallbackPassword.substring(fallbackPassword.length - 3)}`);
+    console.log(
+      `Primary: ${primaryPassword.substring(0, 3)}...${primaryPassword.substring(primaryPassword.length - 3)}`
+    );
+    console.log(
+      `Fallback: ${fallbackPassword.substring(0, 3)}...${fallbackPassword.substring(fallbackPassword.length - 3)}`
+    );
 
     // Simulate password testing (in real environment, would test P12 certificate)
     const primaryResult = {
       success: primaryPassword === 'Marvel247@$&',
       password: primaryPassword,
-      error: primaryPassword === 'Marvel247@$&' ? undefined : 'Password does not match expected format'
+      error:
+        primaryPassword === 'Marvel247@$&' ? undefined : 'Password does not match expected format',
     };
 
     const fallbackResult = {
       success: fallbackPassword === 'Marvel2479@$&(',
       password: fallbackPassword,
-      error: fallbackPassword === 'Marvel2479@$&(' ? undefined : 'Password does not match expected format'
+      error:
+        fallbackPassword === 'Marvel2479@$&('
+          ? undefined
+          : 'Password does not match expected format',
     };
 
     let recommendedPassword: string | undefined;

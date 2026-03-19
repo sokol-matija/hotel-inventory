@@ -5,7 +5,11 @@ import { CalendarEvent, Reservation, Guest, Room, Company } from '../types';
 import { RESERVATION_STATUS_COLORS } from '../calendarUtils';
 import { HotelEmailService } from '../../emailService';
 import hotelNotification from '../../notifications';
-import { generatePDFInvoice, generateThermalReceipt, generateInvoiceNumber } from '../../pdfInvoiceGenerator';
+import {
+  generatePDFInvoice,
+  generateThermalReceipt,
+  generateInvoiceNumber,
+} from '../../pdfInvoiceGenerator';
 import { FiscalizationService } from '../../fiscalization/FiscalizationService';
 import { hotelDataService } from './HotelDataService';
 import { supabase } from '../../supabase';
@@ -39,9 +43,9 @@ export interface FiscalInvoiceResult {
 
 export class ReservationService {
   private static instance: ReservationService;
-  
+
   private constructor() {}
-  
+
   public static getInstance(): ReservationService {
     if (!ReservationService.instance) {
       ReservationService.instance = new ReservationService();
@@ -58,17 +62,17 @@ export class ReservationService {
   ): Promise<ReservationData | null> {
     if (!event) return null;
 
-    const reservation = reservations.find(r => r.id === event.reservationId);
+    const reservation = reservations.find((r) => r.id === event.reservationId);
     if (!reservation) return null;
 
     // Fetch guest and room data from database
     const [guests, room] = await Promise.all([
       hotelDataService.getGuests(),
-      hotelDataService.getRoomById(event.roomId)
+      hotelDataService.getRoomById(event.roomId),
     ]);
 
-    const guest = guests.find(g => g.id === reservation.guestId);
-    
+    const guest = guests.find((g) => g.id === reservation.guestId);
+
     if (!guest || !room) {
       return null;
     }
@@ -81,7 +85,7 @@ export class ReservationService {
       guest,
       room,
       statusColors,
-      isMaintenanceReservation
+      isMaintenanceReservation,
     };
   }
 
@@ -95,8 +99,12 @@ export class ReservationService {
   ): Promise<EmailResult> {
     try {
       // Use provided room or fetch from database
-      const roomData = room || await hotelDataService.getRoomById(reservation.roomId);
-      const result = await HotelEmailService.sendWelcomeEmail(reservation, guest, roomData ?? undefined);
+      const roomData = room || (await hotelDataService.getRoomById(reservation.roomId));
+      const result = await HotelEmailService.sendWelcomeEmail(
+        reservation,
+        guest,
+        roomData ?? undefined
+      );
 
       if (result.success) {
         hotelNotification.success(
@@ -106,20 +114,12 @@ export class ReservationService {
         );
         return { success: true };
       } else {
-        hotelNotification.error(
-          'Email Failed',
-          result.message,
-          5
-        );
+        hotelNotification.error('Email Failed', result.message, 5);
         return { success: false, message: result.message };
       }
     } catch (error) {
       console.error('Error sending email:', error);
-      hotelNotification.error(
-        'Email Error',
-        'Failed to send welcome email. Please try again.',
-        5
-      );
+      hotelNotification.error('Email Error', 'Failed to send welcome email. Please try again.', 5);
       return { success: false, message: 'Failed to send email' };
     }
   }
@@ -134,8 +134,12 @@ export class ReservationService {
   ): Promise<EmailResult> {
     try {
       // Use provided room or fetch from database
-      const roomData = room || await hotelDataService.getRoomById(reservation.roomId);
-      const result = await HotelEmailService.sendReminderEmail(reservation, guest, roomData ?? undefined);
+      const roomData = room || (await hotelDataService.getRoomById(reservation.roomId));
+      const result = await HotelEmailService.sendReminderEmail(
+        reservation,
+        guest,
+        roomData ?? undefined
+      );
 
       if (result.success) {
         hotelNotification.success(
@@ -145,20 +149,12 @@ export class ReservationService {
         );
         return { success: true };
       } else {
-        hotelNotification.error(
-          'Email Failed',
-          result.message,
-          5
-        );
+        hotelNotification.error('Email Failed', result.message, 5);
         return { success: false, message: result.message };
       }
     } catch (error) {
       console.error('Error sending reminder:', error);
-      hotelNotification.error(
-        'Email Error',
-        'Failed to send reminder email. Please try again.',
-        5
-      );
+      hotelNotification.error('Email Error', 'Failed to send reminder email. Please try again.', 5);
       return { success: false, message: 'Failed to send reminder' };
     }
   }
@@ -196,7 +192,7 @@ export class ReservationService {
               street: companyData.address,
               city: companyData.city,
               postalCode: companyData.postal_code,
-              country: companyData.country
+              country: companyData.country,
             },
             contactPerson: companyData.contact_person,
             email: companyData.email,
@@ -207,7 +203,7 @@ export class ReservationService {
             isActive: companyData.is_active,
             notes: companyData.notes,
             createdAt: companyData.created_at,
-            updatedAt: companyData.updated_at
+            updatedAt: companyData.updated_at,
           };
         }
       }
@@ -218,14 +214,16 @@ export class ReservationService {
         dateTime: new Date(),
         totalAmount: reservation.totalAmount,
         vatAmount: reservation.vatAmount,
-        items: [{
-          name: `Room ${room.number} - ${room.nameEnglish}`,
-          quantity: reservation.numberOfNights,
-          unitPrice: reservation.baseRoomRate,
-          vatRate: 25,
-          totalAmount: reservation.totalAmount
-        }],
-        paymentMethod: 'CARD' as const
+        items: [
+          {
+            name: `Room ${room.number} - ${room.nameEnglish}`,
+            quantity: reservation.numberOfNights,
+            unitPrice: reservation.baseRoomRate,
+            vatRate: 25,
+            totalAmount: reservation.totalAmount,
+          },
+        ],
+        paymentMethod: 'CARD' as const,
       };
 
       // Fiscalize with Croatian Tax Authority
@@ -235,7 +233,9 @@ export class ReservationService {
         const fiscalData: FiscalData = {
           jir: fiscalResponse.jir,
           zki: fiscalResponse.zki, // Real ZKI from fiscalization response
-          qrCodeData: fiscalResponse.qrCodeData || fiscalizationService.generateFiscalQRData(fiscalResponse.jir, reservation.totalAmount)
+          qrCodeData:
+            fiscalResponse.qrCodeData ||
+            fiscalizationService.generateFiscalQRData(fiscalResponse.jir, reservation.totalAmount),
         };
 
         // Save fiscal data to database
@@ -247,7 +247,7 @@ export class ReservationService {
             fiscalData.zki!,
             fiscalData.qrCodeData!,
             reservation.totalAmount,
-            typeof guest.id === 'string' ? parseInt(guest.id) : guest.id  // Add guest_id to satisfy database constraint
+            typeof guest.id === 'string' ? parseInt(guest.id) : guest.id // Add guest_id to satisfy database constraint
           );
           console.log('✅ Fiscal data saved to database');
         } catch (dbError) {
@@ -265,7 +265,7 @@ export class ReservationService {
           jir: fiscalData.jir,
           zki: fiscalData.zki,
           qrCodeData: fiscalData.qrCodeData,
-          company // Pass company data for R1 billing
+          company, // Pass company data for R1 billing
         });
 
         hotelNotification.success(
@@ -278,7 +278,7 @@ export class ReservationService {
           success: true,
           jir: fiscalResponse.jir,
           qrCodeData: fiscalData.qrCodeData,
-          fiscalData
+          fiscalData,
         };
       } else {
         hotelNotification.error(
@@ -308,18 +308,14 @@ export class ReservationService {
     fiscalData: FiscalData
   ): Promise<EmailResult> {
     if (!fiscalData.jir) {
-      hotelNotification.error(
-        'No Fiscal Data',
-        'Please generate a fiscal invoice first.',
-        4
-      );
+      hotelNotification.error('No Fiscal Data', 'Please generate a fiscal invoice first.', 4);
       return { success: false, message: 'No fiscal data available' };
     }
 
     try {
       // In a real implementation, this would email the fiscal receipt
       // For now, we'll simulate the process
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
       hotelNotification.success(
         'Fiscal Receipt Emailed!',
@@ -349,11 +345,7 @@ export class ReservationService {
     fiscalData: FiscalData
   ): Promise<{ success: boolean; message?: string }> {
     if (!fiscalData.jir) {
-      hotelNotification.error(
-        'No Fiscal Data',
-        'Please generate a fiscal invoice first.',
-        4
-      );
+      hotelNotification.error('No Fiscal Data', 'Please generate a fiscal invoice first.', 4);
       return { success: false, message: 'No fiscal data available' };
     }
 
@@ -367,7 +359,7 @@ export class ReservationService {
         invoiceDate: new Date(),
         jir: fiscalData.jir,
         zki: fiscalData.zki!,
-        qrCodeData: fiscalData.qrCodeData!
+        qrCodeData: fiscalData.qrCodeData!,
       });
 
       hotelNotification.success(
@@ -405,7 +397,7 @@ export class ReservationService {
           status: 'checked-in',
           label: 'Check In',
           icon: 'log-in',
-          variant: 'default' as const
+          variant: 'default' as const,
         });
         break;
 
@@ -414,7 +406,7 @@ export class ReservationService {
           status: 'checked-out',
           label: 'Check Out',
           icon: 'log-out',
-          variant: 'default' as const
+          variant: 'default' as const,
         });
         break;
 
@@ -472,10 +464,10 @@ export class ReservationService {
     zki: string,
     qrCodeData: string,
     totalAmount: number,
-    guestId: number  // Added to satisfy billing_target constraint
+    guestId: number // Added to satisfy billing_target constraint
   ): Promise<void> {
-
-    const reservationIdNum = typeof reservationId === 'string' ? parseInt(reservationId) : reservationId;
+    const reservationIdNum =
+      typeof reservationId === 'string' ? parseInt(reservationId) : reservationId;
 
     // Step 1: Create or get invoice record
     const { data: existingInvoice } = await supabase
@@ -497,12 +489,12 @@ export class ReservationService {
         .insert({
           invoice_number: invoiceNumber,
           reservation_id: reservationIdNum,
-          guest_id: guestId,  // FIX: Add guest_id to satisfy billing_target constraint
+          guest_id: guestId, // FIX: Add guest_id to satisfy billing_target constraint
           issue_date: new Date().toISOString().split('T')[0],
           subtotal: totalAmount / 1.25, // Remove VAT
-          vat_amount: totalAmount - (totalAmount / 1.25),
+          vat_amount: totalAmount - totalAmount / 1.25,
           total_amount: totalAmount,
-          status: 'sent'
+          status: 'sent',
         })
         .select('id')
         .single();
@@ -513,20 +505,18 @@ export class ReservationService {
     }
 
     // Step 2: Create fiscal_record
-    const { error: fiscalError } = await supabase
-      .from('fiscal_records')
-      .insert({
-        invoice_id: invoiceId,
-        jir,
-        zki,
-        qr_code_data: qrCodeData,
-        submitted_at: new Date().toISOString(),
-        response_status: 'success',
-        response_message: 'Croatian Tax Authority accepted invoice',
-        operator_oib: '87246357068', // Hotel OIB
-        business_space_code: 'POSL1',
-        register_number: 2
-      });
+    const { error: fiscalError } = await supabase.from('fiscal_records').insert({
+      invoice_id: invoiceId,
+      jir,
+      zki,
+      qr_code_data: qrCodeData,
+      submitted_at: new Date().toISOString(),
+      response_status: 'success',
+      response_message: 'Croatian Tax Authority accepted invoice',
+      operator_oib: '87246357068', // Hotel OIB
+      business_space_code: 'POSL1',
+      register_number: 2,
+    });
 
     if (fiscalError) throw fiscalError;
 

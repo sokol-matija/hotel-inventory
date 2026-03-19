@@ -1,91 +1,93 @@
-import React, { useState, useEffect } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog'
-import { Button } from '../ui/button'
-import { Input } from '../ui/input'
-import { Label } from '../ui/label'
-import { Textarea } from '../ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
-import { supabase } from '@/lib/supabase'
-import { auditLog } from '@/lib/auditLog'
-import { useTranslation } from 'react-i18next'
-import { Package, Loader2 } from 'lucide-react'
+import React, { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { Textarea } from '../ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { supabase } from '@/lib/supabase';
+import { auditLog } from '@/lib/auditLog';
+import { useTranslation } from 'react-i18next';
+import { Package, Loader2 } from 'lucide-react';
 
 interface Item {
-  id: number
-  name: string
-  description: string | null
-  unit: string
-  price: number | null
-  minimum_stock: number
-  category_id: number
+  id: number;
+  name: string;
+  description: string | null;
+  unit: string;
+  price: number | null;
+  minimum_stock: number;
+  category_id: number;
   category: {
-    id: number
-    name: string
-    requires_expiration: boolean
-  }
+    id: number;
+    name: string;
+    requires_expiration: boolean;
+  };
 }
 
 interface Category {
-  id: number
-  name: string
-  requires_expiration: boolean
+  id: number;
+  name: string;
+  requires_expiration: boolean;
 }
 
 interface EditItemDialogProps {
-  isOpen: boolean
-  onClose: () => void
-  onItemUpdated: () => void
-  item: Item
+  isOpen: boolean;
+  onClose: () => void;
+  onItemUpdated: () => void;
+  item: Item;
 }
 
-export default function EditItemDialog({ isOpen, onClose, onItemUpdated, item }: EditItemDialogProps) {
-  const { t } = useTranslation()
+export default function EditItemDialog({
+  isOpen,
+  onClose,
+  onItemUpdated,
+  item,
+}: EditItemDialogProps) {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     unit: '',
     price: '',
     minimum_stock: '',
-    category_id: ''
-  })
-  const [categories, setCategories] = useState<Category[]>([])
-  const [loading, setLoading] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
+    category_id: '',
+  });
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      fetchCategories()
+      fetchCategories();
       setFormData({
         name: item.name,
         description: item.description || '',
         unit: item.unit,
         price: item.price?.toString() || '',
         minimum_stock: item.minimum_stock.toString(),
-        category_id: item.category_id.toString()
-      })
+        category_id: item.category_id.toString(),
+      });
     }
-  }, [isOpen, item])
+  }, [isOpen, item]);
 
   const fetchCategories = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .order('name')
+      const { data, error } = await supabase.from('categories').select('*').order('name');
 
-      if (error) throw error
-      setCategories(data || [])
+      if (error) throw error;
+      setCategories(data || []);
     } catch (error) {
-      console.error('Error fetching categories:', error)
+      console.error('Error fetching categories:', error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setSubmitting(true)
+    e.preventDefault();
+    setSubmitting(true);
 
     try {
       const newData = {
@@ -94,15 +96,12 @@ export default function EditItemDialog({ isOpen, onClose, onItemUpdated, item }:
         unit: formData.unit,
         price: formData.price ? parseFloat(formData.price) : null,
         minimum_stock: parseInt(formData.minimum_stock),
-        category_id: parseInt(formData.category_id)
-      }
+        category_id: parseInt(formData.category_id),
+      };
 
-      const { error } = await supabase
-        .from('items')
-        .update(newData)
-        .eq('id', item.id)
+      const { error } = await supabase.from('items').update(newData).eq('id', item.id);
 
-      if (error) throw error
+      if (error) throw error;
 
       // Log the item update
       const oldData = {
@@ -111,27 +110,27 @@ export default function EditItemDialog({ isOpen, onClose, onItemUpdated, item }:
         unit: item.unit,
         price: item.price,
         minimum_stock: item.minimum_stock,
-        category_id: item.category_id
-      }
+        category_id: item.category_id,
+      };
 
-      await auditLog.itemUpdated(item.id, oldData, newData)
+      await auditLog.itemUpdated(item.id, oldData, newData);
 
-      onItemUpdated()
-      onClose()
+      onItemUpdated();
+      onClose();
     } catch (error) {
-      console.error('Error updating item:', error)
-      alert('Error updating item. Please try again.')
+      console.error('Error updating item:', error);
+      alert('Error updating item. Please try again.');
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
-  }
+  };
 
   const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
-    }))
-  }
+      [field]: value,
+    }));
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -237,7 +236,7 @@ export default function EditItemDialog({ isOpen, onClose, onItemUpdated, item }:
             <Button type="submit" disabled={submitting}>
               {submitting ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Updating...
                 </>
               ) : (
@@ -248,5 +247,5 @@ export default function EditItemDialog({ isOpen, onClose, onItemUpdated, item }:
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

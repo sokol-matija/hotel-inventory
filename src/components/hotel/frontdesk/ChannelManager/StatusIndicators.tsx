@@ -5,13 +5,13 @@ import React, { useState } from 'react';
 import { Badge } from '../../../ui/badge';
 import { Button } from '../../../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../ui/card';
-import { 
-  CheckCircle, 
-  XCircle, 
-  AlertTriangle, 
-  Clock, 
-  RefreshCw, 
-  Wifi, 
+import {
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
+  Clock,
+  RefreshCw,
+  Wifi,
   WifiOff,
   Activity,
   Zap,
@@ -22,11 +22,14 @@ import {
   Info,
   ChevronRight,
   Eye,
-  EyeOff
+  EyeOff,
 } from 'lucide-react';
 import { cn } from '../../../../lib/utils';
 import { OTAChannel } from '../../../../lib/hotel/services/phobsTypes';
-import { PhobsError, PhobsErrorType } from '../../../../lib/hotel/services/PhobsErrorHandlingService';
+import {
+  PhobsError,
+  PhobsErrorType,
+} from '../../../../lib/hotel/services/PhobsErrorHandlingService';
 
 export type SyncStatus = 'idle' | 'syncing' | 'success' | 'error' | 'warning' | 'disconnected';
 export type ConflictSeverity = 'low' | 'medium' | 'high' | 'critical';
@@ -82,7 +85,7 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
   label,
   size = 'md',
   showLabel = true,
-  className
+  className,
 }) => {
   const getStatusConfig = (status: SyncStatus) => {
     switch (status) {
@@ -90,72 +93,63 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
         return {
           icon: Clock,
           color: 'text-gray-500 bg-gray-100',
-          label: 'Idle'
+          label: 'Idle',
         };
       case 'syncing':
         return {
           icon: RefreshCw,
           color: 'text-blue-600 bg-blue-100',
           label: 'Syncing',
-          animate: true
+          animate: true,
         };
       case 'success':
         return {
           icon: CheckCircle,
           color: 'text-green-600 bg-green-100',
-          label: 'Success'
+          label: 'Success',
         };
       case 'error':
         return {
           icon: XCircle,
           color: 'text-red-600 bg-red-100',
-          label: 'Error'
+          label: 'Error',
         };
       case 'warning':
         return {
           icon: AlertTriangle,
           color: 'text-yellow-600 bg-yellow-100',
-          label: 'Warning'
+          label: 'Warning',
         };
       case 'disconnected':
         return {
           icon: WifiOff,
           color: 'text-gray-600 bg-gray-100',
-          label: 'Disconnected'
+          label: 'Disconnected',
         };
       default:
         return {
           icon: Clock,
           color: 'text-gray-500 bg-gray-100',
-          label: 'Unknown'
+          label: 'Unknown',
         };
     }
   };
 
   const config = getStatusConfig(status);
   const Icon = config.icon;
-  
+
   const sizeClasses = {
     sm: 'h-4 w-4',
     md: 'h-5 w-5',
-    lg: 'h-6 w-6'
+    lg: 'h-6 w-6',
   };
 
   return (
     <div className={cn('flex items-center space-x-2', className)}>
       <div className={cn('flex items-center justify-center rounded-full p-1', config.color)}>
-        <Icon 
-          className={cn(
-            sizeClasses[size],
-            config.animate && 'animate-spin'
-          )} 
-        />
+        <Icon className={cn(sizeClasses[size], config.animate && 'animate-spin')} />
       </div>
-      {showLabel && (
-        <span className="text-sm font-medium">
-          {label || config.label}
-        </span>
-      )}
+      {showLabel && <span className="text-sm font-medium">{label || config.label}</span>}
     </div>
   );
 };
@@ -168,23 +162,23 @@ export const ChannelStatusCard: React.FC<ChannelStatusProps> = ({
   errorCount = 0,
   reservationCount = 0,
   responseTime,
-  onViewDetails
+  onViewDetails,
 }) => {
   const getChannelDisplayName = (channel: OTAChannel): string => {
     const displayNames: { [K in OTAChannel]: string } = {
       'booking.com': 'Booking.com',
-      'expedia': 'Expedia',
-      'airbnb': 'Airbnb',
-      'agoda': 'Agoda',
+      expedia: 'Expedia',
+      airbnb: 'Airbnb',
+      agoda: 'Agoda',
       'hotels.com': 'Hotels.com',
-      'hostelworld': 'Hostelworld',
-      'kayak': 'Kayak',
-      'trivago': 'Trivago',
-      'priceline': 'Priceline',
+      hostelworld: 'Hostelworld',
+      kayak: 'Kayak',
+      trivago: 'Trivago',
+      priceline: 'Priceline',
       'camping.info': 'Camping.info',
       'pitchup.com': 'Pitchup.com',
-      'eurocamp': 'Eurocamp',
-      'directBooking': 'Direct Booking'
+      eurocamp: 'Eurocamp',
+      directBooking: 'Direct Booking',
     };
     return displayNames[channel];
   };
@@ -194,7 +188,7 @@ export const ChannelStatusCard: React.FC<ChannelStatusProps> = ({
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
-    
+
     if (diffMins < 1) return 'Just now';
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`;
@@ -202,7 +196,7 @@ export const ChannelStatusCard: React.FC<ChannelStatusProps> = ({
   };
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card className="transition-shadow hover:shadow-md">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
@@ -217,33 +211,31 @@ export const ChannelStatusCard: React.FC<ChannelStatusProps> = ({
           <StatusIndicator status={status} showLabel={false} />
         </div>
       </CardHeader>
-      
+
       <CardContent className="pt-0">
         <div className="grid grid-cols-3 gap-4 text-sm">
           <div className="text-center">
-            <div className="font-semibold text-lg">{reservationCount}</div>
+            <div className="text-lg font-semibold">{reservationCount}</div>
             <div className="text-gray-600">Reservations</div>
           </div>
-          
+
           <div className="text-center">
-            <div className="font-semibold text-lg text-red-600">{errorCount}</div>
+            <div className="text-lg font-semibold text-red-600">{errorCount}</div>
             <div className="text-gray-600">Errors</div>
           </div>
-          
+
           <div className="text-center">
-            <div className="font-semibold text-lg">
-              {responseTime ? `${responseTime}ms` : '-'}
-            </div>
+            <div className="text-lg font-semibold">{responseTime ? `${responseTime}ms` : '-'}</div>
             <div className="text-gray-600">Response</div>
           </div>
         </div>
-        
+
         {onViewDetails && (
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             onClick={onViewDetails}
-            className="w-full mt-4 flex items-center justify-center space-x-2"
+            className="mt-4 flex w-full items-center justify-center space-x-2"
           >
             <Eye className="h-4 w-4" />
             <span>View Details</span>
@@ -262,7 +254,7 @@ export const ConflictIndicator: React.FC<ConflictIndicatorProps> = ({
   affectedItems,
   autoResolvable,
   onResolve,
-  onView
+  onView,
 }) => {
   const getSeverityConfig = (severity: ConflictSeverity) => {
     switch (severity) {
@@ -270,25 +262,25 @@ export const ConflictIndicator: React.FC<ConflictIndicatorProps> = ({
         return {
           color: 'border-blue-200 bg-blue-50 text-blue-800',
           icon: Info,
-          iconColor: 'text-blue-600'
+          iconColor: 'text-blue-600',
         };
       case 'medium':
         return {
           color: 'border-yellow-200 bg-yellow-50 text-yellow-800',
           icon: AlertTriangle,
-          iconColor: 'text-yellow-600'
+          iconColor: 'text-yellow-600',
         };
       case 'high':
         return {
           color: 'border-orange-200 bg-orange-50 text-orange-800',
           icon: AlertCircle,
-          iconColor: 'text-orange-600'
+          iconColor: 'text-orange-600',
         };
       case 'critical':
         return {
           color: 'border-red-200 bg-red-50 text-red-800',
           icon: XCircle,
-          iconColor: 'text-red-600'
+          iconColor: 'text-red-600',
         };
     }
   };
@@ -297,26 +289,24 @@ export const ConflictIndicator: React.FC<ConflictIndicatorProps> = ({
   const Icon = config.icon;
 
   return (
-    <div className={cn('border rounded-lg p-4', config.color)}>
+    <div className={cn('rounded-lg border p-4', config.color)}>
       <div className="flex items-start justify-between">
         <div className="flex items-start space-x-3">
-          <Icon className={cn('h-5 w-5 mt-0.5', config.iconColor)} />
+          <Icon className={cn('mt-0.5 h-5 w-5', config.iconColor)} />
           <div>
-            <div className="font-medium capitalize">
-              {conflictType.replace('_', ' ')} Conflict
-            </div>
-            <div className="text-sm mt-1">
+            <div className="font-medium capitalize">{conflictType.replace('_', ' ')} Conflict</div>
+            <div className="mt-1 text-sm">
               {affectedItems} item{affectedItems !== 1 ? 's' : ''} affected
             </div>
             {autoResolvable && (
               <Badge variant="outline" className="mt-2 text-xs">
-                <Zap className="h-3 w-3 mr-1" />
+                <Zap className="mr-1 h-3 w-3" />
                 Auto-resolvable
               </Badge>
             )}
           </div>
         </div>
-        
+
         <div className="flex items-center space-x-2">
           {onView && (
             <Button variant="outline" size="sm" onClick={onView}>
@@ -324,8 +314,8 @@ export const ConflictIndicator: React.FC<ConflictIndicatorProps> = ({
             </Button>
           )}
           {onResolve && (
-            <Button 
-              size="sm" 
+            <Button
+              size="sm"
               onClick={onResolve}
               className={autoResolvable ? 'bg-blue-600 hover:bg-blue-700' : undefined}
             >
@@ -346,7 +336,7 @@ export const SyncProgress: React.FC<SyncProgressProps> = ({
   totalSteps,
   currentStepIndex,
   estimatedTimeRemaining,
-  onCancel
+  onCancel,
 }) => {
   const formatTimeRemaining = (seconds: number) => {
     if (seconds < 60) return `${seconds}s`;
@@ -362,7 +352,8 @@ export const SyncProgress: React.FC<SyncProgressProps> = ({
           <div>
             <CardTitle className="text-base">{operation}</CardTitle>
             <CardDescription>
-              {currentStep && `Step ${(currentStepIndex || 0) + 1}${totalSteps ? ` of ${totalSteps}` : ''}: ${currentStep}`}
+              {currentStep &&
+                `Step ${(currentStepIndex || 0) + 1}${totalSteps ? ` of ${totalSteps}` : ''}: ${currentStep}`}
             </CardDescription>
           </div>
           <div className="flex items-center space-x-2">
@@ -371,17 +362,17 @@ export const SyncProgress: React.FC<SyncProgressProps> = ({
           </div>
         </div>
       </CardHeader>
-      
+
       <CardContent>
         <div className="space-y-4">
           {/* Progress bar */}
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out"
+          <div className="h-2 w-full rounded-full bg-gray-200">
+            <div
+              className="h-2 rounded-full bg-blue-600 transition-all duration-300 ease-out"
               style={{ width: `${progress}%` }}
             />
           </div>
-          
+
           <div className="flex items-center justify-between text-sm text-gray-600">
             <div>
               {estimatedTimeRemaining && (
@@ -406,7 +397,7 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({
   averageResponseTime,
   operationsPerMinute,
   errorRate,
-  trend
+  trend,
 }) => {
   const getTrendIcon = () => {
     switch (trend) {
@@ -428,13 +419,13 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base flex items-center space-x-2">
+        <CardTitle className="flex items-center space-x-2 text-base">
           <Shield className="h-5 w-5" />
           <span>Performance Metrics</span>
           {getTrendIcon()}
         </CardTitle>
       </CardHeader>
-      
+
       <CardContent>
         <div className="grid grid-cols-2 gap-4">
           <div className="text-center">
@@ -443,23 +434,28 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({
             </div>
             <div className="text-sm text-gray-600">Success Rate</div>
           </div>
-          
+
           <div className="text-center">
             <div className="text-2xl font-bold text-blue-600">
               {averageResponseTime.toFixed(0)}ms
             </div>
             <div className="text-sm text-gray-600">Avg Response</div>
           </div>
-          
+
           <div className="text-center">
             <div className="text-2xl font-bold text-purple-600">
               {operationsPerMinute.toFixed(0)}
             </div>
             <div className="text-sm text-gray-600">Ops/min</div>
           </div>
-          
+
           <div className="text-center">
-            <div className={cn('text-2xl font-bold', errorRate > 5 ? 'text-red-600' : 'text-green-600')}>
+            <div
+              className={cn(
+                'text-2xl font-bold',
+                errorRate > 5 ? 'text-red-600' : 'text-green-600'
+              )}
+            >
               {errorRate.toFixed(1)}%
             </div>
             <div className="text-sm text-gray-600">Error Rate</div>
@@ -471,9 +467,9 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({
 };
 
 // Compact status badge for use in lists
-export const StatusBadge: React.FC<{ status: SyncStatus; size?: 'sm' | 'md' }> = ({ 
-  status, 
-  size = 'md' 
+export const StatusBadge: React.FC<{ status: SyncStatus; size?: 'sm' | 'md' }> = ({
+  status,
+  size = 'md',
 }) => {
   const getStatusConfig = (status: SyncStatus) => {
     switch (status) {
@@ -495,13 +491,10 @@ export const StatusBadge: React.FC<{ status: SyncStatus; size?: 'sm' | 'md' }> =
   };
 
   const config = getStatusConfig(status);
-  
+
   return (
-    <Badge 
-      className={cn(
-        config.color,
-        size === 'sm' ? 'text-xs px-2 py-0.5' : 'text-sm px-2.5 py-0.5'
-      )}
+    <Badge
+      className={cn(config.color, size === 'sm' ? 'px-2 py-0.5 text-xs' : 'px-2.5 py-0.5 text-sm')}
     >
       {config.label}
     </Badge>
@@ -509,9 +502,9 @@ export const StatusBadge: React.FC<{ status: SyncStatus; size?: 'sm' | 'md' }> =
 };
 
 // Error details component
-export const ErrorDetails: React.FC<{ 
-  error: PhobsError; 
-  onRetry?: () => void; 
+export const ErrorDetails: React.FC<{
+  error: PhobsError;
+  onRetry?: () => void;
   onDismiss?: () => void;
 }> = ({ error, onRetry, onDismiss }) => {
   const [showDetails, setShowDetails] = useState(false);
@@ -535,15 +528,13 @@ export const ErrorDetails: React.FC<{
   };
 
   return (
-    <div className="border border-red-200 bg-red-50 rounded-lg p-4">
+    <div className="rounded-lg border border-red-200 bg-red-50 p-4">
       <div className="flex items-start justify-between">
         <div className="flex items-start space-x-3">
-          <XCircle className="h-5 w-5 text-red-600 mt-0.5" />
+          <XCircle className="mt-0.5 h-5 w-5 text-red-600" />
           <div>
-            <div className="font-medium text-red-800">
-              {error.message}
-            </div>
-            <div className="text-sm text-red-700 mt-1">
+            <div className="font-medium text-red-800">{error.message}</div>
+            <div className="mt-1 text-sm text-red-700">
               <span className={cn('font-medium', getErrorTypeColor(error.type))}>
                 {error.type.replace('_', ' ').toLowerCase()}
               </span>
@@ -557,31 +548,27 @@ export const ErrorDetails: React.FC<{
                 </>
               )}
             </div>
-            
+
             {showDetails && error.originalError && (
-              <div className="mt-3 p-2 bg-red-100 rounded text-xs text-red-800 font-mono">
+              <div className="mt-3 rounded bg-red-100 p-2 font-mono text-xs text-red-800">
                 {error.originalError.stack || error.originalError.message}
               </div>
             )}
           </div>
         </div>
-        
+
         <div className="flex items-center space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowDetails(!showDetails)}
-          >
+          <Button variant="outline" size="sm" onClick={() => setShowDetails(!showDetails)}>
             {showDetails ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </Button>
-          
+
           {error.retryable && onRetry && (
             <Button size="sm" onClick={onRetry}>
-              <RefreshCw className="h-4 w-4 mr-1" />
+              <RefreshCw className="mr-1 h-4 w-4" />
               Retry
             </Button>
           )}
-          
+
           {onDismiss && (
             <Button variant="outline" size="sm" onClick={onDismiss}>
               Dismiss

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
@@ -17,33 +17,23 @@ import {
   Eye,
   Filter,
 } from 'lucide-react';
-import { Guest } from '../../../lib/hotel/types';
 import { useGuests } from '../../../lib/queries/hooks/useGuests';
 
 export default function GuestsPage() {
   const { data: guests = [], isLoading } = useGuests();
-  const findGuestsByName = (query: string) => {
-    const q = query.toLowerCase();
-    return guests.filter(
-      (g) =>
-        g.fullName.toLowerCase().includes(q) ||
-        (g.email ?? '').toLowerCase().includes(q) ||
-        (g.phone ?? '').includes(q)
-    );
-  };
-
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredGuests, setFilteredGuests] = useState<Guest[]>([]);
   const [showFilters, setShowFilters] = useState(false);
 
-  // Update filtered guests when search query or guests change
-  React.useEffect(() => {
-    if (searchQuery.trim()) {
-      setFilteredGuests(findGuestsByName(searchQuery));
-    } else {
-      setFilteredGuests(guests);
-    }
-  }, [searchQuery, guests, findGuestsByName]);
+  const filteredGuests = searchQuery.trim()
+    ? guests.filter((g) => {
+        const q = searchQuery.toLowerCase();
+        return (
+          g.fullName.toLowerCase().includes(q) ||
+          (g.email ?? '').toLowerCase().includes(q) ||
+          (g.phone ?? '').includes(q)
+        );
+      })
+    : guests;
 
   // Handle search
   const handleSearch = (query: string) => {

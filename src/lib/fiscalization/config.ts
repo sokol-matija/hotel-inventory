@@ -11,10 +11,10 @@ export const FISCAL_ENVIRONMENTS: Record<string, FiscalEnvironment> = {
     oib: '87246357068', // Hotel Porec OIB (must match certificate)
   },
   PRODUCTION: {
-    mode: 'PRODUCTION', 
+    mode: 'PRODUCTION',
     url: 'https://cis.porezna-uprava.hr:8449/FiskalizacijaService',
     oib: '87246357068', // Hotel Porec real OIB
-  }
+  },
 };
 
 // Hotel Porec Configuration (from DOS config.xml)
@@ -42,20 +42,20 @@ export const HOTEL_FISCAL_CONFIG: FiscalConfiguration = {
 export function getCurrentEnvironment(): FiscalEnvironment {
   const isDevelopment = process.env.NODE_ENV !== 'production';
   const forceTest = import.meta.env.VITE_FISCAL_FORCE_TEST === 'true';
-  
+
   // SAFETY CHECK: Always use TEST in development or when forced
   if (isDevelopment || forceTest) {
     console.warn('🚨 FISCAL SAFETY: Using TEST environment');
     return FISCAL_ENVIRONMENTS.TEST;
   }
-  
+
   // Production environment (requires explicit flag)
   const allowProduction = import.meta.env.VITE_FISCAL_ALLOW_PRODUCTION === 'true';
   if (allowProduction) {
     console.warn('⚠️ FISCAL WARNING: Using PRODUCTION environment');
     return FISCAL_ENVIRONMENTS.PRODUCTION;
   }
-  
+
   // Default safety fallback
   console.warn('🚨 FISCAL SAFETY: Defaulting to TEST environment');
   return FISCAL_ENVIRONMENTS.TEST;
@@ -98,11 +98,11 @@ export const FISCAL_VALIDATION = {
   MIN_AMOUNT: 0.01,
   REQUIRED_FIELDS: [
     'oib',
-    'dateTime', 
+    'dateTime',
     'businessSpaceCode',
     'cashRegisterCode',
     'invoiceNumber',
-    'totalAmount'
+    'totalAmount',
   ] as const,
 };
 

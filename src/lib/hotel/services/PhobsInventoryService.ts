@@ -14,7 +14,7 @@ import {
   OTAChannel,
   DateRange,
   createPhobsRateId,
-  createPhobsRoomId
+  createPhobsRoomId,
 } from './phobsTypes';
 import { Room, SeasonalPeriod } from '../types';
 
@@ -40,12 +40,14 @@ export interface RoomInventoryData {
   room: Room;
   availability: { [date: string]: number };
   rates: { [date: string]: number };
-  restrictions: { [date: string]: {
-    minimumStay: number;
-    stopSale: boolean;
-    closeToArrival: boolean;
-    closeToDeparture: boolean;
-  }};
+  restrictions: {
+    [date: string]: {
+      minimumStay: number;
+      stopSale: boolean;
+      closeToArrival: boolean;
+      closeToDeparture: boolean;
+    };
+  };
 }
 
 export interface RateCalculationOptions {
@@ -62,7 +64,7 @@ export class PhobsInventoryService {
   private dataMapperService: PhobsDataMapperService;
   private syncStatus: InventorySyncStatus;
   private activeSync: boolean = false;
-  
+
   private constructor() {
     this.channelManagerService = PhobsChannelManagerService.getInstance();
     this.dataMapperService = PhobsDataMapperService.getInstance();
@@ -74,7 +76,7 @@ export class PhobsInventoryService {
       ratesSynced: 0,
       availabilitySynced: 0,
       totalErrors: 0,
-      isActive: false
+      isActive: false,
     };
   }
 
@@ -131,7 +133,8 @@ export class PhobsInventoryService {
       this.syncStatus.availabilitySynced = availabilitySync.recordsSuccessful;
 
       const overallSuccess = roomSync.success && rateSync.success && availabilitySync.success;
-      this.syncStatus.totalErrors = roomSync.recordsFailed + rateSync.recordsFailed + availabilitySync.recordsFailed;
+      this.syncStatus.totalErrors =
+        roomSync.recordsFailed + rateSync.recordsFailed + availabilitySync.recordsFailed;
 
       if (overallSuccess) {
         hotelNotification.success(
@@ -151,9 +154,8 @@ export class PhobsInventoryService {
         roomSync,
         rateSync,
         availabilitySync,
-        overallSuccess
+        overallSuccess,
       };
-
     } catch (error) {
       console.error('Full inventory sync error:', error);
       hotelNotification.error(
@@ -161,7 +163,7 @@ export class PhobsInventoryService {
         error instanceof Error ? error.message : 'Unknown error occurred',
         8
       );
-      
+
       throw error;
     } finally {
       this.activeSync = false;
@@ -176,10 +178,7 @@ export class PhobsInventoryService {
   /**
    * Sync room configurations to Phobs
    */
-  async syncRoomInventory(
-    rooms: Room[],
-    options: InventorySyncOptions = {}
-  ): Promise<SyncResult> {
+  async syncRoomInventory(rooms: Room[], options: InventorySyncOptions = {}): Promise<SyncResult> {
     const startTime = Date.now();
     let recordsProcessed = 0;
     let recordsSuccessful = 0;
@@ -206,9 +205,8 @@ export class PhobsInventoryService {
 
           // Update room in Phobs (would call actual API)
           await this.updateRoomInPhobs(phobsRoom, options);
-          
-          recordsSuccessful++;
 
+          recordsSuccessful++;
         } catch (error) {
           recordsFailed++;
           const errorMessage = `Room ${room.number}: ${error instanceof Error ? error.message : 'Unknown error'}`;
@@ -226,15 +224,14 @@ export class PhobsInventoryService {
         recordsSuccessful,
         recordsFailed,
         errors,
-        duration
+        duration,
       };
 
       return result;
-
     } catch (error) {
       const duration = Date.now() - startTime;
       console.error('Room inventory sync error:', error);
-      
+
       return {
         success: false,
         operation: 'availability',
@@ -242,7 +239,7 @@ export class PhobsInventoryService {
         recordsSuccessful,
         recordsFailed: recordsProcessed,
         errors: [error instanceof Error ? error.message : 'Room sync failed'],
-        duration
+        duration,
       };
     }
   }
@@ -254,10 +251,7 @@ export class PhobsInventoryService {
   /**
    * Sync rate plans to Phobs
    */
-  async syncRatePlans(
-    rooms: Room[],
-    options: InventorySyncOptions = {}
-  ): Promise<SyncResult> {
+  async syncRatePlans(rooms: Room[], options: InventorySyncOptions = {}): Promise<SyncResult> {
     const startTime = Date.now();
     let recordsProcessed = 0;
     let recordsSuccessful = 0;
@@ -280,7 +274,6 @@ export class PhobsInventoryService {
           // Update rate plan in Phobs
           await this.updateRatePlanInPhobs(ratePlan, options);
           recordsSuccessful++;
-
         } catch (error) {
           recordsFailed++;
           const errorMessage = `Rate plan ${ratePlan.name}: ${error instanceof Error ? error.message : 'Unknown error'}`;
@@ -298,28 +291,27 @@ export class PhobsInventoryService {
         recordsSuccessful,
         recordsFailed,
         errors,
-        duration
+        duration,
       };
 
       // Update Phobs service with rate sync request
       if (recordsSuccessful > 0) {
         const ratesSyncRequest: RatesSyncRequest = {
-          rateIds: ratePlans.map(rp => rp.rateId),
+          rateIds: ratePlans.map((rp) => rp.rateId),
           roomIds: [], // TODO: Map room IDs
           dateRange: options.dateRange || this.getDefaultDateRange(),
           rates: ratePlans,
-          forceUpdate: options.forceFullSync
+          forceUpdate: options.forceFullSync,
         };
 
         await this.channelManagerService.syncRates(ratesSyncRequest);
       }
 
       return result;
-
     } catch (error) {
       const duration = Date.now() - startTime;
       console.error('Rate plans sync error:', error);
-      
+
       return {
         success: false,
         operation: 'rates',
@@ -327,7 +319,7 @@ export class PhobsInventoryService {
         recordsSuccessful,
         recordsFailed: recordsProcessed,
         errors: [error instanceof Error ? error.message : 'Rate sync failed'],
-        duration
+        duration,
       };
     }
   }
@@ -369,23 +361,25 @@ export class PhobsInventoryService {
       const batchSize = 100; // Process 100 availability records at a time
       for (let i = 0; i < availabilityData.length; i += batchSize) {
         const batch = availabilityData.slice(i, i + batchSize);
-        
+
         try {
           const availabilitySyncRequest: AvailabilitySyncRequest = {
             roomIds: [], // TODO: Map room IDs
             dateRange,
             availability: batch,
-            forceUpdate: options.forceFullSync
+            forceUpdate: options.forceFullSync,
           };
 
-          const syncResult = await this.channelManagerService.syncRoomAvailability(availabilitySyncRequest);
+          const syncResult =
+            await this.channelManagerService.syncRoomAvailability(availabilitySyncRequest);
           recordsSuccessful += syncResult.recordsSuccessful;
           recordsFailed += syncResult.recordsFailed;
           errors.push(...syncResult.errors);
-
         } catch (error) {
           recordsFailed += batch.length;
-          errors.push(`Batch ${Math.floor(i / batchSize) + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          errors.push(
+            `Batch ${Math.floor(i / batchSize) + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`
+          );
         }
       }
 
@@ -398,13 +392,12 @@ export class PhobsInventoryService {
         recordsSuccessful,
         recordsFailed,
         errors,
-        duration
+        duration,
       };
-
     } catch (error) {
       const duration = Date.now() - startTime;
       console.error('Availability sync error:', error);
-      
+
       return {
         success: false,
         operation: 'availability',
@@ -412,7 +405,7 @@ export class PhobsInventoryService {
         recordsSuccessful,
         recordsFailed: recordsProcessed,
         errors: [error instanceof Error ? error.message : 'Availability sync failed'],
-        duration
+        duration,
       };
     }
   }
@@ -424,37 +417,34 @@ export class PhobsInventoryService {
   /**
    * Calculate dynamic rates based on various factors
    */
-  calculateDynamicRate(
-    baseRate: number,
-    options: RateCalculationOptions
-  ): number {
+  calculateDynamicRate(baseRate: number, options: RateCalculationOptions): number {
     let finalRate = baseRate;
 
     // Apply seasonal adjustment
     const seasonalMultipliers = {
-      'A': 0.8,  // Winter - 20% discount
-      'B': 1.0,  // Spring - base rate
-      'C': 1.2,  // Early summer/fall - 20% premium
-      'D': 1.5   // Peak summer - 50% premium
+      A: 0.8, // Winter - 20% discount
+      B: 1.0, // Spring - base rate
+      C: 1.2, // Early summer/fall - 20% premium
+      D: 1.5, // Peak summer - 50% premium
     };
-    
+
     finalRate *= seasonalMultipliers[options.seasonalPeriod];
 
     // Apply channel-specific adjustments
     const channelAdjustments: { [key in OTAChannel]: number } = {
-      'booking.com': 1.02,     // +2% to cover commission
-      'expedia': 1.05,         // +5% to cover higher commission
-      'airbnb': 1.01,          // +1% minimal adjustment
-      'agoda': 1.03,           // +3% adjustment
-      'hotels.com': 1.04,      // +4% adjustment
-      'hostelworld': 0.98,     // -2% for budget channel
-      'kayak': 1.02,           // +2% adjustment
-      'trivago': 1.02,         // +2% adjustment
-      'priceline': 1.05,       // +5% for higher commission
-      'camping.info': 0.95,    // -5% for camping channel
-      'pitchup.com': 0.95,     // -5% for camping channel
-      'eurocamp': 1.10,        // +10% premium for tour operator
-      'directBooking': 0.95    // -5% discount for direct bookings
+      'booking.com': 1.02, // +2% to cover commission
+      expedia: 1.05, // +5% to cover higher commission
+      airbnb: 1.01, // +1% minimal adjustment
+      agoda: 1.03, // +3% adjustment
+      'hotels.com': 1.04, // +4% adjustment
+      hostelworld: 0.98, // -2% for budget channel
+      kayak: 1.02, // +2% adjustment
+      trivago: 1.02, // +2% adjustment
+      priceline: 1.05, // +5% for higher commission
+      'camping.info': 0.95, // -5% for camping channel
+      'pitchup.com': 0.95, // -5% for camping channel
+      eurocamp: 1.1, // +10% premium for tour operator
+      directBooking: 0.95, // -5% discount for direct bookings
     };
 
     finalRate *= channelAdjustments[options.channel];
@@ -507,7 +497,7 @@ export class PhobsInventoryService {
       // Set flag to stop sync
       this.activeSync = false;
       this.syncStatus.isActive = false;
-      
+
       hotelNotification.warning(
         'Sync Cancelled',
         'Inventory synchronization has been cancelled by user',
@@ -539,9 +529,9 @@ export class PhobsInventoryService {
 
     // TODO: Implement actual Phobs API call
     // await this.channelManagerService.updateRoom(phobsRoom);
-    
+
     // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
   }
 
   /**
@@ -558,9 +548,9 @@ export class PhobsInventoryService {
 
     // TODO: Implement actual Phobs API call
     // await this.channelManagerService.updateRatePlan(ratePlan);
-    
+
     // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await new Promise((resolve) => setTimeout(resolve, 50));
   }
 
   /**
@@ -568,45 +558,48 @@ export class PhobsInventoryService {
    */
   private generateRatePlans(rooms: Room[]): PhobsRatePlan[] {
     const ratePlans: PhobsRatePlan[] = [];
-    
+
     // Group rooms by type
-    const roomsByType = rooms.reduce((acc, room) => {
-      if (!acc[room.type]) acc[room.type] = [];
-      acc[room.type].push(room);
-      return acc;
-    }, {} as { [key: string]: Room[] });
+    const roomsByType = rooms.reduce(
+      (acc, room) => {
+        if (!acc[room.type]) acc[room.type] = [];
+        acc[room.type].push(room);
+        return acc;
+      },
+      {} as { [key: string]: Room[] }
+    );
 
     // Create rate plan for each room type
     Object.entries(roomsByType).forEach(([roomType, roomsOfType]) => {
       const baseRoom = roomsOfType[0]; // Use first room as template
-      
+
       const ratePlan: PhobsRatePlan = {
         rateId: createPhobsRateId(`rate_${roomType}_${Date.now()}`),
         name: `Standard Rate - ${baseRoom.nameEnglish}`,
         description: `Standard pricing for ${baseRoom.nameEnglish} rooms`,
-        
+
         baseRate: baseRoom.seasonalRates.B, // Use spring rate as base
         currency: 'EUR',
-        
+
         seasonalAdjustments: {
-          'A': baseRoom.seasonalRates.A,
-          'B': baseRoom.seasonalRates.B,
-          'C': baseRoom.seasonalRates.C,
-          'D': baseRoom.seasonalRates.D
+          A: baseRoom.seasonalRates.A,
+          B: baseRoom.seasonalRates.B,
+          C: baseRoom.seasonalRates.C,
+          D: baseRoom.seasonalRates.D,
         },
-        
+
         channelRates: this.generateChannelRates(baseRoom.seasonalRates.B),
-        
+
         minimumStay: 1,
         maximumStay: 30,
         advanceBookingDays: 365,
-        
+
         isActive: true,
         validFrom: new Date(),
         validTo: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year from now
-        
+
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       ratePlans.push(ratePlan);
@@ -618,23 +611,27 @@ export class PhobsInventoryService {
   /**
    * Generate channel-specific rates
    */
-  private generateChannelRates(baseRate: number): { [K in OTAChannel]?: { rate: number; isActive: boolean; commission: number } } {
+  private generateChannelRates(baseRate: number): {
+    [K in OTAChannel]?: { rate: number; isActive: boolean; commission: number };
+  } {
     const channels: OTAChannel[] = ['booking.com', 'expedia', 'airbnb', 'agoda', 'hotels.com'];
-    const channelRates: { [K in OTAChannel]?: { rate: number; isActive: boolean; commission: number } } = {};
+    const channelRates: {
+      [K in OTAChannel]?: { rate: number; isActive: boolean; commission: number };
+    } = {};
 
-    channels.forEach(channel => {
+    channels.forEach((channel) => {
       const rate = this.calculateDynamicRate(baseRate, {
         seasonalPeriod: 'B', // Base season
         roomType: 'standard',
         channel,
         advanceBookingDays: 14,
-        lengthOfStay: 2
+        lengthOfStay: 2,
       });
 
       channelRates[channel] = {
         rate,
         isActive: true,
-        commission: this.getChannelCommissionRate(channel)
+        commission: this.getChannelCommissionRate(channel),
       };
     });
 
@@ -647,18 +644,18 @@ export class PhobsInventoryService {
   private getChannelCommissionRate(channel: OTAChannel): number {
     const commissionRates: { [K in OTAChannel]: number } = {
       'booking.com': 0.15,
-      'expedia': 0.18,
-      'airbnb': 0.14,
-      'agoda': 0.16,
+      expedia: 0.18,
+      airbnb: 0.14,
+      agoda: 0.16,
       'hotels.com': 0.17,
-      'hostelworld': 0.12,
-      'kayak': 0.15,
-      'trivago': 0.15,
-      'priceline': 0.18,
-      'camping.info': 0.10,
+      hostelworld: 0.12,
+      kayak: 0.15,
+      trivago: 0.15,
+      priceline: 0.18,
+      'camping.info': 0.1,
       'pitchup.com': 0.12,
-      'eurocamp': 0.20,
-      'directBooking': 0.00
+      eurocamp: 0.2,
+      directBooking: 0.0,
     };
 
     return commissionRates[channel];
@@ -680,32 +677,34 @@ export class PhobsInventoryService {
     while (currentDate <= endDate) {
       // TODO: Check actual reservations for this room and date
       const isAvailable = Math.random() > 0.3; // 70% chance of availability (placeholder)
-      
+
       const dailyAvailability: PhobsAvailability = {
         roomId: createPhobsRoomId(`phobs_room_${room.id}_${room.number}`), // Use generated Phobs room ID
         rateId: createPhobsRateId(`rate_${room.type}_${Date.now()}`), // Use generated rate ID
         date: new Date(currentDate),
-        
+
         available: isAvailable ? 1 : 0,
         totalRooms: 1,
         rate: this.calculateDynamicRate(room.seasonalRates.B, {
           seasonalPeriod: this.getSeasonalPeriodForDate(currentDate),
           roomType: room.type,
           channel: 'directBooking',
-          advanceBookingDays: Math.floor((currentDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
-          lengthOfStay: 2
+          advanceBookingDays: Math.floor(
+            (currentDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+          ),
+          lengthOfStay: 2,
         }),
         currency: 'EUR',
-        
+
         minimumStay: 1,
         maximumStay: 30,
         closeToArrival: false,
         closeToDeparture: false,
         stopSale: !isAvailable,
-        
+
         channelAvailability: {},
-        
-        lastUpdated: new Date()
+
+        lastUpdated: new Date(),
       };
 
       availability.push(dailyAvailability);
@@ -720,7 +719,7 @@ export class PhobsInventoryService {
    */
   private getSeasonalPeriodForDate(date: Date): SeasonalPeriod {
     const month = date.getMonth() + 1;
-    
+
     if (month >= 12 || month <= 2) return 'A'; // Winter
     if (month >= 3 && month <= 5) return 'B'; // Spring
     if (month >= 6 && month <= 8) return 'D'; // Summer (peak)

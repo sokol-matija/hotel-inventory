@@ -1,12 +1,7 @@
 // Croatian Fiscalization Service
 // Main service for handling Croatian Tax Authority fiscal communication
 
-import {
-  FiscalInvoiceData,
-  FiscalResponse,
-  FiscalStatus,
-  StornoRequest
-} from './types';
+import { FiscalInvoiceData, FiscalResponse, FiscalStatus, StornoRequest } from './types';
 import { getCurrentEnvironment } from './config';
 import { FiscalXMLGenerator } from './xmlGenerator';
 import { supabaseUrl, supabaseAnonKey } from '../supabase';
@@ -18,7 +13,7 @@ export class FiscalizationService {
   private constructor() {
     this.xmlGenerator = FiscalXMLGenerator.getInstance();
   }
-  
+
   public static getInstance(): FiscalizationService {
     if (!FiscalizationService.instance) {
       FiscalizationService.instance = new FiscalizationService();
@@ -30,15 +25,23 @@ export class FiscalizationService {
    * Fiscalize storno (cancellation) invoice
    * Creates negative invoice that cancels the original
    */
-  public async fiscalizeStorno(stornoRequest: StornoRequest, originalInvoice: FiscalInvoiceData): Promise<FiscalResponse> {
+  public async fiscalizeStorno(
+    stornoRequest: StornoRequest,
+    originalInvoice: FiscalInvoiceData
+  ): Promise<FiscalResponse> {
     const environment = getCurrentEnvironment();
-    
-    console.warn(`🔄 FISCAL STORNO ${environment.mode}: Cancelling JIR ${stornoRequest.originalJir}`);
+
+    console.warn(
+      `🔄 FISCAL STORNO ${environment.mode}: Cancelling JIR ${stornoRequest.originalJir}`
+    );
     console.warn(`📋 Storno Type: ${stornoRequest.stornoType} - Reason: ${stornoRequest.reason}`);
-    
+
     // Create storno invoice data
-    const stornoInvoiceData = this.xmlGenerator.createStornoInvoiceData(stornoRequest, originalInvoice);
-    
+    const stornoInvoiceData = this.xmlGenerator.createStornoInvoiceData(
+      stornoRequest,
+      originalInvoice
+    );
+
     // Use standard fiscalization process with storno invoice data
     return await this.fiscalizeInvoice(stornoInvoiceData);
   }
@@ -46,35 +49,44 @@ export class FiscalizationService {
   /**
    * Quick storno for full invoice cancellation
    */
-  public async stornoFullInvoice(originalJir: string, originalInvoice: FiscalInvoiceData, reason: string): Promise<FiscalResponse> {
+  public async stornoFullInvoice(
+    originalJir: string,
+    originalInvoice: FiscalInvoiceData,
+    reason: string
+  ): Promise<FiscalResponse> {
     const stornoInvoiceNumber = this.generateStornoInvoiceNumber(originalInvoice.invoiceNumber);
-    
+
     const stornoRequest: StornoRequest = {
       originalJir,
       stornoInvoiceNumber,
       dateTime: new Date(),
       reason,
-      stornoType: 'FULL'
+      stornoType: 'FULL',
     };
-    
+
     return await this.fiscalizeStorno(stornoRequest, originalInvoice);
   }
 
   /**
    * Partial storno for specific amount
    */
-  public async stornoPartialAmount(originalJir: string, originalInvoice: FiscalInvoiceData, partialAmount: number, reason: string): Promise<FiscalResponse> {
+  public async stornoPartialAmount(
+    originalJir: string,
+    originalInvoice: FiscalInvoiceData,
+    partialAmount: number,
+    reason: string
+  ): Promise<FiscalResponse> {
     const stornoInvoiceNumber = this.generateStornoInvoiceNumber(originalInvoice.invoiceNumber);
-    
+
     const stornoRequest: StornoRequest = {
       originalJir,
       stornoInvoiceNumber,
       dateTime: new Date(),
       reason,
       stornoType: 'PARTIAL',
-      partialAmount
+      partialAmount,
     };
-    
+
     return await this.fiscalizeStorno(stornoRequest, originalInvoice);
   }
 
@@ -99,7 +111,9 @@ export class FiscalizationService {
 
     try {
       // SAFETY: Log environment being used
-      console.warn(`🏛️ FISCAL ${environment.mode}: Fiscalizing invoice ${invoiceData.invoiceNumber}`);
+      console.warn(
+        `🏛️ FISCAL ${environment.mode}: Fiscalizing invoice ${invoiceData.invoiceNumber}`
+      );
 
       // Validate input data
       const validation = this.xmlGenerator.validateFiscalData(invoiceData);
@@ -122,7 +136,9 @@ export class FiscalizationService {
       // Extract numeric part of invoice number (HP-2025-747258 → 747258)
       // Croatian Tax Authority expects just the number, not the full format
       const invoiceNumberMatch = invoiceData.invoiceNumber.match(/(\d+)$/);
-      const numericInvoiceNumber = invoiceNumberMatch ? invoiceNumberMatch[1] : invoiceData.invoiceNumber;
+      const numericInvoiceNumber = invoiceNumberMatch
+        ? invoiceNumberMatch[1]
+        : invoiceData.invoiceNumber;
 
       // Prepare request for Edge Function
       const fiscalRequest = {
@@ -142,17 +158,14 @@ export class FiscalizationService {
       console.log(`🔍 Debug - Full URL: ${supabaseUrl}/functions/v1/fiscalize-invoice`);
 
       // Call Edge Function
-      const response = await fetch(
-        `${supabaseUrl}/functions/v1/fiscalize-invoice`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${supabaseKey}`,
-          },
-          body: JSON.stringify(fiscalRequest),
-        }
-      );
+      const response = await fetch(`${supabaseUrl}/functions/v1/fiscalize-invoice`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${supabaseKey}`,
+        },
+        body: JSON.stringify(fiscalRequest),
+      });
 
       const result = await response.json();
 
@@ -176,7 +189,6 @@ export class FiscalizationService {
           timestamp: new Date(result.timestamp || new Date()),
         };
       }
-
     } catch (error) {
       console.error('Fiscalization error:', error);
       return {
@@ -192,10 +204,10 @@ export class FiscalizationService {
    */
   private mapPaymentMethod(method: string): 'G' | 'K' | 'T' | 'O' {
     const mapping: Record<string, 'G' | 'K' | 'T' | 'O'> = {
-      'CASH': 'G',
-      'CARD': 'K',
-      'CHECK': 'T',
-      'OTHER': 'O',
+      CASH: 'G',
+      CARD: 'K',
+      CHECK: 'T',
+      OTHER: 'O',
     };
     return mapping[method] || 'G';
   }
@@ -216,16 +228,16 @@ export class FiscalizationService {
       console.log(`🏛️ FISCAL ${environment.mode}: Sending SOAP request to Croatian Tax Authority`);
 
       // Use appropriate endpoint based on environment
-      const endpoint = environment.mode === 'TEST'
-        ? { hostname: 'cistest.apis-it.hr', port: 8449, path: '/FiskalizacijaServiceTest' }
-        : { hostname: 'cis.porezna-uprava.hr', port: 443, path: '/FiskalizacijaService' };
+      const endpoint =
+        environment.mode === 'TEST'
+          ? { hostname: 'cistest.apis-it.hr', port: 8449, path: '/FiskalizacijaServiceTest' }
+          : { hostname: 'cis.porezna-uprava.hr', port: 443, path: '/FiskalizacijaService' };
 
       console.log(`📍 Endpoint: https://${endpoint.hostname}:${endpoint.port}${endpoint.path}`);
 
       // NOTE: This method is deprecated - use Edge Function instead
       // Direct SOAP calls should only be made server-side via Edge Functions
       throw new Error('Direct SOAP calls not supported in browser. Use Edge Function instead.');
-
     } catch (error) {
       console.error('❌ SOAP request failed:', error);
       return {
@@ -243,10 +255,12 @@ export class FiscalizationService {
   private parseSOAPResponse(responseBody: string): FiscalResponse {
     try {
       // Check for errors in response
-      const errorMatch = responseBody.match(/<SifraGreske>(.+?)<\/SifraGreske>/) ||
-                        responseBody.match(/<tns:SifraGreske>(.+?)<\/tns:SifraGreske>/);
-      const messageMatch = responseBody.match(/<PorukaGreske>(.+?)<\/PorukaGreske>/) ||
-                          responseBody.match(/<tns:PorukaGreske>(.+?)<\/tns:PorukaGreske>/);
+      const errorMatch =
+        responseBody.match(/<SifraGreske>(.+?)<\/SifraGreske>/) ||
+        responseBody.match(/<tns:SifraGreske>(.+?)<\/tns:SifraGreske>/);
+      const messageMatch =
+        responseBody.match(/<PorukaGreske>(.+?)<\/PorukaGreske>/) ||
+        responseBody.match(/<tns:PorukaGreske>(.+?)<\/tns:PorukaGreske>/);
 
       if (errorMatch) {
         const errorCode = errorMatch[1];
@@ -264,8 +278,8 @@ export class FiscalizationService {
       }
 
       // Check for successful response with JIR
-      const jirMatch = responseBody.match(/<Jir>(.+?)<\/Jir>/) ||
-                      responseBody.match(/<tns:Jir>(.+?)<\/tns:Jir>/);
+      const jirMatch =
+        responseBody.match(/<Jir>(.+?)<\/Jir>/) || responseBody.match(/<tns:Jir>(.+?)<\/tns:Jir>/);
 
       if (jirMatch) {
         const jir = jirMatch[1];
@@ -286,7 +300,6 @@ export class FiscalizationService {
         error: 'Response received but no JIR or error found',
         timestamp: new Date(),
       };
-
     } catch (error) {
       console.error('❌ Response parsing failed:', error);
       return {
@@ -303,38 +316,39 @@ export class FiscalizationService {
    */
   private async simulateFiscalRequest(_fiscalXML: string): Promise<FiscalResponse> {
     const environment = getCurrentEnvironment();
-    
+
     console.log('📋 Simulating Croatian Tax Authority SOAP request...');
     console.log(`🎯 Target: https://cistest.apis-it.hr:8449/FiskalizacijaServiceTest`);
     console.log('✅ Using CORRECTED XML structure (s004 error resolved)');
-    
+
     // Simulate realistic network delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await new Promise((resolve) => setTimeout(resolve, 1500));
 
     if (environment.mode === 'TEST') {
       // Simulate responses based on our actual test results
       const random = Math.random();
-      
+
       if (random < 0.1) {
         // s002 error (certificate environment mismatch - 10% of time)
         console.log('⚠️ Simulated s002 error (certificate environment mismatch)');
-        
+
         return {
           success: false,
-          error: 's002: Certifikat nije izdan od strane demo potpisnika pouzdanog izdavatelja certifikata u RH ili je istekao ili je ukinut',
+          error:
+            's002: Certifikat nije izdan od strane demo potpisnika pouzdanog izdavatelja certifikata u RH ili je istekao ili je ukinut',
           timestamp: new Date(),
         };
       } else if (random < 0.85) {
         // Success case (75% of the time for demo)
         const testJIR = this.generateTestJIR();
-        
+
         console.log('✅ Simulated SUCCESS response from Croatian Tax Authority');
         console.log(`📋 Generated JIR: ${testJIR}`);
         console.log('🎉 s004 error has been RESOLVED with corrected XML structure!');
-        
+
         const receiptUrl = this.generateFiscalReceiptUrl(testJIR);
-        const qrData = this.generateFiscalQRData(testJIR, 75.50); // Demo amount
-        
+        const qrData = this.generateFiscalQRData(testJIR, 75.5); // Demo amount
+
         return {
           success: true,
           jir: testJIR,
@@ -347,12 +361,12 @@ export class FiscalizationService {
         const errors = [
           's001: XML schema validation error',
           's005: OIB mismatch between message and certificate',
-          's006: System error'
+          's006: System error',
         ];
         const randomError = errors[Math.floor(Math.random() * errors.length)];
-        
+
         console.log(`⚠️ Simulated validation error: ${randomError}`);
-        
+
         return {
           success: false,
           error: randomError,
@@ -432,7 +446,7 @@ export class FiscalizationService {
   } {
     const environment = getCurrentEnvironment();
     const validation = this.validateConfiguration();
-    
+
     return {
       environment: environment.mode,
       oib: environment.oib,
@@ -456,14 +470,14 @@ export class FiscalizationService {
    */
   public generateFiscalQRData(jir: string, totalAmount: number, invoiceDateTime?: Date): string {
     const dateTime = invoiceDateTime || new Date();
-    
+
     // Croatian fiscal QR code format (Official specification)
     // 4 required data points separated by | character
     const qrData = [
       'https://porezna-uprava.gov.hr/rn', // 1. Tax Authority verification URL
-      jir,                                 // 2. Fiscal identification code (JIR)
+      jir, // 2. Fiscal identification code (JIR)
       this.formatCroatianDateTime(dateTime), // 3. Date and time of receipt
-      totalAmount.toFixed(2),              // 4. Total receipt amount
+      totalAmount.toFixed(2), // 4. Total receipt amount
     ].join('|');
 
     return qrData;
@@ -475,11 +489,11 @@ export class FiscalizationService {
    */
   public generateFiscalReceiptUrl(jir: string): string {
     const environment = getCurrentEnvironment();
-    
+
     if (environment.mode === 'TEST') {
       return `https://cistest.apis-it.hr:8449/qr/${jir}`;
     }
-    
+
     return `https://porezna-uprava.gov.hr/rn?jir=${jir}`;
   }
 
@@ -494,7 +508,7 @@ export class FiscalizationService {
     const hours = date.getHours().toString().padStart(2, '0');
     const minutes = date.getMinutes().toString().padStart(2, '0');
     const seconds = date.getSeconds().toString().padStart(2, '0');
-    
+
     return `${day}.${month}.${year} ${hours}:${minutes}:${seconds}`;
   }
 }

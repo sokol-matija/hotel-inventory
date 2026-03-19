@@ -1,41 +1,35 @@
-import React, { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
-import { Button } from '../ui/button'
-import { Input } from '../ui/input'
-import { Label } from '../ui/label'
-import { supabase } from '@/lib/supabase'
-import { useAuth } from '../auth/AuthProvider'
-import { useTranslation } from 'react-i18next'
-import { formatDate } from '@/lib/dateUtils'
-import { 
-  Edit,
-  Save,
-  X,
-  Refrigerator,
-  Warehouse
-} from 'lucide-react'
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '../auth/AuthProvider';
+import { useTranslation } from 'react-i18next';
+import { formatDate } from '@/lib/dateUtils';
+import { Edit, Save, X, Refrigerator, Warehouse } from 'lucide-react';
 
 interface Location {
-  id: number
-  name: string
-  type: string
-  description: string | null
-  is_refrigerated: boolean
-  created_at: string
+  id: number;
+  name: string;
+  type: string;
+  description: string | null;
+  is_refrigerated: boolean;
+  created_at: string;
 }
 
 export default function LocationManagement() {
-  const { user } = useAuth()
-  const { t } = useTranslation()
-  const [locations, setLocations] = useState<Location[]>([])
-  const [editingId, setEditingId] = useState<number | null>(null)
-  const [editName, setEditName] = useState('')
-  const [editDescription, setEditDescription] = useState('')
-  const [loading, setLoading] = useState(true)
+  const { user } = useAuth();
+  const { t } = useTranslation();
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchLocations()
-  }, [])
+    fetchLocations();
+  }, []);
 
   const fetchLocations = async () => {
     try {
@@ -43,28 +37,28 @@ export default function LocationManagement() {
         .from('locations')
         .select('*')
         .order('type', { ascending: true })
-        .order('name', { ascending: true })
+        .order('name', { ascending: true });
 
-      if (error) throw error
-      setLocations(data || [])
+      if (error) throw error;
+      setLocations(data || []);
     } catch (error) {
-      console.error('Error fetching locations:', error)
+      console.error('Error fetching locations:', error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const startEdit = (location: Location) => {
-    setEditingId(location.id)
-    setEditName(location.name)
-    setEditDescription(location.description || '')
-  }
+    setEditingId(location.id);
+    setEditName(location.name);
+    setEditDescription(location.description || '');
+  };
 
   const cancelEdit = () => {
-    setEditingId(null)
-    setEditName('')
-    setEditDescription('')
-  }
+    setEditingId(null);
+    setEditName('');
+    setEditDescription('');
+  };
 
   const saveEdit = async (id: number) => {
     try {
@@ -72,46 +66,48 @@ export default function LocationManagement() {
         .from('locations')
         .update({
           name: editName,
-          description: editDescription
+          description: editDescription,
         })
-        .eq('id', id)
+        .eq('id', id);
 
-      if (error) throw error
-      
-      await fetchLocations()
-      setEditingId(null)
-      setEditName('')
-      setEditDescription('')
+      if (error) throw error;
+
+      await fetchLocations();
+      setEditingId(null);
+      setEditName('');
+      setEditDescription('');
     } catch (error) {
-      console.error('Error updating location:', error)
+      console.error('Error updating location:', error);
     }
-  }
+  };
 
   // Allow all authenticated users access
   if (!user) {
     return (
-      <div className="text-center py-8">
+      <div className="py-8 text-center">
         <p className="text-gray-600">{t('admin.accessDenied')}</p>
       </div>
-    )
+    );
   }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mr-3" />
+      <div className="flex h-64 items-center justify-center">
+        <div className="mr-3 h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
         <span>{t('common.loading')}</span>
       </div>
-    )
+    );
   }
 
-  const refrigeratedLocations = locations.filter(loc => loc.is_refrigerated)
-  const regularLocations = locations.filter(loc => !loc.is_refrigerated)
+  const refrigeratedLocations = locations.filter((loc) => loc.is_refrigerated);
+  const regularLocations = locations.filter((loc) => !loc.is_refrigerated);
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{t('admin.locationManagement')}</h1>
+        <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">
+          {t('admin.locationManagement')}
+        </h1>
         <p className="text-gray-600">{t('admin.locationManagementDescription')}</p>
       </div>
 
@@ -122,14 +118,15 @@ export default function LocationManagement() {
             <Refrigerator className="h-5 w-5 text-blue-600" />
             <span>{t('admin.refrigeratedStorage', { count: refrigeratedLocations.length })}</span>
           </CardTitle>
-          <CardDescription>
-            {t('admin.refrigeratedStorageDescription')}
-          </CardDescription>
+          <CardDescription>{t('admin.refrigeratedStorageDescription')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {refrigeratedLocations.map((location) => (
-              <div key={location.id} className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
+              <div
+                key={location.id}
+                className="flex items-center justify-between rounded-lg bg-blue-50 p-4"
+              >
                 <div className="flex-1">
                   {editingId === location.id ? (
                     <div className="space-y-3">
@@ -159,14 +156,15 @@ export default function LocationManagement() {
                       <p className="text-sm text-gray-600">
                         {location.description || t('admin.noDescription')}
                       </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {t('common.type')}: {t(`locationTypes.${location.type.toLowerCase()}`)} • {t('admin.created')}: {formatDate(location.created_at)}
+                      <p className="mt-1 text-xs text-gray-500">
+                        {t('common.type')}: {t(`locationTypes.${location.type.toLowerCase()}`)} •{' '}
+                        {t('admin.created')}: {formatDate(location.created_at)}
                       </p>
                     </div>
                   )}
                 </div>
-                
-                <div className="flex items-center space-x-2 ml-4">
+
+                <div className="ml-4 flex items-center space-x-2">
                   {editingId === location.id ? (
                     <>
                       <Button
@@ -176,20 +174,12 @@ export default function LocationManagement() {
                       >
                         <Save className="h-4 w-4" />
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={cancelEdit}
-                      >
+                      <Button size="sm" variant="outline" onClick={cancelEdit}>
                         <X className="h-4 w-4" />
                       </Button>
                     </>
                   ) : (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => startEdit(location)}
-                    >
+                    <Button size="sm" variant="outline" onClick={() => startEdit(location)}>
                       <Edit className="h-4 w-4" />
                     </Button>
                   )}
@@ -208,14 +198,15 @@ export default function LocationManagement() {
               <Warehouse className="h-5 w-5 text-gray-600" />
               <span>{t('admin.regularStorage', { count: regularLocations.length })}</span>
             </CardTitle>
-            <CardDescription>
-              {t('admin.regularStorageDescription')}
-            </CardDescription>
+            <CardDescription>{t('admin.regularStorageDescription')}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {regularLocations.map((location) => (
-                <div key={location.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div
+                  key={location.id}
+                  className="flex items-center justify-between rounded-lg bg-gray-50 p-4"
+                >
                   <div className="flex-1">
                     {editingId === location.id ? (
                       <div className="space-y-3">
@@ -245,14 +236,15 @@ export default function LocationManagement() {
                         <p className="text-sm text-gray-600">
                           {location.description || t('admin.noDescription')}
                         </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {t('common.type')}: {t(`locationTypes.${location.type.toLowerCase()}`)} • {t('admin.created')}: {formatDate(location.created_at)}
+                        <p className="mt-1 text-xs text-gray-500">
+                          {t('common.type')}: {t(`locationTypes.${location.type.toLowerCase()}`)} •{' '}
+                          {t('admin.created')}: {formatDate(location.created_at)}
                         </p>
                       </div>
                     )}
                   </div>
-                  
-                  <div className="flex items-center space-x-2 ml-4">
+
+                  <div className="ml-4 flex items-center space-x-2">
                     {editingId === location.id ? (
                       <>
                         <Button
@@ -262,20 +254,12 @@ export default function LocationManagement() {
                         >
                           <Save className="h-4 w-4" />
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={cancelEdit}
-                        >
+                        <Button size="sm" variant="outline" onClick={cancelEdit}>
                           <X className="h-4 w-4" />
                         </Button>
                       </>
                     ) : (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => startEdit(location)}
-                      >
+                      <Button size="sm" variant="outline" onClick={() => startEdit(location)}>
                         <Edit className="h-4 w-4" />
                       </Button>
                     )}
@@ -287,5 +271,5 @@ export default function LocationManagement() {
         </Card>
       )}
     </div>
-  )
+  );
 }

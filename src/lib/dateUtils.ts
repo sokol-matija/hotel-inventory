@@ -5,19 +5,19 @@
 const dateFormatter = new Intl.DateTimeFormat('hr-HR', {
   year: 'numeric',
   month: '2-digit',
-  day: '2-digit'
+  day: '2-digit',
 });
 
 const longDateFormatter = new Intl.DateTimeFormat('hr-HR', {
   weekday: 'long',
   year: 'numeric',
   month: 'long',
-  day: 'numeric'
+  day: 'numeric',
 });
 
 const timeFormatter = new Intl.DateTimeFormat('hr-HR', {
   hour: '2-digit',
-  minute: '2-digit'
+  minute: '2-digit',
 });
 
 const dateTimeFormatter = new Intl.DateTimeFormat('hr-HR', {
@@ -25,7 +25,7 @@ const dateTimeFormatter = new Intl.DateTimeFormat('hr-HR', {
   month: '2-digit',
   day: '2-digit',
   hour: '2-digit',
-  minute: '2-digit'
+  minute: '2-digit',
 });
 
 /**
@@ -82,9 +82,9 @@ export const formatDateTimeForDisplay = (dateString: string) => {
   if (!dateString) return { date: '', time: '' };
   const date = new Date(dateString);
   if (isNaN(date.getTime())) return { date: '', time: '' };
-  
+
   return {
     date: formatDate(date),
-    time: formatTime(date)
+    time: formatTime(date),
   };
 };

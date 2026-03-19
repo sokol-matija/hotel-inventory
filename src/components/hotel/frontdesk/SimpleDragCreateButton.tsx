@@ -1,6 +1,6 @@
 /**
  * Simple Drag Create Button
- * 
+ *
  * A basic button for enabling/disabling drag-to-create mode
  */
 
@@ -14,14 +14,12 @@ interface SimpleDragCreateButtonProps {
   onToggle: () => void;
 }
 
-const SimpleDragCreateButton: React.FC<SimpleDragCreateButtonProps> = ({
-  state,
-  onToggle
-}) => {
+const SimpleDragCreateButton: React.FC<SimpleDragCreateButtonProps> = ({ state, onToggle }) => {
   const getButtonText = () => {
     if (!state.isEnabled) return 'Drag to Create';
     if (state.isSelecting) return 'Select Check-out (AM)';
-    if (state.currentSelection && !state.currentSelection.checkOutDate) return 'Select Check-out (AM)';
+    if (state.currentSelection && !state.currentSelection.checkOutDate)
+      return 'Select Check-out (AM)';
     return 'Drag Create Active';
   };
 
@@ -34,9 +32,11 @@ const SimpleDragCreateButton: React.FC<SimpleDragCreateButtonProps> = ({
       variant={getButtonVariant()}
       onClick={onToggle}
       className="transition-all duration-200"
-      title={state.isEnabled ? 'Click to disable drag-create mode' : 'Click to enable drag-create mode'}
+      title={
+        state.isEnabled ? 'Click to disable drag-create mode' : 'Click to enable drag-create mode'
+      }
     >
-      <MousePointer2 className="h-4 w-4 mr-2" />
+      <MousePointer2 className="mr-2 h-4 w-4" />
       {getButtonText()}
     </Button>
   );

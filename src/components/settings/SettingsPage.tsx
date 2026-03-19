@@ -6,11 +6,11 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  togglePushNotifications, 
-  isPushNotificationSupported, 
+import {
+  togglePushNotifications,
+  isPushNotificationSupported,
   sendLocalNotification,
-  createExpirationNotification 
+  createExpirationNotification,
 } from '@/lib/pushNotifications';
 import { Bell, BellOff, Settings, TestTube } from 'lucide-react';
 
@@ -25,7 +25,7 @@ const SettingsPage: React.FC = () => {
   const { toast } = useToast();
   const [settings, setSettings] = useState<NotificationSettings>({
     pushNotificationsEnabled: false,
-    pushSubscription: null
+    pushSubscription: null,
   });
   const [loading, setLoading] = useState(true);
   const [isToggling, setIsToggling] = useState(false);
@@ -34,7 +34,7 @@ const SettingsPage: React.FC = () => {
   useEffect(() => {
     setSupportsPush(isPushNotificationSupported());
     loadSettings();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const loadSettings = async () => {
@@ -55,12 +55,12 @@ const SettingsPage: React.FC = () => {
         toast({
           title: t('settings.error'),
           description: t('settings.loadError'),
-          variant: 'destructive'
+          variant: 'destructive',
         });
       } else {
         setSettings({
           pushNotificationsEnabled: data?.push_notifications_enabled || false,
-          pushSubscription: data?.push_subscription || null
+          pushSubscription: data?.push_subscription || null,
         });
       }
     } catch (error) {
@@ -76,21 +76,21 @@ const SettingsPage: React.FC = () => {
     setIsToggling(true);
     try {
       const newEnabled = !settings.pushNotificationsEnabled;
-      
+
       const success = await togglePushNotifications(user.id, newEnabled);
-      
+
       if (success || !newEnabled) {
-        setSettings(prev => ({
+        setSettings((prev) => ({
           ...prev,
-          pushNotificationsEnabled: newEnabled
+          pushNotificationsEnabled: newEnabled,
         }));
 
         toast({
           title: t('settings.success'),
-          description: newEnabled 
-            ? t('settings.notificationsEnabled') 
+          description: newEnabled
+            ? t('settings.notificationsEnabled')
             : t('settings.notificationsDisabled'),
-          variant: 'default'
+          variant: 'default',
         });
 
         // Settings updated successfully
@@ -100,7 +100,7 @@ const SettingsPage: React.FC = () => {
       toast({
         title: t('settings.error'),
         description: error instanceof Error ? error.message : t('settings.toggleError'),
-        variant: 'destructive'
+        variant: 'destructive',
       });
     } finally {
       setIsToggling(false);
@@ -108,38 +108,33 @@ const SettingsPage: React.FC = () => {
   };
 
   const handleTestNotification = () => {
-    const testNotification = createExpirationNotification(
-      'Test Item',
-      'Test Location', 
-      3,
-      5
-    );
+    const testNotification = createExpirationNotification('Test Item', 'Test Location', 3, 5);
 
     sendLocalNotification(testNotification);
-    
+
     toast({
       title: t('settings.testSent'),
       description: t('settings.testSentDescription'),
-      variant: 'default'
+      variant: 'default',
     });
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      <div className="flex min-h-[400px] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
+    <div className="container mx-auto max-w-4xl p-6">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
+        <h1 className="flex items-center gap-2 text-3xl font-bold text-gray-900">
           <Settings className="h-8 w-8" />
           {t('settings.title')}
         </h1>
-        <p className="text-gray-600 mt-2">{t('settings.description')}</p>
+        <p className="mt-2 text-gray-600">{t('settings.description')}</p>
       </div>
 
       {/* Notification Settings Card */}
@@ -149,20 +144,18 @@ const SettingsPage: React.FC = () => {
             <Bell className="h-5 w-5" />
             {t('settings.notifications.title')}
           </CardTitle>
-          <CardDescription>
-            {t('settings.notifications.description')}
-          </CardDescription>
+          <CardDescription>{t('settings.notifications.description')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {!supportsPush && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
               <div className="flex items-center gap-2">
                 <BellOff className="h-5 w-5 text-yellow-600" />
-                <span className="text-yellow-800 font-medium">
+                <span className="font-medium text-yellow-800">
                   {t('settings.notifications.notSupported')}
                 </span>
               </div>
-              <p className="text-yellow-700 text-sm mt-2">
+              <p className="mt-2 text-sm text-yellow-700">
                 {t('settings.notifications.notSupportedDescription')}
               </p>
             </div>
@@ -173,26 +166,24 @@ const SettingsPage: React.FC = () => {
               <Label className="text-base font-medium">
                 {t('settings.notifications.pushNotifications')}
               </Label>
-              <p className="text-sm text-gray-600">
-                {t('settings.notifications.pushDescription')}
-              </p>
+              <p className="text-sm text-gray-600">{t('settings.notifications.pushDescription')}</p>
             </div>
             <Button
-              variant={settings.pushNotificationsEnabled ? "default" : "outline"}
+              variant={settings.pushNotificationsEnabled ? 'default' : 'outline'}
               onClick={handleToggleNotifications}
               disabled={isToggling || !supportsPush}
               className="min-w-[100px]"
             >
               {isToggling ? (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
               ) : settings.pushNotificationsEnabled ? (
                 <>
-                  <Bell className="h-4 w-4 mr-2" />
+                  <Bell className="mr-2 h-4 w-4" />
                   {t('settings.enabled')}
                 </>
               ) : (
                 <>
-                  <BellOff className="h-4 w-4 mr-2" />
+                  <BellOff className="mr-2 h-4 w-4" />
                   {t('settings.disabled')}
                 </>
               )}
@@ -200,14 +191,14 @@ const SettingsPage: React.FC = () => {
           </div>
 
           {settings.pushNotificationsEnabled && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="rounded-lg border border-green-200 bg-green-50 p-4">
               <div className="flex items-center gap-2">
                 <Bell className="h-5 w-5 text-green-600" />
-                <span className="text-green-800 font-medium">
+                <span className="font-medium text-green-800">
                   {t('settings.notifications.active')}
                 </span>
               </div>
-              <p className="text-green-700 text-sm mt-2">
+              <p className="mt-2 text-sm text-green-700">
                 {t('settings.notifications.activeDescription')}
               </p>
               <div className="mt-3">
@@ -215,34 +206,34 @@ const SettingsPage: React.FC = () => {
                   variant="outline"
                   size="sm"
                   onClick={handleTestNotification}
-                  className="text-green-700 border-green-300 hover:bg-green-100"
+                  className="border-green-300 text-green-700 hover:bg-green-100"
                 >
-                  <TestTube className="h-4 w-4 mr-2" />
+                  <TestTube className="mr-2 h-4 w-4" />
                   {t('settings.notifications.testNotification')}
                 </Button>
               </div>
             </div>
           )}
 
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h4 className="font-medium text-blue-900 mb-2">
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+            <h4 className="mb-2 font-medium text-blue-900">
               {t('settings.notifications.schedule.title')}
             </h4>
             <div className="space-y-2 text-sm text-blue-800">
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
+                <div className="h-3 w-3 rounded-full bg-yellow-400"></div>
                 <span>{t('settings.notifications.schedule.thirtyDays')}</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                <div className="h-3 w-3 rounded-full bg-orange-500"></div>
                 <span>{t('settings.notifications.schedule.sevenDays')}</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-red-600 rounded-full"></div>
+                <div className="h-3 w-3 rounded-full bg-red-600"></div>
                 <span>{t('settings.notifications.schedule.oneDay')}</span>
               </div>
             </div>
-            <p className="text-blue-700 text-sm mt-3">
+            <p className="mt-3 text-sm text-blue-700">
               {t('settings.notifications.schedule.description')}
             </p>
           </div>
@@ -253,14 +244,10 @@ const SettingsPage: React.FC = () => {
       <Card>
         <CardHeader>
           <CardTitle>{t('settings.general.title')}</CardTitle>
-          <CardDescription>
-            {t('settings.general.description')}
-          </CardDescription>
+          <CardDescription>{t('settings.general.description')}</CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-gray-600 text-sm">
-            {t('settings.general.comingSoon')}
-          </p>
+          <p className="text-sm text-gray-600">{t('settings.general.comingSoon')}</p>
         </CardContent>
       </Card>
     </div>

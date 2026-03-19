@@ -37,9 +37,9 @@ interface FeeConfiguration {
 export class DatabasePricingService {
   private static instance: DatabasePricingService;
   private static readonly HOTEL_POREC_ID = '550e8400-e29b-41d4-a716-446655440000'; // Fixed UUID for Hotel Porec
-  
+
   private constructor() {}
-  
+
   public static getInstance(): DatabasePricingService {
     if (!DatabasePricingService.instance) {
       DatabasePricingService.instance = new DatabasePricingService();
@@ -61,14 +61,16 @@ export class DatabasePricingService {
       // Calculate nights
       const checkInDate = new Date(input.checkIn);
       const checkOutDate = new Date(input.checkOut);
-      const nights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
+      const nights = Math.ceil(
+        (checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
 
       // Get seasonal period
       const seasonalPeriod = this.getSeasonalPeriod(checkInDate);
 
       // Get room type pricing from database
       const pricing = await this.getRoomTypePricing(room.id, input.pricingTierId);
-      
+
       // Get base rate for the seasonal period
       const baseRate = this.getSeasonalRate(pricing, seasonalPeriod);
       const subtotal = baseRate * nights;
@@ -93,17 +95,16 @@ export class DatabasePricingService {
           children0to3: this.getChildDiscountByAge(input.children, 0, 3, baseRate, nights),
           children3to7: this.getChildDiscountByAge(input.children, 3, 7, baseRate, nights),
           children7to14: this.getChildDiscountByAge(input.children, 7, 14, baseRate, nights),
-          longStay: 0 // TODO: Implement long stay discounts
+          longStay: 0, // TODO: Implement long stay discounts
         },
         totalDiscounts: childrenDiscount,
         fees,
         totalFees,
-        total
+        total,
       };
-
     } catch (error) {
       console.error('Error calculating pricing:', error);
-      
+
       // Return fallback pricing
       return this.getFallbackPricing(input);
     }
@@ -125,7 +126,7 @@ export class DatabasePricingService {
         .single();
 
       if (error) throw error;
-      
+
       return data.id;
     } catch (error) {
       console.error('Error getting active price list:', error);
@@ -137,7 +138,10 @@ export class DatabasePricingService {
   /**
    * Get room type pricing from database
    */
-  private async getRoomTypePricing(roomId: string, _pricingTierId?: string): Promise<RoomTypePricing> {
+  private async getRoomTypePricing(
+    roomId: string,
+    _pricingTierId?: string
+  ): Promise<RoomTypePricing> {
     try {
       // First get the room to find its room type
       const room = await hotelDataService.getRoomById(roomId);
@@ -165,18 +169,18 @@ export class DatabasePricingService {
         .single();
 
       if (error) throw error;
-      
+
       return data;
     } catch (error) {
       console.error('Error getting room type pricing:', error);
-      
+
       // Return fallback pricing based on room type
       return {
         id: 'fallback',
         price_period_a: 50,
         price_period_b: 60,
         price_period_c: 80,
-        price_period_d: 100
+        price_period_d: 100,
       };
     }
   }
@@ -196,7 +200,7 @@ export class DatabasePricingService {
         .order('display_order');
 
       if (error) throw error;
-      
+
       return data || [];
     } catch (error) {
       console.error('Error getting fee configurations:', error);
@@ -207,7 +211,10 @@ export class DatabasePricingService {
   /**
    * Calculate all fees
    */
-  private async calculateFees(input: DatabasePricingInput, nights: number): Promise<{
+  private async calculateFees(
+    input: DatabasePricingInput,
+    nights: number
+  ): Promise<{
     tourism: number;
     vat: number;
     pets: number;
@@ -221,7 +228,7 @@ export class DatabasePricingService {
       pets: 0,
       parking: 0,
       shortStay: 0,
-      additional: 0
+      additional: 0,
     };
 
     try {
@@ -252,10 +259,9 @@ export class DatabasePricingService {
 
       // Calculate VAT (25% on accommodation, already included in Croatian hotel rates)
       fees.vat = 0; // VAT is already included in room rates
-
     } catch (error) {
       console.error('Error calculating fees:', error);
-      
+
       // Fallback fee calculations
       fees.tourism = this.calculateTourismTax(input.adults, input.children, nights);
       if (input.hasPets) fees.pets = 20; // €20 pet fee
@@ -269,18 +275,22 @@ export class DatabasePricingService {
    * Calculate tourism tax
    */
   private calculateTourismTax(adults: number, children: GuestChild[], nights: number): number {
-    const seasonalRate = 1.50; // €1.50 per person per night (high season rate)
-    
+    const seasonalRate = 1.5; // €1.50 per person per night (high season rate)
+
     // Only adults and children over 18 pay tourism tax
-    const taxableGuests = adults + children.filter(child => child.age >= 18).length;
-    
+    const taxableGuests = adults + children.filter((child) => child.age >= 18).length;
+
     return taxableGuests * seasonalRate * nights;
   }
 
   /**
    * Calculate children discounts
    */
-  private calculateChildrenDiscounts(children: GuestChild[], baseRate: number, nights: number): number {
+  private calculateChildrenDiscounts(
+    children: GuestChild[],
+    baseRate: number,
+    nights: number
+  ): number {
     let totalDiscount = 0;
 
     for (const child of children) {
@@ -303,12 +313,20 @@ export class DatabasePricingService {
   /**
    * Get discount amount for specific age range
    */
-  private getChildDiscountByAge(children: GuestChild[], minAge: number, maxAge: number, baseRate: number, nights: number): number {
-    const eligibleChildren = children.filter(child => child.age >= minAge && child.age < maxAge);
-    
+  private getChildDiscountByAge(
+    children: GuestChild[],
+    minAge: number,
+    maxAge: number,
+    baseRate: number,
+    nights: number
+  ): number {
+    const eligibleChildren = children.filter((child) => child.age >= minAge && child.age < maxAge);
+
     let discountRate = 0;
-    if (minAge === 0 && maxAge === 3) discountRate = 1.0; // Free
-    else if (minAge === 3 && maxAge === 7) discountRate = 0.5; // 50% off
+    if (minAge === 0 && maxAge === 3)
+      discountRate = 1.0; // Free
+    else if (minAge === 3 && maxAge === 7)
+      discountRate = 0.5; // 50% off
     else if (minAge === 7 && maxAge === 14) discountRate = 0.2; // 20% off
 
     return eligibleChildren.length * baseRate * nights * discountRate;
@@ -319,11 +337,16 @@ export class DatabasePricingService {
    */
   private getSeasonalRate(pricing: RoomTypePricing, period: SeasonalPeriod): number {
     switch (period) {
-      case 'A': return pricing.price_period_a;
-      case 'B': return pricing.price_period_b;
-      case 'C': return pricing.price_period_c;
-      case 'D': return pricing.price_period_d;
-      default: return pricing.price_period_a;
+      case 'A':
+        return pricing.price_period_a;
+      case 'B':
+        return pricing.price_period_b;
+      case 'C':
+        return pricing.price_period_c;
+      case 'D':
+        return pricing.price_period_d;
+      default:
+        return pricing.price_period_a;
     }
   }
 
@@ -346,21 +369,23 @@ export class DatabasePricingService {
    * Fallback pricing when database is unavailable
    */
   private getFallbackPricing(input: DatabasePricingInput): PricingCalculation {
-    const nights = Math.ceil((input.checkOut.getTime() - input.checkIn.getTime()) / (1000 * 60 * 60 * 24));
+    const nights = Math.ceil(
+      (input.checkOut.getTime() - input.checkIn.getTime()) / (1000 * 60 * 60 * 24)
+    );
     const baseRate = 60; // Fallback base rate
     const seasonalPeriod = this.getSeasonalPeriod(input.checkIn);
     const subtotal = baseRate * nights;
-    
+
     const childrenDiscount = this.calculateChildrenDiscounts(input.children, baseRate, nights);
     const tourismTax = this.calculateTourismTax(input.adults, input.children, nights);
-    
+
     const fees = {
       tourism: tourismTax,
       vat: 0,
       pets: input.hasPets ? 20 : 0,
       parking: input.needsParking ? 7 * nights : 0,
       shortStay: nights < 3 ? subtotal * 0.2 : 0,
-      additional: 0
+      additional: 0,
     };
 
     const totalFees = Object.values(fees).reduce((sum, fee) => sum + fee, 0);
@@ -375,12 +400,12 @@ export class DatabasePricingService {
         children0to3: this.getChildDiscountByAge(input.children, 0, 3, baseRate, nights),
         children3to7: this.getChildDiscountByAge(input.children, 3, 7, baseRate, nights),
         children7to14: this.getChildDiscountByAge(input.children, 7, 14, baseRate, nights),
-        longStay: 0
+        longStay: 0,
       },
       totalDiscounts: childrenDiscount,
       fees,
       totalFees,
-      total: discountedSubtotal + totalFees
+      total: discountedSubtotal + totalFees,
     };
   }
 }

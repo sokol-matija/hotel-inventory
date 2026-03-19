@@ -8,7 +8,7 @@ export class HotelEracuniXMLGenerator {
 
   generateUBLXML(invoice: EracuniInvoice): string {
     const xmlHeader = `<?xml version="1.0" encoding="UTF-8"?>`;
-    
+
     const xmlContent = `
 <Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"
          xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
@@ -145,7 +145,7 @@ export class HotelEracuniXMLGenerator {
     }
 
     // Additional services
-    invoice.hotel_data.additional_services.forEach(service => {
+    invoice.hotel_data.additional_services.forEach((service) => {
       lines += this.generateInvoiceLine(
         lineId++,
         service.name,
@@ -199,10 +199,12 @@ export class HotelEracuniXMLGenerator {
   private calculateNightlyRate(invoice: EracuniInvoice): number {
     // Calculate base nightly rate excluding tourism tax and additional services
     const additionalServicesTotal = invoice.hotel_data.additional_services.reduce(
-      (sum, service) => sum + service.total, 0
+      (sum, service) => sum + service.total,
+      0
     );
-    
-    const accommodationTotal = invoice.total_amount - invoice.hotel_data.tourism_tax - additionalServicesTotal;
+
+    const accommodationTotal =
+      invoice.total_amount - invoice.hotel_data.tourism_tax - additionalServicesTotal;
     return accommodationTotal / invoice.hotel_data.nights;
   }
 
@@ -218,28 +220,28 @@ export class HotelEracuniXMLGenerator {
 
   validateXML(xmlContent: string): { isValid: boolean; errors: string[] } {
     const errors: string[] = [];
-    
+
     // Basic XML structure validation
     if (!xmlContent.includes('<?xml version="1.0"')) {
       errors.push('Missing XML declaration');
     }
-    
+
     if (!xmlContent.includes('xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"')) {
       errors.push('Missing UBL 2.1 namespace declaration');
     }
-    
+
     // Croatian specific validations
     if (!xmlContent.includes('HR:OIB')) {
       errors.push('Missing Croatian OIB identification');
     }
-    
+
     if (!xmlContent.includes('Hotel Porec')) {
       errors.push('Missing Hotel Porec identification');
     }
-    
+
     return {
       isValid: errors.length === 0,
-      errors
+      errors,
     };
   }
 }

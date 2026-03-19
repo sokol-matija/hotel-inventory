@@ -1,9 +1,9 @@
 /**
  * KeyboardShortcutService - Manage keyboard shortcuts for timeline operations
- * 
+ *
  * This service provides comprehensive keyboard shortcut support for power users to work
  * efficiently with the hotel timeline, enabling rapid navigation and operations.
- * 
+ *
  * Features:
  * - 20+ predefined keyboard shortcuts for common operations
  * - Context-aware shortcuts that adapt to current mode (normal, drag, move, expand)
@@ -12,13 +12,13 @@
  * - Customizable shortcut registration and management
  * - Help system with formatted shortcut display
  * - Event-driven architecture with custom events
- * 
+ *
  * Shortcuts Include:
  * - Navigation: Arrow keys, Home (today), Ctrl+F (search)
  * - Modes: D (drag create), E (expansion), M (move), Esc (exit)
  * - Operations: Ctrl+N (new), Delete (delete selected), Ctrl+A (select all)
  * - Quick Status: 1 (confirmed), 2 (checked in), 3 (checked out)
- * 
+ *
  * Usage:
  * ```typescript
  * const shortcutService = KeyboardShortcutService.getInstance();
@@ -28,7 +28,7 @@
  *   handleShortcutAction(action);
  * });
  * ```
- * 
+ *
  * @author Hotel Management System v2.7
  * @since August 2025
  */
@@ -62,9 +62,9 @@ export class KeyboardShortcutService {
       isModalOpen: false,
       selectedReservations: [],
       activeMode: 'normal',
-      currentDate: new Date()
+      currentDate: new Date(),
     };
-    
+
     this.setupDefaultShortcuts();
     this.bindEventListeners();
   }
@@ -86,15 +86,15 @@ export class KeyboardShortcutService {
       description: 'Navigate to previous day or move reservation left',
       action: () => this.handleContextAwareArrowLeft(),
       category: 'navigation',
-      enabled: true
+      enabled: true,
     });
 
     this.registerShortcut('ArrowRight', {
-      key: 'ArrowRight', 
+      key: 'ArrowRight',
       description: 'Navigate to next day or move reservation right',
       action: () => this.handleContextAwareArrowRight(),
       category: 'navigation',
-      enabled: true
+      enabled: true,
     });
 
     this.registerShortcut('Home', {
@@ -102,7 +102,7 @@ export class KeyboardShortcutService {
       description: 'Go to today',
       action: () => this.triggerAction('navigate_today'),
       category: 'navigation',
-      enabled: true
+      enabled: true,
     });
 
     // Mode shortcuts
@@ -111,7 +111,7 @@ export class KeyboardShortcutService {
       description: 'Toggle Drag Create mode',
       action: () => this.triggerAction('toggle_drag_create'),
       category: 'modes',
-      enabled: true
+      enabled: true,
     });
 
     this.registerShortcut('KeyE', {
@@ -119,7 +119,7 @@ export class KeyboardShortcutService {
       description: 'Toggle Expansion mode',
       action: () => this.triggerAction('toggle_expansion'),
       category: 'modes',
-      enabled: true
+      enabled: true,
     });
 
     this.registerShortcut('KeyM', {
@@ -127,7 +127,7 @@ export class KeyboardShortcutService {
       description: 'Toggle Move mode',
       action: () => this.triggerAction('toggle_move'),
       category: 'modes',
-      enabled: true
+      enabled: true,
     });
 
     this.registerShortcut('Escape', {
@@ -135,7 +135,7 @@ export class KeyboardShortcutService {
       description: 'Exit current mode or close modal',
       action: () => this.triggerAction('escape'),
       category: 'accessibility',
-      enabled: true
+      enabled: true,
     });
 
     // Operation shortcuts
@@ -145,7 +145,7 @@ export class KeyboardShortcutService {
       description: 'Create new reservation',
       action: () => this.triggerAction('new_reservation'),
       category: 'operations',
-      enabled: true
+      enabled: true,
     });
 
     this.registerShortcut('Delete', {
@@ -153,7 +153,7 @@ export class KeyboardShortcutService {
       description: 'Delete selected reservations',
       action: () => this.triggerAction('delete_selected'),
       category: 'operations',
-      enabled: true
+      enabled: true,
     });
 
     this.registerShortcut('KeyF', {
@@ -162,7 +162,7 @@ export class KeyboardShortcutService {
       description: 'Search reservations',
       action: () => this.triggerAction('search'),
       category: 'navigation',
-      enabled: true
+      enabled: true,
     });
 
     // Accessibility shortcuts
@@ -171,7 +171,7 @@ export class KeyboardShortcutService {
       description: 'Show keyboard shortcuts help',
       action: () => this.triggerAction('show_help'),
       category: 'accessibility',
-      enabled: true
+      enabled: true,
     });
 
     this.registerShortcut('Tab', {
@@ -179,7 +179,7 @@ export class KeyboardShortcutService {
       description: 'Navigate through focusable elements',
       action: () => this.triggerAction('tab_navigation'),
       category: 'accessibility',
-      enabled: true
+      enabled: true,
     });
 
     // Batch operation shortcuts
@@ -189,7 +189,7 @@ export class KeyboardShortcutService {
       description: 'Select all visible reservations',
       action: () => this.triggerAction('select_all'),
       category: 'operations',
-      enabled: true
+      enabled: true,
     });
 
     this.registerShortcut('KeyC', {
@@ -198,7 +198,7 @@ export class KeyboardShortcutService {
       description: 'Copy selected reservations',
       action: () => this.triggerAction('copy_reservations'),
       category: 'operations',
-      enabled: true
+      enabled: true,
     });
 
     this.registerShortcut('KeyV', {
@@ -207,7 +207,7 @@ export class KeyboardShortcutService {
       description: 'Paste reservations',
       action: () => this.triggerAction('paste_reservations'),
       category: 'operations',
-      enabled: true
+      enabled: true,
     });
 
     // Quick status changes
@@ -216,7 +216,7 @@ export class KeyboardShortcutService {
       description: 'Set selected reservations to Confirmed',
       action: () => this.triggerAction('status_confirmed'),
       category: 'operations',
-      enabled: true
+      enabled: true,
     });
 
     this.registerShortcut('Digit2', {
@@ -224,7 +224,7 @@ export class KeyboardShortcutService {
       description: 'Set selected reservations to Checked In',
       action: () => this.triggerAction('status_checked_in'),
       category: 'operations',
-      enabled: true
+      enabled: true,
     });
 
     this.registerShortcut('Digit3', {
@@ -232,7 +232,7 @@ export class KeyboardShortcutService {
       description: 'Set selected reservations to Checked Out',
       action: () => this.triggerAction('status_checked_out'),
       category: 'operations',
-      enabled: true
+      enabled: true,
     });
   }
 
@@ -291,7 +291,7 @@ export class KeyboardShortcutService {
    * Get all shortcuts by category
    */
   getShortcutsByCategory(category: KeyboardShortcut['category']): KeyboardShortcut[] {
-    return Array.from(this.shortcuts.values()).filter(s => s.category === category);
+    return Array.from(this.shortcuts.values()).filter((s) => s.category === category);
   }
 
   /**
@@ -299,14 +299,14 @@ export class KeyboardShortcutService {
    */
   getShortcutsHelp(): { [category: string]: KeyboardShortcut[] } {
     const help: { [category: string]: KeyboardShortcut[] } = {};
-    
+
     for (const shortcut of Array.from(this.shortcuts.values())) {
       if (!help[shortcut.category]) {
         help[shortcut.category] = [];
       }
       help[shortcut.category].push(shortcut);
     }
-    
+
     return help;
   }
 
@@ -315,11 +315,11 @@ export class KeyboardShortcutService {
    */
   formatShortcut(shortcut: KeyboardShortcut): string {
     const parts = [];
-    
+
     if (shortcut.ctrlKey) parts.push('Ctrl');
     if (shortcut.shiftKey) parts.push('Shift');
     if (shortcut.altKey) parts.push('Alt');
-    
+
     // Convert key codes to readable names
     let keyName = shortcut.key;
     if (keyName.startsWith('Key')) {
@@ -335,9 +335,9 @@ export class KeyboardShortcutService {
     } else if (keyName === 'ArrowDown') {
       keyName = '↓';
     }
-    
+
     parts.push(keyName);
-    
+
     return parts.join(' + ');
   }
 
@@ -346,18 +346,26 @@ export class KeyboardShortcutService {
    */
   private bindEventListeners(): void {
     document.addEventListener('keydown', this.handleKeyDown.bind(this));
-    
+
     // Prevent shortcuts when typing in input fields
     document.addEventListener('focusin', (e) => {
       const target = e.target as HTMLElement;
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true') {
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.contentEditable === 'true'
+      ) {
         this.setEnabled(false);
       }
     });
-    
+
     document.addEventListener('focusout', (e) => {
       const target = e.target as HTMLElement;
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true') {
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.contentEditable === 'true'
+      ) {
         this.setEnabled(true);
       }
     });
@@ -368,7 +376,7 @@ export class KeyboardShortcutService {
    */
   private handleKeyDown(event: KeyboardEvent): void {
     if (!this.isEnabled) return;
-    
+
     // Don't trigger shortcuts in modals unless specifically allowed
     if (this.context.isModalOpen && !['Escape', 'F1'].includes(event.code)) {
       return;
@@ -376,7 +384,7 @@ export class KeyboardShortcutService {
 
     const shortcutKey = this.getShortcutKey(event);
     const shortcut = this.shortcuts.get(shortcutKey);
-    
+
     if (shortcut && shortcut.enabled) {
       // Check if shortcut is applicable in current context
       if (this.isShortcutApplicable(shortcut)) {
@@ -392,17 +400,17 @@ export class KeyboardShortcutService {
    */
   private getShortcutKey(event: KeyboardEvent): string {
     const parts = [];
-    
+
     if (event.ctrlKey) parts.push('Ctrl');
     if (event.shiftKey) parts.push('Shift');
     if (event.altKey) parts.push('Alt');
     parts.push(event.code);
-    
+
     // For simple key shortcuts, just use the code
     if (parts.length === 1) {
       return parts[0];
     }
-    
+
     return parts.join('+');
   }
 
@@ -411,19 +419,28 @@ export class KeyboardShortcutService {
    */
   private isShortcutApplicable(shortcut: KeyboardShortcut): boolean {
     // Some shortcuts only work when reservations are selected
-    if (['delete_selected', 'copy_reservations', 'status_confirmed', 'status_checked_in', 'status_checked_out'].some(action => 
-        shortcut.action.toString().includes(action))) {
+    if (
+      [
+        'delete_selected',
+        'copy_reservations',
+        'status_confirmed',
+        'status_checked_in',
+        'status_checked_out',
+      ].some((action) => shortcut.action.toString().includes(action))
+    ) {
       return this.context.selectedReservations.length > 0;
     }
-    
+
     // Arrow key navigation works in all modes (context-aware)
     // Other navigation shortcuts only work in normal mode
-    if (shortcut.description.includes('Navigate') && 
-        !shortcut.description.includes('move reservation') && 
-        this.context.activeMode !== 'normal') {
+    if (
+      shortcut.description.includes('Navigate') &&
+      !shortcut.description.includes('move reservation') &&
+      this.context.activeMode !== 'normal'
+    ) {
       return false;
     }
-    
+
     return true;
   }
 
@@ -432,9 +449,11 @@ export class KeyboardShortcutService {
    */
   private triggerAction(action: string): void {
     // Emit custom event that can be listened to
-    document.dispatchEvent(new CustomEvent('hotel-timeline-shortcut', {
-      detail: { action, context: this.context }
-    }));
+    document.dispatchEvent(
+      new CustomEvent('hotel-timeline-shortcut', {
+        detail: { action, context: this.context },
+      })
+    );
   }
 
   /**

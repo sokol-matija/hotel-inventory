@@ -6,33 +6,33 @@ export type Role = 'admin' | 'reception' | 'kitchen' | 'housekeeping' | 'bookkee
 export interface UserPermissions {
   // Dashboard access
   canViewDashboard: boolean;
-  
+
   // Locations
   canViewLocations: boolean;
   canAddLocation: boolean;
   canEditLocation: boolean;
   canDeleteLocation: boolean;
-  
+
   // Items management
   canViewItems: boolean;
   canAddItem: boolean;
   canEditItem: boolean;
   canDeleteItem: boolean;
-  
+
   // Inventory management
   canViewInventory: boolean;
   canAddInventory: boolean;
   canEditInventory: boolean;
   canDeleteInventory: boolean;
   canModifyQuantity: boolean;
-  
+
   // Global view
   canViewGlobalInventory: boolean;
-  
+
   // Settings
   canViewSettings: boolean;
   canEditSettings: boolean;
-  
+
   // Admin functions
   canManageLocations: boolean;
   canViewAuditLogs: boolean;
@@ -64,7 +64,7 @@ const rolePermissions: Record<Role, UserPermissions> = {
     canViewAuditLogs: true,
     canManageUsers: true,
   },
-  
+
   reception: {
     // Reception can view most things and manage basic inventory
     canViewDashboard: true,
@@ -88,7 +88,7 @@ const rolePermissions: Record<Role, UserPermissions> = {
     canViewAuditLogs: false,
     canManageUsers: false,
   },
-  
+
   kitchen: {
     // Kitchen staff can manage items and inventory they need for cooking
     canViewDashboard: true,
@@ -112,7 +112,7 @@ const rolePermissions: Record<Role, UserPermissions> = {
     canViewAuditLogs: false,
     canManageUsers: false,
   },
-  
+
   housekeeping: {
     // Housekeeping can view inventory and modify cleaning supplies
     canViewDashboard: true,
@@ -136,7 +136,7 @@ const rolePermissions: Record<Role, UserPermissions> = {
     canViewAuditLogs: false,
     canManageUsers: false,
   },
-  
+
   bookkeeping: {
     // Bookkeeping has mostly read-only access for financial tracking
     canViewDashboard: true,
@@ -188,7 +188,9 @@ export function hasPermission(role: Role, permission: keyof UserPermissions): bo
  */
 export function canModifyInventory(role: Role): boolean {
   const permissions = getPermissions(role);
-  return permissions.canAddInventory || permissions.canEditInventory || permissions.canModifyQuantity;
+  return (
+    permissions.canAddInventory || permissions.canEditInventory || permissions.canModifyQuantity
+  );
 }
 
 /**
@@ -207,13 +209,16 @@ export function canManageItems(role: Role): boolean {
  * @returns Array of roles that have this permission
  */
 export function getRolesWithPermission(permission: keyof UserPermissions): Role[] {
-  return (Object.keys(rolePermissions) as Role[]).filter(role => 
-    rolePermissions[role][permission]
+  return (Object.keys(rolePermissions) as Role[]).filter(
+    (role) => rolePermissions[role][permission]
   );
 }
 
 // Helper function to check if a user profile has a specific permission
-export function userHasPermission(userProfile: Record<string, unknown>, permission: keyof UserPermissions): boolean {
+export function userHasPermission(
+  userProfile: Record<string, unknown>,
+  permission: keyof UserPermissions
+): boolean {
   if (!userProfile?.role?.name) return false;
   return hasPermission(userProfile.role.name as Role, permission);
-} 
+}

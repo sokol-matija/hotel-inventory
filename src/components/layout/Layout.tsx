@@ -1,65 +1,67 @@
-import React, { useState } from 'react'
-import { Outlet, useNavigate } from '@tanstack/react-router'
-import Sidebar from './Sidebar'
-import MobileNav from './MobileNav'
-import { useAuth } from '../auth/AuthProvider'
-import LanguageSwitcher from '../ui/LanguageSwitcher'
+import React, { useState } from 'react';
+import { Outlet, useNavigate } from '@tanstack/react-router';
+import Sidebar from './Sidebar';
+import MobileNav from './MobileNav';
+import { useAuth } from '../auth/AuthProvider';
+import LanguageSwitcher from '../ui/LanguageSwitcher';
 
 export default function Layout() {
-  const { user } = useAuth()
-  const navigate = useNavigate()
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  if (!user) return null
+  if (!user) return null;
 
   return (
-    <div className="flex h-screen bg-gray-50 relative">
+    <div className="relative flex h-screen bg-gray-50">
       {/* Background decorative image */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <img 
-          src="/mozaik_gp1.png" 
-          alt="Decorative background" 
-          className="absolute bottom-0 right-0 w-full h-64 object-cover opacity-10"
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <img
+          src="/mozaik_gp1.png"
+          alt="Decorative background"
+          className="absolute right-0 bottom-0 h-64 w-full object-cover opacity-10"
         />
       </div>
-      
+
       {/* Desktop Sidebar */}
-      <div className="hidden lg:block relative z-10">
+      <div className="relative z-10 hidden lg:block">
         <Sidebar />
       </div>
 
       {/* Mobile Navigation */}
-      <MobileNav 
-        isOpen={isMobileMenuOpen} 
-        onClose={() => setIsMobileMenuOpen(false)}
-      />
+      <MobileNav isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto relative z-10">
+      <main className="relative z-10 flex-1 overflow-auto">
         {/* Mobile Header */}
-        <div className="lg:hidden bg-white border-b border-gray-200 p-4">
+        <div className="border-b border-gray-200 bg-white p-4 lg:hidden">
           <div className="flex items-center justify-between">
             <div className="flex-shrink-0">
               <LanguageSwitcher />
             </div>
-            <div className="flex items-center justify-center flex-1">
-              <div 
-                className="w-32 h-12 flex items-center justify-center cursor-pointer"
+            <div className="flex flex-1 items-center justify-center">
+              <div
+                className="flex h-12 w-32 cursor-pointer items-center justify-center"
                 onClick={() => navigate({ to: '/dashboard' })}
               >
-                <img 
-                  src="/LOGO1-hires.png" 
-                  alt="Hotel Porec Logo" 
-                  className="w-full h-full object-contain"
+                <img
+                  src="/LOGO1-hires.png"
+                  alt="Hotel Porec Logo"
+                  className="h-full w-full object-contain"
                 />
               </div>
             </div>
             <button
               onClick={() => setIsMobileMenuOpen(true)}
-              className="p-2 rounded-md text-gray-600 hover:bg-gray-100 flex-shrink-0"
+              className="flex-shrink-0 rounded-md p-2 text-gray-600 hover:bg-gray-100"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
               </svg>
             </button>
           </div>
@@ -71,5 +73,5 @@ export default function Layout() {
         </div>
       </main>
     </div>
-  )
+  );
 }

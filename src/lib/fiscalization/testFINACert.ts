@@ -18,8 +18,12 @@ export function testFINACertificate(): void {
   console.log('\n🔐 Testing certificate passwords...');
   const passwordTest = certManager.testFINACertificate();
 
-  console.log(`Primary password (Marvel247@$&): ${passwordTest.primaryPasswordResult.success ? '✅' : '❌'}`);
-  console.log(`Fallback password (Marvel2479@$&(): ${passwordTest.fallbackPasswordResult.success ? '✅' : '❌'}`);
+  console.log(
+    `Primary password (Marvel247@$&): ${passwordTest.primaryPasswordResult.success ? '✅' : '❌'}`
+  );
+  console.log(
+    `Fallback password (Marvel2479@$&(): ${passwordTest.fallbackPasswordResult.success ? '✅' : '❌'}`
+  );
 
   if (passwordTest.recommendedPassword) {
     console.log(`✅ Recommended password: ${passwordTest.recommendedPassword}`);
@@ -44,7 +48,7 @@ export function testFINACertificate(): void {
 
   if (serviceStatus.validationErrors.length > 0) {
     console.log('\n❌ Validation errors:');
-    serviceStatus.validationErrors.forEach(error => console.log(`  - ${error}`));
+    serviceStatus.validationErrors.forEach((error) => console.log(`  - ${error}`));
   }
 
   // Test invoice generation with sample data
@@ -53,22 +57,23 @@ export function testFINACertificate(): void {
   const sampleInvoice = {
     invoiceNumber: 'HP-2025-000001',
     dateTime: new Date(),
-    totalAmount: 150.00,
-    vatAmount: 25.00,
+    totalAmount: 150.0,
+    vatAmount: 25.0,
     items: [
       {
         name: 'Hotel Room - Test Night',
         quantity: 1,
-        unitPrice: 150.00,
+        unitPrice: 150.0,
         vatRate: 0.25,
-        totalAmount: 150.00
-      }
+        totalAmount: 150.0,
+      },
     ],
-    paymentMethod: 'CARD' as const
+    paymentMethod: 'CARD' as const,
   };
 
-  fiscalService.fiscalizeInvoice(sampleInvoice)
-    .then(result => {
+  fiscalService
+    .fiscalizeInvoice(sampleInvoice)
+    .then((result) => {
       console.log('\n📋 Fiscalization test result:');
       console.log(`Success: ${result.success ? '✅' : '❌'}`);
 
@@ -83,7 +88,7 @@ export function testFINACertificate(): void {
       console.log('\n' + '='.repeat(60));
       console.log('🎉 FINA certificate test completed!');
     })
-    .catch(error => {
+    .catch((error) => {
       console.error('\n❌ Fiscalization test failed:', error);
     });
 }

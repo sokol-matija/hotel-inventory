@@ -76,9 +76,7 @@ export interface GuestSearchFilters {
 }
 
 // Result types for error handling
-export type GuestResult<T> = 
-  | { success: true; data: T }
-  | { success: false; error: string };
+export type GuestResult<T> = { success: true; data: T } | { success: false; error: string };
 
 export class GuestService {
   private static instance: GuestService;
@@ -97,24 +95,23 @@ export class GuestService {
    */
   async getGuests(filters: GuestSearchFilters = {}): Promise<GuestResult<Guest[]>> {
     try {
-      let query = supabase
-        .from('guests')
-        .select('*')
-        .order('last_name', { ascending: true });
+      let query = supabase.from('guests').select('*').order('last_name', { ascending: true });
 
       // Apply filters
       if (filters.query) {
-        query = query.or(`first_name.ilike.%${filters.query}%,last_name.ilike.%${filters.query}%,email.ilike.%${filters.query}%`);
+        query = query.or(
+          `first_name.ilike.%${filters.query}%,last_name.ilike.%${filters.query}%,email.ilike.%${filters.query}%`
+        );
       }
-      
+
       if (filters.nationality) {
         query = query.eq('nationality', filters.nationality);
       }
-      
+
       if (filters.isVip !== undefined) {
         query = query.eq('is_vip', filters.isVip);
       }
-      
+
       if (filters.hasPets !== undefined) {
         query = query.eq('has_pets', filters.hasPets);
       }
@@ -127,9 +124,9 @@ export class GuestService {
       return { success: true, data: guests };
     } catch (error) {
       console.error('Error fetching guests:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Failed to fetch guests' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch guests',
       };
     }
   }
@@ -139,11 +136,7 @@ export class GuestService {
    */
   async getGuestById(id: string): Promise<GuestResult<Guest>> {
     try {
-      const { data, error } = await supabase
-        .from('guests')
-        .select('*')
-        .eq('id', id)
-        .single();
+      const { data, error } = await supabase.from('guests').select('*').eq('id', id).single();
 
       if (error) throw error;
       if (!data) throw new Error('Guest not found');
@@ -152,9 +145,9 @@ export class GuestService {
       return { success: true, data: guest };
     } catch (error) {
       console.error('Error fetching guest:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Failed to fetch guest' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch guest',
       };
     }
   }
@@ -186,11 +179,7 @@ export class GuestService {
         emergency_contact_phone: guestData.emergencyContactPhone?.trim() || null,
       };
 
-      const { data, error } = await supabase
-        .from('guests')
-        .insert(insertData)
-        .select('*')
-        .single();
+      const { data, error } = await supabase.from('guests').insert(insertData).select('*').single();
 
       if (error) throw error;
 
@@ -203,11 +192,11 @@ export class GuestService {
       //     current_age: this.calculateAge(child.dateOfBirth),
       //     discount_category: child.discountCategory || null,
       //   }));
-      // 
+      //
       //   const { error: childrenError } = await supabase
       //     .from('guest_children')
       //     .insert(childrenInserts);
-      // 
+      //
       //   if (childrenError) {
       //     console.error('Error adding children:', childrenError);
       //     // Don't fail the guest creation, but log the error
@@ -221,9 +210,9 @@ export class GuestService {
       return { success: true, data: guestResult.data };
     } catch (error) {
       console.error('Error creating guest:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Failed to create guest' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to create guest',
       };
     }
   }
@@ -240,25 +229,30 @@ export class GuestService {
       if (updates.lastName !== undefined) updateData.last_name = updates.lastName.trim();
       if (updates.email !== undefined) updateData.email = updates.email?.trim() || null;
       if (updates.phone !== undefined) updateData.phone = updates.phone?.trim() || null;
-      if (updates.dateOfBirth !== undefined) updateData.date_of_birth = updates.dateOfBirth?.toISOString().split('T')[0] || null;
+      if (updates.dateOfBirth !== undefined)
+        updateData.date_of_birth = updates.dateOfBirth?.toISOString().split('T')[0] || null;
       if (updates.nationality !== undefined) updateData.nationality = updates.nationality || null;
-      if (updates.passportNumber !== undefined) updateData.passport_number = updates.passportNumber?.trim() || null;
-      if (updates.idCardNumber !== undefined) updateData.id_card_number = updates.idCardNumber?.trim() || null;
-      if (updates.preferredLanguage !== undefined) updateData.preferred_language = updates.preferredLanguage;
-      if (updates.dietaryRestrictions !== undefined) updateData.dietary_restrictions = updates.dietaryRestrictions;
-      if (updates.specialNeeds !== undefined) updateData.special_needs = updates.specialNeeds?.trim() || null;
+      if (updates.passportNumber !== undefined)
+        updateData.passport_number = updates.passportNumber?.trim() || null;
+      if (updates.idCardNumber !== undefined)
+        updateData.id_card_number = updates.idCardNumber?.trim() || null;
+      if (updates.preferredLanguage !== undefined)
+        updateData.preferred_language = updates.preferredLanguage;
+      if (updates.dietaryRestrictions !== undefined)
+        updateData.dietary_restrictions = updates.dietaryRestrictions;
+      if (updates.specialNeeds !== undefined)
+        updateData.special_needs = updates.specialNeeds?.trim() || null;
       if (updates.hasPets !== undefined) updateData.has_pets = updates.hasPets;
       if (updates.isVip !== undefined) updateData.is_vip = updates.isVip;
       if (updates.vipLevel !== undefined) updateData.vip_level = updates.vipLevel;
-      if (updates.emergencyContactName !== undefined) updateData.emergency_contact_name = updates.emergencyContactName?.trim() || null;
-      if (updates.emergencyContactPhone !== undefined) updateData.emergency_contact_phone = updates.emergencyContactPhone?.trim() || null;
+      if (updates.emergencyContactName !== undefined)
+        updateData.emergency_contact_name = updates.emergencyContactName?.trim() || null;
+      if (updates.emergencyContactPhone !== undefined)
+        updateData.emergency_contact_phone = updates.emergencyContactPhone?.trim() || null;
 
       updateData.updated_at = new Date().toISOString();
 
-      const { error } = await supabase
-        .from('guests')
-        .update(updateData)
-        .eq('id', id);
+      const { error } = await supabase.from('guests').update(updateData).eq('id', id);
 
       if (error) throw error;
 
@@ -269,9 +263,9 @@ export class GuestService {
       return { success: true, data: guestResult.data };
     } catch (error) {
       console.error('Error updating guest:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Failed to update guest' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to update guest',
       };
     }
   }
@@ -292,19 +286,16 @@ export class GuestService {
         throw new Error('Cannot delete guest with existing reservations');
       }
 
-      const { error } = await supabase
-        .from('guests')
-        .delete()
-        .eq('id', id);
+      const { error } = await supabase.from('guests').delete().eq('id', id);
 
       if (error) throw error;
 
       return { success: true, data: undefined };
     } catch (error) {
       console.error('Error deleting guest:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Failed to delete guest' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to delete guest',
       };
     }
   }
@@ -381,11 +372,11 @@ export class GuestService {
     const today = new Date();
     let age = today.getFullYear() - dateOfBirth.getFullYear();
     const monthDiff = today.getMonth() - dateOfBirth.getMonth();
-    
+
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dateOfBirth.getDate())) {
       age--;
     }
-    
+
     return Math.max(0, age);
   }
 }

@@ -54,11 +54,7 @@ jest.mock('../../../../ui/switch', () => ({
 
 jest.mock('../../../../ui/select', () => ({
   Select: ({ children, value, onValueChange }: any) => (
-    <select
-      value={value}
-      onChange={(e) => onValueChange?.(e.target.value)}
-      data-testid="select"
-    >
+    <select value={value} onChange={(e) => onValueChange?.(e.target.value)} data-testid="select">
       {children}
     </select>
   ),
@@ -68,7 +64,9 @@ jest.mock('../../../../ui/select', () => ({
   SelectValue: () => <span>Select Value</span>,
 }));
 
-const mockConfigurationService = PhobsConfigurationService as jest.MockedClass<typeof PhobsConfigurationService>;
+const mockConfigurationService = PhobsConfigurationService as jest.MockedClass<
+  typeof PhobsConfigurationService
+>;
 
 // Test wrapper component
 const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -79,7 +77,7 @@ const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 
 describe('ChannelManagerSettings Component', () => {
   let mockConfigService: any;
-  
+
   const mockConfiguration = {
     isConfigured: true,
     credentials: {
@@ -88,7 +86,7 @@ describe('ChannelManagerSettings Component', () => {
       hotelId: 'hotel_123',
       baseUrl: 'https://api.phobs.net/v1',
       webhookSecret: 'webhook_secret',
-      webhookUrl: 'https://example.com/webhook'
+      webhookUrl: 'https://example.com/webhook',
     },
     channels: [
       {
@@ -97,7 +95,7 @@ describe('ChannelManagerSettings Component', () => {
         commissionRate: 0.15,
         rateAdjustment: 0,
         minimumStay: 1,
-        maximumStay: 30
+        maximumStay: 30,
       },
       {
         channel: 'expedia' as const,
@@ -105,8 +103,8 @@ describe('ChannelManagerSettings Component', () => {
         commissionRate: 0.18,
         rateAdjustment: 5,
         minimumStay: 2,
-        maximumStay: 14
-      }
+        maximumStay: 14,
+      },
     ],
     syncSettings: {
       autoSync: true,
@@ -116,15 +114,15 @@ describe('ChannelManagerSettings Component', () => {
       throttleDelayMs: 1000,
       conflictResolutionStrategy: 'manual_review' as const,
       notifyOnConflicts: true,
-      notifyOnFailures: true
+      notifyOnFailures: true,
     },
     createdAt: new Date('2025-08-01'),
-    lastUpdated: new Date('2025-08-15')
+    lastUpdated: new Date('2025-08-15'),
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     mockConfigService = {
       getConfiguration: jest.fn(),
       getChannelConfigurations: jest.fn(),
@@ -214,14 +212,14 @@ describe('ChannelManagerSettings Component', () => {
 
       const apiKeyInput = screen.getByDisplayValue('test_api_key');
       const hotelIdInput = screen.getByDisplayValue('hotel_123');
-      
+
       expect(apiKeyInput).toBeInTheDocument();
       expect(hotelIdInput).toBeInTheDocument();
     });
 
     it('handles credential input changes', async () => {
       const user = userEvent.setup();
-      
+
       render(
         <TestWrapper>
           <ChannelManagerSettings />
@@ -229,7 +227,7 @@ describe('ChannelManagerSettings Component', () => {
       );
 
       const apiKeyInput = screen.getByDisplayValue('test_api_key');
-      
+
       await user.clear(apiKeyInput);
       await user.type(apiKeyInput, 'new_api_key');
 
@@ -275,9 +273,9 @@ describe('ChannelManagerSettings Component', () => {
 
     it('shows error notification on failed save', async () => {
       const user = userEvent.setup();
-      mockConfigService.updateCredentials.mockResolvedValue({ 
-        success: false, 
-        error: 'Invalid API key' 
+      mockConfigService.updateCredentials.mockResolvedValue({
+        success: false,
+        error: 'Invalid API key',
       });
 
       render(
@@ -290,18 +288,15 @@ describe('ChannelManagerSettings Component', () => {
       await user.click(saveButton);
 
       await waitFor(() => {
-        expect(mockNotification.error).toHaveBeenCalledWith(
-          'Save Failed',
-          'Invalid API key'
-        );
+        expect(mockNotification.error).toHaveBeenCalledWith('Save Failed', 'Invalid API key');
       });
     });
 
     it('tests connection when test button clicked', async () => {
       const user = userEvent.setup();
-      mockConfigService.testConnection.mockResolvedValue({ 
-        success: true, 
-        responseTime: 1200 
+      mockConfigService.testConnection.mockResolvedValue({
+        success: true,
+        responseTime: 1200,
       });
 
       render(
@@ -318,9 +313,9 @@ describe('ChannelManagerSettings Component', () => {
 
     it('shows connection test results', async () => {
       const user = userEvent.setup();
-      mockConfigService.testConnection.mockResolvedValue({ 
-        success: true, 
-        responseTime: 800 
+      mockConfigService.testConnection.mockResolvedValue({
+        success: true,
+        responseTime: 800,
       });
 
       render(
@@ -340,7 +335,7 @@ describe('ChannelManagerSettings Component', () => {
     it('disables test button when no API key', () => {
       mockConfigService.getConfiguration.mockReturnValue({
         ...mockConfiguration,
-        credentials: { ...mockConfiguration.credentials, apiKey: '' }
+        credentials: { ...mockConfiguration.credentials, apiKey: '' },
       });
 
       render(
@@ -395,10 +390,9 @@ describe('ChannelManagerSettings Component', () => {
       fireEvent.blur(commissionInput);
 
       await waitFor(() => {
-        expect(mockConfigService.updateChannelConfiguration).toHaveBeenCalledWith(
-          'booking.com',
-          { commissionRate: 0.12 }
-        );
+        expect(mockConfigService.updateChannelConfiguration).toHaveBeenCalledWith('booking.com', {
+          commissionRate: 0.12,
+        });
       });
     });
 
@@ -456,13 +450,13 @@ describe('ChannelManagerSettings Component', () => {
         </TestWrapper>
       );
 
-      const autoSyncSwitch = screen.getAllByTestId('switch').find(
-        (switch_) => switch_.getAttribute('checked') === 'true'
-      );
-      
+      const autoSyncSwitch = screen
+        .getAllByTestId('switch')
+        .find((switch_) => switch_.getAttribute('checked') === 'true');
+
       if (autoSyncSwitch) {
         await user.click(autoSyncSwitch);
-        
+
         await waitFor(() => {
           expect(mockConfigService.updateSyncSettings).toHaveBeenCalled();
         });
@@ -560,9 +554,9 @@ describe('ChannelManagerSettings Component', () => {
       );
 
       const fileInput = screen.getByLabelText(/import configuration/i);
-      
+
       const mockFile = new File(['{"config":"data"}'], 'config.json', {
-        type: 'application/json'
+        type: 'application/json',
       });
 
       await user.upload(fileInput, mockFile);
@@ -656,7 +650,7 @@ describe('ChannelManagerSettings Component', () => {
       );
 
       const commissionInput = screen.getByDisplayValue('15');
-      
+
       await user.clear(commissionInput);
       await user.type(commissionInput, '-5'); // Invalid negative value
 
@@ -674,7 +668,7 @@ describe('ChannelManagerSettings Component', () => {
       );
 
       const syncIntervalInput = screen.getByDisplayValue('30');
-      
+
       await user.clear(syncIntervalInput);
       await user.type(syncIntervalInput, '2'); // Below minimum of 5
 

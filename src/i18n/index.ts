@@ -1,23 +1,23 @@
-import i18n from 'i18next'
-import { initReactI18next } from 'react-i18next'
-import LanguageDetector from 'i18next-browser-languagedetector'
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+import LanguageDetector from 'i18next-browser-languagedetector';
 
 // Import translation files
-import en from './locales/en.json'
-import hr from './locales/hr.json'
-import de from './locales/de.json'
+import en from './locales/en.json';
+import hr from './locales/hr.json';
+import de from './locales/de.json';
 
 const resources = {
   en: {
-    translation: en
+    translation: en,
   },
   hr: {
-    translation: hr
+    translation: hr,
   },
   de: {
-    translation: de
-  }
-}
+    translation: de,
+  },
+};
 
 i18n
   .use(LanguageDetector)
@@ -27,15 +27,15 @@ i18n
     fallbackLng: 'hr',
     lng: 'hr', // Set Croatian as the default language
     debug: process.env.NODE_ENV === 'development',
-    
+
     interpolation: {
-      escapeValue: false // React already escapes values
+      escapeValue: false, // React already escapes values
     },
 
     detection: {
       order: ['localStorage', 'htmlTag'],
-      caches: ['localStorage']
-    }
-  })
+      caches: ['localStorage'],
+    },
+  });
 
-export default i18n
+export default i18n;

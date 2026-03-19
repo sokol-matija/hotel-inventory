@@ -64,24 +64,24 @@ export class PhobsReservationSyncService {
   private channelManagerService: PhobsChannelManagerService;
   private dataMapperService: PhobsDataMapperService;
   private inventoryService: PhobsInventoryService;
-  
+
   private syncStatus: ReservationSyncStatus;
   private syncQueue: SyncQueueItem[] = [];
   private processingQueue: boolean = false;
   private activeConflicts: Map<string, ConflictResolution> = new Map();
-  
+
   private defaultConflictStrategy: ConflictResolutionStrategy = {
     autoResolve: false,
     strategy: 'manual_review',
     notifyStaff: true,
-    escalateAfterMinutes: 30
+    escalateAfterMinutes: 30,
   };
 
   private constructor() {
     this.channelManagerService = PhobsChannelManagerService.getInstance();
     this.dataMapperService = PhobsDataMapperService.getInstance();
     this.inventoryService = PhobsInventoryService.getInstance();
-    
+
     this.syncStatus = {
       lastOutboundSync: null,
       lastInboundSync: null,
@@ -90,7 +90,7 @@ export class PhobsReservationSyncService {
       pendingInbound: 0,
       conflictsDetected: 0,
       conflictsResolved: 0,
-      syncErrors: 0
+      syncErrors: 0,
     };
 
     // Start queue processing
@@ -137,7 +137,7 @@ export class PhobsReservationSyncService {
       const syncRequest: ReservationSyncRequest = {
         reservations: [phobsReservation],
         operation,
-        forceUpdate: options.forceSync || false
+        forceUpdate: options.forceSync || false,
       };
 
       // Execute sync
@@ -158,11 +158,10 @@ export class PhobsReservationSyncService {
       }
 
       return syncResult;
-
     } catch (error) {
       console.error('Outbound reservation sync error:', error);
       this.syncStatus.syncErrors++;
-      
+
       return {
         success: false,
         operation: 'reservation',
@@ -170,7 +169,7 @@ export class PhobsReservationSyncService {
         recordsSuccessful: 0,
         recordsFailed: 1,
         errors: [error instanceof Error ? error.message : 'Unknown sync error'],
-        duration: 0
+        duration: 0,
       };
     }
   }
@@ -206,15 +205,16 @@ export class PhobsReservationSyncService {
           scheduledFor: new Date(),
           data: { reservation, guest, room },
           errors: [],
-          createdAt: new Date()
+          createdAt: new Date(),
         };
 
         this.syncQueue.push(queueItem);
         this.syncStatus.pendingOutbound++;
         queued++;
-
       } catch (error) {
-        errors.push(`Reservation ${reservation.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        errors.push(
+          `Reservation ${reservation.id}: ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
       }
     }
 
@@ -236,14 +236,19 @@ export class PhobsReservationSyncService {
   async processIncomingReservation(
     phobsReservation: PhobsReservation,
     source: 'webhook' | 'pull_sync' = 'webhook'
-  ): Promise<{ success: boolean; internalReservationId?: string; conflicts?: ConflictResolution[]; error?: string }> {
+  ): Promise<{
+    success: boolean;
+    internalReservationId?: string;
+    conflicts?: ConflictResolution[];
+    error?: string;
+  }> {
     try {
       console.log('Processing incoming reservation:', {
         phobsId: phobsReservation.phobsReservationId,
         channel: phobsReservation.channel,
         guest: `${phobsReservation.guest.firstName} ${phobsReservation.guest.lastName}`,
         checkIn: phobsReservation.checkIn,
-        checkOut: phobsReservation.checkOut
+        checkOut: phobsReservation.checkOut,
       });
 
       // Check for existing reservation (duplicate detection)
@@ -252,7 +257,7 @@ export class PhobsReservationSyncService {
         console.warn('Duplicate reservation detected:', phobsReservation.phobsReservationId);
         return {
           success: false,
-          error: 'Duplicate reservation - already exists in system'
+          error: 'Duplicate reservation - already exists in system',
         };
       }
 
@@ -265,7 +270,7 @@ export class PhobsReservationSyncService {
           return {
             success: false,
             conflicts,
-            error: 'Unresolvable conflicts detected'
+            error: 'Unresolvable conflicts detected',
           };
         }
       }
@@ -283,7 +288,10 @@ export class PhobsReservationSyncService {
       internalReservation.guestId = guestId;
 
       // Create internal reservation
-      const reservationId = await this.createInternalReservation(internalReservation, phobsReservation);
+      const reservationId = await this.createInternalReservation(
+        internalReservation,
+        phobsReservation
+      );
 
       // Update availability
       await this.updateAvailabilityAfterInboundReservation(phobsReservation);
@@ -304,16 +312,15 @@ export class PhobsReservationSyncService {
       return {
         success: true,
         internalReservationId: reservationId,
-        conflicts: conflicts.length > 0 ? conflicts : undefined
+        conflicts: conflicts.length > 0 ? conflicts : undefined,
       };
-
     } catch (error) {
       console.error('Error processing incoming reservation:', error);
       this.syncStatus.syncErrors++;
-      
+
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown processing error'
+        error: error instanceof Error ? error.message : 'Unknown processing error',
       };
     }
   }
@@ -328,7 +335,9 @@ export class PhobsReservationSyncService {
       // Find existing internal reservation
       const existingReservation = await this.findExistingReservation(phobsReservation);
       if (!existingReservation) {
-        throw new Error(`No internal reservation found for Phobs ID: ${phobsReservation.phobsReservationId}`);
+        throw new Error(
+          `No internal reservation found for Phobs ID: ${phobsReservation.phobsReservationId}`
+        );
       }
 
       // Map modifications
@@ -351,12 +360,11 @@ export class PhobsReservationSyncService {
       await this.sendModificationNotifications(phobsReservation, existingReservation.id);
 
       return { success: true };
-
     } catch (error) {
       console.error('Error processing reservation modification:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown modification error'
+        error: error instanceof Error ? error.message : 'Unknown modification error',
       };
     }
   }
@@ -371,14 +379,16 @@ export class PhobsReservationSyncService {
       // Find existing internal reservation
       const existingReservation = await this.findExistingReservation(phobsReservation);
       if (!existingReservation) {
-        console.warn(`Cancellation for non-existent reservation: ${phobsReservation.phobsReservationId}`);
+        console.warn(
+          `Cancellation for non-existent reservation: ${phobsReservation.phobsReservationId}`
+        );
         return { success: true }; // Not an error if already gone
       }
 
       // Update reservation status to cancelled
-      await this.updateInternalReservation(existingReservation.id, { 
+      await this.updateInternalReservation(existingReservation.id, {
         status: 'room-closure', // Map cancelled to room-closure
-        lastModified: new Date()
+        lastModified: new Date(),
       });
 
       // Update availability (make room available again)
@@ -388,12 +398,11 @@ export class PhobsReservationSyncService {
       await this.sendCancellationNotifications(phobsReservation, existingReservation.id);
 
       return { success: true };
-
     } catch (error) {
       console.error('Error processing reservation cancellation:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown cancellation error'
+        error: error instanceof Error ? error.message : 'Unknown cancellation error',
       };
     }
   }
@@ -431,14 +440,15 @@ export class PhobsReservationSyncService {
           status: 'detected',
           detectedAt: new Date(),
           channel: phobsReservation.channel,
-          affectedReservations: overlappingReservations.map(r => r.id)
+          affectedReservations: overlappingReservations.map((r) => r.id),
         });
       }
 
       // Check for rate mismatches
       const expectedRate = await this.calculateExpectedRate(internalReservation);
       const rateDifference = Math.abs(expectedRate - phobsReservation.roomRate);
-      if (rateDifference > expectedRate * 0.1) { // More than 10% difference
+      if (rateDifference > expectedRate * 0.1) {
+        // More than 10% difference
         conflicts.push({
           conflictId: `rate_mismatch_${internalReservation.id}_${Date.now()}`,
           type: 'rate_mismatch',
@@ -450,10 +460,9 @@ export class PhobsReservationSyncService {
           status: 'detected',
           detectedAt: new Date(),
           channel: phobsReservation.channel,
-          affectedReservations: [internalReservation.id]
+          affectedReservations: [internalReservation.id],
         });
       }
-
     } catch (error) {
       console.error('Error detecting conflicts:', error);
     }
@@ -489,10 +498,9 @@ export class PhobsReservationSyncService {
           status: 'detected',
           detectedAt: new Date(),
           channel: phobsReservation.channel,
-          affectedReservations: []
+          affectedReservations: [],
         });
       }
-
     } catch (error) {
       console.error('Error detecting inbound conflicts:', error);
     }
@@ -520,7 +528,7 @@ export class PhobsReservationSyncService {
    */
   private async processQueueAsync(): Promise<void> {
     if (this.processingQueue) return;
-    
+
     this.processingQueue = true;
 
     try {
@@ -534,34 +542,33 @@ export class PhobsReservationSyncService {
 
       // Process items due for execution
       const now = new Date();
-      const itemsToProcess = this.syncQueue.filter(item => 
-        item.scheduledFor <= now && item.attempts < item.maxAttempts
+      const itemsToProcess = this.syncQueue.filter(
+        (item) => item.scheduledFor <= now && item.attempts < item.maxAttempts
       );
 
       for (const item of itemsToProcess) {
         try {
           await this.processSyncQueueItem(item);
-          
+
           // Remove from queue if successful
-          this.syncQueue = this.syncQueue.filter(i => i.id !== item.id);
-          
+          this.syncQueue = this.syncQueue.filter((i) => i.id !== item.id);
+
           if (item.type === 'outbound') {
             this.syncStatus.pendingOutbound--;
           } else {
             this.syncStatus.pendingInbound--;
           }
-
         } catch (error) {
           // Handle failed item
           item.attempts++;
           item.lastAttempt = new Date();
           item.errors.push(error instanceof Error ? error.message : 'Unknown error');
-          
+
           if (item.attempts >= item.maxAttempts) {
             // Remove failed item after max attempts
-            this.syncQueue = this.syncQueue.filter(i => i.id !== item.id);
+            this.syncQueue = this.syncQueue.filter((i) => i.id !== item.id);
             this.syncStatus.syncErrors++;
-            
+
             console.error(`Sync item failed after ${item.maxAttempts} attempts:`, item.id);
           } else {
             // Schedule retry with exponential backoff
@@ -571,9 +578,8 @@ export class PhobsReservationSyncService {
         }
 
         // Throttle processing to avoid rate limits
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
-
     } catch (error) {
       console.error('Queue processing error:', error);
     } finally {
@@ -606,7 +612,7 @@ export class PhobsReservationSyncService {
     return {
       ...this.syncStatus,
       queueLength: this.syncQueue.length,
-      activeConflicts: this.activeConflicts.size
+      activeConflicts: this.activeConflicts.size,
     };
   }
 
@@ -632,7 +638,7 @@ export class PhobsReservationSyncService {
     this.syncQueue = [];
     this.syncStatus.pendingOutbound = 0;
     this.syncStatus.pendingInbound = 0;
-    
+
     hotelNotification.warning(
       'Sync Queue Cleared',
       `Cleared ${cleared} pending sync operations`,
@@ -652,7 +658,9 @@ export class PhobsReservationSyncService {
   ): 'low' | 'normal' | 'high' | 'urgent' {
     const now = new Date();
     const checkInDate = new Date(reservation.checkIn);
-    const daysUntilCheckIn = Math.ceil((checkInDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    const daysUntilCheckIn = Math.ceil(
+      (checkInDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+    );
 
     if (operation === 'cancel') return 'urgent';
     if (daysUntilCheckIn <= 1) return 'urgent';
@@ -695,9 +703,8 @@ export class PhobsReservationSyncService {
         nights,
         adults: phobsReservation.adults,
         children: phobsReservation.children,
-        totalAmount: phobsReservation.totalAmount
+        totalAmount: phobsReservation.totalAmount,
       });
-
     } catch (error) {
       console.error('Failed to send OTA booking notification:', error);
     }
@@ -739,8 +746,11 @@ export class PhobsReservationSyncService {
     return null;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private async findOverlappingReservations(_roomId: string, _checkIn: Date, _checkOut: Date): Promise<any[]> {
+  private async findOverlappingReservations(
+    _roomId: string,
+    _checkIn: Date,
+    _checkOut: Date
+  ): Promise<any[]> {
     // TODO: Query database for overlapping reservations
     return [];
   }
@@ -750,7 +760,11 @@ export class PhobsReservationSyncService {
     return reservation.totalAmount;
   }
 
-  private async checkRoomAvailability(_roomId: string, _checkIn: Date, _checkOut: Date): Promise<boolean> {
+  private async checkRoomAvailability(
+    _roomId: string,
+    _checkIn: Date,
+    _checkOut: Date
+  ): Promise<boolean> {
     // TODO: Check room availability in database
     return true;
   }
@@ -761,8 +775,10 @@ export class PhobsReservationSyncService {
     return 'temp-guest-id';
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private async createInternalReservation(_reservation: any, _phobsReservation: PhobsReservation): Promise<string> {
+  private async createInternalReservation(
+    _reservation: any,
+    _phobsReservation: PhobsReservation
+  ): Promise<string> {
     // TODO: Create reservation in database
     return 'temp-reservation-id';
   }
@@ -772,11 +788,17 @@ export class PhobsReservationSyncService {
     // TODO: Update reservation in database
   }
 
-  private async updateAvailabilityAfterReservationChange(_reservation: Reservation, _room: Room, _operation: 'create' | 'cancel'): Promise<void> {
+  private async updateAvailabilityAfterReservationChange(
+    _reservation: Reservation,
+    _room: Room,
+    _operation: 'create' | 'cancel'
+  ): Promise<void> {
     // TODO: Update availability in inventory service
   }
 
-  private async updateAvailabilityAfterInboundReservation(_phobsReservation: PhobsReservation): Promise<void> {
+  private async updateAvailabilityAfterInboundReservation(
+    _phobsReservation: PhobsReservation
+  ): Promise<void> {
     // TODO: Update availability after inbound reservation
   }
 
@@ -790,7 +812,11 @@ export class PhobsReservationSyncService {
     // TODO: Make room available again after cancellation
   }
 
-  private async handleSyncConflicts(_conflicts: ConflictResolution[], _reservation: PhobsReservation, _operation: string): Promise<SyncResult> {
+  private async handleSyncConflicts(
+    _conflicts: ConflictResolution[],
+    _reservation: PhobsReservation,
+    _operation: string
+  ): Promise<SyncResult> {
     // TODO: Implement conflict handling logic
     return {
       success: false,
@@ -799,11 +825,14 @@ export class PhobsReservationSyncService {
       recordsSuccessful: 0,
       recordsFailed: 1,
       errors: ['Conflicts detected - manual resolution required'],
-      duration: 0
+      duration: 0,
     };
   }
 
-  private async resolveInboundConflicts(_conflicts: ConflictResolution[], _reservation: PhobsReservation): Promise<{ success: boolean }> {
+  private async resolveInboundConflicts(
+    _conflicts: ConflictResolution[],
+    _reservation: PhobsReservation
+  ): Promise<{ success: boolean }> {
     // TODO: Implement inbound conflict resolution
     return { success: true };
   }

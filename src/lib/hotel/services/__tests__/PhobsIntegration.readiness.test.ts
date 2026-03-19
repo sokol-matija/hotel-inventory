@@ -161,7 +161,7 @@ describe('Phobs Integration Readiness Suite', () => {
         expect(result.reservations![0].checkOut).toBe('2025-01-17');
         expect(result.reservations![0].guest?.givenName).toBe('John');
         expect(result.reservations![0].guest?.surname).toBe('Doe');
-        expect(result.reservations![0].totalAmount).toBe(240.00);
+        expect(result.reservations![0].totalAmount).toBe(240.0);
       });
 
       it('should handle multiple reservations in single response', () => {
@@ -305,7 +305,7 @@ describe('Phobs Integration Readiness Suite', () => {
         ratePlanCode: 'BAR',
         startDate: '2025-01-15',
         endDate: '2025-01-31',
-        baseRate: 120.00,
+        baseRate: 120.0,
         currencyCode: 'EUR',
       });
 
@@ -323,7 +323,7 @@ describe('Phobs Integration Readiness Suite', () => {
         ratePlanCode: 'BAR',
         startDate: '2025-01-15',
         endDate: '2025-01-15',
-        baseRate: 120.00,
+        baseRate: 120.0,
         currencyCode: 'EUR',
       });
 
@@ -344,16 +344,14 @@ describe('Phobs Integration Readiness Suite', () => {
         checkIn: '2025-01-15',
         checkOut: '2025-01-17',
         numberOfUnits: 1,
-        guestCounts: [
-          { ageQualifyingCode: 10, count: 2 },
-        ],
+        guestCounts: [{ ageQualifyingCode: 10, count: 2 }],
         guest: {
           givenName: 'John',
           surname: 'Doe',
           email: 'john.doe@example.com',
           phone: '+385911234567',
         },
-        totalAmount: 240.00,
+        totalAmount: 240.0,
         currencyCode: 'EUR',
       });
 

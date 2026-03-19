@@ -11,7 +11,7 @@ export interface FiscalEnvironment {
 export interface FiscalConfiguration {
   hotelOib: string;
   businessSpaceCode: string; // POSL1
-  cashRegisterCode: string;  // 2
+  cashRegisterCode: string; // 2
   operatorOib?: string;
   address: {
     street: string;

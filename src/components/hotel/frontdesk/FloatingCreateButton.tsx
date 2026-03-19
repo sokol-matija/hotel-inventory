@@ -31,45 +31,11 @@ export default function FloatingCreateButton({ onClick }: FloatingCreateButtonPr
       {/* Floating Action Button */}
       <button
         onClick={handleClick}
-        className="
-          fixed
-          bottom-6
-          right-6
-          z-50
-          w-16
-          h-16
-          rounded-full
-          bg-blue-600
-          hover:bg-blue-700
-          active:bg-blue-800
-          text-white
-          shadow-2xl
-          hover:shadow-3xl
-          transition-all
-          duration-200
-          ease-in-out
-          hover:scale-110
-          active:scale-95
-          flex
-          items-center
-          justify-center
-          focus:outline-none
-          focus:ring-4
-          focus:ring-blue-300
-          group
-        "
+        className="hover:shadow-3xl group fixed right-6 bottom-6 z-50 flex h-16 w-16 items-center justify-center rounded-full bg-blue-600 text-white shadow-2xl transition-all duration-200 ease-in-out hover:scale-110 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 focus:outline-none active:scale-95 active:bg-blue-800"
         aria-label="Create new reservation"
         title="Create Unallocated Reservation"
       >
-        <Plus
-          className="
-            w-8
-            h-8
-            transition-transform
-            duration-200
-            group-hover:rotate-90
-          "
-        />
+        <Plus className="h-8 w-8 transition-transform duration-200 group-hover:rotate-90" />
       </button>
 
       {/* Modal for creating unallocated reservation */}

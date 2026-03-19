@@ -5,19 +5,19 @@ import { Button } from './button';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { Reservation } from '../../lib/hotel/types';
 import { isDateAvailableForRoom } from '../../lib/hotel/calendarUtils';
-import { 
-  format, 
-  startOfMonth, 
-  endOfMonth, 
-  startOfWeek, 
-  endOfWeek, 
-  addDays, 
-  isSameMonth, 
-  isSameDay, 
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
+  startOfWeek,
+  endOfWeek,
+  addDays,
+  isSameMonth,
+  isSameDay,
   isToday,
   addMonths,
   subMonths,
-  startOfDay
+  startOfDay,
 } from 'date-fns';
 
 interface CalendarDatePickerProps {
@@ -45,7 +45,7 @@ export function CalendarDatePicker({
   required = false,
   reservations,
   roomId,
-  disabled = false
+  disabled = false,
 }: CalendarDatePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(value ? new Date(value) : new Date());
@@ -110,9 +110,9 @@ export function CalendarDatePicker({
     }
 
     return (
-      <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 p-4 min-w-[300px]">
+      <div className="absolute top-full left-0 z-50 mt-1 min-w-[300px] rounded-lg border border-gray-300 bg-white p-4 shadow-lg">
         {/* Calendar Header */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="mb-4 flex items-center justify-between">
           <Button
             type="button"
             variant="outline"
@@ -121,9 +121,7 @@ export function CalendarDatePicker({
           >
             &lt;
           </Button>
-          <h3 className="font-semibold">
-            {format(currentMonth, 'MMMM yyyy')}
-          </h3>
+          <h3 className="font-semibold">{format(currentMonth, 'MMMM yyyy')}</h3>
           <Button
             type="button"
             variant="outline"
@@ -135,9 +133,9 @@ export function CalendarDatePicker({
         </div>
 
         {/* Day Headers */}
-        <div className="grid grid-cols-7 gap-1 mb-2">
-          {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
-            <div key={day} className="text-center text-xs font-medium text-gray-500 p-2">
+        <div className="mb-2 grid grid-cols-7 gap-1">
+          {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day) => (
+            <div key={day} className="p-2 text-center text-xs font-medium text-gray-500">
               {day}
             </div>
           ))}
@@ -151,7 +149,9 @@ export function CalendarDatePicker({
               const isSelected = value && isSameDay(date, new Date(value));
               const isTodayDate = isToday(date);
               const isSelectable = isDateSelectable(date);
-              const isOccupied = !isDateAvailableForRoom(reservations, roomId, date) && startOfDay(date) >= startOfDay(new Date());
+              const isOccupied =
+                !isDateAvailableForRoom(reservations, roomId, date) &&
+                startOfDay(date) >= startOfDay(new Date());
 
               return (
                 <button
@@ -159,15 +159,7 @@ export function CalendarDatePicker({
                   type="button"
                   onClick={() => handleDateSelect(date)}
                   disabled={!isSelectable}
-                  className={`
-                    p-2 text-sm rounded-md transition-colors relative
-                    ${!isCurrentMonth ? 'text-gray-300' : ''}
-                    ${isTodayDate ? 'bg-blue-100 font-semibold' : ''}
-                    ${isSelected ? 'bg-blue-600 text-white' : ''}
-                    ${isSelectable && !isSelected && isCurrentMonth ? 'hover:bg-gray-100' : ''}
-                    ${!isSelectable ? 'text-gray-300 cursor-not-allowed' : 'cursor-pointer'}
-                    ${isOccupied && isCurrentMonth ? 'bg-red-100 text-red-400' : ''}
-                  `}
+                  className={`relative rounded-md p-2 text-sm transition-colors ${!isCurrentMonth ? 'text-gray-300' : ''} ${isTodayDate ? 'bg-blue-100 font-semibold' : ''} ${isSelected ? 'bg-blue-600 text-white' : ''} ${isSelectable && !isSelected && isCurrentMonth ? 'hover:bg-gray-100' : ''} ${!isSelectable ? 'cursor-not-allowed text-gray-300' : 'cursor-pointer'} ${isOccupied && isCurrentMonth ? 'bg-red-100 text-red-400' : ''} `}
                 >
                   {format(date, 'd')}
                   {isOccupied && isCurrentMonth && (
@@ -180,17 +172,17 @@ export function CalendarDatePicker({
         </div>
 
         {/* Legend */}
-        <div className="mt-4 text-xs text-gray-600 space-y-1">
+        <div className="mt-4 space-y-1 text-xs text-gray-600">
           <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 bg-red-100 rounded"></div>
+            <div className="h-3 w-3 rounded bg-red-100"></div>
             <span>Occupied (unavailable)</span>
           </div>
           <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 bg-blue-100 rounded"></div>
+            <div className="h-3 w-3 rounded bg-blue-100"></div>
             <span>Today</span>
           </div>
           <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 bg-blue-600 rounded"></div>
+            <div className="h-3 w-3 rounded bg-blue-600"></div>
             <span>Selected</span>
           </div>
         </div>
@@ -200,7 +192,9 @@ export function CalendarDatePicker({
 
   return (
     <div className="space-y-1" ref={containerRef}>
-      <Label htmlFor={id}>{label} {required && '*'}</Label>
+      <Label htmlFor={id}>
+        {label} {required && '*'}
+      </Label>
       <div className="relative">
         <Input
           id={id}
@@ -218,17 +212,17 @@ export function CalendarDatePicker({
           size="sm"
           onClick={() => !disabled && setIsOpen(!isOpen)}
           disabled={disabled}
-          className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+          className="absolute top-0 right-0 h-full px-3 hover:bg-transparent"
         >
           <CalendarIcon className="h-4 w-4 text-gray-500" />
         </Button>
-        
+
         {isOpen && renderCalendar()}
       </div>
 
       {/* Show warning if current value is occupied */}
       {value && !isDateAvailableForRoom(reservations, roomId, new Date(value)) && (
-        <div className="text-sm text-red-600 mt-1">
+        <div className="mt-1 text-sm text-red-600">
           ⚠️ This date is occupied by another reservation
         </div>
       )}

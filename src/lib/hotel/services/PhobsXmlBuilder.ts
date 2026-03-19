@@ -369,11 +369,7 @@ export class PhobsXmlBuilder {
     password: string;
     timestamp?: string;
   }): string {
-    const {
-      username,
-      password,
-      timestamp = new Date().toISOString(),
-    } = params;
+    const { username, password, timestamp = new Date().toISOString() } = params;
 
     // Build WS-Security header
     const headers = {
@@ -383,7 +379,8 @@ export class PhobsXmlBuilder {
         'wsse:UsernameToken': {
           'wsse:Username': username,
           'wsse:Password': {
-            '@_xsi:type': 'wsse:http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText',
+            '@_xsi:type':
+              'wsse:http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText',
             '#text': password,
           },
         },
@@ -427,12 +424,7 @@ export class PhobsXmlBuilder {
     }>; // List of reservations to confirm with mapping
     timestamp?: string;
   }): string {
-    const {
-      username,
-      password,
-      confirmationCodes,
-      timestamp = new Date().toISOString(),
-    } = params;
+    const { username, password, confirmationCodes, timestamp = new Date().toISOString() } = params;
 
     // Build WS-Security header
     const headers = {
@@ -442,7 +434,8 @@ export class PhobsXmlBuilder {
         'wsse:UsernameToken': {
           'wsse:Username': username,
           'wsse:Password': {
-            '@_xsi:type': 'wsse:http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText',
+            '@_xsi:type':
+              'wsse:http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText',
             '#text': password,
           },
         },

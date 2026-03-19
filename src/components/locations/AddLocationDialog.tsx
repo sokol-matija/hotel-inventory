@@ -1,83 +1,78 @@
-import React, { useState } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog'
-import { Button } from '../ui/button'
-import { Input } from '../ui/input'
-import { Label } from '../ui/label'
-import { Textarea } from '../ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
-import { supabase } from '@/lib/supabase'
-import { useTranslation } from 'react-i18next'
-import { MapPin, Loader2 } from 'lucide-react'
+import React, { useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { Textarea } from '../ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { supabase } from '@/lib/supabase';
+import { useTranslation } from 'react-i18next';
+import { MapPin, Loader2 } from 'lucide-react';
 
 interface AddLocationDialogProps {
-  isOpen: boolean
-  onClose: () => void
-  onLocationAdded: () => void
+  isOpen: boolean;
+  onClose: () => void;
+  onLocationAdded: () => void;
 }
 
-const LOCATION_TYPES = [
-  'refrigerator',
-  'freezer', 
-  'pantry',
-  'storage',
-  'bar',
-  'kitchen',
-  'office'
-]
+const LOCATION_TYPES = ['refrigerator', 'freezer', 'pantry', 'storage', 'bar', 'kitchen', 'office'];
 
-export default function AddLocationDialog({ isOpen, onClose, onLocationAdded }: AddLocationDialogProps) {
-  const { t } = useTranslation()
+export default function AddLocationDialog({
+  isOpen,
+  onClose,
+  onLocationAdded,
+}: AddLocationDialogProps) {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     name: '',
     type: '',
     description: '',
-    is_refrigerated: false
-  })
-  const [submitting, setSubmitting] = useState(false)
+    is_refrigerated: false,
+  });
+  const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setSubmitting(true)
+    e.preventDefault();
+    setSubmitting(true);
 
     try {
-      const { error } = await supabase
-        .from('locations')
-        .insert([
-          {
-            name: formData.name,
-            type: formData.type,
-            description: formData.description || null,
-            is_refrigerated: formData.is_refrigerated || ['refrigerator', 'freezer'].includes(formData.type)
-          }
-        ])
+      const { error } = await supabase.from('locations').insert([
+        {
+          name: formData.name,
+          type: formData.type,
+          description: formData.description || null,
+          is_refrigerated:
+            formData.is_refrigerated || ['refrigerator', 'freezer'].includes(formData.type),
+        },
+      ]);
 
-      if (error) throw error
+      if (error) throw error;
 
-      onLocationAdded()
-      onClose()
-      setFormData({ name: '', type: '', description: '', is_refrigerated: false })
+      onLocationAdded();
+      onClose();
+      setFormData({ name: '', type: '', description: '', is_refrigerated: false });
     } catch (error) {
-      console.error('Error adding location:', error)
-      alert('Error adding location. Please try again.')
+      console.error('Error adding location:', error);
+      alert('Error adding location. Please try again.');
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
-  }
+  };
 
   const handleChange = (field: string, value: string | boolean) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
-    }))
-  }
+      [field]: value,
+    }));
+  };
 
   const handleTypeChange = (type: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       type,
-      is_refrigerated: ['refrigerator', 'freezer'].includes(type)
-    }))
-  }
+      is_refrigerated: ['refrigerator', 'freezer'].includes(type),
+    }));
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -103,10 +98,7 @@ export default function AddLocationDialog({ isOpen, onClose, onLocationAdded }: 
 
           <div>
             <Label htmlFor="type">{t('locations.locationType')} *</Label>
-            <Select
-              value={formData.type}
-              onValueChange={handleTypeChange}
-            >
+            <Select value={formData.type} onValueChange={handleTypeChange}>
               <SelectTrigger>
                 <SelectValue placeholder={t('locations.selectLocationType')} />
               </SelectTrigger>
@@ -143,7 +135,7 @@ export default function AddLocationDialog({ isOpen, onClose, onLocationAdded }: 
             <Label htmlFor="is_refrigerated" className="text-sm">
               Refrigerated storage
               {['refrigerator', 'freezer'].includes(formData.type) && (
-                <span className="text-gray-500 ml-1">(automatic for this type)</span>
+                <span className="ml-1 text-gray-500">(automatic for this type)</span>
               )}
             </Label>
           </div>
@@ -155,7 +147,7 @@ export default function AddLocationDialog({ isOpen, onClose, onLocationAdded }: 
             <Button type="submit" disabled={submitting}>
               {submitting ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Adding...
                 </>
               ) : (
@@ -166,5 +158,5 @@ export default function AddLocationDialog({ isOpen, onClose, onLocationAdded }: 
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

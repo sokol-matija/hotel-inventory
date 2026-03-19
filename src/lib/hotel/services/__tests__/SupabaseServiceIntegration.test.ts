@@ -9,19 +9,19 @@ const getTestData = async () => {
   const [rooms, guests, reservations] = await Promise.all([
     hotelDataService.getRooms(),
     hotelDataService.getGuests(),
-    hotelDataService.getReservations()
+    hotelDataService.getReservations(),
   ]);
-  
+
   return { rooms, guests, reservations };
 };
 
 const cleanupTestReservations = async () => {
   const reservations = await hotelDataService.getReservations();
-  const testReservations = reservations.filter(r => 
-    r.specialRequests?.includes('SERVICE_LAYER_TEST') || 
-    r.notes?.includes('SERVICE_LAYER_TEST')
+  const testReservations = reservations.filter(
+    (r) =>
+      r.specialRequests?.includes('SERVICE_LAYER_TEST') || r.notes?.includes('SERVICE_LAYER_TEST')
   );
-  
+
   for (const reservation of testReservations) {
     try {
       await hotelDataService.deleteReservation(reservation.id);
@@ -40,7 +40,9 @@ describe('Supabase Service Layer Integration Tests', () => {
 
   beforeAll(async () => {
     testData = await getTestData();
-    console.log(`🎯 Service Test Environment: ${testData.rooms.length} rooms, ${testData.guests.length} guests, ${testData.reservations.length} reservations`);
+    console.log(
+      `🎯 Service Test Environment: ${testData.rooms.length} rooms, ${testData.guests.length} guests, ${testData.reservations.length} reservations`
+    );
   });
 
   afterEach(async () => {
@@ -50,10 +52,7 @@ describe('Supabase Service Layer Integration Tests', () => {
   describe('🏗️ Database Connection & Schema', () => {
     test('should verify Supabase connection works', async () => {
       // Test direct connection
-      const { data: testConnection, error } = await supabase
-        .from('rooms')
-        .select('count')
-        .single();
+      const { data: testConnection, error } = await supabase.from('rooms').select('count').single();
 
       expect(error).toBeNull();
       expect(testConnection).toBeDefined();
@@ -67,7 +66,7 @@ describe('Supabase Service Layer Integration Tests', () => {
         supabase.from('guests').select('*').limit(1),
         supabase.from('reservations').select('*').limit(1),
         supabase.from('companies').select('*').limit(1),
-        supabase.from('pricing_tiers').select('*').limit(1)
+        supabase.from('pricing_tiers').select('*').limit(1),
       ]);
 
       tableTests.forEach((result, index) => {
@@ -84,25 +83,27 @@ describe('Supabase Service Layer Integration Tests', () => {
     test('should verify database has test data', async () => {
       expect(testData.rooms.length).toBeGreaterThan(0);
       expect(testData.guests.length).toBeGreaterThan(0);
-      
-      console.log(`✅ Database contains ${testData.rooms.length} rooms and ${testData.guests.length} guests`);
+
+      console.log(
+        `✅ Database contains ${testData.rooms.length} rooms and ${testData.guests.length} guests`
+      );
     });
   });
 
   describe('🏨 Room Operations', () => {
     test('should fetch all rooms correctly', async () => {
       const rooms = await hotelDataService.getRooms();
-      
+
       expect(Array.isArray(rooms)).toBe(true);
       expect(rooms.length).toBeGreaterThan(0);
-      
+
       // Verify room structure
       const firstRoom = rooms[0];
       expect(firstRoom).toHaveProperty('id');
       expect(firstRoom).toHaveProperty('number');
       expect(firstRoom).toHaveProperty('floor');
       expect(firstRoom).toHaveProperty('type');
-      
+
       console.log(`✅ Fetched ${rooms.length} rooms successfully`);
     });
 
@@ -115,11 +116,11 @@ describe('Supabase Service Layer Integration Tests', () => {
 
       const testRoomId = rooms[0].id;
       const room = await hotelDataService.getRoomById(testRoomId);
-      
+
       expect(room).toBeDefined();
       expect(room.id).toBe(testRoomId);
       expect(room.number).toBe(rooms[0].number);
-      
+
       console.log(`✅ Retrieved room ${room.number} by ID successfully`);
     });
 
@@ -152,10 +153,10 @@ describe('Supabase Service Layer Integration Tests', () => {
       checkOut.setDate(checkOut.getDate() + 37);
 
       const availableRooms = await hotelDataService.getAvailableRooms(checkIn, checkOut);
-      
+
       expect(Array.isArray(availableRooms)).toBe(true);
       expect(availableRooms.length).toBeGreaterThanOrEqual(0);
-      
+
       console.log(`✅ Found ${availableRooms.length} available rooms for date range`);
     });
   });
@@ -163,9 +164,9 @@ describe('Supabase Service Layer Integration Tests', () => {
   describe('👥 Guest Operations', () => {
     test('should fetch all guests correctly', async () => {
       const guests = await hotelDataService.getGuests();
-      
+
       expect(Array.isArray(guests)).toBe(true);
-      
+
       if (guests.length > 0) {
         const firstGuest = guests[0];
         expect(firstGuest).toHaveProperty('id');
@@ -173,7 +174,7 @@ describe('Supabase Service Layer Integration Tests', () => {
         expect(firstGuest).toHaveProperty('lastName');
         expect(firstGuest).toHaveProperty('email');
       }
-      
+
       console.log(`✅ Fetched ${guests.length} guests successfully`);
     });
 
@@ -185,10 +186,10 @@ describe('Supabase Service Layer Integration Tests', () => {
 
       const testGuestId = testData.guests[0].id;
       const guest = await hotelDataService.getGuestById(testGuestId);
-      
+
       expect(guest).toBeDefined();
       expect(guest.id).toBe(testGuestId);
-      
+
       console.log(`✅ Retrieved guest ${guest.firstName} ${guest.lastName} by ID successfully`);
     });
   });
@@ -232,7 +233,7 @@ describe('Supabase Service Layer Integration Tests', () => {
         additionalCharges: 0,
         roomServiceItems: [],
         totalAmount: 381,
-        notes: 'SERVICE_LAYER_TEST reservation'
+        notes: 'SERVICE_LAYER_TEST reservation',
       };
 
       const startTime = performance.now();
@@ -245,7 +246,9 @@ describe('Supabase Service Layer Integration Tests', () => {
       expect(reservation.guestId).toBe(testGuest.id);
       expect(reservation.status).toBe('confirmed');
 
-      console.log(`✅ Created reservation ${reservation.id} for room ${testRoom.number} in ${Math.round(duration)}ms`);
+      console.log(
+        `✅ Created reservation ${reservation.id} for room ${testRoom.number} in ${Math.round(duration)}ms`
+      );
     });
 
     test('should update reservation successfully', async () => {
@@ -287,13 +290,13 @@ describe('Supabase Service Layer Integration Tests', () => {
         additionalCharges: 0,
         roomServiceItems: [],
         totalAmount: 254,
-        notes: 'SERVICE_LAYER_TEST update test'
+        notes: 'SERVICE_LAYER_TEST update test',
       });
 
       // Update the reservation
       const updatedReservation = await hotelDataService.updateReservation(reservation.id, {
         status: 'checked-in',
-        specialRequests: 'SERVICE_LAYER_TEST updated reservation'
+        specialRequests: 'SERVICE_LAYER_TEST updated reservation',
       });
 
       expect(updatedReservation.status).toBe('checked-in');
@@ -304,9 +307,9 @@ describe('Supabase Service Layer Integration Tests', () => {
 
     test('should fetch reservations correctly', async () => {
       const reservations = await hotelDataService.getReservations();
-      
+
       expect(Array.isArray(reservations)).toBe(true);
-      
+
       if (reservations.length > 0) {
         const firstReservation = reservations[0];
         expect(firstReservation).toHaveProperty('id');
@@ -316,7 +319,7 @@ describe('Supabase Service Layer Integration Tests', () => {
         expect(firstReservation).toHaveProperty('checkOut');
         expect(firstReservation).toHaveProperty('status');
       }
-      
+
       console.log(`✅ Fetched ${reservations.length} reservations successfully`);
     });
 
@@ -359,7 +362,7 @@ describe('Supabase Service Layer Integration Tests', () => {
         additionalCharges: 0,
         roomServiceItems: [],
         totalAmount: 254,
-        notes: 'SERVICE_LAYER_TEST deletion test'
+        notes: 'SERVICE_LAYER_TEST deletion test',
       });
 
       // Delete the reservation
@@ -367,8 +370,8 @@ describe('Supabase Service Layer Integration Tests', () => {
 
       // Verify deletion
       const allReservations = await hotelDataService.getReservations();
-      const deletedReservation = allReservations.find(r => r.id === reservation.id);
-      
+      const deletedReservation = allReservations.find((r) => r.id === reservation.id);
+
       expect(deletedReservation).toBeUndefined();
       console.log(`✅ Successfully deleted reservation ${reservation.id}`);
     });
@@ -416,7 +419,7 @@ describe('Supabase Service Layer Integration Tests', () => {
           additionalCharges: 0,
           roomServiceItems: [],
           totalAmount: 254,
-          notes: 'SERVICE_LAYER_TEST concurrent 1'
+          notes: 'SERVICE_LAYER_TEST concurrent 1',
         }),
         hotelDataService.createReservation({
           roomId: room2.id,
@@ -442,12 +445,12 @@ describe('Supabase Service Layer Integration Tests', () => {
           additionalCharges: 0,
           roomServiceItems: [],
           totalAmount: 254,
-          notes: 'SERVICE_LAYER_TEST concurrent 2'
-        })
+          notes: 'SERVICE_LAYER_TEST concurrent 2',
+        }),
       ];
 
       const results = await Promise.allSettled(reservationPromises);
-      
+
       results.forEach((result, index) => {
         expect(result.status).toBe('fulfilled');
         if (result.status === 'fulfilled') {
@@ -503,7 +506,7 @@ describe('Supabase Service Layer Integration Tests', () => {
         getRooms: 0,
         getGuests: 0,
         getReservations: 0,
-        createReservation: 0
+        createReservation: 0,
       };
 
       // Measure getRooms performance
@@ -527,7 +530,7 @@ describe('Supabase Service Layer Integration Tests', () => {
       console.log(`   🏨 getReservations: ${Math.round(operations.getReservations)}ms`);
 
       // All operations should complete within reasonable time (5 seconds)
-      Object.values(operations).forEach(duration => {
+      Object.values(operations).forEach((duration) => {
         expect(duration).toBeLessThan(5000);
       });
 

@@ -38,9 +38,9 @@ export class RealtimeService {
   private static instance: RealtimeService;
   private channels: Map<string, RealtimeChannel> = new Map();
   private static readonly HOTEL_POREC_ID = '550e8400-e29b-41d4-a716-446655440000'; // Fixed UUID for Hotel Porec
-  
+
   private constructor() {}
-  
+
   public static getInstance(): RealtimeService {
     if (!RealtimeService.instance) {
       RealtimeService.instance = new RealtimeService();
@@ -55,9 +55,7 @@ export class RealtimeService {
     onReservationChange: ReservationChangeHandler,
     roomId?: string
   ): () => void {
-    const channelName = roomId 
-      ? `reservations-room-${roomId}`
-      : 'reservations-all';
+    const channelName = roomId ? `reservations-room-${roomId}` : 'reservations-all';
 
     // Remove existing subscription if any
     this.unsubscribe(channelName);
@@ -70,20 +68,18 @@ export class RealtimeService {
           event: '*',
           schema: 'public',
           table: 'reservations',
-          filter: roomId
-            ? `room_id=eq.${roomId}`
-            : undefined
+          filter: roomId ? `room_id=eq.${roomId}` : undefined,
         },
         (payload) => {
           console.log('Reservation change:', payload);
-          
+
           const realtimePayload: ReservationRealtimePayload = {
             eventType: payload.eventType as RealtimeEventType,
             new: payload.new as Reservation | null,
             old: payload.old as Reservation | null,
-            table: 'reservations'
+            table: 'reservations',
           };
-          
+
           onReservationChange(realtimePayload);
         }
       )
@@ -100,13 +96,8 @@ export class RealtimeService {
   /**
    * Subscribe to room status changes
    */
-  subscribeToRooms(
-    onRoomChange: RoomChangeHandler,
-    floor?: number
-  ): () => void {
-    const channelName = floor 
-      ? `rooms-floor-${floor}`
-      : 'rooms-all';
+  subscribeToRooms(onRoomChange: RoomChangeHandler, floor?: number): () => void {
+    const channelName = floor ? `rooms-floor-${floor}` : 'rooms-all';
 
     // Remove existing subscription if any
     this.unsubscribe(channelName);
@@ -119,20 +110,18 @@ export class RealtimeService {
           event: '*',
           schema: 'public',
           table: 'rooms',
-          filter: floor
-            ? `floor_number=eq.${floor}`
-            : undefined
+          filter: floor ? `floor_number=eq.${floor}` : undefined,
         },
         (payload) => {
           console.log('Room change:', payload);
-          
+
           const realtimePayload: RoomRealtimePayload = {
             eventType: payload.eventType as RealtimeEventType,
             new: payload.new as Room | null,
             old: payload.old as Room | null,
-            table: 'rooms'
+            table: 'rooms',
           };
-          
+
           onRoomChange(realtimePayload);
         }
       )
@@ -149,9 +138,7 @@ export class RealtimeService {
   /**
    * Subscribe to guest changes
    */
-  subscribeToGuests(
-    onGuestChange: GuestChangeHandler
-  ): () => void {
+  subscribeToGuests(onGuestChange: GuestChangeHandler): () => void {
     const channelName = 'guests-all';
 
     // Remove existing subscription if any
@@ -164,18 +151,18 @@ export class RealtimeService {
         {
           event: '*',
           schema: 'public',
-          table: 'guests'
+          table: 'guests',
         },
         (payload) => {
           console.log('Guest change:', payload);
-          
+
           const realtimePayload: GuestRealtimePayload = {
             eventType: payload.eventType as RealtimeEventType,
             new: payload.new as Guest | null,
             old: payload.old as Guest | null,
-            table: 'guests'
+            table: 'guests',
           };
-          
+
           onGuestChange(realtimePayload);
         }
       )
@@ -217,7 +204,7 @@ export class RealtimeService {
 
     // Return function to unsubscribe from all
     return () => {
-      unsubscribeFunctions.forEach(unsub => unsub());
+      unsubscribeFunctions.forEach((unsub) => unsub());
     };
   }
 
@@ -241,18 +228,18 @@ export class RealtimeService {
           event: '*',
           schema: 'public',
           table: 'reservations',
-          filter: `id=eq.${reservationId}`
+          filter: `id=eq.${reservationId}`,
         },
         (payload) => {
           console.log('Single reservation change:', payload);
-          
+
           const realtimePayload: ReservationRealtimePayload = {
             eventType: payload.eventType as RealtimeEventType,
             new: payload.new as Reservation | null,
             old: payload.old as Reservation | null,
-            table: 'reservations'
+            table: 'reservations',
           };
-          
+
           onReservationChange(realtimePayload);
         }
       )

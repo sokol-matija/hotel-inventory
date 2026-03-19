@@ -6,50 +6,50 @@ export interface EracuniConfig {
   environment: 'demo' | 'production';
   fina_endpoint_url: string;
   company_name: string;
-  company_oib: string;          // Croatian OIB (tax number)
+  company_oib: string; // Croatian OIB (tax number)
   company_address: string;
   company_city: string;
   company_postal_code: string;
-  company_country: string;      // 'HR' for Croatia
+  company_country: string; // 'HR' for Croatia
   soap_timeout: number;
   max_retries: number;
   is_active: boolean;
 }
 
-export type InvoiceStatus = 
-  | 'draft'           // Created but not ready
-  | 'generated'       // XML generated, ready to send
-  | 'sent'            // Sent to FINA
-  | 'delivered'       // FINA confirmed receipt
-  | 'accepted'        // FINA approved invoice
-  | 'rejected'        // FINA rejected invoice
-  | 'error'           // Error occurred
-  | 'cancelled'       // Manually cancelled
+export type InvoiceStatus =
+  | 'draft' // Created but not ready
+  | 'generated' // XML generated, ready to send
+  | 'sent' // Sent to FINA
+  | 'delivered' // FINA confirmed receipt
+  | 'accepted' // FINA approved invoice
+  | 'rejected' // FINA rejected invoice
+  | 'error' // Error occurred
+  | 'cancelled'; // Manually cancelled
 
 export interface EracuniInvoice {
   id: string;
-  reservation_id: string;       // Hotel reservation ID
-  guest_id: string;            // Guest customer ID
-  invoice_number: string;       // Format: HP-YYYY-XXXXXX (Hotel Porec)
+  reservation_id: string; // Hotel reservation ID
+  guest_id: string; // Guest customer ID
+  invoice_number: string; // Format: HP-YYYY-XXXXXX (Hotel Porec)
   invoice_date: string;
-  due_date: string;            // Standard 30 days
+  due_date: string; // Standard 30 days
   net_amount: number;
-  vat_rate: number;            // Croatia: 25% standard rate
+  vat_rate: number; // Croatia: 25% standard rate
   vat_amount: number;
   total_amount: number;
-  currency: string;            // EUR (Croatia adopted Euro in 2023)
+  currency: string; // EUR (Croatia adopted Euro in 2023)
   status: InvoiceStatus;
-  
+
   // Croatian Fiscal Compliance
   fiscal_data: {
-    oib: string;               // Hotel's OIB
-    jir?: string;              // Jedinstveni identifikator računa (JIR)
-    zki?: string;              // Zaštitni kod izdavatelja (ZKI)
+    oib: string; // Hotel's OIB
+    jir?: string; // Jedinstveni identifikator računa (JIR)
+    zki?: string; // Zaštitni kod izdavatelja (ZKI)
     fiscal_receipt_url?: string;
     submission_timestamp?: string;
     fina_response_id?: string;
   };
-  
+
   // Hotel-specific data
   hotel_data: {
     room_number: string;
@@ -58,7 +58,7 @@ export interface EracuniInvoice {
     check_out_date: string;
     nights: number;
     guests: number;
-    tourism_tax: number;       // Croatian tourism tax
+    tourism_tax: number; // Croatian tourism tax
     breakfast_included: boolean;
     additional_services: Array<{
       name: string;
@@ -67,7 +67,7 @@ export interface EracuniInvoice {
       total: number;
     }>;
   };
-  
+
   created_at: string;
   updated_at: string;
   xml_generated?: boolean;
@@ -108,15 +108,15 @@ export const HOTEL_POREC_CONFIG: EracuniConfig = {
   company_country: 'HR',
   soap_timeout: 30000,
   max_retries: 3,
-  is_active: true
+  is_active: true,
 };
 
 // Croatian Tax Rates
 export const CROATIAN_TAX_RATES = {
-  STANDARD_VAT: 0.25,          // 25% standard VAT rate
-  REDUCED_VAT: 0.13,           // 13% reduced VAT rate (some services)
-  ZERO_VAT: 0.00,              // 0% for exports
-  TOURISM_TAX_PER_NIGHT: 1.35  // €1.35 per person per night (2025 rate)
+  STANDARD_VAT: 0.25, // 25% standard VAT rate
+  REDUCED_VAT: 0.13, // 13% reduced VAT rate (some services)
+  ZERO_VAT: 0.0, // 0% for exports
+  TOURISM_TAX_PER_NIGHT: 1.35, // €1.35 per person per night (2025 rate)
 };
 
 // Croatian Fiscal Validation Rules
@@ -124,5 +124,5 @@ export const CROATIAN_FISCAL_RULES = {
   OIB_LENGTH: 11,
   INVOICE_NUMBER_PATTERN: /^HP-\d{4}-\d{6}$/,
   JIR_LENGTH: 32,
-  ZKI_LENGTH: 32
+  ZKI_LENGTH: 32,
 };

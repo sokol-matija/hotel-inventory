@@ -15,18 +15,18 @@ export interface BookingFormState {
   adults: number;
   children: GuestChild[];
   specialRequests: string;
-  
+
   // Additional options
   hasPets: boolean;
   needsParking: boolean;
   status: ReservationStatus;
   bookingSource: 'booking.com' | 'direct' | 'other';
-  
+
   // R1 billing
   isR1Bill: boolean;
   selectedCompany: Company | null;
   pricingTierId: string;
-  
+
   // New guest data
   newGuestData: {
     firstName: string;
@@ -37,7 +37,7 @@ export interface BookingFormState {
     nationality: string;
     hasPets: boolean;
   };
-  
+
   // Form state
   errors: BookingValidationError[];
   isDirty: boolean;
@@ -67,66 +67,72 @@ const initialState: BookingFormState = {
     email: '',
     phone: '',
     nationality: '',
-    hasPets: false
+    hasPets: false,
   },
   errors: [],
   isDirty: false,
-  isSubmitting: false
+  isSubmitting: false,
 };
 
 export function useBookingForm(room?: Room, initialData?: Partial<BookingFormState>) {
   const [formState, setFormState] = useState<BookingFormState>(() => ({
     ...initialState,
     selectedRoom: room || null,
-    ...initialData
+    ...initialData,
   }));
 
   const bookingService = BookingService.getInstance();
 
   // Form field updaters
-  const updateField = useCallback(<K extends keyof BookingFormState>(
-    field: K,
-    value: BookingFormState[K]
-  ) => {
-    setFormState(prev => ({
-      ...prev,
-      [field]: value,
-      isDirty: true
-    }));
-  }, []);
+  const updateField = useCallback(
+    <K extends keyof BookingFormState>(field: K, value: BookingFormState[K]) => {
+      setFormState((prev) => ({
+        ...prev,
+        [field]: value,
+        isDirty: true,
+      }));
+    },
+    []
+  );
 
-  const updateNewGuestField = useCallback(<K extends keyof BookingFormState['newGuestData']>(
-    field: K,
-    value: BookingFormState['newGuestData'][K]
-  ) => {
-    setFormState(prev => ({
-      ...prev,
-      newGuestData: {
-        ...prev.newGuestData,
-        [field]: value
-      },
-      isDirty: true
-    }));
-  }, []);
+  const updateNewGuestField = useCallback(
+    <K extends keyof BookingFormState['newGuestData']>(
+      field: K,
+      value: BookingFormState['newGuestData'][K]
+    ) => {
+      setFormState((prev) => ({
+        ...prev,
+        newGuestData: {
+          ...prev.newGuestData,
+          [field]: value,
+        },
+        isDirty: true,
+      }));
+    },
+    []
+  );
 
   // Computed values
-  const bookingData: Partial<BookingData> = useMemo(() => ({
-    room: formState.selectedRoom || undefined,
-    guest: formState.isNewGuest ? formState.newGuestData : formState.selectedGuest || undefined,
-    isNewGuest: formState.isNewGuest,
-    checkIn: formState.checkIn,
-    checkOut: formState.checkOut,
-    adults: formState.adults,
-    children: formState.children,
-    specialRequests: formState.specialRequests,
-    hasPets: formState.hasPets,
-    needsParking: formState.needsParking,
-    status: formState.status,
-    bookingSource: formState.bookingSource,
-    isR1Bill: formState.isR1Bill,
-    selectedCompany: formState.selectedCompany,
-    pricingTierId: formState.pricingTierId
-  }), [formState]);
+  const bookingData: Partial<BookingData> = useMemo(
+    () => ({
+      room: formState.selectedRoom || undefined,
+      guest: formState.isNewGuest ? formState.newGuestData : formState.selectedGuest || undefined,
+      isNewGuest: formState.isNewGuest,
+      checkIn: formState.checkIn,
+      checkOut: formState.checkOut,
+      adults: formState.adults,
+      children: formState.children,
+      specialRequests: formState.specialRequests,
+      hasPets: formState.hasPets,
+      needsParking: formState.needsParking,
+      status: formState.status,
+      bookingSource: formState.bookingSource,
+      isR1Bill: formState.isR1Bill,
+      selectedCompany: formState.selectedCompany,
+      pricingTierId: formState.pricingTierId,
+    }),
+    [formState]
+  );
 
   // Pricing calculation
   const pricing = useMemo(() => {
@@ -134,71 +140,76 @@ export function useBookingForm(room?: Room, initialData?: Partial<BookingFormSta
   }, [bookingService, bookingData]);
 
   // Validation
-  const validate = useCallback((existingReservations: Reservation[] = []) => {
-    const validationErrors = bookingService.validateBooking(bookingData, existingReservations);
-    
-    setFormState(prev => ({
-      ...prev,
-      errors: validationErrors
-    }));
-    
-    return validationErrors.length === 0;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bookingService]); // Remove bookingData dependency to prevent infinite re-renders
+  const validate = useCallback(
+    (existingReservations: Reservation[] = []) => {
+      const validationErrors = bookingService.validateBooking(bookingData, existingReservations);
+
+      setFormState((prev) => ({
+        ...prev,
+        errors: validationErrors,
+      }));
+
+      return validationErrors.length === 0;
+    },
+    [bookingService]
+  ); // Remove bookingData dependency to prevent infinite re-renders
 
   // Form submission
   const setSubmitting = useCallback((isSubmitting: boolean) => {
-    setFormState(prev => ({
+    setFormState((prev) => ({
       ...prev,
-      isSubmitting
+      isSubmitting,
     }));
   }, []);
 
   // Reset form
-  const reset = useCallback((newRoom?: Room) => {
-    setFormState({
-      ...initialState,
-      selectedRoom: newRoom || formState.selectedRoom,
-      ...initialData
-    });
-  }, [formState.selectedRoom, initialData]);
+  const reset = useCallback(
+    (newRoom?: Room) => {
+      setFormState({
+        ...initialState,
+        selectedRoom: newRoom || formState.selectedRoom,
+        ...initialData,
+      });
+    },
+    [formState.selectedRoom, initialData]
+  );
 
   // Add child
   const addChild = useCallback((child: GuestChild) => {
-    setFormState(prev => ({
+    setFormState((prev) => ({
       ...prev,
       children: [...prev.children, child],
-      isDirty: true
+      isDirty: true,
     }));
   }, []);
 
   // Remove child
   const removeChild = useCallback((index: number) => {
-    setFormState(prev => ({
+    setFormState((prev) => ({
       ...prev,
       children: prev.children.filter((_, i) => i !== index),
-      isDirty: true
+      isDirty: true,
     }));
   }, []);
 
   // Convenience getters
   const isValid = formState.errors.length === 0;
-  const hasDateConflict = formState.errors.some(e => e.type === 'date_conflict');
-  const hasRoom401Issues = formState.errors.some(e => e.type === 'room_401');
-  const hasFormErrors = formState.errors.some(e => e.type === 'form_invalid');
+  const hasDateConflict = formState.errors.some((e) => e.type === 'date_conflict');
+  const hasRoom401Issues = formState.errors.some((e) => e.type === 'room_401');
+  const hasFormErrors = formState.errors.some((e) => e.type === 'form_invalid');
 
   return {
     // State
     formState,
     bookingData,
     pricing,
-    
+
     // Computed
     isValid,
     hasDateConflict,
     hasRoom401Issues,
     hasFormErrors,
-    
+
     // Actions
     updateField,
     updateNewGuestField,
@@ -206,6 +217,6 @@ export function useBookingForm(room?: Room, initialData?: Partial<BookingFormSta
     setSubmitting,
     reset,
     addChild,
-    removeChild
+    removeChild,
   };
 }

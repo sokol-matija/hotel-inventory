@@ -112,11 +112,7 @@ export class PhobsChannelManagerService {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       console.error('Phobs initialization failed:', error);
 
-      hotelNotification.error(
-        'Channel Manager Connection Failed',
-        errorMessage,
-        6
-      );
+      hotelNotification.error('Channel Manager Connection Failed', errorMessage, 6);
 
       return { success: false, error: errorMessage };
     }
@@ -145,7 +141,7 @@ export class PhobsChannelManagerService {
           return {
             success: true,
             token: this.authToken,
-            expiresAt: this.tokenExpiresAt
+            expiresAt: this.tokenExpiresAt,
           };
         } else {
           throw new Error(authResponse.error || 'Authentication failed');
@@ -154,11 +150,11 @@ export class PhobsChannelManagerService {
       {
         operation: 'authenticate',
         endpoint: '/token',
-        hotelId: this.config.hotelId
+        hotelId: this.config.hotelId,
       },
       {
         maxAttempts: 2, // Don't retry auth too many times
-        baseDelayMs: 2000
+        baseDelayMs: 2000,
       }
     );
 
@@ -168,7 +164,7 @@ export class PhobsChannelManagerService {
       this.errorHandler.logError(result.error!);
       return {
         success: false,
-        error: result.error?.message || 'Authentication failed'
+        error: result.error?.message || 'Authentication failed',
       };
     }
   }
@@ -180,7 +176,7 @@ export class PhobsChannelManagerService {
     if (!this.soapClient) {
       return {
         success: false,
-        error: 'SOAP client not initialized'
+        error: 'SOAP client not initialized',
       };
     }
 
@@ -192,7 +188,7 @@ export class PhobsChannelManagerService {
           success: true,
           latency: connectionResult.latency,
           apiVersion: '1.006', // OTA version
-          supportedFeatures: ['SOAP/XML', 'OTA', 'OAuth2']
+          supportedFeatures: ['SOAP/XML', 'OTA', 'OAuth2'],
         };
       } else {
         throw new Error(connectionResult.error || 'Connection test failed');
@@ -201,7 +197,7 @@ export class PhobsChannelManagerService {
       console.error('Connection test failed:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Connection test failed'
+        error: error instanceof Error ? error.message : 'Connection test failed',
       };
     }
   }
@@ -224,7 +220,7 @@ export class PhobsChannelManagerService {
         recordsSuccessful: 0,
         recordsFailed: 0,
         errors: ['SOAP client or configuration not initialized'],
-        duration: 0
+        duration: 0,
       };
     }
 
@@ -236,7 +232,7 @@ export class PhobsChannelManagerService {
         recordsSuccessful: 0,
         recordsFailed: 0,
         errors: ['Availability sync already in progress'],
-        duration: 0
+        duration: 0,
       };
     }
 
@@ -262,7 +258,9 @@ export class PhobsChannelManagerService {
             hotelCode: this.config.hotelId,
             roomId: availability.roomId,
             roomTypeCode: PhobsDataTransformer.mapRoomTypeToOtaCode(availability.roomId),
-            ratePlanCode: availability.rateId ? PhobsDataTransformer.mapRatePlanToOtaCode(availability.rateId) : undefined,
+            ratePlanCode: availability.rateId
+              ? PhobsDataTransformer.mapRatePlanToOtaCode(availability.rateId)
+              : undefined,
             startDate: availability.date,
             endDate: availability.date, // Single day update
             available: availability.available,
@@ -270,7 +268,7 @@ export class PhobsChannelManagerService {
             minStay: availability.minimumStay,
             maxStay: availability.maximumStay,
             closeToArrival: availability.closeToArrival,
-            closeToDeparture: availability.closeToDeparture
+            closeToDeparture: availability.closeToDeparture,
           });
 
           // Send SOAP request
@@ -280,12 +278,16 @@ export class PhobsChannelManagerService {
             recordsSuccessful++;
           } else {
             recordsFailed++;
-            const errorMsg = soapResponse.errors?.map(e => `${e.code}: ${e.message}`).join(', ') || 'Unknown error';
+            const errorMsg =
+              soapResponse.errors?.map((e) => `${e.code}: ${e.message}`).join(', ') ||
+              'Unknown error';
             errors.push(`Room ${availability.roomId}: ${errorMsg}`);
           }
         } catch (error) {
           recordsFailed++;
-          errors.push(`Room ${availability.roomId}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          errors.push(
+            `Room ${availability.roomId}: ${error instanceof Error ? error.message : 'Unknown error'}`
+          );
         }
       }
 
@@ -299,7 +301,7 @@ export class PhobsChannelManagerService {
         recordsSuccessful,
         recordsFailed,
         errors,
-        duration
+        duration,
       };
 
       if (result.success) {
@@ -328,7 +330,7 @@ export class PhobsChannelManagerService {
         recordsSuccessful,
         recordsFailed: recordsProcessed,
         errors: [error instanceof Error ? error.message : 'Sync failed'],
-        duration
+        duration,
       };
     } finally {
       this.syncInProgress.delete(operation);
@@ -349,7 +351,7 @@ export class PhobsChannelManagerService {
         recordsSuccessful: 0,
         recordsFailed: 0,
         errors: ['SOAP client or configuration not initialized'],
-        duration: 0
+        duration: 0,
       };
     }
 
@@ -361,7 +363,7 @@ export class PhobsChannelManagerService {
         recordsSuccessful: 0,
         recordsFailed: 0,
         errors: ['Rate sync already in progress'],
-        duration: 0
+        duration: 0,
       };
     }
 
@@ -390,7 +392,7 @@ export class PhobsChannelManagerService {
             startDate: request.dateRange.startDate,
             endDate: request.dateRange.endDate,
             baseRate: ratePlan.baseRate,
-            currencyCode: ratePlan.currency
+            currencyCode: ratePlan.currency,
           });
 
           // Send SOAP request
@@ -400,12 +402,16 @@ export class PhobsChannelManagerService {
             recordsSuccessful++;
           } else {
             recordsFailed++;
-            const errorMsg = soapResponse.errors?.map(e => `${e.code}: ${e.message}`).join(', ') || 'Unknown error';
+            const errorMsg =
+              soapResponse.errors?.map((e) => `${e.code}: ${e.message}`).join(', ') ||
+              'Unknown error';
             errors.push(`Rate ${ratePlan.rateId}: ${errorMsg}`);
           }
         } catch (error) {
           recordsFailed++;
-          errors.push(`Rate ${ratePlan.rateId}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          errors.push(
+            `Rate ${ratePlan.rateId}: ${error instanceof Error ? error.message : 'Unknown error'}`
+          );
         }
       }
 
@@ -419,7 +425,7 @@ export class PhobsChannelManagerService {
         recordsSuccessful,
         recordsFailed,
         errors,
-        duration
+        duration,
       };
 
       if (result.success) {
@@ -448,7 +454,7 @@ export class PhobsChannelManagerService {
         recordsSuccessful,
         recordsFailed: recordsProcessed,
         errors: [error instanceof Error ? error.message : 'Sync failed'],
-        duration
+        duration,
       };
     } finally {
       this.syncInProgress.delete(operation);
@@ -476,7 +482,7 @@ export class PhobsChannelManagerService {
     if (!this.soapClient || !this.config) {
       return {
         success: false,
-        error: 'SOAP client or configuration not initialized'
+        error: 'SOAP client or configuration not initialized',
       };
     }
 
@@ -489,7 +495,7 @@ export class PhobsChannelManagerService {
       // Send SOAP request to fetch rate plan
       const soapResponse = await this.soapClient.sendRatePlanRequest({
         hotelCode: this.config.hotelId,
-        destinationSystemCode
+        destinationSystemCode,
       });
 
       if (soapResponse.success && soapResponse.data) {
@@ -503,35 +509,28 @@ export class PhobsChannelManagerService {
 
         return {
           success: true,
-          ratePlans
+          ratePlans,
         };
       } else {
-        const errorMsg = soapResponse.errors?.map(e => `${e.code}: ${e.message}`).join(', ') || 'Unknown error';
+        const errorMsg =
+          soapResponse.errors?.map((e) => `${e.code}: ${e.message}`).join(', ') || 'Unknown error';
 
-        hotelNotification.error(
-          'Rate Plan Fetch Failed',
-          errorMsg,
-          5
-        );
+        hotelNotification.error('Rate Plan Fetch Failed', errorMsg, 5);
 
         return {
           success: false,
-          error: errorMsg
+          error: errorMsg,
         };
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch rate plan';
       console.error('Error fetching hotel rate plan:', error);
 
-      hotelNotification.error(
-        'Rate Plan Fetch Error',
-        errorMessage,
-        6
-      );
+      hotelNotification.error('Rate Plan Fetch Error', errorMessage, 6);
 
       return {
         success: false,
-        error: errorMessage
+        error: errorMessage,
       };
     }
   }
@@ -554,7 +553,7 @@ export class PhobsChannelManagerService {
         recordsSuccessful: 0,
         recordsFailed: 0,
         errors: ['SOAP client or configuration not initialized'],
-        duration: 0
+        duration: 0,
       };
     }
 
@@ -566,7 +565,7 @@ export class PhobsChannelManagerService {
         recordsSuccessful: 0,
         recordsFailed: 0,
         errors: ['Reservation sync already in progress'],
-        duration: 0
+        duration: 0,
       };
     }
 
@@ -578,8 +577,12 @@ export class PhobsChannelManagerService {
     const errors: string[] = [];
 
     try {
-      const operationText = request.operation === 'create' ? 'Creating' :
-                           request.operation === 'update' ? 'Updating' : 'Cancelling';
+      const operationText =
+        request.operation === 'create'
+          ? 'Creating'
+          : request.operation === 'update'
+            ? 'Updating'
+            : 'Cancelling';
 
       hotelNotification.info(
         'Syncing Reservations',
@@ -592,8 +595,11 @@ export class PhobsChannelManagerService {
         try {
           // Map operation to OTA resStatus
           const resStatus: 'Commit' | 'Cancel' | 'Modify' =
-            request.operation === 'create' ? 'Commit' :
-            request.operation === 'cancel' ? 'Cancel' : 'Modify';
+            request.operation === 'create'
+              ? 'Commit'
+              : request.operation === 'cancel'
+                ? 'Cancel'
+                : 'Modify';
 
           // Transform reservation to SOAP parameters
           const soapParams = this.mapReservationToSoapParams(reservation, resStatus);
@@ -605,12 +611,16 @@ export class PhobsChannelManagerService {
             recordsSuccessful++;
           } else {
             recordsFailed++;
-            const errorMsg = soapResponse.errors?.map(e => `${e.code}: ${e.message}`).join(', ') || 'Unknown error';
+            const errorMsg =
+              soapResponse.errors?.map((e) => `${e.code}: ${e.message}`).join(', ') ||
+              'Unknown error';
             errors.push(`Reservation ${reservation.phobsReservationId}: ${errorMsg}`);
           }
         } catch (error) {
           recordsFailed++;
-          errors.push(`Reservation ${reservation.phobsReservationId}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          errors.push(
+            `Reservation ${reservation.phobsReservationId}: ${error instanceof Error ? error.message : 'Unknown error'}`
+          );
         }
       }
 
@@ -624,7 +634,7 @@ export class PhobsChannelManagerService {
         recordsSuccessful,
         recordsFailed,
         errors,
-        duration
+        duration,
       };
 
       if (result.success) {
@@ -653,7 +663,7 @@ export class PhobsChannelManagerService {
         recordsSuccessful,
         recordsFailed: recordsProcessed,
         errors: [error instanceof Error ? error.message : 'Sync failed'],
-        duration
+        duration,
       };
     } finally {
       this.syncInProgress.delete(operation);
@@ -696,37 +706,31 @@ export class PhobsChannelManagerService {
         success: false,
         reservationsReceived: 0,
         reservationsConfirmed: 0,
-        error: 'SOAP client or configuration not initialized'
+        error: 'SOAP client or configuration not initialized',
       };
     }
 
     try {
-      hotelNotification.info(
-        'Pulling Reservations',
-        'Retrieving new reservations from Phobs...'
-      );
+      hotelNotification.info('Pulling Reservations', 'Retrieving new reservations from Phobs...');
 
       // Step 1 & 2: Pull reservations
       const pullResult = await this.soapClient.pullReservations({
         hotelCode: this.config.hotelId,
         username: this.config.apiKey,
-        password: this.config.secretKey
+        password: this.config.secretKey,
       });
 
       if (!pullResult.success || !pullResult.reservations) {
-        const errorMsg = pullResult.errors?.map(e => `${e.code}: ${e.message}`).join(', ') || 'Unknown error';
-        
-        hotelNotification.error(
-          'Reservation Pull Failed',
-          errorMsg,
-          5
-        );
+        const errorMsg =
+          pullResult.errors?.map((e) => `${e.code}: ${e.message}`).join(', ') || 'Unknown error';
+
+        hotelNotification.error('Reservation Pull Failed', errorMsg, 5);
 
         return {
           success: false,
           reservationsReceived: 0,
           reservationsConfirmed: 0,
-          error: errorMsg
+          error: errorMsg,
         };
       }
 
@@ -734,36 +738,35 @@ export class PhobsChannelManagerService {
       const reservationsReceived = reservations.length;
 
       if (reservationsReceived === 0) {
-        hotelNotification.info(
-          'No New Reservations',
-          'No new reservations to process from Phobs'
-        );
+        hotelNotification.info('No New Reservations', 'No new reservations to process from Phobs');
 
         return {
           success: true,
           reservationsReceived: 0,
           reservationsConfirmed: 0,
-          reservations: []
+          reservations: [],
         };
       }
 
       // Step 3: Confirm received reservations
-      const confirmationCodes = reservations.map(r => ({
+      const confirmationCodes = reservations.map((r) => ({
         reservationCode: r.reservationId,
         pmsConfirmationId: r.reservationId,
-        yourConfirmationCode: r.reservationId
+        yourConfirmationCode: r.reservationId,
       }));
 
       const confirmResult = await this.soapClient.confirmReservations({
         hotelCode: this.config.hotelId,
         username: this.config.apiKey,
         password: this.config.secretKey,
-        confirmationCodes
+        confirmationCodes,
       });
 
       if (!confirmResult.success) {
-        const errorMsg = confirmResult.errors?.map(e => `${e.code}: ${e.message}`).join(', ') || 'Confirmation failed';
-        
+        const errorMsg =
+          confirmResult.errors?.map((e) => `${e.code}: ${e.message}`).join(', ') ||
+          'Confirmation failed';
+
         hotelNotification.warning(
           'Confirmation Issues',
           `Received ${reservationsReceived} reservations but confirmation had issues: ${errorMsg}`,
@@ -775,7 +778,7 @@ export class PhobsChannelManagerService {
           reservationsReceived,
           reservationsConfirmed: 0,
           reservations,
-          error: `Confirmation failed: ${errorMsg}`
+          error: `Confirmation failed: ${errorMsg}`,
         };
       }
 
@@ -789,23 +792,19 @@ export class PhobsChannelManagerService {
         success: true,
         reservationsReceived,
         reservationsConfirmed: confirmationCodes.length,
-        reservations
+        reservations,
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to pull reservations';
       console.error('Error in pullReservationsFromPhobs:', error);
 
-      hotelNotification.error(
-        'Reservation Pull Error',
-        errorMessage,
-        6
-      );
+      hotelNotification.error('Reservation Pull Error', errorMessage, 6);
 
       return {
         success: false,
         reservationsReceived: 0,
         reservationsConfirmed: 0,
-        error: errorMessage
+        error: errorMessage,
       };
     }
   }
@@ -813,11 +812,13 @@ export class PhobsChannelManagerService {
   /**
    * Handle incoming reservation from OTA channel (webhook)
    */
-  async handleIncomingReservation(phobsReservation: PhobsReservation): Promise<{ success: boolean; internalReservationId?: string; error?: string }> {
+  async handleIncomingReservation(
+    phobsReservation: PhobsReservation
+  ): Promise<{ success: boolean; internalReservationId?: string; error?: string }> {
     try {
       // Convert Phobs reservation to internal format
       this.mapPhobsReservationToInternal(phobsReservation);
-      
+
       // Check for conflicts (double booking, rate mismatch)
       const conflicts = await this.detectConflicts(phobsReservation);
       if (conflicts.length > 0) {
@@ -831,7 +832,7 @@ export class PhobsChannelManagerService {
       // Save to internal system
       // TODO: Integrate with HotelDataService to create reservation
       const reservationId = `internal-${Date.now()}`;
-      
+
       hotelNotification.success(
         'New OTA Reservation!',
         `${phobsReservation.guest.firstName} ${phobsReservation.guest.lastName} from ${phobsReservation.channel}`,
@@ -846,7 +847,7 @@ export class PhobsChannelManagerService {
         `Error processing ${phobsReservation.channel} reservation`,
         6
       );
-      
+
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
@@ -871,24 +872,24 @@ export class PhobsChannelManagerService {
             await this.handleIncomingReservation(event.data.reservation);
           }
           break;
-          
+
         case 'reservation.modified':
           if ('reservation' in event.data) {
             await this.handleReservationModification(event.data.reservation);
           }
           break;
-          
+
         case 'reservation.cancelled':
           if ('reservation' in event.data) {
             await this.handleReservationCancellation(event.data.reservation);
           }
           break;
-          
+
         case 'availability.updated':
         case 'rates.updated':
           // Handle availability/rate updates from OTA channels
           break;
-          
+
         default:
           console.warn('Unknown webhook event type:', event.eventType);
       }
@@ -916,7 +917,7 @@ export class PhobsChannelManagerService {
       errorChannels: 1,
       totalReservations: 0, // TODO: Get from database
       syncErrors: this.retryQueue.length,
-      lastError: this.retryQueue.length > 0 ? 'Sync operations in retry queue' : undefined
+      lastError: this.retryQueue.length > 0 ? 'Sync operations in retry queue' : undefined,
     };
   }
 
@@ -944,7 +945,7 @@ export class PhobsChannelManagerService {
   private mapReservationToSoapParams(
     reservation: PhobsReservation,
     operation: 'Commit' | 'Cancel' | 'Modify'
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): any {
     return {
       hotelCode: this.config!.hotelId,
@@ -958,21 +959,25 @@ export class PhobsChannelManagerService {
       guestCounts: [
         {
           ageQualifyingCode: 10, // Adult
-          count: reservation.adults
+          count: reservation.adults,
         },
-        ...(reservation.children > 0 ? [{
-          ageQualifyingCode: 8, // Child
-          count: reservation.children
-        }] : [])
+        ...(reservation.children > 0
+          ? [
+              {
+                ageQualifyingCode: 8, // Child
+                count: reservation.children,
+              },
+            ]
+          : []),
       ],
       guest: {
         givenName: reservation.guest.firstName,
         surname: reservation.guest.lastName,
         email: reservation.guest.email,
-        phone: reservation.guest.phone
+        phone: reservation.guest.phone,
       },
       totalAmount: reservation.totalAmount,
-      currencyCode: reservation.currency
+      currencyCode: reservation.currency,
     };
   }
 
@@ -982,18 +987,18 @@ export class PhobsChannelManagerService {
   private mapOTAToBookingSource(otaChannel: OTAChannel): BookingSource {
     const mapping: { [key in OTAChannel]: BookingSource } = {
       'booking.com': 'booking.com',
-      'directBooking': 'direct',
-      'expedia': 'other',
-      'airbnb': 'other',
-      'agoda': 'other',
+      directBooking: 'direct',
+      expedia: 'other',
+      airbnb: 'other',
+      agoda: 'other',
       'hotels.com': 'other',
-      'hostelworld': 'other',
-      'kayak': 'other',
-      'trivago': 'other',
-      'priceline': 'other',
+      hostelworld: 'other',
+      kayak: 'other',
+      trivago: 'other',
+      priceline: 'other',
       'camping.info': 'other',
       'pitchup.com': 'other',
-      'eurocamp': 'other'
+      eurocamp: 'other',
     };
     return mapping[otaChannel] || 'other';
   }
@@ -1015,7 +1020,7 @@ export class PhobsChannelManagerService {
       totalAmount: phobsReservation.totalAmount,
       bookingDate: phobsReservation.bookingDate,
       lastModified: new Date(),
-      notes: `OTA Booking from ${phobsReservation.channel} - Ref: ${phobsReservation.bookingReference}`
+      notes: `OTA Booking from ${phobsReservation.channel} - Ref: ${phobsReservation.bookingReference}`,
     };
   }
 
@@ -1031,7 +1036,9 @@ export class PhobsChannelManagerService {
   /**
    * Resolve detected conflicts
    */
-  private async resolveConflicts(_conflicts: ConflictResolution[]): Promise<{ success: boolean; error?: string }> {
+  private async resolveConflicts(
+    _conflicts: ConflictResolution[]
+  ): Promise<{ success: boolean; error?: string }> {
     // TODO: Implement conflict resolution logic
     return { success: true };
   }
@@ -1043,7 +1050,7 @@ export class PhobsChannelManagerService {
     if (!this.config?.webhookSecret) {
       return false; // No secret configured
     }
-    
+
     // TODO: Implement HMAC signature verification
     // Compare event.signature with computed HMAC
     return true; // Simplified for now

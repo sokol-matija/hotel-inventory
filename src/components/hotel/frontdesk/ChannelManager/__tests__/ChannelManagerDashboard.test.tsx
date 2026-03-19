@@ -33,9 +33,7 @@ jest.mock('../StatusIndicators', () => ({
     <div data-testid={`channel-card-${channel}`}>
       <span>{channel}</span>
       <span>{status}</span>
-      {onViewDetails && (
-        <button onClick={onViewDetails}>View Details</button>
-      )}
+      {onViewDetails && <button onClick={onViewDetails}>View Details</button>}
     </div>
   ),
   ConflictIndicator: ({ severity, onResolve, onView }: any) => (
@@ -68,19 +66,25 @@ jest.mock('../StatusIndicators', () => ({
 
 // Mock utility functions
 jest.mock('../../../../../lib/utils', () => ({
-  cn: (...args: any[]) => args.filter(Boolean).join(' ')
+  cn: (...args: any[]) => args.filter(Boolean).join(' '),
 }));
 
-const mockChannelManagerService = PhobsChannelManagerService as jest.MockedClass<typeof PhobsChannelManagerService>;
-const mockReservationSyncService = PhobsReservationSyncService as jest.MockedClass<typeof PhobsReservationSyncService>;
-const mockMonitoringService = PhobsMonitoringService as jest.MockedClass<typeof PhobsMonitoringService>;
-const mockErrorHandlingService = PhobsErrorHandlingService as jest.MockedClass<typeof PhobsErrorHandlingService>;
+const mockChannelManagerService = PhobsChannelManagerService as jest.MockedClass<
+  typeof PhobsChannelManagerService
+>;
+const mockReservationSyncService = PhobsReservationSyncService as jest.MockedClass<
+  typeof PhobsReservationSyncService
+>;
+const mockMonitoringService = PhobsMonitoringService as jest.MockedClass<
+  typeof PhobsMonitoringService
+>;
+const mockErrorHandlingService = PhobsErrorHandlingService as jest.MockedClass<
+  typeof PhobsErrorHandlingService
+>;
 
 // Test wrapper component
 const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <MemoryRouter>
-    {children}
-  </MemoryRouter>
+  <MemoryRouter>{children}</MemoryRouter>
 );
 
 describe('ChannelManagerDashboard Component', () => {
@@ -334,7 +338,7 @@ describe('ChannelManagerDashboard Component', () => {
       await waitFor(() => {
         const viewDetailsButtons = screen.getAllByText('View Details');
         expect(viewDetailsButtons.length).toBeGreaterThan(0);
-        
+
         // Click should not throw error
         fireEvent.click(viewDetailsButtons[0]);
       });
@@ -492,10 +496,10 @@ describe('ChannelManagerDashboard Component', () => {
       await waitFor(() => {
         const retryButton = screen.getByRole('button', { name: /retry/i });
         const dismissButton = screen.getByRole('button', { name: /dismiss/i });
-        
+
         fireEvent.click(retryButton);
         fireEvent.click(dismissButton);
-        
+
         // Should remove the error from display
         expect(screen.queryByTestId('error-details')).not.toBeInTheDocument();
       });
@@ -535,7 +539,7 @@ describe('ChannelManagerDashboard Component', () => {
       await waitFor(() => {
         const refreshButton = screen.getByRole('button', { name: /refresh/i });
         fireEvent.click(refreshButton);
-        
+
         expect(refreshButton).toBeDisabled();
       });
     });

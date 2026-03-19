@@ -2,15 +2,7 @@
 // Handles rooms, room types, guests, and reservations
 
 import { supabase, Database } from '../../supabase';
-import {
-  Room,
-  Guest,
-  Reservation,
-  Hotel,
-  RoomType as AppRoomType,
-  Invoice,
-  ReservationStatus,
-} from '../types';
+import { Room, Guest, Reservation, Hotel, RoomType as AppRoomType, Invoice } from '../types';
 import { databaseAdapter } from './DatabaseAdapter';
 
 // Database row types from Supabase
@@ -576,8 +568,8 @@ export class HotelDataService {
 
     if (error) throw error;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (data || []).map(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (row: any): Invoice => ({
         id: row.id.toString(),
         invoiceNumber: row.invoice_number,
@@ -627,9 +619,8 @@ export class HotelDataService {
               updatedAt: new Date(),
             } as Guest)
           : undefined,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         reservation: row.reservations
-          ? (mapInvoiceReservation(row) as any as Reservation)
+          ? (mapInvoiceReservation(row) as unknown as Reservation)
           : undefined,
       })
     );

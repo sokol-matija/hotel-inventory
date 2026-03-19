@@ -8,363 +8,356 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as TermsOfServiceRouteImport } from './routes/terms-of-service'
-import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
-import { Route as OnboardingRouteImport } from './routes/onboarding'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as LayoutRouteImport } from './routes/_layout'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as NfcCleanRouteImport } from './routes/nfc/clean'
-import { Route as HotelModuleSelectorRouteImport } from './routes/hotel/module-selector'
-import { Route as HotelFrontDeskRouteImport } from './routes/hotel/front-desk'
-import { Route as HotelFinanceRouteImport } from './routes/hotel/finance'
-import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
-import { Route as LayoutOrdersRouteImport } from './routes/_layout/orders'
-import { Route as LayoutItemsRouteImport } from './routes/_layout/items'
-import { Route as LayoutGlobalRouteImport } from './routes/_layout/global'
-import { Route as LayoutDashboardRouteImport } from './routes/_layout/dashboard'
-import { Route as HotelFrontDeskIndexRouteImport } from './routes/hotel/front-desk/index'
-import { Route as HotelFinanceIndexRouteImport } from './routes/hotel/finance/index'
-import { Route as LayoutLocationsIndexRouteImport } from './routes/_layout/locations/index'
-import { Route as HotelFrontDeskRoomServiceRouteImport } from './routes/hotel/front-desk/room-service'
-import { Route as HotelFrontDeskReservationsListRouteImport } from './routes/hotel/front-desk/reservations-list'
-import { Route as HotelFrontDeskReportsRouteImport } from './routes/hotel/front-desk/reports'
-import { Route as HotelFrontDeskPrinterTestRouteImport } from './routes/hotel/front-desk/printer-test'
-import { Route as HotelFrontDeskPricingRouteImport } from './routes/hotel/front-desk/pricing'
-import { Route as HotelFrontDeskPaymentsRouteImport } from './routes/hotel/front-desk/payments'
-import { Route as HotelFrontDeskGuestsRouteImport } from './routes/hotel/front-desk/guests'
-import { Route as HotelFrontDeskEmailTestRouteImport } from './routes/hotel/front-desk/email-test'
-import { Route as HotelFrontDeskCompaniesRouteImport } from './routes/hotel/front-desk/companies'
-import { Route as HotelFinanceRevenueAnalyticsRouteImport } from './routes/hotel/finance/revenue-analytics'
-import { Route as HotelFinanceInvoicesRouteImport } from './routes/hotel/finance/invoices'
-import { Route as HotelFinanceFiscalizationTestRouteImport } from './routes/hotel/finance/fiscalization-test'
-import { Route as HotelFinanceFiscalComplianceRouteImport } from './routes/hotel/finance/fiscal-compliance'
-import { Route as HotelFinanceEracuniTestRouteImport } from './routes/hotel/finance/eracuni-test'
-import { Route as LayoutLocationsIdRouteImport } from './routes/_layout/locations/$id'
-import { Route as LayoutAdminTestingRouteImport } from './routes/_layout/admin/testing'
-import { Route as LayoutAdminLocationsRouteImport } from './routes/_layout/admin/locations'
-import { Route as LayoutAdminAuditRouteImport } from './routes/_layout/admin/audit'
-import { Route as HotelFrontDeskChannelManagerIndexRouteImport } from './routes/hotel/front-desk/channel-manager/index'
-import { Route as HotelFrontDeskChannelManagerSettingsRouteImport } from './routes/hotel/front-desk/channel-manager/settings'
+import { Route as rootRouteImport } from './routes/__root';
+import { Route as TermsOfServiceRouteImport } from './routes/terms-of-service';
+import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy';
+import { Route as OnboardingRouteImport } from './routes/onboarding';
+import { Route as LoginRouteImport } from './routes/login';
+import { Route as LayoutRouteImport } from './routes/_layout';
+import { Route as IndexRouteImport } from './routes/index';
+import { Route as NfcCleanRouteImport } from './routes/nfc/clean';
+import { Route as HotelModuleSelectorRouteImport } from './routes/hotel/module-selector';
+import { Route as HotelFrontDeskRouteImport } from './routes/hotel/front-desk';
+import { Route as HotelFinanceRouteImport } from './routes/hotel/finance';
+import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings';
+import { Route as LayoutOrdersRouteImport } from './routes/_layout/orders';
+import { Route as LayoutItemsRouteImport } from './routes/_layout/items';
+import { Route as LayoutGlobalRouteImport } from './routes/_layout/global';
+import { Route as LayoutDashboardRouteImport } from './routes/_layout/dashboard';
+import { Route as HotelFrontDeskIndexRouteImport } from './routes/hotel/front-desk/index';
+import { Route as HotelFinanceIndexRouteImport } from './routes/hotel/finance/index';
+import { Route as LayoutLocationsIndexRouteImport } from './routes/_layout/locations/index';
+import { Route as HotelFrontDeskRoomServiceRouteImport } from './routes/hotel/front-desk/room-service';
+import { Route as HotelFrontDeskReservationsListRouteImport } from './routes/hotel/front-desk/reservations-list';
+import { Route as HotelFrontDeskReportsRouteImport } from './routes/hotel/front-desk/reports';
+import { Route as HotelFrontDeskPrinterTestRouteImport } from './routes/hotel/front-desk/printer-test';
+import { Route as HotelFrontDeskPricingRouteImport } from './routes/hotel/front-desk/pricing';
+import { Route as HotelFrontDeskPaymentsRouteImport } from './routes/hotel/front-desk/payments';
+import { Route as HotelFrontDeskGuestsRouteImport } from './routes/hotel/front-desk/guests';
+import { Route as HotelFrontDeskEmailTestRouteImport } from './routes/hotel/front-desk/email-test';
+import { Route as HotelFrontDeskCompaniesRouteImport } from './routes/hotel/front-desk/companies';
+import { Route as HotelFinanceRevenueAnalyticsRouteImport } from './routes/hotel/finance/revenue-analytics';
+import { Route as HotelFinanceInvoicesRouteImport } from './routes/hotel/finance/invoices';
+import { Route as HotelFinanceFiscalizationTestRouteImport } from './routes/hotel/finance/fiscalization-test';
+import { Route as HotelFinanceFiscalComplianceRouteImport } from './routes/hotel/finance/fiscal-compliance';
+import { Route as HotelFinanceEracuniTestRouteImport } from './routes/hotel/finance/eracuni-test';
+import { Route as LayoutLocationsIdRouteImport } from './routes/_layout/locations/$id';
+import { Route as LayoutAdminTestingRouteImport } from './routes/_layout/admin/testing';
+import { Route as LayoutAdminLocationsRouteImport } from './routes/_layout/admin/locations';
+import { Route as LayoutAdminAuditRouteImport } from './routes/_layout/admin/audit';
+import { Route as HotelFrontDeskChannelManagerIndexRouteImport } from './routes/hotel/front-desk/channel-manager/index';
+import { Route as HotelFrontDeskChannelManagerSettingsRouteImport } from './routes/hotel/front-desk/channel-manager/settings';
 
 const TermsOfServiceRoute = TermsOfServiceRouteImport.update({
   id: '/terms-of-service',
   path: '/terms-of-service',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
   id: '/privacy-policy',
   path: '/privacy-policy',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const LayoutRoute = LayoutRouteImport.update({
   id: '/_layout',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const NfcCleanRoute = NfcCleanRouteImport.update({
   id: '/nfc/clean',
   path: '/nfc/clean',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const HotelModuleSelectorRoute = HotelModuleSelectorRouteImport.update({
   id: '/hotel/module-selector',
   path: '/hotel/module-selector',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const HotelFrontDeskRoute = HotelFrontDeskRouteImport.update({
   id: '/hotel/front-desk',
   path: '/hotel/front-desk',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const HotelFinanceRoute = HotelFinanceRouteImport.update({
   id: '/hotel/finance',
   path: '/hotel/finance',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const LayoutSettingsRoute = LayoutSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
   getParentRoute: () => LayoutRoute,
-} as any)
+} as any);
 const LayoutOrdersRoute = LayoutOrdersRouteImport.update({
   id: '/orders',
   path: '/orders',
   getParentRoute: () => LayoutRoute,
-} as any)
+} as any);
 const LayoutItemsRoute = LayoutItemsRouteImport.update({
   id: '/items',
   path: '/items',
   getParentRoute: () => LayoutRoute,
-} as any)
+} as any);
 const LayoutGlobalRoute = LayoutGlobalRouteImport.update({
   id: '/global',
   path: '/global',
   getParentRoute: () => LayoutRoute,
-} as any)
+} as any);
 const LayoutDashboardRoute = LayoutDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
   getParentRoute: () => LayoutRoute,
-} as any)
+} as any);
 const HotelFrontDeskIndexRoute = HotelFrontDeskIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => HotelFrontDeskRoute,
-} as any)
+} as any);
 const HotelFinanceIndexRoute = HotelFinanceIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => HotelFinanceRoute,
-} as any)
+} as any);
 const LayoutLocationsIndexRoute = LayoutLocationsIndexRouteImport.update({
   id: '/locations/',
   path: '/locations/',
   getParentRoute: () => LayoutRoute,
-} as any)
-const HotelFrontDeskRoomServiceRoute =
-  HotelFrontDeskRoomServiceRouteImport.update({
-    id: '/room-service',
-    path: '/room-service',
-    getParentRoute: () => HotelFrontDeskRoute,
-  } as any)
-const HotelFrontDeskReservationsListRoute =
-  HotelFrontDeskReservationsListRouteImport.update({
-    id: '/reservations-list',
-    path: '/reservations-list',
-    getParentRoute: () => HotelFrontDeskRoute,
-  } as any)
+} as any);
+const HotelFrontDeskRoomServiceRoute = HotelFrontDeskRoomServiceRouteImport.update({
+  id: '/room-service',
+  path: '/room-service',
+  getParentRoute: () => HotelFrontDeskRoute,
+} as any);
+const HotelFrontDeskReservationsListRoute = HotelFrontDeskReservationsListRouteImport.update({
+  id: '/reservations-list',
+  path: '/reservations-list',
+  getParentRoute: () => HotelFrontDeskRoute,
+} as any);
 const HotelFrontDeskReportsRoute = HotelFrontDeskReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
   getParentRoute: () => HotelFrontDeskRoute,
-} as any)
-const HotelFrontDeskPrinterTestRoute =
-  HotelFrontDeskPrinterTestRouteImport.update({
-    id: '/printer-test',
-    path: '/printer-test',
-    getParentRoute: () => HotelFrontDeskRoute,
-  } as any)
+} as any);
+const HotelFrontDeskPrinterTestRoute = HotelFrontDeskPrinterTestRouteImport.update({
+  id: '/printer-test',
+  path: '/printer-test',
+  getParentRoute: () => HotelFrontDeskRoute,
+} as any);
 const HotelFrontDeskPricingRoute = HotelFrontDeskPricingRouteImport.update({
   id: '/pricing',
   path: '/pricing',
   getParentRoute: () => HotelFrontDeskRoute,
-} as any)
+} as any);
 const HotelFrontDeskPaymentsRoute = HotelFrontDeskPaymentsRouteImport.update({
   id: '/payments',
   path: '/payments',
   getParentRoute: () => HotelFrontDeskRoute,
-} as any)
+} as any);
 const HotelFrontDeskGuestsRoute = HotelFrontDeskGuestsRouteImport.update({
   id: '/guests',
   path: '/guests',
   getParentRoute: () => HotelFrontDeskRoute,
-} as any)
+} as any);
 const HotelFrontDeskEmailTestRoute = HotelFrontDeskEmailTestRouteImport.update({
   id: '/email-test',
   path: '/email-test',
   getParentRoute: () => HotelFrontDeskRoute,
-} as any)
+} as any);
 const HotelFrontDeskCompaniesRoute = HotelFrontDeskCompaniesRouteImport.update({
   id: '/companies',
   path: '/companies',
   getParentRoute: () => HotelFrontDeskRoute,
-} as any)
-const HotelFinanceRevenueAnalyticsRoute =
-  HotelFinanceRevenueAnalyticsRouteImport.update({
-    id: '/revenue-analytics',
-    path: '/revenue-analytics',
-    getParentRoute: () => HotelFinanceRoute,
-  } as any)
+} as any);
+const HotelFinanceRevenueAnalyticsRoute = HotelFinanceRevenueAnalyticsRouteImport.update({
+  id: '/revenue-analytics',
+  path: '/revenue-analytics',
+  getParentRoute: () => HotelFinanceRoute,
+} as any);
 const HotelFinanceInvoicesRoute = HotelFinanceInvoicesRouteImport.update({
   id: '/invoices',
   path: '/invoices',
   getParentRoute: () => HotelFinanceRoute,
-} as any)
-const HotelFinanceFiscalizationTestRoute =
-  HotelFinanceFiscalizationTestRouteImport.update({
-    id: '/fiscalization-test',
-    path: '/fiscalization-test',
-    getParentRoute: () => HotelFinanceRoute,
-  } as any)
-const HotelFinanceFiscalComplianceRoute =
-  HotelFinanceFiscalComplianceRouteImport.update({
-    id: '/fiscal-compliance',
-    path: '/fiscal-compliance',
-    getParentRoute: () => HotelFinanceRoute,
-  } as any)
+} as any);
+const HotelFinanceFiscalizationTestRoute = HotelFinanceFiscalizationTestRouteImport.update({
+  id: '/fiscalization-test',
+  path: '/fiscalization-test',
+  getParentRoute: () => HotelFinanceRoute,
+} as any);
+const HotelFinanceFiscalComplianceRoute = HotelFinanceFiscalComplianceRouteImport.update({
+  id: '/fiscal-compliance',
+  path: '/fiscal-compliance',
+  getParentRoute: () => HotelFinanceRoute,
+} as any);
 const HotelFinanceEracuniTestRoute = HotelFinanceEracuniTestRouteImport.update({
   id: '/eracuni-test',
   path: '/eracuni-test',
   getParentRoute: () => HotelFinanceRoute,
-} as any)
+} as any);
 const LayoutLocationsIdRoute = LayoutLocationsIdRouteImport.update({
   id: '/locations/$id',
   path: '/locations/$id',
   getParentRoute: () => LayoutRoute,
-} as any)
+} as any);
 const LayoutAdminTestingRoute = LayoutAdminTestingRouteImport.update({
   id: '/admin/testing',
   path: '/admin/testing',
   getParentRoute: () => LayoutRoute,
-} as any)
+} as any);
 const LayoutAdminLocationsRoute = LayoutAdminLocationsRouteImport.update({
   id: '/admin/locations',
   path: '/admin/locations',
   getParentRoute: () => LayoutRoute,
-} as any)
+} as any);
 const LayoutAdminAuditRoute = LayoutAdminAuditRouteImport.update({
   id: '/admin/audit',
   path: '/admin/audit',
   getParentRoute: () => LayoutRoute,
-} as any)
-const HotelFrontDeskChannelManagerIndexRoute =
-  HotelFrontDeskChannelManagerIndexRouteImport.update({
-    id: '/channel-manager/',
-    path: '/channel-manager/',
-    getParentRoute: () => HotelFrontDeskRoute,
-  } as any)
+} as any);
+const HotelFrontDeskChannelManagerIndexRoute = HotelFrontDeskChannelManagerIndexRouteImport.update({
+  id: '/channel-manager/',
+  path: '/channel-manager/',
+  getParentRoute: () => HotelFrontDeskRoute,
+} as any);
 const HotelFrontDeskChannelManagerSettingsRoute =
   HotelFrontDeskChannelManagerSettingsRouteImport.update({
     id: '/channel-manager/settings',
     path: '/channel-manager/settings',
     getParentRoute: () => HotelFrontDeskRoute,
-  } as any)
+  } as any);
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/login': typeof LoginRoute
-  '/onboarding': typeof OnboardingRoute
-  '/privacy-policy': typeof PrivacyPolicyRoute
-  '/terms-of-service': typeof TermsOfServiceRoute
-  '/dashboard': typeof LayoutDashboardRoute
-  '/global': typeof LayoutGlobalRoute
-  '/items': typeof LayoutItemsRoute
-  '/orders': typeof LayoutOrdersRoute
-  '/settings': typeof LayoutSettingsRoute
-  '/hotel/finance': typeof HotelFinanceRouteWithChildren
-  '/hotel/front-desk': typeof HotelFrontDeskRouteWithChildren
-  '/hotel/module-selector': typeof HotelModuleSelectorRoute
-  '/nfc/clean': typeof NfcCleanRoute
-  '/admin/audit': typeof LayoutAdminAuditRoute
-  '/admin/locations': typeof LayoutAdminLocationsRoute
-  '/admin/testing': typeof LayoutAdminTestingRoute
-  '/locations/$id': typeof LayoutLocationsIdRoute
-  '/hotel/finance/eracuni-test': typeof HotelFinanceEracuniTestRoute
-  '/hotel/finance/fiscal-compliance': typeof HotelFinanceFiscalComplianceRoute
-  '/hotel/finance/fiscalization-test': typeof HotelFinanceFiscalizationTestRoute
-  '/hotel/finance/invoices': typeof HotelFinanceInvoicesRoute
-  '/hotel/finance/revenue-analytics': typeof HotelFinanceRevenueAnalyticsRoute
-  '/hotel/front-desk/companies': typeof HotelFrontDeskCompaniesRoute
-  '/hotel/front-desk/email-test': typeof HotelFrontDeskEmailTestRoute
-  '/hotel/front-desk/guests': typeof HotelFrontDeskGuestsRoute
-  '/hotel/front-desk/payments': typeof HotelFrontDeskPaymentsRoute
-  '/hotel/front-desk/pricing': typeof HotelFrontDeskPricingRoute
-  '/hotel/front-desk/printer-test': typeof HotelFrontDeskPrinterTestRoute
-  '/hotel/front-desk/reports': typeof HotelFrontDeskReportsRoute
-  '/hotel/front-desk/reservations-list': typeof HotelFrontDeskReservationsListRoute
-  '/hotel/front-desk/room-service': typeof HotelFrontDeskRoomServiceRoute
-  '/locations/': typeof LayoutLocationsIndexRoute
-  '/hotel/finance/': typeof HotelFinanceIndexRoute
-  '/hotel/front-desk/': typeof HotelFrontDeskIndexRoute
-  '/hotel/front-desk/channel-manager/settings': typeof HotelFrontDeskChannelManagerSettingsRoute
-  '/hotel/front-desk/channel-manager/': typeof HotelFrontDeskChannelManagerIndexRoute
+  '/': typeof IndexRoute;
+  '/login': typeof LoginRoute;
+  '/onboarding': typeof OnboardingRoute;
+  '/privacy-policy': typeof PrivacyPolicyRoute;
+  '/terms-of-service': typeof TermsOfServiceRoute;
+  '/dashboard': typeof LayoutDashboardRoute;
+  '/global': typeof LayoutGlobalRoute;
+  '/items': typeof LayoutItemsRoute;
+  '/orders': typeof LayoutOrdersRoute;
+  '/settings': typeof LayoutSettingsRoute;
+  '/hotel/finance': typeof HotelFinanceRouteWithChildren;
+  '/hotel/front-desk': typeof HotelFrontDeskRouteWithChildren;
+  '/hotel/module-selector': typeof HotelModuleSelectorRoute;
+  '/nfc/clean': typeof NfcCleanRoute;
+  '/admin/audit': typeof LayoutAdminAuditRoute;
+  '/admin/locations': typeof LayoutAdminLocationsRoute;
+  '/admin/testing': typeof LayoutAdminTestingRoute;
+  '/locations/$id': typeof LayoutLocationsIdRoute;
+  '/hotel/finance/eracuni-test': typeof HotelFinanceEracuniTestRoute;
+  '/hotel/finance/fiscal-compliance': typeof HotelFinanceFiscalComplianceRoute;
+  '/hotel/finance/fiscalization-test': typeof HotelFinanceFiscalizationTestRoute;
+  '/hotel/finance/invoices': typeof HotelFinanceInvoicesRoute;
+  '/hotel/finance/revenue-analytics': typeof HotelFinanceRevenueAnalyticsRoute;
+  '/hotel/front-desk/companies': typeof HotelFrontDeskCompaniesRoute;
+  '/hotel/front-desk/email-test': typeof HotelFrontDeskEmailTestRoute;
+  '/hotel/front-desk/guests': typeof HotelFrontDeskGuestsRoute;
+  '/hotel/front-desk/payments': typeof HotelFrontDeskPaymentsRoute;
+  '/hotel/front-desk/pricing': typeof HotelFrontDeskPricingRoute;
+  '/hotel/front-desk/printer-test': typeof HotelFrontDeskPrinterTestRoute;
+  '/hotel/front-desk/reports': typeof HotelFrontDeskReportsRoute;
+  '/hotel/front-desk/reservations-list': typeof HotelFrontDeskReservationsListRoute;
+  '/hotel/front-desk/room-service': typeof HotelFrontDeskRoomServiceRoute;
+  '/locations/': typeof LayoutLocationsIndexRoute;
+  '/hotel/finance/': typeof HotelFinanceIndexRoute;
+  '/hotel/front-desk/': typeof HotelFrontDeskIndexRoute;
+  '/hotel/front-desk/channel-manager/settings': typeof HotelFrontDeskChannelManagerSettingsRoute;
+  '/hotel/front-desk/channel-manager/': typeof HotelFrontDeskChannelManagerIndexRoute;
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/login': typeof LoginRoute
-  '/onboarding': typeof OnboardingRoute
-  '/privacy-policy': typeof PrivacyPolicyRoute
-  '/terms-of-service': typeof TermsOfServiceRoute
-  '/dashboard': typeof LayoutDashboardRoute
-  '/global': typeof LayoutGlobalRoute
-  '/items': typeof LayoutItemsRoute
-  '/orders': typeof LayoutOrdersRoute
-  '/settings': typeof LayoutSettingsRoute
-  '/hotel/module-selector': typeof HotelModuleSelectorRoute
-  '/nfc/clean': typeof NfcCleanRoute
-  '/admin/audit': typeof LayoutAdminAuditRoute
-  '/admin/locations': typeof LayoutAdminLocationsRoute
-  '/admin/testing': typeof LayoutAdminTestingRoute
-  '/locations/$id': typeof LayoutLocationsIdRoute
-  '/hotel/finance/eracuni-test': typeof HotelFinanceEracuniTestRoute
-  '/hotel/finance/fiscal-compliance': typeof HotelFinanceFiscalComplianceRoute
-  '/hotel/finance/fiscalization-test': typeof HotelFinanceFiscalizationTestRoute
-  '/hotel/finance/invoices': typeof HotelFinanceInvoicesRoute
-  '/hotel/finance/revenue-analytics': typeof HotelFinanceRevenueAnalyticsRoute
-  '/hotel/front-desk/companies': typeof HotelFrontDeskCompaniesRoute
-  '/hotel/front-desk/email-test': typeof HotelFrontDeskEmailTestRoute
-  '/hotel/front-desk/guests': typeof HotelFrontDeskGuestsRoute
-  '/hotel/front-desk/payments': typeof HotelFrontDeskPaymentsRoute
-  '/hotel/front-desk/pricing': typeof HotelFrontDeskPricingRoute
-  '/hotel/front-desk/printer-test': typeof HotelFrontDeskPrinterTestRoute
-  '/hotel/front-desk/reports': typeof HotelFrontDeskReportsRoute
-  '/hotel/front-desk/reservations-list': typeof HotelFrontDeskReservationsListRoute
-  '/hotel/front-desk/room-service': typeof HotelFrontDeskRoomServiceRoute
-  '/locations': typeof LayoutLocationsIndexRoute
-  '/hotel/finance': typeof HotelFinanceIndexRoute
-  '/hotel/front-desk': typeof HotelFrontDeskIndexRoute
-  '/hotel/front-desk/channel-manager/settings': typeof HotelFrontDeskChannelManagerSettingsRoute
-  '/hotel/front-desk/channel-manager': typeof HotelFrontDeskChannelManagerIndexRoute
+  '/': typeof IndexRoute;
+  '/login': typeof LoginRoute;
+  '/onboarding': typeof OnboardingRoute;
+  '/privacy-policy': typeof PrivacyPolicyRoute;
+  '/terms-of-service': typeof TermsOfServiceRoute;
+  '/dashboard': typeof LayoutDashboardRoute;
+  '/global': typeof LayoutGlobalRoute;
+  '/items': typeof LayoutItemsRoute;
+  '/orders': typeof LayoutOrdersRoute;
+  '/settings': typeof LayoutSettingsRoute;
+  '/hotel/module-selector': typeof HotelModuleSelectorRoute;
+  '/nfc/clean': typeof NfcCleanRoute;
+  '/admin/audit': typeof LayoutAdminAuditRoute;
+  '/admin/locations': typeof LayoutAdminLocationsRoute;
+  '/admin/testing': typeof LayoutAdminTestingRoute;
+  '/locations/$id': typeof LayoutLocationsIdRoute;
+  '/hotel/finance/eracuni-test': typeof HotelFinanceEracuniTestRoute;
+  '/hotel/finance/fiscal-compliance': typeof HotelFinanceFiscalComplianceRoute;
+  '/hotel/finance/fiscalization-test': typeof HotelFinanceFiscalizationTestRoute;
+  '/hotel/finance/invoices': typeof HotelFinanceInvoicesRoute;
+  '/hotel/finance/revenue-analytics': typeof HotelFinanceRevenueAnalyticsRoute;
+  '/hotel/front-desk/companies': typeof HotelFrontDeskCompaniesRoute;
+  '/hotel/front-desk/email-test': typeof HotelFrontDeskEmailTestRoute;
+  '/hotel/front-desk/guests': typeof HotelFrontDeskGuestsRoute;
+  '/hotel/front-desk/payments': typeof HotelFrontDeskPaymentsRoute;
+  '/hotel/front-desk/pricing': typeof HotelFrontDeskPricingRoute;
+  '/hotel/front-desk/printer-test': typeof HotelFrontDeskPrinterTestRoute;
+  '/hotel/front-desk/reports': typeof HotelFrontDeskReportsRoute;
+  '/hotel/front-desk/reservations-list': typeof HotelFrontDeskReservationsListRoute;
+  '/hotel/front-desk/room-service': typeof HotelFrontDeskRoomServiceRoute;
+  '/locations': typeof LayoutLocationsIndexRoute;
+  '/hotel/finance': typeof HotelFinanceIndexRoute;
+  '/hotel/front-desk': typeof HotelFrontDeskIndexRoute;
+  '/hotel/front-desk/channel-manager/settings': typeof HotelFrontDeskChannelManagerSettingsRoute;
+  '/hotel/front-desk/channel-manager': typeof HotelFrontDeskChannelManagerIndexRoute;
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/_layout': typeof LayoutRouteWithChildren
-  '/login': typeof LoginRoute
-  '/onboarding': typeof OnboardingRoute
-  '/privacy-policy': typeof PrivacyPolicyRoute
-  '/terms-of-service': typeof TermsOfServiceRoute
-  '/_layout/dashboard': typeof LayoutDashboardRoute
-  '/_layout/global': typeof LayoutGlobalRoute
-  '/_layout/items': typeof LayoutItemsRoute
-  '/_layout/orders': typeof LayoutOrdersRoute
-  '/_layout/settings': typeof LayoutSettingsRoute
-  '/hotel/finance': typeof HotelFinanceRouteWithChildren
-  '/hotel/front-desk': typeof HotelFrontDeskRouteWithChildren
-  '/hotel/module-selector': typeof HotelModuleSelectorRoute
-  '/nfc/clean': typeof NfcCleanRoute
-  '/_layout/admin/audit': typeof LayoutAdminAuditRoute
-  '/_layout/admin/locations': typeof LayoutAdminLocationsRoute
-  '/_layout/admin/testing': typeof LayoutAdminTestingRoute
-  '/_layout/locations/$id': typeof LayoutLocationsIdRoute
-  '/hotel/finance/eracuni-test': typeof HotelFinanceEracuniTestRoute
-  '/hotel/finance/fiscal-compliance': typeof HotelFinanceFiscalComplianceRoute
-  '/hotel/finance/fiscalization-test': typeof HotelFinanceFiscalizationTestRoute
-  '/hotel/finance/invoices': typeof HotelFinanceInvoicesRoute
-  '/hotel/finance/revenue-analytics': typeof HotelFinanceRevenueAnalyticsRoute
-  '/hotel/front-desk/companies': typeof HotelFrontDeskCompaniesRoute
-  '/hotel/front-desk/email-test': typeof HotelFrontDeskEmailTestRoute
-  '/hotel/front-desk/guests': typeof HotelFrontDeskGuestsRoute
-  '/hotel/front-desk/payments': typeof HotelFrontDeskPaymentsRoute
-  '/hotel/front-desk/pricing': typeof HotelFrontDeskPricingRoute
-  '/hotel/front-desk/printer-test': typeof HotelFrontDeskPrinterTestRoute
-  '/hotel/front-desk/reports': typeof HotelFrontDeskReportsRoute
-  '/hotel/front-desk/reservations-list': typeof HotelFrontDeskReservationsListRoute
-  '/hotel/front-desk/room-service': typeof HotelFrontDeskRoomServiceRoute
-  '/_layout/locations/': typeof LayoutLocationsIndexRoute
-  '/hotel/finance/': typeof HotelFinanceIndexRoute
-  '/hotel/front-desk/': typeof HotelFrontDeskIndexRoute
-  '/hotel/front-desk/channel-manager/settings': typeof HotelFrontDeskChannelManagerSettingsRoute
-  '/hotel/front-desk/channel-manager/': typeof HotelFrontDeskChannelManagerIndexRoute
+  __root__: typeof rootRouteImport;
+  '/': typeof IndexRoute;
+  '/_layout': typeof LayoutRouteWithChildren;
+  '/login': typeof LoginRoute;
+  '/onboarding': typeof OnboardingRoute;
+  '/privacy-policy': typeof PrivacyPolicyRoute;
+  '/terms-of-service': typeof TermsOfServiceRoute;
+  '/_layout/dashboard': typeof LayoutDashboardRoute;
+  '/_layout/global': typeof LayoutGlobalRoute;
+  '/_layout/items': typeof LayoutItemsRoute;
+  '/_layout/orders': typeof LayoutOrdersRoute;
+  '/_layout/settings': typeof LayoutSettingsRoute;
+  '/hotel/finance': typeof HotelFinanceRouteWithChildren;
+  '/hotel/front-desk': typeof HotelFrontDeskRouteWithChildren;
+  '/hotel/module-selector': typeof HotelModuleSelectorRoute;
+  '/nfc/clean': typeof NfcCleanRoute;
+  '/_layout/admin/audit': typeof LayoutAdminAuditRoute;
+  '/_layout/admin/locations': typeof LayoutAdminLocationsRoute;
+  '/_layout/admin/testing': typeof LayoutAdminTestingRoute;
+  '/_layout/locations/$id': typeof LayoutLocationsIdRoute;
+  '/hotel/finance/eracuni-test': typeof HotelFinanceEracuniTestRoute;
+  '/hotel/finance/fiscal-compliance': typeof HotelFinanceFiscalComplianceRoute;
+  '/hotel/finance/fiscalization-test': typeof HotelFinanceFiscalizationTestRoute;
+  '/hotel/finance/invoices': typeof HotelFinanceInvoicesRoute;
+  '/hotel/finance/revenue-analytics': typeof HotelFinanceRevenueAnalyticsRoute;
+  '/hotel/front-desk/companies': typeof HotelFrontDeskCompaniesRoute;
+  '/hotel/front-desk/email-test': typeof HotelFrontDeskEmailTestRoute;
+  '/hotel/front-desk/guests': typeof HotelFrontDeskGuestsRoute;
+  '/hotel/front-desk/payments': typeof HotelFrontDeskPaymentsRoute;
+  '/hotel/front-desk/pricing': typeof HotelFrontDeskPricingRoute;
+  '/hotel/front-desk/printer-test': typeof HotelFrontDeskPrinterTestRoute;
+  '/hotel/front-desk/reports': typeof HotelFrontDeskReportsRoute;
+  '/hotel/front-desk/reservations-list': typeof HotelFrontDeskReservationsListRoute;
+  '/hotel/front-desk/room-service': typeof HotelFrontDeskRoomServiceRoute;
+  '/_layout/locations/': typeof LayoutLocationsIndexRoute;
+  '/hotel/finance/': typeof HotelFinanceIndexRoute;
+  '/hotel/front-desk/': typeof HotelFrontDeskIndexRoute;
+  '/hotel/front-desk/channel-manager/settings': typeof HotelFrontDeskChannelManagerSettingsRoute;
+  '/hotel/front-desk/channel-manager/': typeof HotelFrontDeskChannelManagerIndexRoute;
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
+  fileRoutesByFullPath: FileRoutesByFullPath;
   fullPaths:
     | '/'
     | '/login'
@@ -402,8 +395,8 @@ export interface FileRouteTypes {
     | '/hotel/finance/'
     | '/hotel/front-desk/'
     | '/hotel/front-desk/channel-manager/settings'
-    | '/hotel/front-desk/channel-manager/'
-  fileRoutesByTo: FileRoutesByTo
+    | '/hotel/front-desk/channel-manager/';
+  fileRoutesByTo: FileRoutesByTo;
   to:
     | '/'
     | '/login'
@@ -439,7 +432,7 @@ export interface FileRouteTypes {
     | '/hotel/finance'
     | '/hotel/front-desk'
     | '/hotel/front-desk/channel-manager/settings'
-    | '/hotel/front-desk/channel-manager'
+    | '/hotel/front-desk/channel-manager';
   id:
     | '__root__'
     | '/'
@@ -479,304 +472,304 @@ export interface FileRouteTypes {
     | '/hotel/finance/'
     | '/hotel/front-desk/'
     | '/hotel/front-desk/channel-manager/settings'
-    | '/hotel/front-desk/channel-manager/'
-  fileRoutesById: FileRoutesById
+    | '/hotel/front-desk/channel-manager/';
+  fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  LayoutRoute: typeof LayoutRouteWithChildren
-  LoginRoute: typeof LoginRoute
-  OnboardingRoute: typeof OnboardingRoute
-  PrivacyPolicyRoute: typeof PrivacyPolicyRoute
-  TermsOfServiceRoute: typeof TermsOfServiceRoute
-  HotelFinanceRoute: typeof HotelFinanceRouteWithChildren
-  HotelFrontDeskRoute: typeof HotelFrontDeskRouteWithChildren
-  HotelModuleSelectorRoute: typeof HotelModuleSelectorRoute
-  NfcCleanRoute: typeof NfcCleanRoute
+  IndexRoute: typeof IndexRoute;
+  LayoutRoute: typeof LayoutRouteWithChildren;
+  LoginRoute: typeof LoginRoute;
+  OnboardingRoute: typeof OnboardingRoute;
+  PrivacyPolicyRoute: typeof PrivacyPolicyRoute;
+  TermsOfServiceRoute: typeof TermsOfServiceRoute;
+  HotelFinanceRoute: typeof HotelFinanceRouteWithChildren;
+  HotelFrontDeskRoute: typeof HotelFrontDeskRouteWithChildren;
+  HotelModuleSelectorRoute: typeof HotelModuleSelectorRoute;
+  NfcCleanRoute: typeof NfcCleanRoute;
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
     '/terms-of-service': {
-      id: '/terms-of-service'
-      path: '/terms-of-service'
-      fullPath: '/terms-of-service'
-      preLoaderRoute: typeof TermsOfServiceRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/terms-of-service';
+      path: '/terms-of-service';
+      fullPath: '/terms-of-service';
+      preLoaderRoute: typeof TermsOfServiceRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/privacy-policy': {
-      id: '/privacy-policy'
-      path: '/privacy-policy'
-      fullPath: '/privacy-policy'
-      preLoaderRoute: typeof PrivacyPolicyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/privacy-policy';
+      path: '/privacy-policy';
+      fullPath: '/privacy-policy';
+      preLoaderRoute: typeof PrivacyPolicyRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/onboarding': {
-      id: '/onboarding'
-      path: '/onboarding'
-      fullPath: '/onboarding'
-      preLoaderRoute: typeof OnboardingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/onboarding';
+      path: '/onboarding';
+      fullPath: '/onboarding';
+      preLoaderRoute: typeof OnboardingRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/login';
+      path: '/login';
+      fullPath: '/login';
+      preLoaderRoute: typeof LoginRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/_layout': {
-      id: '/_layout'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof LayoutRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/_layout';
+      path: '';
+      fullPath: '/';
+      preLoaderRoute: typeof LayoutRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/';
+      path: '/';
+      fullPath: '/';
+      preLoaderRoute: typeof IndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/nfc/clean': {
-      id: '/nfc/clean'
-      path: '/nfc/clean'
-      fullPath: '/nfc/clean'
-      preLoaderRoute: typeof NfcCleanRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/nfc/clean';
+      path: '/nfc/clean';
+      fullPath: '/nfc/clean';
+      preLoaderRoute: typeof NfcCleanRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/hotel/module-selector': {
-      id: '/hotel/module-selector'
-      path: '/hotel/module-selector'
-      fullPath: '/hotel/module-selector'
-      preLoaderRoute: typeof HotelModuleSelectorRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/hotel/module-selector';
+      path: '/hotel/module-selector';
+      fullPath: '/hotel/module-selector';
+      preLoaderRoute: typeof HotelModuleSelectorRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/hotel/front-desk': {
-      id: '/hotel/front-desk'
-      path: '/hotel/front-desk'
-      fullPath: '/hotel/front-desk'
-      preLoaderRoute: typeof HotelFrontDeskRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/hotel/front-desk';
+      path: '/hotel/front-desk';
+      fullPath: '/hotel/front-desk';
+      preLoaderRoute: typeof HotelFrontDeskRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/hotel/finance': {
-      id: '/hotel/finance'
-      path: '/hotel/finance'
-      fullPath: '/hotel/finance'
-      preLoaderRoute: typeof HotelFinanceRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/hotel/finance';
+      path: '/hotel/finance';
+      fullPath: '/hotel/finance';
+      preLoaderRoute: typeof HotelFinanceRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/_layout/settings': {
-      id: '/_layout/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof LayoutSettingsRouteImport
-      parentRoute: typeof LayoutRoute
-    }
+      id: '/_layout/settings';
+      path: '/settings';
+      fullPath: '/settings';
+      preLoaderRoute: typeof LayoutSettingsRouteImport;
+      parentRoute: typeof LayoutRoute;
+    };
     '/_layout/orders': {
-      id: '/_layout/orders'
-      path: '/orders'
-      fullPath: '/orders'
-      preLoaderRoute: typeof LayoutOrdersRouteImport
-      parentRoute: typeof LayoutRoute
-    }
+      id: '/_layout/orders';
+      path: '/orders';
+      fullPath: '/orders';
+      preLoaderRoute: typeof LayoutOrdersRouteImport;
+      parentRoute: typeof LayoutRoute;
+    };
     '/_layout/items': {
-      id: '/_layout/items'
-      path: '/items'
-      fullPath: '/items'
-      preLoaderRoute: typeof LayoutItemsRouteImport
-      parentRoute: typeof LayoutRoute
-    }
+      id: '/_layout/items';
+      path: '/items';
+      fullPath: '/items';
+      preLoaderRoute: typeof LayoutItemsRouteImport;
+      parentRoute: typeof LayoutRoute;
+    };
     '/_layout/global': {
-      id: '/_layout/global'
-      path: '/global'
-      fullPath: '/global'
-      preLoaderRoute: typeof LayoutGlobalRouteImport
-      parentRoute: typeof LayoutRoute
-    }
+      id: '/_layout/global';
+      path: '/global';
+      fullPath: '/global';
+      preLoaderRoute: typeof LayoutGlobalRouteImport;
+      parentRoute: typeof LayoutRoute;
+    };
     '/_layout/dashboard': {
-      id: '/_layout/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof LayoutDashboardRouteImport
-      parentRoute: typeof LayoutRoute
-    }
+      id: '/_layout/dashboard';
+      path: '/dashboard';
+      fullPath: '/dashboard';
+      preLoaderRoute: typeof LayoutDashboardRouteImport;
+      parentRoute: typeof LayoutRoute;
+    };
     '/hotel/front-desk/': {
-      id: '/hotel/front-desk/'
-      path: '/'
-      fullPath: '/hotel/front-desk/'
-      preLoaderRoute: typeof HotelFrontDeskIndexRouteImport
-      parentRoute: typeof HotelFrontDeskRoute
-    }
+      id: '/hotel/front-desk/';
+      path: '/';
+      fullPath: '/hotel/front-desk/';
+      preLoaderRoute: typeof HotelFrontDeskIndexRouteImport;
+      parentRoute: typeof HotelFrontDeskRoute;
+    };
     '/hotel/finance/': {
-      id: '/hotel/finance/'
-      path: '/'
-      fullPath: '/hotel/finance/'
-      preLoaderRoute: typeof HotelFinanceIndexRouteImport
-      parentRoute: typeof HotelFinanceRoute
-    }
+      id: '/hotel/finance/';
+      path: '/';
+      fullPath: '/hotel/finance/';
+      preLoaderRoute: typeof HotelFinanceIndexRouteImport;
+      parentRoute: typeof HotelFinanceRoute;
+    };
     '/_layout/locations/': {
-      id: '/_layout/locations/'
-      path: '/locations'
-      fullPath: '/locations/'
-      preLoaderRoute: typeof LayoutLocationsIndexRouteImport
-      parentRoute: typeof LayoutRoute
-    }
+      id: '/_layout/locations/';
+      path: '/locations';
+      fullPath: '/locations/';
+      preLoaderRoute: typeof LayoutLocationsIndexRouteImport;
+      parentRoute: typeof LayoutRoute;
+    };
     '/hotel/front-desk/room-service': {
-      id: '/hotel/front-desk/room-service'
-      path: '/room-service'
-      fullPath: '/hotel/front-desk/room-service'
-      preLoaderRoute: typeof HotelFrontDeskRoomServiceRouteImport
-      parentRoute: typeof HotelFrontDeskRoute
-    }
+      id: '/hotel/front-desk/room-service';
+      path: '/room-service';
+      fullPath: '/hotel/front-desk/room-service';
+      preLoaderRoute: typeof HotelFrontDeskRoomServiceRouteImport;
+      parentRoute: typeof HotelFrontDeskRoute;
+    };
     '/hotel/front-desk/reservations-list': {
-      id: '/hotel/front-desk/reservations-list'
-      path: '/reservations-list'
-      fullPath: '/hotel/front-desk/reservations-list'
-      preLoaderRoute: typeof HotelFrontDeskReservationsListRouteImport
-      parentRoute: typeof HotelFrontDeskRoute
-    }
+      id: '/hotel/front-desk/reservations-list';
+      path: '/reservations-list';
+      fullPath: '/hotel/front-desk/reservations-list';
+      preLoaderRoute: typeof HotelFrontDeskReservationsListRouteImport;
+      parentRoute: typeof HotelFrontDeskRoute;
+    };
     '/hotel/front-desk/reports': {
-      id: '/hotel/front-desk/reports'
-      path: '/reports'
-      fullPath: '/hotel/front-desk/reports'
-      preLoaderRoute: typeof HotelFrontDeskReportsRouteImport
-      parentRoute: typeof HotelFrontDeskRoute
-    }
+      id: '/hotel/front-desk/reports';
+      path: '/reports';
+      fullPath: '/hotel/front-desk/reports';
+      preLoaderRoute: typeof HotelFrontDeskReportsRouteImport;
+      parentRoute: typeof HotelFrontDeskRoute;
+    };
     '/hotel/front-desk/printer-test': {
-      id: '/hotel/front-desk/printer-test'
-      path: '/printer-test'
-      fullPath: '/hotel/front-desk/printer-test'
-      preLoaderRoute: typeof HotelFrontDeskPrinterTestRouteImport
-      parentRoute: typeof HotelFrontDeskRoute
-    }
+      id: '/hotel/front-desk/printer-test';
+      path: '/printer-test';
+      fullPath: '/hotel/front-desk/printer-test';
+      preLoaderRoute: typeof HotelFrontDeskPrinterTestRouteImport;
+      parentRoute: typeof HotelFrontDeskRoute;
+    };
     '/hotel/front-desk/pricing': {
-      id: '/hotel/front-desk/pricing'
-      path: '/pricing'
-      fullPath: '/hotel/front-desk/pricing'
-      preLoaderRoute: typeof HotelFrontDeskPricingRouteImport
-      parentRoute: typeof HotelFrontDeskRoute
-    }
+      id: '/hotel/front-desk/pricing';
+      path: '/pricing';
+      fullPath: '/hotel/front-desk/pricing';
+      preLoaderRoute: typeof HotelFrontDeskPricingRouteImport;
+      parentRoute: typeof HotelFrontDeskRoute;
+    };
     '/hotel/front-desk/payments': {
-      id: '/hotel/front-desk/payments'
-      path: '/payments'
-      fullPath: '/hotel/front-desk/payments'
-      preLoaderRoute: typeof HotelFrontDeskPaymentsRouteImport
-      parentRoute: typeof HotelFrontDeskRoute
-    }
+      id: '/hotel/front-desk/payments';
+      path: '/payments';
+      fullPath: '/hotel/front-desk/payments';
+      preLoaderRoute: typeof HotelFrontDeskPaymentsRouteImport;
+      parentRoute: typeof HotelFrontDeskRoute;
+    };
     '/hotel/front-desk/guests': {
-      id: '/hotel/front-desk/guests'
-      path: '/guests'
-      fullPath: '/hotel/front-desk/guests'
-      preLoaderRoute: typeof HotelFrontDeskGuestsRouteImport
-      parentRoute: typeof HotelFrontDeskRoute
-    }
+      id: '/hotel/front-desk/guests';
+      path: '/guests';
+      fullPath: '/hotel/front-desk/guests';
+      preLoaderRoute: typeof HotelFrontDeskGuestsRouteImport;
+      parentRoute: typeof HotelFrontDeskRoute;
+    };
     '/hotel/front-desk/email-test': {
-      id: '/hotel/front-desk/email-test'
-      path: '/email-test'
-      fullPath: '/hotel/front-desk/email-test'
-      preLoaderRoute: typeof HotelFrontDeskEmailTestRouteImport
-      parentRoute: typeof HotelFrontDeskRoute
-    }
+      id: '/hotel/front-desk/email-test';
+      path: '/email-test';
+      fullPath: '/hotel/front-desk/email-test';
+      preLoaderRoute: typeof HotelFrontDeskEmailTestRouteImport;
+      parentRoute: typeof HotelFrontDeskRoute;
+    };
     '/hotel/front-desk/companies': {
-      id: '/hotel/front-desk/companies'
-      path: '/companies'
-      fullPath: '/hotel/front-desk/companies'
-      preLoaderRoute: typeof HotelFrontDeskCompaniesRouteImport
-      parentRoute: typeof HotelFrontDeskRoute
-    }
+      id: '/hotel/front-desk/companies';
+      path: '/companies';
+      fullPath: '/hotel/front-desk/companies';
+      preLoaderRoute: typeof HotelFrontDeskCompaniesRouteImport;
+      parentRoute: typeof HotelFrontDeskRoute;
+    };
     '/hotel/finance/revenue-analytics': {
-      id: '/hotel/finance/revenue-analytics'
-      path: '/revenue-analytics'
-      fullPath: '/hotel/finance/revenue-analytics'
-      preLoaderRoute: typeof HotelFinanceRevenueAnalyticsRouteImport
-      parentRoute: typeof HotelFinanceRoute
-    }
+      id: '/hotel/finance/revenue-analytics';
+      path: '/revenue-analytics';
+      fullPath: '/hotel/finance/revenue-analytics';
+      preLoaderRoute: typeof HotelFinanceRevenueAnalyticsRouteImport;
+      parentRoute: typeof HotelFinanceRoute;
+    };
     '/hotel/finance/invoices': {
-      id: '/hotel/finance/invoices'
-      path: '/invoices'
-      fullPath: '/hotel/finance/invoices'
-      preLoaderRoute: typeof HotelFinanceInvoicesRouteImport
-      parentRoute: typeof HotelFinanceRoute
-    }
+      id: '/hotel/finance/invoices';
+      path: '/invoices';
+      fullPath: '/hotel/finance/invoices';
+      preLoaderRoute: typeof HotelFinanceInvoicesRouteImport;
+      parentRoute: typeof HotelFinanceRoute;
+    };
     '/hotel/finance/fiscalization-test': {
-      id: '/hotel/finance/fiscalization-test'
-      path: '/fiscalization-test'
-      fullPath: '/hotel/finance/fiscalization-test'
-      preLoaderRoute: typeof HotelFinanceFiscalizationTestRouteImport
-      parentRoute: typeof HotelFinanceRoute
-    }
+      id: '/hotel/finance/fiscalization-test';
+      path: '/fiscalization-test';
+      fullPath: '/hotel/finance/fiscalization-test';
+      preLoaderRoute: typeof HotelFinanceFiscalizationTestRouteImport;
+      parentRoute: typeof HotelFinanceRoute;
+    };
     '/hotel/finance/fiscal-compliance': {
-      id: '/hotel/finance/fiscal-compliance'
-      path: '/fiscal-compliance'
-      fullPath: '/hotel/finance/fiscal-compliance'
-      preLoaderRoute: typeof HotelFinanceFiscalComplianceRouteImport
-      parentRoute: typeof HotelFinanceRoute
-    }
+      id: '/hotel/finance/fiscal-compliance';
+      path: '/fiscal-compliance';
+      fullPath: '/hotel/finance/fiscal-compliance';
+      preLoaderRoute: typeof HotelFinanceFiscalComplianceRouteImport;
+      parentRoute: typeof HotelFinanceRoute;
+    };
     '/hotel/finance/eracuni-test': {
-      id: '/hotel/finance/eracuni-test'
-      path: '/eracuni-test'
-      fullPath: '/hotel/finance/eracuni-test'
-      preLoaderRoute: typeof HotelFinanceEracuniTestRouteImport
-      parentRoute: typeof HotelFinanceRoute
-    }
+      id: '/hotel/finance/eracuni-test';
+      path: '/eracuni-test';
+      fullPath: '/hotel/finance/eracuni-test';
+      preLoaderRoute: typeof HotelFinanceEracuniTestRouteImport;
+      parentRoute: typeof HotelFinanceRoute;
+    };
     '/_layout/locations/$id': {
-      id: '/_layout/locations/$id'
-      path: '/locations/$id'
-      fullPath: '/locations/$id'
-      preLoaderRoute: typeof LayoutLocationsIdRouteImport
-      parentRoute: typeof LayoutRoute
-    }
+      id: '/_layout/locations/$id';
+      path: '/locations/$id';
+      fullPath: '/locations/$id';
+      preLoaderRoute: typeof LayoutLocationsIdRouteImport;
+      parentRoute: typeof LayoutRoute;
+    };
     '/_layout/admin/testing': {
-      id: '/_layout/admin/testing'
-      path: '/admin/testing'
-      fullPath: '/admin/testing'
-      preLoaderRoute: typeof LayoutAdminTestingRouteImport
-      parentRoute: typeof LayoutRoute
-    }
+      id: '/_layout/admin/testing';
+      path: '/admin/testing';
+      fullPath: '/admin/testing';
+      preLoaderRoute: typeof LayoutAdminTestingRouteImport;
+      parentRoute: typeof LayoutRoute;
+    };
     '/_layout/admin/locations': {
-      id: '/_layout/admin/locations'
-      path: '/admin/locations'
-      fullPath: '/admin/locations'
-      preLoaderRoute: typeof LayoutAdminLocationsRouteImport
-      parentRoute: typeof LayoutRoute
-    }
+      id: '/_layout/admin/locations';
+      path: '/admin/locations';
+      fullPath: '/admin/locations';
+      preLoaderRoute: typeof LayoutAdminLocationsRouteImport;
+      parentRoute: typeof LayoutRoute;
+    };
     '/_layout/admin/audit': {
-      id: '/_layout/admin/audit'
-      path: '/admin/audit'
-      fullPath: '/admin/audit'
-      preLoaderRoute: typeof LayoutAdminAuditRouteImport
-      parentRoute: typeof LayoutRoute
-    }
+      id: '/_layout/admin/audit';
+      path: '/admin/audit';
+      fullPath: '/admin/audit';
+      preLoaderRoute: typeof LayoutAdminAuditRouteImport;
+      parentRoute: typeof LayoutRoute;
+    };
     '/hotel/front-desk/channel-manager/': {
-      id: '/hotel/front-desk/channel-manager/'
-      path: '/channel-manager'
-      fullPath: '/hotel/front-desk/channel-manager/'
-      preLoaderRoute: typeof HotelFrontDeskChannelManagerIndexRouteImport
-      parentRoute: typeof HotelFrontDeskRoute
-    }
+      id: '/hotel/front-desk/channel-manager/';
+      path: '/channel-manager';
+      fullPath: '/hotel/front-desk/channel-manager/';
+      preLoaderRoute: typeof HotelFrontDeskChannelManagerIndexRouteImport;
+      parentRoute: typeof HotelFrontDeskRoute;
+    };
     '/hotel/front-desk/channel-manager/settings': {
-      id: '/hotel/front-desk/channel-manager/settings'
-      path: '/channel-manager/settings'
-      fullPath: '/hotel/front-desk/channel-manager/settings'
-      preLoaderRoute: typeof HotelFrontDeskChannelManagerSettingsRouteImport
-      parentRoute: typeof HotelFrontDeskRoute
-    }
+      id: '/hotel/front-desk/channel-manager/settings';
+      path: '/channel-manager/settings';
+      fullPath: '/hotel/front-desk/channel-manager/settings';
+      preLoaderRoute: typeof HotelFrontDeskChannelManagerSettingsRouteImport;
+      parentRoute: typeof HotelFrontDeskRoute;
+    };
   }
 }
 
 interface LayoutRouteChildren {
-  LayoutDashboardRoute: typeof LayoutDashboardRoute
-  LayoutGlobalRoute: typeof LayoutGlobalRoute
-  LayoutItemsRoute: typeof LayoutItemsRoute
-  LayoutOrdersRoute: typeof LayoutOrdersRoute
-  LayoutSettingsRoute: typeof LayoutSettingsRoute
-  LayoutAdminAuditRoute: typeof LayoutAdminAuditRoute
-  LayoutAdminLocationsRoute: typeof LayoutAdminLocationsRoute
-  LayoutAdminTestingRoute: typeof LayoutAdminTestingRoute
-  LayoutLocationsIdRoute: typeof LayoutLocationsIdRoute
-  LayoutLocationsIndexRoute: typeof LayoutLocationsIndexRoute
+  LayoutDashboardRoute: typeof LayoutDashboardRoute;
+  LayoutGlobalRoute: typeof LayoutGlobalRoute;
+  LayoutItemsRoute: typeof LayoutItemsRoute;
+  LayoutOrdersRoute: typeof LayoutOrdersRoute;
+  LayoutSettingsRoute: typeof LayoutSettingsRoute;
+  LayoutAdminAuditRoute: typeof LayoutAdminAuditRoute;
+  LayoutAdminLocationsRoute: typeof LayoutAdminLocationsRoute;
+  LayoutAdminTestingRoute: typeof LayoutAdminTestingRoute;
+  LayoutLocationsIdRoute: typeof LayoutLocationsIdRoute;
+  LayoutLocationsIndexRoute: typeof LayoutLocationsIndexRoute;
 }
 
 const LayoutRouteChildren: LayoutRouteChildren = {
@@ -790,18 +783,17 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutAdminTestingRoute: LayoutAdminTestingRoute,
   LayoutLocationsIdRoute: LayoutLocationsIdRoute,
   LayoutLocationsIndexRoute: LayoutLocationsIndexRoute,
-}
+};
 
-const LayoutRouteWithChildren =
-  LayoutRoute._addFileChildren(LayoutRouteChildren)
+const LayoutRouteWithChildren = LayoutRoute._addFileChildren(LayoutRouteChildren);
 
 interface HotelFinanceRouteChildren {
-  HotelFinanceEracuniTestRoute: typeof HotelFinanceEracuniTestRoute
-  HotelFinanceFiscalComplianceRoute: typeof HotelFinanceFiscalComplianceRoute
-  HotelFinanceFiscalizationTestRoute: typeof HotelFinanceFiscalizationTestRoute
-  HotelFinanceInvoicesRoute: typeof HotelFinanceInvoicesRoute
-  HotelFinanceRevenueAnalyticsRoute: typeof HotelFinanceRevenueAnalyticsRoute
-  HotelFinanceIndexRoute: typeof HotelFinanceIndexRoute
+  HotelFinanceEracuniTestRoute: typeof HotelFinanceEracuniTestRoute;
+  HotelFinanceFiscalComplianceRoute: typeof HotelFinanceFiscalComplianceRoute;
+  HotelFinanceFiscalizationTestRoute: typeof HotelFinanceFiscalizationTestRoute;
+  HotelFinanceInvoicesRoute: typeof HotelFinanceInvoicesRoute;
+  HotelFinanceRevenueAnalyticsRoute: typeof HotelFinanceRevenueAnalyticsRoute;
+  HotelFinanceIndexRoute: typeof HotelFinanceIndexRoute;
 }
 
 const HotelFinanceRouteChildren: HotelFinanceRouteChildren = {
@@ -811,25 +803,23 @@ const HotelFinanceRouteChildren: HotelFinanceRouteChildren = {
   HotelFinanceInvoicesRoute: HotelFinanceInvoicesRoute,
   HotelFinanceRevenueAnalyticsRoute: HotelFinanceRevenueAnalyticsRoute,
   HotelFinanceIndexRoute: HotelFinanceIndexRoute,
-}
+};
 
-const HotelFinanceRouteWithChildren = HotelFinanceRoute._addFileChildren(
-  HotelFinanceRouteChildren,
-)
+const HotelFinanceRouteWithChildren = HotelFinanceRoute._addFileChildren(HotelFinanceRouteChildren);
 
 interface HotelFrontDeskRouteChildren {
-  HotelFrontDeskCompaniesRoute: typeof HotelFrontDeskCompaniesRoute
-  HotelFrontDeskEmailTestRoute: typeof HotelFrontDeskEmailTestRoute
-  HotelFrontDeskGuestsRoute: typeof HotelFrontDeskGuestsRoute
-  HotelFrontDeskPaymentsRoute: typeof HotelFrontDeskPaymentsRoute
-  HotelFrontDeskPricingRoute: typeof HotelFrontDeskPricingRoute
-  HotelFrontDeskPrinterTestRoute: typeof HotelFrontDeskPrinterTestRoute
-  HotelFrontDeskReportsRoute: typeof HotelFrontDeskReportsRoute
-  HotelFrontDeskReservationsListRoute: typeof HotelFrontDeskReservationsListRoute
-  HotelFrontDeskRoomServiceRoute: typeof HotelFrontDeskRoomServiceRoute
-  HotelFrontDeskIndexRoute: typeof HotelFrontDeskIndexRoute
-  HotelFrontDeskChannelManagerSettingsRoute: typeof HotelFrontDeskChannelManagerSettingsRoute
-  HotelFrontDeskChannelManagerIndexRoute: typeof HotelFrontDeskChannelManagerIndexRoute
+  HotelFrontDeskCompaniesRoute: typeof HotelFrontDeskCompaniesRoute;
+  HotelFrontDeskEmailTestRoute: typeof HotelFrontDeskEmailTestRoute;
+  HotelFrontDeskGuestsRoute: typeof HotelFrontDeskGuestsRoute;
+  HotelFrontDeskPaymentsRoute: typeof HotelFrontDeskPaymentsRoute;
+  HotelFrontDeskPricingRoute: typeof HotelFrontDeskPricingRoute;
+  HotelFrontDeskPrinterTestRoute: typeof HotelFrontDeskPrinterTestRoute;
+  HotelFrontDeskReportsRoute: typeof HotelFrontDeskReportsRoute;
+  HotelFrontDeskReservationsListRoute: typeof HotelFrontDeskReservationsListRoute;
+  HotelFrontDeskRoomServiceRoute: typeof HotelFrontDeskRoomServiceRoute;
+  HotelFrontDeskIndexRoute: typeof HotelFrontDeskIndexRoute;
+  HotelFrontDeskChannelManagerSettingsRoute: typeof HotelFrontDeskChannelManagerSettingsRoute;
+  HotelFrontDeskChannelManagerIndexRoute: typeof HotelFrontDeskChannelManagerIndexRoute;
 }
 
 const HotelFrontDeskRouteChildren: HotelFrontDeskRouteChildren = {
@@ -843,15 +833,13 @@ const HotelFrontDeskRouteChildren: HotelFrontDeskRouteChildren = {
   HotelFrontDeskReservationsListRoute: HotelFrontDeskReservationsListRoute,
   HotelFrontDeskRoomServiceRoute: HotelFrontDeskRoomServiceRoute,
   HotelFrontDeskIndexRoute: HotelFrontDeskIndexRoute,
-  HotelFrontDeskChannelManagerSettingsRoute:
-    HotelFrontDeskChannelManagerSettingsRoute,
-  HotelFrontDeskChannelManagerIndexRoute:
-    HotelFrontDeskChannelManagerIndexRoute,
-}
+  HotelFrontDeskChannelManagerSettingsRoute: HotelFrontDeskChannelManagerSettingsRoute,
+  HotelFrontDeskChannelManagerIndexRoute: HotelFrontDeskChannelManagerIndexRoute,
+};
 
 const HotelFrontDeskRouteWithChildren = HotelFrontDeskRoute._addFileChildren(
-  HotelFrontDeskRouteChildren,
-)
+  HotelFrontDeskRouteChildren
+);
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -864,7 +852,7 @@ const rootRouteChildren: RootRouteChildren = {
   HotelFrontDeskRoute: HotelFrontDeskRouteWithChildren,
   HotelModuleSelectorRoute: HotelModuleSelectorRoute,
   NfcCleanRoute: NfcCleanRoute,
-}
+};
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>()
+  ._addFileTypes<FileRouteTypes>();

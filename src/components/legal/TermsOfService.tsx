@@ -1,34 +1,30 @@
-import React from 'react'
-import { Button } from '../ui/button'
-import { ArrowLeft } from 'lucide-react'
+import React from 'react';
+import { Button } from '../ui/button';
+import { ArrowLeft } from 'lucide-react';
 
 export default function TermsOfService() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 px-4 py-12">
+      <div className="mx-auto max-w-4xl">
         {/* Header */}
         <div className="mb-8">
-          <Button
-            onClick={() => window.history.back()}
-            variant="outline"
-            className="mb-4"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
+          <Button onClick={() => window.history.back()} variant="outline" className="mb-4">
+            <ArrowLeft className="mr-2 h-4 w-4" />
             Back
           </Button>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Terms of Service</h1>
+          <h1 className="mb-2 text-4xl font-bold text-gray-900">Terms of Service</h1>
           <p className="text-lg text-gray-600">Hotel Porec • Poreč, Croatia</p>
         </div>
 
         {/* Content Card */}
-        <div className="bg-white rounded-lg shadow-lg p-8 border border-gray-200">
+        <div className="rounded-lg border border-gray-200 bg-white p-8 shadow-lg">
           <div className="prose prose-lg max-w-none">
             {/* Coming Soon Message */}
-            <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-6 mb-8">
+            <div className="mb-8 rounded-lg border-2 border-blue-300 bg-blue-50 p-6">
               <div className="text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-200 rounded-full mb-4">
+                <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-blue-200">
                   <svg
-                    className="w-8 h-8 text-blue-600"
+                    className="h-8 w-8 text-blue-600"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -41,17 +37,16 @@ export default function TermsOfService() {
                     />
                   </svg>
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                  Coming Soon
-                </h2>
-                <p className="text-gray-600 mb-4">
+                <h2 className="mb-2 text-2xl font-bold text-gray-900">Coming Soon</h2>
+                <p className="mb-4 text-gray-600">
                   Our Terms of Service are currently being prepared and will be available shortly.
                 </p>
                 <p className="text-sm text-gray-500">
-                  Last updated: {new Date().toLocaleDateString('en-US', {
+                  Last updated:{' '}
+                  {new Date().toLocaleDateString('en-US', {
                     year: 'numeric',
                     month: 'long',
-                    day: 'numeric'
+                    day: 'numeric',
                   })}
                 </p>
               </div>
@@ -59,48 +54,51 @@ export default function TermsOfService() {
 
             {/* Placeholder Sections */}
             <section className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">1. Introduction</h2>
-              <div className="h-12 bg-gray-100 rounded animate-pulse"></div>
+              <h2 className="mb-4 text-2xl font-bold text-gray-900">1. Introduction</h2>
+              <div className="h-12 animate-pulse rounded bg-gray-100"></div>
             </section>
 
             <section className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">2. Use License</h2>
+              <h2 className="mb-4 text-2xl font-bold text-gray-900">2. Use License</h2>
               <div className="space-y-3">
-                <div className="h-4 bg-gray-100 rounded animate-pulse"></div>
-                <div className="h-4 bg-gray-100 rounded animate-pulse w-5/6"></div>
+                <div className="h-4 animate-pulse rounded bg-gray-100"></div>
+                <div className="h-4 w-5/6 animate-pulse rounded bg-gray-100"></div>
               </div>
             </section>
 
             <section className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">3. Disclaimer</h2>
+              <h2 className="mb-4 text-2xl font-bold text-gray-900">3. Disclaimer</h2>
               <div className="space-y-3">
-                <div className="h-4 bg-gray-100 rounded animate-pulse"></div>
-                <div className="h-4 bg-gray-100 rounded animate-pulse w-4/6"></div>
+                <div className="h-4 animate-pulse rounded bg-gray-100"></div>
+                <div className="h-4 w-4/6 animate-pulse rounded bg-gray-100"></div>
               </div>
             </section>
 
             <section className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">4. Limitations</h2>
+              <h2 className="mb-4 text-2xl font-bold text-gray-900">4. Limitations</h2>
               <div className="space-y-3">
-                <div className="h-4 bg-gray-100 rounded animate-pulse"></div>
-                <div className="h-4 bg-gray-100 rounded animate-pulse w-5/6"></div>
+                <div className="h-4 animate-pulse rounded bg-gray-100"></div>
+                <div className="h-4 w-5/6 animate-pulse rounded bg-gray-100"></div>
               </div>
             </section>
 
             <section className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">5. Accuracy of Materials</h2>
+              <h2 className="mb-4 text-2xl font-bold text-gray-900">5. Accuracy of Materials</h2>
               <div className="space-y-3">
-                <div className="h-4 bg-gray-100 rounded animate-pulse"></div>
-                <div className="h-4 bg-gray-100 rounded animate-pulse w-4/6"></div>
+                <div className="h-4 animate-pulse rounded bg-gray-100"></div>
+                <div className="h-4 w-4/6 animate-pulse rounded bg-gray-100"></div>
               </div>
             </section>
           </div>
 
           {/* Footer Note */}
-          <div className="mt-12 pt-8 border-t border-gray-200">
+          <div className="mt-12 border-t border-gray-200 pt-8">
             <p className="text-sm text-gray-500">
               For questions about our Terms of Service, please contact us at{' '}
-              <a href="mailto:hotelporec@pu.t-com.hr" className="text-blue-600 hover:text-blue-700 underline">
+              <a
+                href="mailto:hotelporec@pu.t-com.hr"
+                className="text-blue-600 underline hover:text-blue-700"
+              >
                 hotelporec@pu.t-com.hr
               </a>
             </p>
@@ -108,5 +106,5 @@ export default function TermsOfService() {
         </div>
       </div>
     </div>
-  )
+  );
 }

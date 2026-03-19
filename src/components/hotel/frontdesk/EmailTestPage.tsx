@@ -3,20 +3,19 @@ import { Button } from '../../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import { Badge } from '../../ui/badge';
 import { Input } from '../../ui/input';
-import { 
-  Mail, 
-  Send, 
-  User, 
+import {
+  Mail,
+  Send,
+  User,
   Calendar,
   CheckCircle,
   XCircle,
   Loader2,
   Globe,
-  Phone
+  Phone,
 } from 'lucide-react';
 import { useEmailTestState } from '../../../lib/hooks/useEmailTestState';
 import { ntfyService } from '../../../lib/ntfyService';
-
 
 export default function EmailTestPage() {
   const {
@@ -31,7 +30,7 @@ export default function EmailTestPage() {
     testData,
     isValidEmail,
     emailValidationError,
-    
+
     // Actions
     setEmailAddress,
     setSelectedLanguage,
@@ -41,18 +40,19 @@ export default function EmailTestPage() {
     getEmailTypes,
     getEmailLanguages,
     formatDisplayDate,
-    getGuestBadges
+    getGuestBadges,
   } = useEmailTestState();
-
 
   return (
     <div className="p-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Email & Notification System Test</h1>
-        <p className="text-gray-600">Test the hotel email system and Room 401 push notifications with sample data</p>
+        <p className="text-gray-600">
+          Test the hotel email system and Room 401 push notifications with sample data
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Test Data Overview */}
         <div className="space-y-6">
           {/* Guest Information Card */}
@@ -82,10 +82,14 @@ export default function EmailTestPage() {
                   <div className="font-medium">{testData.guest.nationality}</div>
                 </div>
               </div>
-              
+
               <div className="flex items-center space-x-4 pt-2">
                 {getGuestBadges(testData.guest).map((badge, index) => (
-                  <Badge key={index} variant={badge.type === 'vip' ? 'default' : 'outline'} className="text-xs">
+                  <Badge
+                    key={index}
+                    variant={badge.type === 'vip' ? 'default' : 'outline'}
+                    className="text-xs"
+                  >
                     <span className="mr-1">{badge.icon}</span>
                     {badge.label}
                   </Badge>
@@ -112,11 +116,15 @@ export default function EmailTestPage() {
                 </div>
                 <div>
                   <div className="text-sm text-gray-500">Check-in</div>
-                  <div className="font-medium">{formatDisplayDate(testData.reservation.checkIn)}</div>
+                  <div className="font-medium">
+                    {formatDisplayDate(testData.reservation.checkIn)}
+                  </div>
                 </div>
                 <div>
                   <div className="text-sm text-gray-500">Check-out</div>
-                  <div className="font-medium">{formatDisplayDate(testData.reservation.checkOut)}</div>
+                  <div className="font-medium">
+                    {formatDisplayDate(testData.reservation.checkOut)}
+                  </div>
                 </div>
                 <div>
                   <div className="text-sm text-gray-500">Duration</div>
@@ -124,16 +132,16 @@ export default function EmailTestPage() {
                 </div>
                 <div>
                   <div className="text-sm text-gray-500">Total Amount</div>
-                  <div className="font-medium text-lg text-green-600">
+                  <div className="text-lg font-medium text-green-600">
                     €{testData.reservation.totalAmount.toFixed(2)}
                   </div>
                 </div>
               </div>
 
               {testData.reservation.specialRequests && (
-                <div className="pt-2 border-t">
+                <div className="border-t pt-2">
                   <div className="text-sm text-gray-500">Special Requests</div>
-                  <div className="text-sm mt-1 p-2 bg-yellow-50 rounded">
+                  <div className="mt-1 rounded bg-yellow-50 p-2 text-sm">
                     {testData.reservation.specialRequests}
                   </div>
                 </div>
@@ -155,7 +163,7 @@ export default function EmailTestPage() {
             <CardContent className="space-y-4">
               {/* Email Address Input */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="mb-2 block text-sm font-medium text-gray-700">
                   📧 Send to Email Address:
                 </label>
                 <Input
@@ -166,13 +174,13 @@ export default function EmailTestPage() {
                   className={`w-full ${!isValidEmail && emailAddress ? 'border-red-500' : ''}`}
                 />
                 {emailValidationError && (
-                  <p className="text-sm text-red-600 mt-1">{emailValidationError}</p>
+                  <p className="mt-1 text-sm text-red-600">{emailValidationError}</p>
                 )}
               </div>
 
               {/* Email Type Selection */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="mb-2 block text-sm font-medium text-gray-700">
                   📝 Email Type:
                 </label>
                 <div className="grid grid-cols-1 gap-2">
@@ -180,7 +188,7 @@ export default function EmailTestPage() {
                     <button
                       key={type.value}
                       onClick={() => setSelectedEmailType(type.value)}
-                      className={`p-3 text-left border rounded-lg transition-colors ${
+                      className={`rounded-lg border p-3 text-left transition-colors ${
                         selectedEmailType === type.value
                           ? 'border-blue-500 bg-blue-50 text-blue-900'
                           : 'border-gray-200 hover:border-gray-300'
@@ -196,8 +204,8 @@ export default function EmailTestPage() {
               {/* Language Selection */}
               {selectedEmailType === 'welcome' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <Globe className="h-4 w-4 inline mr-1" />
+                  <label className="mb-2 block text-sm font-medium text-gray-700">
+                    <Globe className="mr-1 inline h-4 w-4" />
                     Language:
                   </label>
                   <div className="grid grid-cols-3 gap-2">
@@ -205,7 +213,7 @@ export default function EmailTestPage() {
                       <button
                         key={lang.value}
                         onClick={() => setSelectedLanguage(lang.value)}
-                        className={`p-2 text-center border rounded-lg transition-colors ${
+                        className={`rounded-lg border p-2 text-center transition-colors ${
                           selectedLanguage === lang.value
                             ? 'border-blue-500 bg-blue-50 text-blue-900'
                             : 'border-gray-200 hover:border-gray-300'
@@ -227,13 +235,15 @@ export default function EmailTestPage() {
               >
                 {isSendingEmail ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Sending Test Email...
                   </>
                 ) : (
                   <>
-                    <Send className="h-4 w-4 mr-2" />
-                    Send {selectedEmailType.charAt(0).toUpperCase() + selectedEmailType.slice(1)} Email
+                    <Send className="mr-2 h-4 w-4" />
+                    Send {selectedEmailType.charAt(0).toUpperCase() +
+                      selectedEmailType.slice(1)}{' '}
+                    Email
                     {selectedEmailType === 'welcome' && ` (${selectedLanguage.toUpperCase()})`}
                   </>
                 )}
@@ -255,21 +265,24 @@ export default function EmailTestPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className={`p-4 rounded-lg ${
-                  lastEmailResult.success 
-                    ? 'bg-green-50 text-green-800' 
-                    : 'bg-red-50 text-red-800'
-                }`}>
+                <div
+                  className={`rounded-lg p-4 ${
+                    lastEmailResult.success
+                      ? 'bg-green-50 text-green-800'
+                      : 'bg-red-50 text-red-800'
+                  }`}
+                >
                   <p className="font-medium">
                     {lastEmailResult.success ? '✅ Success!' : '❌ Failed'}
                   </p>
-                  <p className="text-sm mt-1">{lastEmailResult.message}</p>
+                  <p className="mt-1 text-sm">{lastEmailResult.message}</p>
                 </div>
-                
+
                 {lastEmailResult.success && (
-                  <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                  <div className="mt-4 rounded-lg bg-blue-50 p-3">
                     <p className="text-sm text-blue-800">
-                      📧 Check your email inbox at <strong>{emailAddress}</strong> for the {selectedEmailType} email!
+                      📧 Check your email inbox at <strong>{emailAddress}</strong> for the{' '}
+                      {selectedEmailType} email!
                     </p>
                   </div>
                 )}
@@ -319,7 +332,7 @@ export default function EmailTestPage() {
                     </div>
                   </>
                 )}
-                
+
                 {selectedEmailType === 'thankyou' && (
                   <>
                     <div className="flex items-center space-x-2">
@@ -340,7 +353,7 @@ export default function EmailTestPage() {
                     </div>
                   </>
                 )}
-                
+
                 {selectedEmailType === 'reminder' && (
                   <>
                     <div className="flex items-center space-x-2">
@@ -361,7 +374,7 @@ export default function EmailTestPage() {
                     </div>
                   </>
                 )}
-                
+
                 <div className="flex items-center space-x-2">
                   <Phone className="h-4 w-4 text-gray-400" />
                   <span>Hotel contact: +385 (0)52 451 611</span>
@@ -385,13 +398,14 @@ export default function EmailTestPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-3 text-sm">
-              <div className="p-3 bg-blue-50 rounded-lg">
+              <div className="rounded-lg bg-blue-50 p-3">
                 <p className="font-medium text-blue-900">📱 Mobile Setup Required</p>
-                <p className="text-blue-700 mt-1">
-                  Install the ntfy app and subscribe to: <code className="font-mono bg-white px-1 rounded">{ntfyService.getTopic()}</code>
+                <p className="mt-1 text-blue-700">
+                  Install the ntfy app and subscribe to:{' '}
+                  <code className="rounded bg-white px-1 font-mono">{ntfyService.getTopic()}</code>
                 </p>
               </div>
-              
+
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
                   <span className="text-lg">🏨</span>
@@ -408,7 +422,7 @@ export default function EmailTestPage() {
               </div>
             </div>
 
-            <Button 
+            <Button
               onClick={sendTestNotification}
               disabled={isSendingNotification}
               className="w-full bg-purple-600 hover:bg-purple-700"
@@ -427,23 +441,29 @@ export default function EmailTestPage() {
             </Button>
 
             {lastNotificationResult && (
-              <div className={`p-3 rounded-lg ${lastNotificationResult.success ? 'bg-green-50' : 'bg-red-50'}`}>
+              <div
+                className={`rounded-lg p-3 ${lastNotificationResult.success ? 'bg-green-50' : 'bg-red-50'}`}
+              >
                 <div className="flex items-center space-x-2">
                   {lastNotificationResult.success ? (
                     <CheckCircle className="h-4 w-4 text-green-500" />
                   ) : (
                     <XCircle className="h-4 w-4 text-red-500" />
                   )}
-                  <span className={`text-sm font-medium ${lastNotificationResult.success ? 'text-green-800' : 'text-red-800'}`}>
+                  <span
+                    className={`text-sm font-medium ${lastNotificationResult.success ? 'text-green-800' : 'text-red-800'}`}
+                  >
                     {lastNotificationResult.success ? 'Success!' : 'Failed'}
                   </span>
                 </div>
-                <p className={`text-sm mt-1 ${lastNotificationResult.success ? 'text-green-700' : 'text-red-700'}`}>
+                <p
+                  className={`mt-1 text-sm ${lastNotificationResult.success ? 'text-green-700' : 'text-red-700'}`}
+                >
                   {lastNotificationResult.message}
                 </p>
-                
+
                 {lastNotificationResult.success && (
-                  <div className="mt-4 p-3 bg-purple-50 rounded-lg">
+                  <div className="mt-4 rounded-lg bg-purple-50 p-3">
                     <p className="text-sm text-purple-800">
                       📱 Check your phone for the Room 401 booking notification!
                     </p>

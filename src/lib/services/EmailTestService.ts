@@ -25,9 +25,9 @@ export interface EmailTestData {
 
 export class EmailTestService {
   private static instance: EmailTestService;
-  
+
   private constructor() {}
-  
+
   public static getInstance(): EmailTestService {
     if (!EmailTestService.instance) {
       EmailTestService.instance = new EmailTestService();
@@ -59,12 +59,12 @@ export class EmailTestService {
         {
           name: 'Ana Sokol',
           dateOfBirth: new Date('2015-06-20'),
-          age: 8
-        }
+          age: 8,
+        },
       ],
       totalStays: 3,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
     const testRoom: Room = {
@@ -78,11 +78,11 @@ export class EmailTestService {
         A: 120,
         B: 150,
         C: 180,
-        D: 220
+        D: 220,
       },
       maxOccupancy: 2,
       isPremium: false,
-      amenities: ['WiFi', 'Air Conditioning', 'Sea View']
+      amenities: ['WiFi', 'Air Conditioning', 'Sea View'],
     };
 
     const testReservation: Reservation = {
@@ -90,20 +90,20 @@ export class EmailTestService {
       roomId: testRoom.id,
       guestId: testGuest.id,
       checkIn: new Date(Date.now() + 86400000), // Tomorrow
-      checkOut: new Date(Date.now() + (5 * 86400000)), // 5 days from now
+      checkOut: new Date(Date.now() + 5 * 86400000), // 5 days from now
       numberOfGuests: 2,
       adults: 2,
       children: [
         {
           name: 'Ana Sokol',
           dateOfBirth: new Date('2015-06-20'),
-          age: 8
-        }
+          age: 8,
+        },
       ],
       status: 'confirmed',
       bookingSource: 'direct',
       specialRequests: 'Sea view preferred, early check-in requested',
-      
+
       // Pricing details
       seasonalPeriod: 'C',
       baseRoomRate: 180,
@@ -118,63 +118,67 @@ export class EmailTestService {
       additionalCharges: 0,
       roomServiceItems: [],
       totalAmount: 956.8,
-      
+
       // Metadata
       bookingDate: new Date(),
       lastModified: new Date(),
-      notes: 'Test reservation for email system'
+      notes: 'Test reservation for email system',
     };
 
     return {
       guest: testGuest,
       room: testRoom,
-      reservation: testReservation
+      reservation: testReservation,
     };
   }
 
   /**
    * Send a test email with the specified configuration
    */
-  async sendTestEmail(config: EmailTestConfiguration, testData: EmailTestData): Promise<TestResult> {
+  async sendTestEmail(
+    config: EmailTestConfiguration,
+    testData: EmailTestData
+  ): Promise<TestResult> {
     try {
       // Generate email data based on email type
-      const emailData = config.emailType === 'reminder' 
-        ? { guest: { ...testData.guest, email: config.emailAddress } }
-        : { 
-            guest: { ...testData.guest, email: config.emailAddress }, 
-            reservation: testData.reservation, 
-            room: testData.room 
-          };
-      
+      const emailData =
+        config.emailType === 'reminder'
+          ? { guest: { ...testData.guest, email: config.emailAddress } }
+          : {
+              guest: { ...testData.guest, email: config.emailAddress },
+              reservation: testData.reservation,
+              room: testData.room,
+            };
+
       // Generate email template
       const template = HotelEmailService.generateEmail(
         config.emailType,
         emailData,
         config.language
       );
-      
+
       // Send email
       const result = await HotelEmailService.sendEmail(
         config.emailAddress,
         template,
         testData.guest.fullName
       );
-      
+
       if (result.success) {
         hotelNotification.success(
-          'Test Email Sent Successfully!', 
+          'Test Email Sent Successfully!',
           `${config.emailType} email sent to ${config.emailAddress}`
         );
       } else {
         hotelNotification.error('Email Send Failed', result.message);
       }
-      
+
       return result;
     } catch (error) {
       console.error('Error sending test email:', error);
       const errorResult = {
         success: false,
-        message: 'Failed to send test email. Please check the console for details.'
+        message: 'Failed to send test email. Please check the console for details.',
       };
       hotelNotification.error('Email Send Error', errorResult.message);
       return errorResult;
@@ -196,33 +200,33 @@ export class EmailTestService {
         adults: testData.reservation.adults,
         children: testData.reservation.children.length,
         bookingSource: testData.reservation.bookingSource,
-        totalAmount: testData.reservation.totalAmount
+        totalAmount: testData.reservation.totalAmount,
       };
 
       const success = await ntfyService.sendRoom401BookingNotification(notificationData);
-      
+
       const result = {
         success,
-        message: success 
-          ? 'Test notification sent successfully to Room 401 topic!' 
-          : 'Failed to send notification. Please check console for details.'
+        message: success
+          ? 'Test notification sent successfully to Room 401 topic!'
+          : 'Failed to send notification. Please check console for details.',
       };
-      
+
       if (success) {
         hotelNotification.success(
-          'Test Notification Sent!', 
+          'Test Notification Sent!',
           'Check your mobile device for the Room 401 booking notification'
         );
       } else {
         hotelNotification.error('Notification Failed', result.message);
       }
-      
+
       return result;
     } catch (error) {
       console.error('Error sending test notification:', error);
       const errorResult = {
         success: false,
-        message: 'Failed to send test notification. Please check the console for details.'
+        message: 'Failed to send test notification. Please check the console for details.',
       };
       hotelNotification.error('Notification Error', errorResult.message);
       return errorResult;
@@ -234,21 +238,21 @@ export class EmailTestService {
    */
   getEmailTypes(): Array<{ value: EmailType; label: string; description: string }> {
     return [
-      { 
-        value: 'welcome', 
-        label: '🏨 Welcome Email', 
-        description: 'Check-in information & hotel details' 
+      {
+        value: 'welcome',
+        label: '🏨 Welcome Email',
+        description: 'Check-in information & hotel details',
       },
-      { 
-        value: 'thankyou', 
-        label: '🙏 Thank You Email', 
-        description: 'Post-stay appreciation message' 
+      {
+        value: 'thankyou',
+        label: '🙏 Thank You Email',
+        description: 'Post-stay appreciation message',
       },
-      { 
-        value: 'reminder', 
-        label: '🌞 Summer Season Reminder', 
-        description: 'Seasonal booking reminder (no reservation data)' 
-      }
+      {
+        value: 'reminder',
+        label: '🌞 Summer Season Reminder',
+        description: 'Seasonal booking reminder (no reservation data)',
+      },
     ];
   }
 
@@ -259,7 +263,7 @@ export class EmailTestService {
     return [
       { value: 'en', label: '🇬🇧 English', flag: '🇬🇧' },
       { value: 'de', label: '🇩🇪 Deutsch', flag: '🇩🇪' },
-      { value: 'it', label: '🇮🇹 Italiano', flag: '🇮🇹' }
+      { value: 'it', label: '🇮🇹 Italiano', flag: '🇮🇹' },
     ];
   }
 
@@ -271,7 +275,7 @@ export class EmailTestService {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
     });
   }
 
@@ -288,40 +292,42 @@ export class EmailTestService {
    */
   validateEmailAddress(email: string): { valid: boolean; error?: string } {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    
+
     if (!email.trim()) {
       return { valid: false, error: 'Email address is required' };
     }
-    
+
     if (!emailRegex.test(email)) {
       return { valid: false, error: 'Please enter a valid email address' };
     }
-    
+
     return { valid: true };
   }
 
   /**
    * Get guest display badges based on guest properties
    */
-  getGuestBadges(guest: Guest): Array<{ type: 'pet' | 'vip' | 'children'; label: string; icon: string }> {
+  getGuestBadges(
+    guest: Guest
+  ): Array<{ type: 'pet' | 'vip' | 'children'; label: string; icon: string }> {
     const badges: Array<{ type: 'pet' | 'vip' | 'children'; label: string; icon: string }> = [];
-    
+
     if (guest.hasPets) {
       badges.push({ type: 'pet', label: 'Has Pet', icon: '❤️' });
     }
-    
+
     if (guest.isVip) {
       badges.push({ type: 'vip', label: 'VIP Guest', icon: '⭐' });
     }
-    
+
     if (guest.children.length > 0) {
-      badges.push({ 
-        type: 'children', 
-        label: `${guest.children.length} Child${guest.children.length > 1 ? 'ren' : ''}`, 
-        icon: '👶' 
+      badges.push({
+        type: 'children',
+        label: `${guest.children.length} Child${guest.children.length > 1 ? 'ren' : ''}`,
+        icon: '👶',
       });
     }
-    
+
     return badges;
   }
 }

@@ -1,4 +1,4 @@
-import { supabase } from './supabase'
+import { supabase } from './supabase';
 
 // Safe wrapper for Supabase calls that handles invalid sessions automatically
 export const safeSupabaseCall = async <T>(
@@ -6,12 +6,12 @@ export const safeSupabaseCall = async <T>(
   redirectOnFailure: boolean = true
 ): Promise<T | null> => {
   try {
-    const result = await operation()
-    return result
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await operation();
+    return result;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
-    const errorMessage = error?.message?.toLowerCase() || ''
-    
+    const errorMessage = error?.message?.toLowerCase() || '';
+
     // Only handle very specific session errors - be much more conservative
     if (
       errorMessage.includes('invalid refresh token') ||
@@ -19,36 +19,36 @@ export const safeSupabaseCall = async <T>(
       errorMessage.includes('jwt expired') ||
       (error?.status === 401 && errorMessage.includes('expired'))
     ) {
-      console.log('Specific session error detected during API call:', error.message)
-      
+      console.log('Specific session error detected during API call:', error.message);
+
       // Sign out and redirect to login
-      await supabase.auth.signOut()
-      
+      await supabase.auth.signOut();
+
       if (redirectOnFailure) {
-        window.location.href = '/login'
+        window.location.href = '/login';
       }
-      
-      return null
+
+      return null;
     }
-    
+
     // Don't handle generic 401s - they could be permission errors, not session errors
     // Let the calling code handle other errors normally
-    throw error
+    throw error;
   }
-}
+};
 
 // Helper function to check if an error is session-related
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const isSessionError = (error: any): boolean => {
-  const errorMessage = error?.message?.toLowerCase() || ''
+  const errorMessage = error?.message?.toLowerCase() || '';
   return (
     errorMessage.includes('invalid refresh token') ||
     errorMessage.includes('jwt expired') ||
     errorMessage.includes('refresh_token_not_found') ||
     errorMessage.includes('invalid_token') ||
     error?.status === 401
-  )
-}
+  );
+};
 
 // TEMPORARILY DISABLED - Complex type wrapping causing TypeScript errors
 // This was causing build failures due to complex Supabase type definitions

@@ -19,19 +19,19 @@ jest.mock('../lib/supabase', () => ({
           single: jest.fn().mockResolvedValue({
             data: {
               push_notifications_enabled: false,
-              push_subscription: null
+              push_subscription: null,
             },
-            error: null
-          })
-        }))
+            error: null,
+          }),
+        })),
       })),
       update: jest.fn(() => ({
         eq: jest.fn().mockResolvedValue({
-          error: null
-        })
-      }))
-    }))
-  }
+          error: null,
+        }),
+      })),
+    })),
+  },
 }));
 
 // Mock push notifications
@@ -43,27 +43,23 @@ jest.mock('../lib/pushNotifications', () => ({
     title: 'Test Notification',
     body: 'Test notification body',
     icon: '/test-icon.png',
-    data: { type: 'test' }
-  }))
+    data: { type: 'test' },
+  })),
 }));
 
 // Mock Auth Provider
 const mockUser = {
   id: 'test-user-id',
-  email: 'test@example.com'
+  email: 'test@example.com',
 };
 
 const mockUserProfile = {
   role: { name: 'admin' },
-  push_notifications_enabled: false
+  push_notifications_enabled: false,
 };
 
 const MockAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  return (
-    <div data-testid="mock-auth-provider">
-      {children}
-    </div>
-  );
+  return <div data-testid="mock-auth-provider">{children}</div>;
 };
 
 // Mock useAuth hook
@@ -72,17 +68,17 @@ jest.mock('../components/auth/AuthProvider', () => ({
     user: mockUser,
     userProfile: mockUserProfile,
     loading: false,
-    refreshUserProfile: jest.fn()
+    refreshUserProfile: jest.fn(),
   }),
-  AuthProvider: MockAuthProvider
+  AuthProvider: MockAuthProvider,
 }));
 
 // Mock toast hook
 const mockToast = jest.fn();
 jest.mock('../hooks/use-toast', () => ({
   useToast: () => ({
-    toast: mockToast
-  })
+    toast: mockToast,
+  }),
 }));
 
 describe('SettingsPage', () => {
@@ -108,7 +104,9 @@ describe('SettingsPage', () => {
     expect(screen.getByText('Settings')).toBeInTheDocument();
     expect(screen.getByText('Notifications')).toBeInTheDocument();
     expect(screen.getByText('Push Notifications')).toBeInTheDocument();
-    expect(screen.getByText('Receive browser notifications for important inventory alerts')).toBeInTheDocument();
+    expect(
+      screen.getByText('Receive browser notifications for important inventory alerts')
+    ).toBeInTheDocument();
   });
 
   it('should show notification schedule information', async () => {
@@ -118,7 +116,9 @@ describe('SettingsPage', () => {
     expect(screen.getByText('30 days before expiration - Yellow warning')).toBeInTheDocument();
     expect(screen.getByText('7 days before expiration - Orange warning')).toBeInTheDocument();
     expect(screen.getByText('1 day before expiration - Red critical alert')).toBeInTheDocument();
-    expect(screen.getByText('Notifications are sent daily at 7:00 AM local time')).toBeInTheDocument();
+    expect(
+      screen.getByText('Notifications are sent daily at 7:00 AM local time')
+    ).toBeInTheDocument();
   });
 
   it('should toggle push notifications when button is clicked', async () => {
@@ -138,18 +138,21 @@ describe('SettingsPage', () => {
   it('should send test notification when test button is clicked', async () => {
     // Mock notifications as enabled
     const mockEnabledProfile = { ...mockUserProfile, push_notifications_enabled: true };
-    
+
     jest.doMock('../components/auth/AuthProvider', () => ({
       useAuth: () => ({
         user: mockUser,
         userProfile: mockEnabledProfile,
         loading: false,
-        refreshUserProfile: jest.fn()
+        refreshUserProfile: jest.fn(),
       }),
-      AuthProvider: MockAuthProvider
+      AuthProvider: MockAuthProvider,
     }));
 
-    const { sendLocalNotification, createExpirationNotification } = require('../lib/pushNotifications');
+    const {
+      sendLocalNotification,
+      createExpirationNotification,
+    } = require('../lib/pushNotifications');
 
     renderSettingsPage();
 
@@ -163,7 +166,7 @@ describe('SettingsPage', () => {
       expect(mockToast).toHaveBeenCalledWith({
         title: 'Test notification sent',
         description: 'Check your browser for the test notification',
-        variant: 'default'
+        variant: 'default',
       });
     });
   });
@@ -175,7 +178,11 @@ describe('SettingsPage', () => {
     renderSettingsPage();
 
     expect(screen.getByText('Push notifications not supported')).toBeInTheDocument();
-    expect(screen.getByText('Your browser or device doesn\'t support push notifications. Please use a modern browser.')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Your browser or device doesn't support push notifications. Please use a modern browser."
+      )
+    ).toBeInTheDocument();
   });
 
   it('should show loading state initially', async () => {
@@ -185,9 +192,9 @@ describe('SettingsPage', () => {
         user: mockUser,
         userProfile: null,
         loading: true,
-        refreshUserProfile: jest.fn()
+        refreshUserProfile: jest.fn(),
       }),
-      AuthProvider: MockAuthProvider
+      AuthProvider: MockAuthProvider,
     }));
 
     renderSettingsPage();
@@ -210,7 +217,7 @@ describe('SettingsPage', () => {
       expect(mockToast).toHaveBeenCalledWith({
         title: 'Error',
         description: 'Permission denied',
-        variant: 'destructive'
+        variant: 'destructive',
       });
     });
   });
@@ -220,7 +227,9 @@ describe('SettingsPage', () => {
 
     expect(screen.getByText('General Settings')).toBeInTheDocument();
     expect(screen.getByText('Application preferences and configuration')).toBeInTheDocument();
-    expect(screen.getByText('Additional settings will be available in future updates')).toBeInTheDocument();
+    expect(
+      screen.getByText('Additional settings will be available in future updates')
+    ).toBeInTheDocument();
   });
 });
 
@@ -238,7 +247,7 @@ describe('Settings Page Accessibility', () => {
 
     // Check for proper heading structure
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Settings');
-    
+
     // Check for button roles
     const toggleButton = screen.getByRole('button', { name: /disabled/i });
     expect(toggleButton).toBeInTheDocument();
@@ -256,7 +265,7 @@ describe('Settings Page Accessibility', () => {
     );
 
     const toggleButton = screen.getByRole('button', { name: /disabled/i });
-    
+
     // Should be focusable
     toggleButton.focus();
     expect(document.activeElement).toBe(toggleButton);

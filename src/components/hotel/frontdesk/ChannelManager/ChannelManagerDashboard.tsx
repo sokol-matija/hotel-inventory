@@ -6,26 +6,32 @@ import { useNavigate } from '@tanstack/react-router';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../ui/card';
 import { Button } from '../../../ui/button';
 import { Badge } from '../../../ui/badge';
-import { 
-  AlertTriangle, 
-  CheckCircle, 
-  RefreshCw, 
-  Settings, 
-  Users, 
+import {
+  AlertTriangle,
+  CheckCircle,
+  RefreshCw,
+  Settings,
+  Users,
   Wifi,
   WifiOff,
   Euro,
   AlertCircle,
-  ArrowUp
+  ArrowUp,
 } from 'lucide-react';
 import { PhobsChannelManagerService } from '../../../../lib/hotel/services/PhobsChannelManagerService';
-import { PhobsReservationSyncService, ReservationSyncStatus } from '../../../../lib/hotel/services/PhobsReservationSyncService';
-import { PhobsMonitoringService, LogEntry } from '../../../../lib/hotel/services/PhobsMonitoringService';
+import {
+  PhobsReservationSyncService,
+  ReservationSyncStatus,
+} from '../../../../lib/hotel/services/PhobsReservationSyncService';
+import {
+  PhobsMonitoringService,
+  LogEntry,
+} from '../../../../lib/hotel/services/PhobsMonitoringService';
 import { PhobsErrorHandlingService } from '../../../../lib/hotel/services/PhobsErrorHandlingService';
-import { 
-  ChannelManagerStatus, 
-  OTAChannel, 
-  ConflictResolution 
+import {
+  ChannelManagerStatus,
+  OTAChannel,
+  ConflictResolution,
 } from '../../../../lib/hotel/services/phobsTypes';
 import {
   ChannelStatusCard,
@@ -34,7 +40,7 @@ import {
   SyncProgress,
   PerformanceMetrics,
   ErrorDetails,
-  SyncStatus
+  SyncStatus,
 } from './StatusIndicators';
 
 interface ChannelStatusData {
@@ -63,10 +69,14 @@ interface RecentReservation {
 
 export default function ChannelManagerDashboard() {
   const navigate = useNavigate();
-  const [channelManagerStatus, setChannelManagerStatus] = useState<ChannelManagerStatus | null>(null);
+  const [channelManagerStatus, setChannelManagerStatus] = useState<ChannelManagerStatus | null>(
+    null
+  );
   const [channelData, setChannelData] = useState<ChannelStatusData[]>([]);
   const [recentReservations, setRecentReservations] = useState<RecentReservation[]>([]);
-  const [syncStatus, setSyncStatus] = useState<(ReservationSyncStatus & { queueLength: number; activeConflicts: number }) | null>(null);
+  const [syncStatus, setSyncStatus] = useState<
+    (ReservationSyncStatus & { queueLength: number; activeConflicts: number }) | null
+  >(null);
   const [activeConflicts, setActiveConflicts] = useState<ConflictResolution[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState(new Date());
@@ -75,14 +85,16 @@ export default function ChannelManagerDashboard() {
     averageResponseTime: 1250,
     operationsPerMinute: 12,
     errorRate: 4.8,
-    trend: 'stable' as 'stable' | 'up' | 'down'
+    trend: 'stable' as 'stable' | 'up' | 'down',
   });
-  const [activeSyncOperations] = useState<Array<{
-    id: string;
-    operation: string;
-    progress: number;
-    currentStep?: string;
-  }>>([]);
+  const [activeSyncOperations] = useState<
+    Array<{
+      id: string;
+      operation: string;
+      progress: number;
+      currentStep?: string;
+    }>
+  >([]);
   const [recentErrors, setRecentErrors] = useState<LogEntry[]>([]);
 
   // Services
@@ -93,7 +105,7 @@ export default function ChannelManagerDashboard() {
 
   useEffect(() => {
     loadDashboardData();
-    
+
     // Set up auto-refresh every 30 seconds
     const interval = setInterval(() => {
       loadDashboardData();
@@ -130,13 +142,14 @@ export default function ChannelManagerDashboard() {
       // Load performance metrics
       const healthMetrics = monitoringService.getSystemHealthMetrics();
       errorHandlingService.getMetrics();
-      
+
       setPerformanceMetrics({
         successRate: healthMetrics.errorRate > 0 ? 100 - healthMetrics.errorRate : 100,
         averageResponseTime: healthMetrics.averageResponseTime || 1200,
         operationsPerMinute: healthMetrics.operationsPerMinute || 0,
         errorRate: healthMetrics.errorRate || 0,
-        trend: healthMetrics.errorRate > 10 ? 'down' : healthMetrics.errorRate < 2 ? 'up' : 'stable'
+        trend:
+          healthMetrics.errorRate > 10 ? 'down' : healthMetrics.errorRate < 2 ? 'up' : 'stable',
       });
 
       // Load recent errors
@@ -162,7 +175,7 @@ export default function ChannelManagerDashboard() {
         totalBookings: 156,
         revenue: 28450.75,
         errorCount: 0,
-        commission: 0.15
+        commission: 0.15,
       },
       {
         channel: 'expedia',
@@ -170,9 +183,9 @@ export default function ChannelManagerDashboard() {
         status: 'active',
         lastSync: new Date(Date.now() - 8 * 60 * 1000), // 8 minutes ago
         totalBookings: 89,
-        revenue: 16780.50,
+        revenue: 16780.5,
         errorCount: 1,
-        commission: 0.18
+        commission: 0.18,
       },
       {
         channel: 'airbnb',
@@ -182,7 +195,7 @@ export default function ChannelManagerDashboard() {
         totalBookings: 203,
         revenue: 35690.25,
         errorCount: 0,
-        commission: 0.14
+        commission: 0.14,
       },
       {
         channel: 'agoda',
@@ -190,9 +203,9 @@ export default function ChannelManagerDashboard() {
         status: 'active',
         lastSync: new Date(Date.now() - 12 * 60 * 1000), // 12 minutes ago
         totalBookings: 67,
-        revenue: 12350.00,
+        revenue: 12350.0,
         errorCount: 0,
-        commission: 0.16
+        commission: 0.16,
       },
       {
         channel: 'hotels.com',
@@ -202,8 +215,8 @@ export default function ChannelManagerDashboard() {
         totalBookings: 34,
         revenue: 6890.75,
         errorCount: 3,
-        commission: 0.17
-      }
+        commission: 0.17,
+      },
     ];
   };
 
@@ -220,7 +233,7 @@ export default function ChannelManagerDashboard() {
         totalAmount: 456.75,
         status: 'confirmed',
         bookingReference: 'BDC-789456123',
-        createdAt: new Date(Date.now() - 15 * 60 * 1000)
+        createdAt: new Date(Date.now() - 15 * 60 * 1000),
       },
       {
         id: '2',
@@ -229,10 +242,10 @@ export default function ChannelManagerDashboard() {
         checkIn: new Date('2025-08-18'),
         checkOut: new Date('2025-08-21'),
         roomNumber: '205',
-        totalAmount: 567.50,
+        totalAmount: 567.5,
         status: 'confirmed',
         bookingReference: 'ABB-HM567891',
-        createdAt: new Date(Date.now() - 32 * 60 * 1000)
+        createdAt: new Date(Date.now() - 32 * 60 * 1000),
       },
       {
         id: '3',
@@ -244,8 +257,8 @@ export default function ChannelManagerDashboard() {
         totalAmount: 789.25,
         status: 'confirmed',
         bookingReference: 'EXP-234567890',
-        createdAt: new Date(Date.now() - 48 * 60 * 1000)
-      }
+        createdAt: new Date(Date.now() - 48 * 60 * 1000),
+      },
     ];
   };
 
@@ -265,39 +278,54 @@ export default function ChannelManagerDashboard() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'text-green-600 bg-green-100';
-      case 'syncing': return 'text-blue-600 bg-blue-100';
-      case 'error': return 'text-red-600 bg-red-100';
-      case 'inactive': return 'text-gray-600 bg-gray-100';
-      default: return 'text-gray-600 bg-gray-100';
+      case 'active':
+        return 'text-green-600 bg-green-100';
+      case 'syncing':
+        return 'text-blue-600 bg-blue-100';
+      case 'error':
+        return 'text-red-600 bg-red-100';
+      case 'inactive':
+        return 'text-gray-600 bg-gray-100';
+      default:
+        return 'text-gray-600 bg-gray-100';
     }
   };
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'active': return <CheckCircle className="h-4 w-4" />;
-      case 'syncing': return <RefreshCw className="h-4 w-4 animate-spin" />;
-      case 'error': return <AlertTriangle className="h-4 w-4" />;
-      case 'inactive': return <WifiOff className="h-4 w-4" />;
-      default: return <WifiOff className="h-4 w-4" />;
+      case 'active':
+        return <CheckCircle className="h-4 w-4" />;
+      case 'syncing':
+        return <RefreshCw className="h-4 w-4 animate-spin" />;
+      case 'error':
+        return <AlertTriangle className="h-4 w-4" />;
+      case 'inactive':
+        return <WifiOff className="h-4 w-4" />;
+      default:
+        return <WifiOff className="h-4 w-4" />;
     }
   };
 
   const convertToSyncStatus = (status: string): SyncStatus => {
     switch (status) {
-      case 'active': return 'success';
-      case 'syncing': return 'syncing';
-      case 'error': return 'error';
-      case 'inactive': return 'disconnected';
-      default: return 'idle';
+      case 'active':
+        return 'success';
+      case 'syncing':
+        return 'syncing';
+      case 'error':
+        return 'error';
+      case 'inactive':
+        return 'disconnected';
+      default:
+        return 'idle';
     }
   };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('hr-HR', {
       style: 'currency',
-      currency: 'EUR'
+      currency: 'EUR',
     }).format(amount);
   };
 
@@ -311,7 +339,7 @@ export default function ChannelManagerDashboard() {
 
   if (loading && !channelManagerStatus) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex h-64 items-center justify-center">
         <div className="flex items-center space-x-2">
           <RefreshCw className="h-6 w-6 animate-spin" />
           <span>Loading channel manager data...</span>
@@ -329,15 +357,17 @@ export default function ChannelManagerDashboard() {
           <p className="text-gray-600">Monitor and manage OTA channel integrations</p>
         </div>
         <div className="flex items-center space-x-4">
-          <div className="text-sm text-gray-500">
-            Last updated: {formatTime(lastRefresh)}
-          </div>
-          <Button onClick={handleManualSync} disabled={loading} className="flex items-center space-x-2">
+          <div className="text-sm text-gray-500">Last updated: {formatTime(lastRefresh)}</div>
+          <Button
+            onClick={handleManualSync}
+            disabled={loading}
+            className="flex items-center space-x-2"
+          >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             <span>Refresh</span>
           </Button>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={() => navigate({ to: '/hotel/front-desk/channel-manager/settings' })}
             className="flex items-center space-x-2"
           >
@@ -348,21 +378,23 @@ export default function ChannelManagerDashboard() {
       </div>
 
       {/* Status Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Connection Status</CardTitle>
-            {channelManagerStatus?.isConnected ? 
-              <Wifi className="h-4 w-4 text-green-600" /> : 
+            {channelManagerStatus?.isConnected ? (
+              <Wifi className="h-4 w-4 text-green-600" />
+            ) : (
               <WifiOff className="h-4 w-4 text-red-600" />
-            }
+            )}
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {channelManagerStatus?.isConnected ? 'Connected' : 'Disconnected'}
             </div>
             <p className="text-xs text-gray-600">
-              {channelManagerStatus?.activeChannels || 0} of {channelManagerStatus?.totalChannels || 0} channels active
+              {channelManagerStatus?.activeChannels || 0} of{' '}
+              {channelManagerStatus?.totalChannels || 0} channels active
             </p>
           </CardContent>
         </Card>
@@ -375,8 +407,8 @@ export default function ChannelManagerDashboard() {
           <CardContent>
             <div className="text-2xl font-bold">{channelManagerStatus?.totalReservations || 0}</div>
             <p className="text-xs text-gray-600">
-              <span className="text-green-600 flex items-center">
-                <ArrowUp className="h-3 w-3 mr-1" />
+              <span className="flex items-center text-green-600">
+                <ArrowUp className="mr-1 h-3 w-3" />
                 +12% from last month
               </span>
             </p>
@@ -393,8 +425,8 @@ export default function ChannelManagerDashboard() {
               {formatCurrency(channelData.reduce((sum, channel) => sum + channel.revenue, 0))}
             </div>
             <p className="text-xs text-gray-600">
-              <span className="text-green-600 flex items-center">
-                <ArrowUp className="h-3 w-3 mr-1" />
+              <span className="flex items-center text-green-600">
+                <ArrowUp className="mr-1 h-3 w-3" />
                 +8.2% from last month
               </span>
             </p>
@@ -408,9 +440,7 @@ export default function ChannelManagerDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{channelManagerStatus?.syncErrors || 0}</div>
-            <p className="text-xs text-gray-600">
-              {activeConflicts.length} active conflicts
-            </p>
+            <p className="text-xs text-gray-600">{activeConflicts.length} active conflicts</p>
           </CardContent>
         </Card>
       </div>
@@ -418,7 +448,7 @@ export default function ChannelManagerDashboard() {
       {/* Enhanced Conflicts Section */}
       {activeConflicts.length > 0 && (
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold flex items-center space-x-2">
+          <h2 className="flex items-center space-x-2 text-xl font-semibold">
             <AlertTriangle className="h-5 w-5 text-red-600" />
             <span>Active Conflicts ({activeConflicts.length})</span>
           </h2>
@@ -441,10 +471,8 @@ export default function ChannelManagerDashboard() {
               />
             ))}
             {activeConflicts.length > 5 && (
-              <div className="text-center py-2">
-                <Button variant="outline">
-                  View All {activeConflicts.length} Conflicts
-                </Button>
+              <div className="py-2 text-center">
+                <Button variant="outline">View All {activeConflicts.length} Conflicts</Button>
               </div>
             )}
           </div>
@@ -485,10 +513,10 @@ export default function ChannelManagerDashboard() {
               error={error}
               onRetry={() => {
                 // Handle retry logic
-                setRecentErrors(prev => prev.filter((_, i) => i !== index));
+                setRecentErrors((prev) => prev.filter((_, i) => i !== index));
               }}
               onDismiss={() => {
-                setRecentErrors(prev => prev.filter((_, i) => i !== index));
+                setRecentErrors((prev) => prev.filter((_, i) => i !== index));
               }}
             />
           ))}
@@ -498,7 +526,7 @@ export default function ChannelManagerDashboard() {
       {/* Enhanced Channel Status Grid */}
       <div className="space-y-4">
         <h2 className="text-xl font-semibold">OTA Channel Status</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {channelData.map((channel) => (
             <ChannelStatusCard
               key={channel.channel}
@@ -526,14 +554,18 @@ export default function ChannelManagerDashboard() {
         <CardContent>
           <div className="space-y-3">
             {recentReservations.map((reservation) => (
-              <div key={reservation.id} className="flex items-center justify-between p-3 border rounded-lg">
+              <div
+                key={reservation.id}
+                className="flex items-center justify-between rounded-lg border p-3"
+              >
                 <div className="flex items-center space-x-4">
                   <div className="flex items-center space-x-2">
                     <Badge variant="outline">{reservation.channel}</Badge>
                     <span className="font-medium">{reservation.guestName}</span>
                   </div>
                   <div className="text-sm text-gray-600">
-                    Room {reservation.roomNumber} • {reservation.checkIn.toLocaleDateString()} - {reservation.checkOut.toLocaleDateString()}
+                    Room {reservation.roomNumber} • {reservation.checkIn.toLocaleDateString()} -{' '}
+                    {reservation.checkOut.toLocaleDateString()}
                   </div>
                 </div>
                 <div className="flex items-center space-x-4">
@@ -541,9 +573,7 @@ export default function ChannelManagerDashboard() {
                     <div className="font-medium">{formatCurrency(reservation.totalAmount)}</div>
                     <div className="text-sm text-gray-600">{reservation.bookingReference}</div>
                   </div>
-                  <Badge className={getStatusColor(reservation.status)}>
-                    {reservation.status}
-                  </Badge>
+                  <Badge className={getStatusColor(reservation.status)}>{reservation.status}</Badge>
                 </div>
               </div>
             ))}
@@ -558,7 +588,7 @@ export default function ChannelManagerDashboard() {
           <CardDescription>Current sync operations and queue status</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
             <div className="space-y-2">
               <div className="text-sm font-medium">Queue Status</div>
               <div className="text-2xl font-bold">{syncStatus?.queueLength || 0}</div>
@@ -574,9 +604,14 @@ export default function ChannelManagerDashboard() {
             <div className="space-y-2">
               <div className="text-sm font-medium">Success Rate</div>
               <div className="text-2xl font-bold text-green-600">
-                {syncStatus?.totalReservationsSynced > 0 
-                  ? Math.round((syncStatus.totalReservationsSynced / (syncStatus.totalReservationsSynced + syncStatus.syncErrors)) * 100)
-                  : 100}%
+                {syncStatus?.totalReservationsSynced > 0
+                  ? Math.round(
+                      (syncStatus.totalReservationsSynced /
+                        (syncStatus.totalReservationsSynced + syncStatus.syncErrors)) *
+                        100
+                    )
+                  : 100}
+                %
               </div>
               <div className="text-sm text-gray-600">Last 24 hours</div>
             </div>

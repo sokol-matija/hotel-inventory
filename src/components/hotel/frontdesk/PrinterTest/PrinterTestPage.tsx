@@ -3,14 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
 import { Button } from '../../../ui/button';
 import { Input } from '../../../ui/input';
 import { Label } from '../../../ui/label';
-import { 
-  Printer, 
-  Receipt, 
-  CheckCircle, 
-  AlertTriangle,
-  Settings,
-  TestTube
-} from 'lucide-react';
+import { Printer, Receipt, CheckCircle, AlertTriangle, Settings, TestTube } from 'lucide-react';
 import { printTestReceipt, printFiscalTestReceipt } from '../../../../lib/printers/windowsPrinter';
 import { HOTEL_POREC } from '../../../../lib/hotel/hotelData';
 
@@ -21,13 +14,13 @@ export default function PrinterTestPage() {
   const [printerName, setPrinterName] = useState('');
 
   const addTestResult = (message: string) => {
-    setTestResults(prev => [...prev, `${new Date().toLocaleTimeString()}: ${message}`]);
+    setTestResults((prev) => [...prev, `${new Date().toLocaleTimeString()}: ${message}`]);
   };
 
   const testPrinterConnection = async () => {
     setIsPrinting(true);
     addTestResult('Testing printer connection...');
-    
+
     try {
       // Test basic browser printing capability
       if (typeof window.print === 'function') {
@@ -49,7 +42,7 @@ export default function PrinterTestPage() {
   const printSimpleTest = async () => {
     setIsPrinting(true);
     addTestResult('Printing simple test receipt...');
-    
+
     try {
       const success = await printTestReceipt();
       if (success) {
@@ -67,7 +60,7 @@ export default function PrinterTestPage() {
   const printFiscalTest = async () => {
     setIsPrinting(true);
     addTestResult('Printing fiscal test receipt...');
-    
+
     try {
       const testOrder = {
         id: 'test-001',
@@ -82,25 +75,25 @@ export default function PrinterTestPage() {
             itemId: 1,
             itemName: 'Coca Cola 0.33L',
             category: 'Beverage',
-            price: 3.50,
+            price: 3.5,
             quantity: 2,
-            totalPrice: 7.00,
+            totalPrice: 7.0,
             unit: 'pcs',
-            availableStock: 50
+            availableStock: 50,
           },
           {
             id: '2',
             itemId: 2,
             itemName: 'Sandwich Club',
             category: 'Food',
-            price: 12.00,
+            price: 12.0,
             quantity: 1,
-            totalPrice: 12.00,
+            totalPrice: 12.0,
             unit: 'pcs',
-            availableStock: 25
-          }
+            availableStock: 25,
+          },
         ],
-        subtotal: 19.00,
+        subtotal: 19.0,
         tax: 4.75, // 25% VAT
         totalAmount: 23.75,
         paymentMethod: 'immediate_cash' as const,
@@ -109,7 +102,7 @@ export default function PrinterTestPage() {
         notes: 'Test order for printer verification',
         orderedBy: 'Front Desk Staff',
         deliveredAt: new Date(),
-        printedReceipt: true
+        printedReceipt: true,
       };
 
       const success = await printFiscalTestReceipt({
@@ -120,9 +113,9 @@ export default function PrinterTestPage() {
           phone: HOTEL_POREC.phone,
           email: HOTEL_POREC.email,
           oib: HOTEL_POREC.taxId,
-          fiscalNumber: 'HP-2025-000001'
+          fiscalNumber: 'HP-2025-000001',
         },
-        timestamp: new Date()
+        timestamp: new Date(),
       });
 
       if (success) {
@@ -151,7 +144,7 @@ export default function PrinterTestPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Printer Configuration */}
         <Card>
           <CardHeader>
@@ -169,7 +162,7 @@ export default function PrinterTestPage() {
                 value={printerName}
                 onChange={(e) => setPrinterName(e.target.value)}
               />
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="mt-1 text-sm text-gray-500">
                 Leave empty to use default system printer
               </p>
             </div>
@@ -177,25 +170,28 @@ export default function PrinterTestPage() {
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
                 {isConnected === null ? (
-                  <div className="w-3 h-3 bg-gray-400 rounded-full" />
+                  <div className="h-3 w-3 rounded-full bg-gray-400" />
                 ) : isConnected ? (
-                  <CheckCircle className="w-5 h-5 text-green-600" />
+                  <CheckCircle className="h-5 w-5 text-green-600" />
                 ) : (
-                  <AlertTriangle className="w-5 h-5 text-red-600" />
+                  <AlertTriangle className="h-5 w-5 text-red-600" />
                 )}
                 <span className="text-sm font-medium">
-                  {isConnected === null ? 'Not tested' : 
-                   isConnected ? 'Printer ready' : 'Connection failed'}
+                  {isConnected === null
+                    ? 'Not tested'
+                    : isConnected
+                      ? 'Printer ready'
+                      : 'Connection failed'}
                 </span>
               </div>
 
-              <Button 
-                onClick={testPrinterConnection} 
+              <Button
+                onClick={testPrinterConnection}
                 disabled={isPrinting}
                 className="w-full"
                 variant="outline"
               >
-                <Printer className="h-4 w-4 mr-2" />
+                <Printer className="mr-2 h-4 w-4" />
                 {isPrinting ? 'Testing...' : 'Test Connection'}
               </Button>
             </div>
@@ -212,46 +208,46 @@ export default function PrinterTestPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 gap-3">
-              <Button 
-                onClick={printSimpleTest} 
+              <Button
+                onClick={printSimpleTest}
                 disabled={isPrinting || isConnected === false}
                 variant="outline"
                 className="justify-start"
               >
-                <Receipt className="h-4 w-4 mr-2" />
+                <Receipt className="mr-2 h-4 w-4" />
                 Print Simple Test
               </Button>
 
-              <Button 
-                onClick={printFiscalTest} 
+              <Button
+                onClick={printFiscalTest}
                 disabled={isPrinting || isConnected === false}
                 className="justify-start"
               >
-                <Receipt className="h-4 w-4 mr-2" />
+                <Receipt className="mr-2 h-4 w-4" />
                 Print Fiscal Receipt Test
               </Button>
             </div>
 
-            <div className="pt-4 border-t">
-              <div className="flex justify-between items-center mb-2">
+            <div className="border-t pt-4">
+              <div className="mb-2 flex items-center justify-between">
                 <span className="text-sm font-medium">Test Results</span>
-                <Button 
-                  onClick={clearResults} 
-                  variant="ghost" 
+                <Button
+                  onClick={clearResults}
+                  variant="ghost"
                   size="sm"
                   disabled={testResults.length === 0}
                 >
                   Clear
                 </Button>
               </div>
-              
-              <div className="bg-gray-50 rounded-md p-3 max-h-64 overflow-y-auto">
+
+              <div className="max-h-64 overflow-y-auto rounded-md bg-gray-50 p-3">
                 {testResults.length === 0 ? (
                   <p className="text-sm text-gray-500 italic">No test results yet</p>
                 ) : (
                   <div className="space-y-1">
                     {testResults.map((result, index) => (
-                      <p key={index} className="text-xs font-mono text-gray-700">
+                      <p key={index} className="font-mono text-xs text-gray-700">
                         {result}
                       </p>
                     ))}
@@ -269,20 +265,20 @@ export default function PrinterTestPage() {
           <CardTitle>Windows Thermal Printer Setup</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div>
-              <h4 className="font-semibold text-sm mb-2">Compatible Printers</h4>
-              <ul className="text-sm text-gray-600 space-y-1">
+              <h4 className="mb-2 text-sm font-semibold">Compatible Printers</h4>
+              <ul className="space-y-1 text-sm text-gray-600">
                 <li>• Bixolon SRP-350II (your model)</li>
                 <li>• Any thermal printer with Windows drivers</li>
                 <li>• ESC/POS compatible printers</li>
                 <li>• Standard Windows printers</li>
               </ul>
             </div>
-            
+
             <div>
-              <h4 className="font-semibold text-sm mb-2">Setup Instructions</h4>
-              <ol className="text-sm text-gray-600 space-y-1">
+              <h4 className="mb-2 text-sm font-semibold">Setup Instructions</h4>
+              <ol className="space-y-1 text-sm text-gray-600">
                 <li>1. Install printer drivers in Windows</li>
                 <li>2. Set thermal printer as default (optional)</li>
                 <li>3. Configure paper size to 80mm thermal</li>
@@ -290,15 +286,15 @@ export default function PrinterTestPage() {
               </ol>
             </div>
           </div>
-          
-          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
+
+          <div className="mt-6 rounded-md border border-blue-200 bg-blue-50 p-4">
             <div className="flex items-start space-x-2">
-              <CheckCircle className="h-5 w-5 text-blue-600 mt-0.5" />
+              <CheckCircle className="mt-0.5 h-5 w-5 text-blue-600" />
               <div>
                 <h5 className="font-semibold text-blue-900">Croatian Fiscal Compliance</h5>
-                <p className="text-sm text-blue-700 mt-1">
-                  Test receipts include OIB numbers, 25% VAT calculation, and fiscal invoice formatting 
-                  required for Croatian hospitality businesses.
+                <p className="mt-1 text-sm text-blue-700">
+                  Test receipts include OIB numbers, 25% VAT calculation, and fiscal invoice
+                  formatting required for Croatian hospitality businesses.
                 </p>
               </div>
             </div>

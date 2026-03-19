@@ -1,5 +1,9 @@
 // PhobsErrorHandling.test.ts - Unit tests for error handling service
-import { PhobsErrorHandlingService, PhobsError, PhobsErrorType } from '../PhobsErrorHandlingService';
+import {
+  PhobsErrorHandlingService,
+  PhobsError,
+  PhobsErrorType,
+} from '../PhobsErrorHandlingService';
 import { testMocks, testUtils } from './setup';
 
 describe('PhobsErrorHandlingService', () => {
@@ -18,7 +22,7 @@ describe('PhobsErrorHandlingService', () => {
       const phobsError = errorHandler.handleError(networkError, {
         operation: 'test_operation',
         attempt: 1,
-        timestamp: new Date()
+        timestamp: new Date(),
       });
 
       expect(phobsError.type).toBe(PhobsErrorType.NETWORK_ERROR);
@@ -28,13 +32,13 @@ describe('PhobsErrorHandlingService', () => {
     test('should classify HTTP errors by status code', () => {
       const authError = {
         status: 401,
-        message: 'Unauthorized'
+        message: 'Unauthorized',
       };
 
       const phobsError = errorHandler.handleError(authError, {
         operation: 'authenticate',
         attempt: 1,
-        timestamp: new Date()
+        timestamp: new Date(),
       });
 
       expect(phobsError.type).toBe(PhobsErrorType.AUTHENTICATION_ERROR);
@@ -45,13 +49,13 @@ describe('PhobsErrorHandlingService', () => {
     test('should classify rate limit errors as retryable', () => {
       const rateLimitError = {
         status: 429,
-        message: 'Rate limit exceeded'
+        message: 'Rate limit exceeded',
       };
 
       const phobsError = errorHandler.handleError(rateLimitError, {
         operation: 'sync_data',
         attempt: 1,
-        timestamp: new Date()
+        timestamp: new Date(),
       });
 
       expect(phobsError.type).toBe(PhobsErrorType.RATE_LIMIT_ERROR);
@@ -61,13 +65,13 @@ describe('PhobsErrorHandlingService', () => {
     test('should classify server errors as retryable', () => {
       const serverError = {
         status: 500,
-        message: 'Internal server error'
+        message: 'Internal server error',
       };
 
       const phobsError = errorHandler.handleError(serverError, {
         operation: 'sync_data',
         attempt: 1,
-        timestamp: new Date()
+        timestamp: new Date(),
       });
 
       expect(phobsError.type).toBe(PhobsErrorType.SERVER_ERROR);
@@ -105,10 +109,7 @@ describe('PhobsErrorHandlingService', () => {
         throw error;
       };
 
-      const result = await errorHandler.withRetry(
-        authFailureOperation,
-        { operation: 'auth_test' }
-      );
+      const result = await errorHandler.withRetry(authFailureOperation, { operation: 'auth_test' });
 
       expect(result.success).toBe(false);
       expect(result.attempts).toBe(1);
@@ -161,7 +162,7 @@ describe('PhobsErrorHandlingService', () => {
   describe('Timeout Handling', () => {
     test('should timeout long-running operations', async () => {
       const slowOperation = async () => {
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise((resolve) => setTimeout(resolve, 200));
         return 'should not complete';
       };
 
@@ -177,7 +178,7 @@ describe('PhobsErrorHandlingService', () => {
 
     test('should complete operations within timeout', async () => {
       const fastOperation = async () => {
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await new Promise((resolve) => setTimeout(resolve, 50));
         return 'completed';
       };
 
@@ -201,13 +202,13 @@ describe('PhobsErrorHandlingService', () => {
       errorHandler.handleError(new Error('Test error 1'), {
         operation: 'test_op',
         attempt: 1,
-        timestamp: new Date()
+        timestamp: new Date(),
       });
 
       errorHandler.handleError(new Error('Test error 2'), {
         operation: 'test_op',
         attempt: 1,
-        timestamp: new Date()
+        timestamp: new Date(),
       });
 
       const updatedMetrics = errorHandler.getMetrics();
@@ -228,7 +229,11 @@ describe('PhobsErrorHandlingService', () => {
         throw error;
       };
 
-      await errorHandler.withRetry(networkFailure, { operation: 'network_test' }, { maxAttempts: 1 });
+      await errorHandler.withRetry(
+        networkFailure,
+        { operation: 'network_test' },
+        { maxAttempts: 1 }
+      );
       await errorHandler.withRetry(authFailure, { operation: 'auth_test' }, { maxAttempts: 1 });
 
       const metrics = errorHandler.getMetrics();
@@ -261,14 +266,17 @@ describe('PhobsErrorHandlingService', () => {
     test('should recommend longer delays for rate limit errors', () => {
       // Simulate rate limit errors
       for (let i = 0; i < 15; i++) {
-        errorHandler.handleError({
-          status: 429,
-          message: 'Rate limit exceeded'
-        }, {
-          operation: 'test_op',
-          attempt: 1,
-          timestamp: new Date()
-        });
+        errorHandler.handleError(
+          {
+            status: 429,
+            message: 'Rate limit exceeded',
+          },
+          {
+            operation: 'test_op',
+            attempt: 1,
+            timestamp: new Date(),
+          }
+        );
       }
 
       const recommendations = errorHandler.getRecommendedRetryConfig('test_op');
@@ -283,7 +291,7 @@ describe('PhobsErrorHandlingService', () => {
         errorHandler.handleError(new Error('Operation timed out'), {
           operation: 'test_op',
           attempt: 1,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
       }
 
@@ -303,7 +311,7 @@ describe('PhobsErrorHandlingService', () => {
           operation: 'test_operation',
           endpoint: '/test/endpoint',
           attempt: 1,
-          timestamp: new Date()
+          timestamp: new Date(),
         },
         500,
         true
@@ -319,7 +327,7 @@ describe('PhobsErrorHandlingService', () => {
           operation: 'test_operation',
           endpoint: '/test/endpoint',
           statusCode: 500,
-          retryable: true
+          retryable: true,
         })
       );
 

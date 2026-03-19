@@ -1,18 +1,18 @@
 // Simple Room Cleaning Service
 // No logging, just updates room status and provides real-time subscriptions
 
-import { supabase, Database } from '@/lib/supabase'
+import { supabase, Database } from '@/lib/supabase';
 
-type Room = Database['public']['Tables']['rooms']['Row']
+type Room = Database['public']['Tables']['rooms']['Row'];
 
 export class RoomCleaningService {
-  private static instance: RoomCleaningService
+  private static instance: RoomCleaningService;
 
   static getInstance(): RoomCleaningService {
     if (!RoomCleaningService.instance) {
-      RoomCleaningService.instance = new RoomCleaningService()
+      RoomCleaningService.instance = new RoomCleaningService();
     }
-    return RoomCleaningService.instance
+    return RoomCleaningService.instance;
   }
 
   /**
@@ -26,17 +26,17 @@ export class RoomCleaningService {
           is_clean: true,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', roomId)
+        .eq('id', roomId);
 
       if (error) {
-        return { success: false, error: error.message }
+        return { success: false, error: error.message };
       }
 
-      console.log(`✅ Room ${roomId} marked as clean`)
-      return { success: true }
+      console.log(`✅ Room ${roomId} marked as clean`);
+      return { success: true };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      return { success: false, error: errorMessage }
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return { success: false, error: errorMessage };
     }
   }
 
@@ -51,17 +51,17 @@ export class RoomCleaningService {
           is_clean: false,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', roomId)
+        .eq('id', roomId);
 
       if (error) {
-        return { success: false, error: error.message }
+        return { success: false, error: error.message };
       }
 
-      console.log(`❌ Room ${roomId} marked as dirty`)
-      return { success: true }
+      console.log(`❌ Room ${roomId} marked as dirty`);
+      return { success: true };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      return { success: false, error: errorMessage }
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return { success: false, error: errorMessage };
     }
   }
 
@@ -69,27 +69,27 @@ export class RoomCleaningService {
    * Get room cleaning status
    */
   async getRoomStatus(roomId: string): Promise<{
-    isClean: boolean
-    lastUpdated: string | null
+    isClean: boolean;
+    lastUpdated: string | null;
   } | null> {
     try {
       const { data, error } = await supabase
         .from('rooms')
         .select('is_clean, updated_at')
         .eq('id', roomId)
-        .single()
+        .single();
 
       if (error || !data) {
-        return null
+        return null;
       }
 
       return {
         isClean: data.is_clean || false,
         lastUpdated: data.updated_at,
-      }
+      };
     } catch (error) {
-      console.error(`Failed to get room status for ${roomId}:`, error)
-      return null
+      console.error(`Failed to get room status for ${roomId}:`, error);
+      return null;
     }
   }
 
@@ -101,7 +101,7 @@ export class RoomCleaningService {
     roomId: string,
     callback: (isClean: boolean) => void
   ): {
-    unsubscribe: () => Promise<void>
+    unsubscribe: () => Promise<void>;
   } {
     const subscription = supabase
       .channel(`room:${roomId}:cleaning`)
@@ -114,17 +114,17 @@ export class RoomCleaningService {
           filter: `id=eq.${roomId}`,
         },
         (payload) => {
-          const isClean = (payload.new as Room).is_clean || false
-          callback(isClean)
+          const isClean = (payload.new as Room).is_clean || false;
+          callback(isClean);
         }
       )
-      .subscribe()
+      .subscribe();
 
     return {
       unsubscribe: async () => {
-        await subscription.unsubscribe()
+        await subscription.unsubscribe();
       },
-    }
+    };
   }
 
   /**
@@ -132,27 +132,27 @@ export class RoomCleaningService {
    */
   async getAllRoomsStatus(): Promise<
     Array<{
-      id: string
-      number: string
-      isClean: boolean
+      id: string;
+      number: string;
+      isClean: boolean;
     }>
   > {
     try {
-      const { data, error } = await supabase.from('rooms').select('id, number, is_clean')
+      const { data, error } = await supabase.from('rooms').select('id, number, is_clean');
 
       if (error) {
-        console.error('Failed to fetch rooms:', error)
-        return []
+        console.error('Failed to fetch rooms:', error);
+        return [];
       }
 
       return (data || []).map((room) => ({
         id: room.id,
         number: room.number,
         isClean: room.is_clean || false,
-      }))
+      }));
     } catch (error) {
-      console.error('Failed to get all rooms status:', error)
-      return []
+      console.error('Failed to get all rooms status:', error);
+      return [];
     }
   }
 
@@ -170,17 +170,17 @@ export class RoomCleaningService {
           is_clean: isClean,
           updated_at: new Date().toISOString(),
         })
-        .in('id', roomIds)
+        .in('id', roomIds);
 
       if (error) {
-        return { success: false, error: error.message }
+        return { success: false, error: error.message };
       }
 
-      console.log(`Updated ${roomIds.length} rooms to ${isClean ? 'clean' : 'dirty'}`)
-      return { success: true }
+      console.log(`Updated ${roomIds.length} rooms to ${isClean ? 'clean' : 'dirty'}`);
+      return { success: true };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      return { success: false, error: errorMessage }
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return { success: false, error: errorMessage };
     }
   }
 
@@ -189,7 +189,8 @@ export class RoomCleaningService {
    * This is what gets encoded on the physical NFC tag
    */
   generateNFCUri(roomId: string, hotelId: string = 'gkbpthurkucotikjefra'): string {
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://gkbpthurkucotikjefra.supabase.co'
-    return `${supabaseUrl}/functions/v1/nfc-clean-room?roomId=${roomId}&hotelId=${hotelId}`
+    const supabaseUrl =
+      import.meta.env.VITE_SUPABASE_URL || 'https://gkbpthurkucotikjefra.supabase.co';
+    return `${supabaseUrl}/functions/v1/nfc-clean-room?roomId=${roomId}&hotelId=${hotelId}`;
   }
 }

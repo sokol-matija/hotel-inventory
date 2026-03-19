@@ -1,6 +1,6 @@
 /**
  * Windows WinPrint Compatible Thermal Printer Service
- * 
+ *
  * Optimized for:
  * - Bixolon SRP-350II thermal printer
  * - Windows generic printer drivers
@@ -30,20 +30,20 @@ interface FiscalPrintData extends PrintReceiptData {
 function generateThermalReceiptHTML(data: FiscalPrintData): string {
   const { order, hotelInfo } = data;
   const currentDate = new Date();
-  const dateStr = currentDate.toLocaleDateString('hr-HR', { 
-    day: '2-digit', 
-    month: '2-digit', 
-    year: '2-digit' 
+  const dateStr = currentDate.toLocaleDateString('hr-HR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: '2-digit',
   });
-  const timeStr = currentDate.toLocaleTimeString('hr-HR', { 
-    hour: '2-digit', 
-    minute: '2-digit', 
-    second: '2-digit' 
+  const timeStr = currentDate.toLocaleTimeString('hr-HR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
   });
-  
+
   // Calculate VAT breakdown for Croatian fiscal compliance
   const vatBreakdown = calculateCroatianVAT(order);
-  
+
   return `
     <!DOCTYPE html>
     <html>
@@ -284,14 +284,18 @@ function generateThermalReceiptHTML(data: FiscalPrintData): string {
       <div class="spacer"></div>
       
       <!-- Order Items -->
-      ${order.items.map((item, index) => `
+      ${order.items
+        .map(
+          (item, index) => `
         <div class="item-line">
           <div class="item-number">${index + 9}</div>
           <div class="item-name">${item.itemName.toUpperCase()}</div>
           <div class="item-qty">${item.quantity}.000</div>
           <div class="item-price">${item.totalPrice.toFixed(2)}</div>
         </div>
-      `).join('')}
+      `
+        )
+        .join('')}
       
       <div class="spacer"></div>
       
@@ -345,12 +349,16 @@ function generateThermalReceiptHTML(data: FiscalPrintData): string {
       <div class="center small">Podaci do ovog datuma su fiskalizirani.</div>
       
       <!-- Payment Method -->
-      ${order.paymentMethod !== 'room_bill' ? `
+      ${
+        order.paymentMethod !== 'room_bill'
+          ? `
         <div class="spacer"></div>
         <div class="center bold">
           ${order.paymentMethod === 'immediate_cash' ? 'GOTOVINA PRIMLJENA' : 'KARTICA'}
         </div>
-      ` : ''}
+      `
+          : ''
+      }
       
       <!-- Footer -->
       <div class="spacer-large"></div>
@@ -420,11 +428,19 @@ function generateThermalReceiptHTML(data: FiscalPrintData): string {
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function generateRawTextReceipt(order: any, hotelInfo: any, timestamp: Date): string {
-  const dateStr = timestamp.toLocaleDateString('hr-HR', { day: '2-digit', month: '2-digit', year: '2-digit' });
-  const timeStr = timestamp.toLocaleTimeString('hr-HR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  
+  const dateStr = timestamp.toLocaleDateString('hr-HR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: '2-digit',
+  });
+  const timeStr = timestamp.toLocaleTimeString('hr-HR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+
   const vatBreakdown = calculateCroatianVAT(order);
-  
+
   // Create raw text with proper spacing (each line max 32 characters for 80mm)
   const receipt = `
              HOTEL POREČ
@@ -452,10 +468,12 @@ Z Roba  5%PDV               0.00
 Z Roba 25%PDV               0.00
 
 
-${/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-order.items.map((item: any, index: number) =>
-  `${index + 9}${item.itemName.toUpperCase().padEnd(20)} ${item.quantity}.000${item.totalPrice.toFixed(2).padStart(6)}`
-).join('\n')}
+${order.items
+  .map(
+    (item: any, index: number) =>
+      `${index + 9}${item.itemName.toUpperCase().padEnd(20)} ${item.quantity}.000${item.totalPrice.toFixed(2).padStart(6)}`
+  )
+  .join('\n')}
 
 
 Korisnik BRAN
@@ -475,8 +493,11 @@ Total                      ${order.totalAmount.toFixed(2)}
 
 Podaci do ovog datuma su fiskalizirani.
 
-${order.paymentMethod !== 'room_bill' ? 
-  `\n        ${order.paymentMethod === 'immediate_cash' ? 'GOTOVINA PRIMLJENA' : 'KARTICA'}\n` : ''}
+${
+  order.paymentMethod !== 'room_bill'
+    ? `\n        ${order.paymentMethod === 'immediate_cash' ? 'GOTOVINA PRIMLJENA' : 'KARTICA'}\n`
+    : ''
+}
 
            Hvala na posjeti!
          Thank you for your visit!
@@ -496,7 +517,7 @@ ${order.paymentMethod !== 'room_bill' ?
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function generateRawTextReceiptHTML(order: any, hotelInfo: any, timestamp: Date): string {
   const textContent = generateRawTextReceipt(order, hotelInfo, timestamp);
-  
+
   return `
     <!DOCTYPE html>
     <html>
@@ -652,29 +673,35 @@ function printHTMLContent(htmlContent: string): Promise<boolean> {
     console.log('4. ✅ Set all margins to 0 or "Minimum"');
     console.log('5. ✅ DISABLE "Fit to page" or "Scale to fit"');
     console.log('6. ✅ Ensure "Actual size" or "100%" is selected');
-    
+
     // Try window method first (better for printer settings)
     try {
-      const printWindow = window.open('', '_blank', 'width=320,height=700,scrollbars=no,resizable=no,menubar=no,toolbar=no,location=no,status=no');
-      
+      const printWindow = window.open(
+        '',
+        '_blank',
+        'width=320,height=700,scrollbars=no,resizable=no,menubar=no,toolbar=no,location=no,status=no'
+      );
+
       if (printWindow) {
         printWindow.document.write(htmlContent);
         printWindow.document.close();
         printWindow.focus();
-        
+
         // Auto-print is handled by the script in the HTML
         setTimeout(() => {
           console.log('✅ Receipt window opened - check your print dialog!');
-          console.log('🔧 If still printing A4: In print dialog → More settings → Paper size → Receipt/80mm');
+          console.log(
+            '🔧 If still printing A4: In print dialog → More settings → Paper size → Receipt/80mm'
+          );
         }, 700);
-        
+
         resolve(true);
         return;
       }
     } catch (windowError) {
       console.warn('Window method failed, trying iframe method:', windowError);
     }
-    
+
     // Fallback to iframe method
     const printFrame = document.createElement('iframe');
     printFrame.style.position = 'absolute';
@@ -682,9 +709,9 @@ function printHTMLContent(htmlContent: string): Promise<boolean> {
     printFrame.style.left = '-1000px';
     printFrame.style.width = '80mm';
     printFrame.style.height = 'auto';
-    
+
     document.body.appendChild(printFrame);
-    
+
     const printDocument = printFrame.contentDocument || printFrame.contentWindow?.document;
     if (!printDocument) {
       document.body.removeChild(printFrame);
@@ -692,18 +719,20 @@ function printHTMLContent(htmlContent: string): Promise<boolean> {
       resolve(false);
       return;
     }
-    
+
     printDocument.open();
     printDocument.write(htmlContent);
     printDocument.close();
-    
+
     // Wait for content to load
     setTimeout(() => {
       try {
         if (printFrame.contentWindow) {
           printFrame.contentWindow.focus();
           printFrame.contentWindow.print();
-          console.log('✅ Print dialog should appear - select thermal printer and check paper size!');
+          console.log(
+            '✅ Print dialog should appear - select thermal printer and check paper size!'
+          );
           resolve(true);
         } else {
           console.error('❌ No print window available');
@@ -713,7 +742,7 @@ function printHTMLContent(htmlContent: string): Promise<boolean> {
         console.error('❌ Print error:', error);
         resolve(false);
       }
-      
+
       // Clean up after printing
       setTimeout(() => {
         try {
@@ -761,51 +790,55 @@ export async function printWindowsReceipt(data: PrintReceiptData): Promise<boole
     // Show instructions to user
     const userConfirmed = window.confirm(
       '🖨️ IMPROVED THERMAL PRINTING:\n\n' +
-      '✅ Now using RAW TEXT format for better generic driver support\n' +
-      '✅ Proper spacing and empty lines preserved\n' +
-      '✅ Professional formatting that matches preview\n\n' +
-      '📋 Is your Bixolon SRP-350II ready?\n' +
-      '✅ Connected and turned on?\n' +
-      '✅ Set as default printer?\n' +
-      '✅ Thermal paper loaded (80mm)?\n\n' +
-      'Click OK to print with improved formatting!'
+        '✅ Now using RAW TEXT format for better generic driver support\n' +
+        '✅ Proper spacing and empty lines preserved\n' +
+        '✅ Professional formatting that matches preview\n\n' +
+        '📋 Is your Bixolon SRP-350II ready?\n' +
+        '✅ Connected and turned on?\n' +
+        '✅ Set as default printer?\n' +
+        '✅ Thermal paper loaded (80mm)?\n\n' +
+        'Click OK to print with improved formatting!'
     );
-    
+
     if (!userConfirmed) {
       console.log('🚫 User cancelled printing to check printer setup');
       return false;
     }
-    
+
     const fiscalData: FiscalPrintData = {
       ...data,
       hotelInfo: {
         ...data.hotelInfo,
         oib: '87246357068', // Hotel Poreč real OIB from receipt
-        fiscalNumber: generateFiscalNumber()
-      }
+        fiscalNumber: generateFiscalNumber(),
+      },
     };
-    
+
     // Use raw text format for better generic driver compatibility
-    const htmlContent = generateRawTextReceiptHTML(fiscalData.order, fiscalData.hotelInfo, fiscalData.timestamp);
+    const htmlContent = generateRawTextReceiptHTML(
+      fiscalData.order,
+      fiscalData.hotelInfo,
+      fiscalData.timestamp
+    );
     const success = await printHTMLContent(htmlContent);
-    
+
     if (success) {
       console.log('✅ Print initiated successfully');
       // Show post-print instructions
       setTimeout(() => {
         alert(
           '📄 PRINT DIALOG TIPS:\n\n' +
-          '🔧 If the receipt prints on A4 paper instead of thermal:\n' +
-          '1. In the print dialog, click "More settings"\n' +
-          '2. Change "Paper size" from "A4" to "Receipt" or "80mm"\n' +
-          '3. Set "Margins" to "Minimum" or "None"\n' +
-          '4. Make sure "Scale" is set to "100%" or "Actual size"\n' +
-          '5. DISABLE "Fit to page"\n\n' +
-          '💡 You can also set these as defaults in your printer properties!'
+            '🔧 If the receipt prints on A4 paper instead of thermal:\n' +
+            '1. In the print dialog, click "More settings"\n' +
+            '2. Change "Paper size" from "A4" to "Receipt" or "80mm"\n' +
+            '3. Set "Margins" to "Minimum" or "None"\n' +
+            '4. Make sure "Scale" is set to "100%" or "Actual size"\n' +
+            '5. DISABLE "Fit to page"\n\n' +
+            '💡 You can also set these as defaults in your printer properties!'
         );
       }, 1000);
     }
-    
+
     return success;
   } catch (error) {
     console.error('Windows receipt print error:', error);
@@ -826,26 +859,28 @@ function calculateCroatianVAT(order: any) {
   // Categorize items by Croatian VAT rates
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   order.items.forEach((item: any) => {
-    if (item.category.toLowerCase().includes('beverage') || 
-        item.category.toLowerCase().includes('drink') ||
-        item.itemName.toLowerCase().includes('pivo') ||
-        item.itemName.toLowerCase().includes('vino') ||
-        item.itemName.toLowerCase().includes('sok')) {
+    if (
+      item.category.toLowerCase().includes('beverage') ||
+      item.category.toLowerCase().includes('drink') ||
+      item.itemName.toLowerCase().includes('pivo') ||
+      item.itemName.toLowerCase().includes('vino') ||
+      item.itemName.toLowerCase().includes('sok')
+    ) {
       drinks25 += item.totalPrice;
     } else {
       food13 += item.totalPrice;
     }
   });
-  
+
   const drinks25Net = drinks25 / 1.28; // Remove 25% VAT + 3% PNP
   const food13Net = food13 / 1.13; // Remove 13% VAT
-  
+
   const vat25 = drinks25Net * 0.25;
   const vat13 = food13Net * 0.13;
   const pnp = drinks25Net * 0.03;
-  
+
   const net = drinks25Net + food13Net;
-  
+
   return {
     drinks25,
     food13,
@@ -854,7 +889,7 @@ function calculateCroatianVAT(order: any) {
     vat25,
     vat13,
     pnp,
-    net
+    net,
   };
 }
 
@@ -863,7 +898,9 @@ function calculateCroatianVAT(order: any) {
  */
 function generateReceiptNumber(): string {
   const today = new Date();
-  const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 86400000);
+  const dayOfYear = Math.floor(
+    (today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 86400000
+  );
   return dayOfYear.toString();
 }
 
@@ -881,18 +918,24 @@ function generateSequenceNumber(): string {
 function generateFiscalNumber(): string {
   const date = new Date();
   const year = date.getFullYear();
-  const sequence = Math.floor(Math.random() * 999999).toString().padStart(6, '0');
+  const sequence = Math.floor(Math.random() * 999999)
+    .toString()
+    .padStart(6, '0');
   return `HP-${year}-${sequence}`;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function generateJIR(): string {
   // Mock JIR (Jedinstveni identifikator računa)
-  return Array.from({length: 32}, () => Math.floor(Math.random() * 16).toString(16)).join('').toUpperCase();
+  return Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16))
+    .join('')
+    .toUpperCase();
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function generateZKI(): string {
   // Mock ZKI (Zaštitni kod izdavatelja)
-  return Array.from({length: 32}, () => Math.floor(Math.random() * 16).toString(16)).join('').toUpperCase();
+  return Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16))
+    .join('')
+    .toUpperCase();
 }

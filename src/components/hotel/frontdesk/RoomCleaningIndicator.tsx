@@ -1,15 +1,15 @@
 // Simple Room Cleaning Status Indicator
 // Shows if room is clean or dirty with real-time updates
 
-import { useEffect, useState } from 'react'
-import { RoomCleaningService } from '@/services/RoomCleaningService'
-import { CheckCircle2, AlertCircle } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { useEffect, useState } from 'react';
+import { RoomCleaningService } from '@/services/RoomCleaningService';
+import { CheckCircle2, AlertCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface RoomCleaningIndicatorProps {
-  roomId: string
-  className?: string
-  showLabel?: boolean
+  roomId: string;
+  className?: string;
+  showLabel?: boolean;
 }
 
 export const RoomCleaningIndicator = ({
@@ -17,43 +17,43 @@ export const RoomCleaningIndicator = ({
   className,
   showLabel = true,
 }: RoomCleaningIndicatorProps) => {
-  const [isClean, setIsClean] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isClean, setIsClean] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const service = RoomCleaningService.getInstance()
+    const service = RoomCleaningService.getInstance();
 
     // Get initial status
     service.getRoomStatus(roomId).then((status) => {
       if (status) {
-        setIsClean(status.isClean)
+        setIsClean(status.isClean);
       }
-      setIsLoading(false)
-    })
+      setIsLoading(false);
+    });
 
     // Subscribe to real-time changes
     const subscription = service.subscribeToRoomStatus(roomId, (clean) => {
-      setIsClean(clean)
-    })
+      setIsClean(clean);
+    });
 
     return () => {
-      subscription.unsubscribe()
-    }
-  }, [roomId])
+      subscription.unsubscribe();
+    };
+  }, [roomId]);
 
   if (isLoading) {
     return (
       <div className={cn('flex items-center gap-2', className)}>
-        <div className="h-4 w-4 rounded-full bg-gray-300 animate-pulse" />
+        <div className="h-4 w-4 animate-pulse rounded-full bg-gray-300" />
         {showLabel && <span className="text-sm text-gray-500">Loading...</span>}
       </div>
-    )
+    );
   }
 
   return (
     <div
       className={cn(
-        'flex items-center gap-2 px-2 py-1 rounded',
+        'flex items-center gap-2 rounded px-2 py-1',
         isClean ? 'bg-green-100' : 'bg-red-100',
         className
       )}
@@ -69,5 +69,5 @@ export const RoomCleaningIndicator = ({
         </span>
       )}
     </div>
-  )
-}
+  );
+};

@@ -6,7 +6,7 @@ import {
   EracuniInvoice,
   EracuniResponse,
   CROATIAN_TAX_RATES,
-  CROATIAN_FISCAL_RULES
+  CROATIAN_FISCAL_RULES,
 } from './types';
 import { HotelEracuniXMLGenerator } from './xmlGenerator';
 import { FinaSoapClient } from './finaSoapClient';
@@ -19,7 +19,7 @@ export class HotelEracuniService {
     try {
       // Step 1: Convert Hotel Invoice to E-računi format
       const eracuniInvoice = this.convertToEracuniFormat(hotelInvoice);
-      
+
       // Step 2: Validate invoice data
       const validation = this.validateInvoiceData(eracuniInvoice);
       if (!validation.isValid) {
@@ -27,13 +27,13 @@ export class HotelEracuniService {
           success: false,
           message: `Validation failed: ${validation.errors.join(', ')}`,
           timestamp: new Date().toISOString(),
-          error_code: 'VALIDATION_ERROR'
+          error_code: 'VALIDATION_ERROR',
         };
       }
 
       // Step 3: Generate Croatian UBL XML
       const xmlContent = this.xmlGenerator.generateUBLXML(eracuniInvoice);
-      
+
       // Step 4: Validate generated XML
       const xmlValidation = this.xmlGenerator.validateXML(xmlContent);
       if (!xmlValidation.isValid) {
@@ -41,21 +41,20 @@ export class HotelEracuniService {
           success: false,
           message: `XML validation failed: ${xmlValidation.errors.join(', ')}`,
           timestamp: new Date().toISOString(),
-          error_code: 'XML_VALIDATION_ERROR'
+          error_code: 'XML_VALIDATION_ERROR',
         };
       }
 
       // Step 5: Submit to FINA
       const response = await this.soapClient.submitInvoice(eracuniInvoice, xmlContent);
-      
+
       return response;
-      
     } catch (error) {
       return {
         success: false,
         message: `E-računi processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         timestamp: new Date().toISOString(),
-        error_code: 'PROCESSING_ERROR'
+        error_code: 'PROCESSING_ERROR',
       };
     }
   }
@@ -67,10 +66,10 @@ export class HotelEracuniService {
   private convertToEracuniFormat(hotelInvoice: Invoice): EracuniInvoice {
     // Calculate Croatian tourism tax
     const tourismTax = this.calculateTourismTax(hotelInvoice);
-    
+
     // Extract additional services
     const additionalServices = this.extractAdditionalServices(hotelInvoice);
-    
+
     return {
       id: hotelInvoice.id,
       reservation_id: hotelInvoice.reservationId,
@@ -84,16 +83,18 @@ export class HotelEracuniService {
       total_amount: hotelInvoice.totalAmount,
       currency: 'EUR',
       status: 'draft',
-      
-      fiscal_data: hotelInvoice.fiscalData ? {
-        oib: hotelInvoice.fiscalData.oib,
-        jir: hotelInvoice.fiscalData.jir,
-        zki: hotelInvoice.fiscalData.zki,
-        fiscal_receipt_url: hotelInvoice.fiscalData.fiscalReceiptUrl
-      } : {
-        oib: ''
-      },
-      
+
+      fiscal_data: hotelInvoice.fiscalData
+        ? {
+            oib: hotelInvoice.fiscalData.oib,
+            jir: hotelInvoice.fiscalData.jir,
+            zki: hotelInvoice.fiscalData.zki,
+            fiscal_receipt_url: hotelInvoice.fiscalData.fiscalReceiptUrl,
+          }
+        : {
+            oib: '',
+          },
+
       hotel_data: {
         room_number: this.extractRoomNumber(hotelInvoice),
         room_type: this.extractRoomType(hotelInvoice),
@@ -103,12 +104,12 @@ export class HotelEracuniService {
         guests: this.extractGuestCount(hotelInvoice),
         tourism_tax: tourismTax,
         breakfast_included: this.isBreakfastIncluded(hotelInvoice),
-        additional_services: additionalServices
+        additional_services: additionalServices,
       },
-      
+
       created_at: hotelInvoice.issueDate.toISOString(),
       updated_at: new Date().toISOString(),
-      xml_generated: false
+      xml_generated: false,
     };
   }
 
@@ -151,7 +152,7 @@ export class HotelEracuniService {
 
     return {
       isValid: errors.length === 0,
-      errors
+      errors,
     };
   }
 
@@ -172,7 +173,7 @@ export class HotelEracuniService {
 
     const remainder = sum % 11;
     const checkDigit = remainder < 2 ? remainder : 11 - remainder;
-    
+
     return checkDigit === parseInt(oib[10]);
   }
 
@@ -181,7 +182,7 @@ export class HotelEracuniService {
     if (originalNumber.startsWith('HP-')) {
       return originalNumber;
     }
-    
+
     const year = new Date().getFullYear();
     const sequence = originalNumber.split('-').pop() || '000001';
     return `HP-${year}-${sequence.padStart(6, '0')}`;
@@ -193,7 +194,9 @@ export class HotelEracuniService {
     return nights * guests * CROATIAN_TAX_RATES.TOURISM_TAX_PER_NIGHT;
   }
 
-  private extractAdditionalServices(_invoice: Invoice): Array<{name: string; quantity: number; unit_price: number; total: number}> {
+  private extractAdditionalServices(
+    _invoice: Invoice
+  ): Array<{ name: string; quantity: number; unit_price: number; total: number }> {
     // Extract from invoice items or description
     // For now, return empty array - this would be implemented based on actual hotel invoice structure
     return [];
@@ -211,7 +214,9 @@ export class HotelEracuniService {
 
   private extractCheckInDate(invoice: Invoice): string {
     // This would come from reservation data
-    return new Date(invoice.issueDate.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    return new Date(invoice.issueDate.getTime() - 3 * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .split('T')[0];
   }
 
   private extractCheckOutDate(invoice: Invoice): string {
@@ -235,29 +240,32 @@ export class HotelEracuniService {
     return invoice.notes?.toLowerCase().includes('breakfast') || false;
   }
 
-  generateInvoicePreview(hotelInvoice: Invoice): { eracuniInvoice: EracuniInvoice; xmlContent: string } {
+  generateInvoicePreview(hotelInvoice: Invoice): {
+    eracuniInvoice: EracuniInvoice;
+    xmlContent: string;
+  } {
     const eracuniInvoice = this.convertToEracuniFormat(hotelInvoice);
     const xmlContent = this.xmlGenerator.generateUBLXML(eracuniInvoice);
-    
+
     return {
       eracuniInvoice,
-      xmlContent
+      xmlContent,
     };
   }
 
-  getServiceStatus(): { 
-    xmlGenerator: boolean; 
-    soapClient: boolean; 
+  getServiceStatus(): {
+    xmlGenerator: boolean;
+    soapClient: boolean;
     finaConnection: string;
     lastTest?: string;
   } {
     const connectionStatus = this.soapClient.getConnectionStatus();
-    
+
     return {
       xmlGenerator: true,
       soapClient: true,
       finaConnection: connectionStatus.connected ? 'Connected' : 'Disconnected',
-      lastTest: new Date().toISOString()
+      lastTest: new Date().toISOString(),
     };
   }
 }

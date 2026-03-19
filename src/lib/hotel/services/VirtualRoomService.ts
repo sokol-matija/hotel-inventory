@@ -33,7 +33,7 @@ export class VirtualRoomService {
     VIRTUAL_FLOOR: 5,
     VIRTUAL_ROOM_START: 501,
     VIRTUAL_ROOM_END: 599,
-    VIRTUAL_ROOM_TYPE: 'UNALLOC'
+    VIRTUAL_ROOM_TYPE: 'UNALLOC',
   };
 
   private constructor() {}
@@ -49,8 +49,7 @@ export class VirtualRoomService {
    * Check if a room is a virtual room (Floor 5)
    */
   public isVirtualRoom(room: Room): boolean {
-    return room.floor === this.config.VIRTUAL_FLOOR ||
-           room.type === this.config.VIRTUAL_ROOM_TYPE;
+    return room.floor === this.config.VIRTUAL_FLOOR || room.type === this.config.VIRTUAL_ROOM_TYPE;
   }
 
   /**
@@ -58,8 +57,7 @@ export class VirtualRoomService {
    */
   public isVirtualRoomNumber(roomNumber: string): boolean {
     const num = parseInt(roomNumber);
-    return num >= this.config.VIRTUAL_ROOM_START &&
-           num <= this.config.VIRTUAL_ROOM_END;
+    return num >= this.config.VIRTUAL_ROOM_START && num <= this.config.VIRTUAL_ROOM_END;
   }
 
   /**
@@ -71,11 +69,10 @@ export class VirtualRoomService {
     checkOut: Date
   ): Promise<{ success: boolean; roomId?: number; error?: string }> {
     try {
-      const { data, error } = await supabase
-        .rpc('get_next_available_virtual_room', {
-          p_check_in: checkIn.toISOString().split('T')[0],
-          p_check_out: checkOut.toISOString().split('T')[0]
-        });
+      const { data, error } = await supabase.rpc('get_next_available_virtual_room', {
+        p_check_in: checkIn.toISOString().split('T')[0],
+        p_check_out: checkOut.toISOString().split('T')[0],
+      });
 
       if (error) {
         console.error('Error getting virtual room:', error);
@@ -87,7 +84,7 @@ export class VirtualRoomService {
       console.error('Exception getting virtual room:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -95,16 +92,16 @@ export class VirtualRoomService {
   /**
    * Get all virtual rooms that have active reservations for a date
    */
-  public async getVirtualRoomsWithReservations(
-    date: Date
-  ): Promise<Room[]> {
+  public async getVirtualRoomsWithReservations(date: Date): Promise<Room[]> {
     try {
       const { data: rooms, error } = await supabase
         .from('rooms')
-        .select(`
+        .select(
+          `
           *,
           reservations!inner(*)
-        `)
+        `
+        )
         .eq('floor_number', this.config.VIRTUAL_FLOOR)
         .lte('reservations.check_in_date', date.toISOString().split('T')[0])
         .gte('reservations.check_out_date', date.toISOString().split('T')[0])
@@ -127,9 +124,7 @@ export class VirtualRoomService {
   /**
    * Create placeholder guest for unallocated reservation
    */
-  private async getOrCreatePlaceholderGuest(
-    temporaryName: string
-  ): Promise<number | null> {
+  private async getOrCreatePlaceholderGuest(temporaryName: string): Promise<number | null> {
     try {
       // Check if placeholder guest exists
       const { data: existingGuest } = await supabase
@@ -153,7 +148,7 @@ export class VirtualRoomService {
           email: null,
           phone: null,
           nationality: null,
-          preferred_language: 'en'
+          preferred_language: 'en',
         })
         .select('id')
         .single();
@@ -178,27 +173,22 @@ export class VirtualRoomService {
   ): Promise<AllocationResult> {
     try {
       // Get next available virtual room
-      const virtualRoomResult = await this.getNextAvailableVirtualRoom(
-        data.checkIn,
-        data.checkOut
-      );
+      const virtualRoomResult = await this.getNextAvailableVirtualRoom(data.checkIn, data.checkOut);
 
       if (!virtualRoomResult.success || !virtualRoomResult.roomId) {
         return {
           success: false,
-          error: virtualRoomResult.error || 'Failed to allocate virtual room'
+          error: virtualRoomResult.error || 'Failed to allocate virtual room',
         };
       }
 
       // Get or create placeholder guest
-      const guestId = await this.getOrCreatePlaceholderGuest(
-        data.temporaryGuestName
-      );
+      const guestId = await this.getOrCreatePlaceholderGuest(data.temporaryGuestName);
 
       if (!guestId) {
         return {
           success: false,
-          error: 'Failed to create placeholder guest'
+          error: 'Failed to create placeholder guest',
         };
       }
 
@@ -227,7 +217,7 @@ export class VirtualRoomService {
           subtotal: 0,
           vat_amount: 0,
           total_amount: 0,
-          payment_status: 'pending'
+          payment_status: 'pending',
         })
         .select('id')
         .single();
@@ -236,19 +226,19 @@ export class VirtualRoomService {
         console.error('Error creating unallocated reservation:', reservationError);
         return {
           success: false,
-          error: reservationError?.message || 'Failed to create reservation'
+          error: reservationError?.message || 'Failed to create reservation',
         };
       }
 
       return {
         success: true,
-        reservationId: reservation.id.toString()
+        reservationId: reservation.id.toString(),
       };
     } catch (error) {
       console.error('Exception creating unallocated reservation:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -274,7 +264,7 @@ export class VirtualRoomService {
         console.error('Error fetching reservation:', fetchError);
         return {
           success: false,
-          error: 'Failed to fetch reservation: ' + (fetchError?.message || 'Not found')
+          error: 'Failed to fetch reservation: ' + (fetchError?.message || 'Not found'),
         };
       }
 
@@ -289,7 +279,7 @@ export class VirtualRoomService {
         console.error('Error fetching target room:', roomError);
         return {
           success: false,
-          error: 'Failed to fetch target room: ' + (roomError?.message || 'Not found')
+          error: 'Failed to fetch target room: ' + (roomError?.message || 'Not found'),
         };
       }
 
@@ -310,7 +300,7 @@ export class VirtualRoomService {
         {
           hasPets: existingReservation.has_pets || false,
           needsParking: existingReservation.parking_required || false,
-          additionalCharges: existingReservation.additional_charges || 0
+          additionalCharges: existingReservation.additional_charges || 0,
         },
         [transformedRoom] // Pass the target room so pricing calculator can find it
       );
@@ -328,7 +318,7 @@ export class VirtualRoomService {
         pet_fee: pricing.fees.pets,
         parking_fee: pricing.fees.parking,
         short_stay_supplement: pricing.fees.shortStay,
-        total_amount: pricing.total
+        total_amount: pricing.total,
       };
 
       // If guest data provided, create/update guest
@@ -342,7 +332,7 @@ export class VirtualRoomService {
             email: guestData.email || null,
             phone: guestData.phone || null,
             nationality: guestData.nationality || null,
-            preferred_language: guestData.preferredLanguage || 'en'
+            preferred_language: guestData.preferredLanguage || 'en',
           })
           .select('id')
           .single();
@@ -351,7 +341,7 @@ export class VirtualRoomService {
           console.error('Error creating guest:', guestError);
           return {
             success: false,
-            error: 'Failed to create guest: ' + guestError.message
+            error: 'Failed to create guest: ' + guestError.message,
           };
         }
 
@@ -368,19 +358,19 @@ export class VirtualRoomService {
         console.error('Error updating reservation:', updateError);
         return {
           success: false,
-          error: 'Failed to update reservation: ' + updateError.message
+          error: 'Failed to update reservation: ' + updateError.message,
         };
       }
 
       return {
         success: true,
-        reservationId
+        reservationId,
       };
     } catch (error) {
       console.error('Exception converting to real reservation:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -401,12 +391,12 @@ export class VirtualRoomService {
         A: parseFloat(dbRoom.seasonal_rate_a || 0),
         B: parseFloat(dbRoom.seasonal_rate_b || 0),
         C: parseFloat(dbRoom.seasonal_rate_c || 0),
-        D: parseFloat(dbRoom.seasonal_rate_d || 0)
+        D: parseFloat(dbRoom.seasonal_rate_d || 0),
       },
       maxOccupancy: dbRoom.max_occupancy || 2,
       isPremium: dbRoom.is_premium || false,
       amenities: dbRoom.amenities || [],
-      is_clean: dbRoom.is_clean || false
+      is_clean: dbRoom.is_clean || false,
     };
   }
 }

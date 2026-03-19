@@ -1,50 +1,50 @@
 // Compact Room Cleaning Status Indicator for Timeline
 // Shows a small dot indicator for room cleaning status with real-time updates
 
-import { useEffect, useState } from 'react'
-import { RoomCleaningService } from '@/services/RoomCleaningService'
-import { cn } from '@/lib/utils'
+import { useEffect, useState } from 'react';
+import { RoomCleaningService } from '@/services/RoomCleaningService';
+import { cn } from '@/lib/utils';
 
 interface TimelineCleaningIndicatorProps {
-  roomId: string
-  className?: string
+  roomId: string;
+  className?: string;
 }
 
 export const TimelineCleaningIndicator = ({
   roomId,
   className,
 }: TimelineCleaningIndicatorProps) => {
-  const [isClean, setIsClean] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isClean, setIsClean] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const service = RoomCleaningService.getInstance()
+    const service = RoomCleaningService.getInstance();
 
     // Get initial status
     service.getRoomStatus(roomId).then((status) => {
       if (status) {
-        setIsClean(status.isClean)
+        setIsClean(status.isClean);
       }
-      setIsLoading(false)
-    })
+      setIsLoading(false);
+    });
 
     // Subscribe to real-time changes
     const subscription = service.subscribeToRoomStatus(roomId, (clean) => {
-      setIsClean(clean)
-    })
+      setIsClean(clean);
+    });
 
     return () => {
-      subscription.unsubscribe()
-    }
-  }, [roomId])
+      subscription.unsubscribe();
+    };
+  }, [roomId]);
 
   if (isLoading) {
     return (
       <div
-        className={cn('h-2.5 w-2.5 rounded-full bg-gray-300 animate-pulse', className)}
+        className={cn('h-2.5 w-2.5 animate-pulse rounded-full bg-gray-300', className)}
         title="Loading cleaning status..."
       />
-    )
+    );
   }
 
   return (
@@ -56,5 +56,5 @@ export const TimelineCleaningIndicator = ({
       )}
       title={isClean ? 'Room clean' : 'Room dirty'}
     />
-  )
-}
+  );
+};

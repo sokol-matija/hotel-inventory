@@ -14,7 +14,7 @@ import {
   PhobsRoom,
   OTAChannel,
   PhobsWebhookEvent,
-  SyncResult
+  SyncResult,
 } from '../phobsTypes';
 import { Reservation, Guest, Room } from '../../types';
 
@@ -26,7 +26,7 @@ const mockPhobsConfig = {
   baseUrl: 'https://api.phobs.test/v1',
   environment: 'test' as const,
   webhookSecret: 'test_webhook_secret',
-  webhookUrl: 'https://test-hotel.com/api/phobs/webhook'
+  webhookUrl: 'https://test-hotel.com/api/phobs/webhook',
 };
 
 const mockGuest: Guest = {
@@ -49,7 +49,7 @@ const mockGuest: Guest = {
   emergencyContactName: undefined,
   emergencyContactPhone: undefined,
   createdAt: new Date(),
-  updatedAt: new Date()
+  updatedAt: new Date(),
 };
 
 const mockRoom: Room = {
@@ -62,11 +62,11 @@ const mockRoom: Room = {
   nameCroatian: 'Standardna dvokrevetna soba',
   amenities: ['WiFi', 'TV', 'Air Conditioning'],
   seasonalRates: {
-    A: 80,  // Winter
+    A: 80, // Winter
     B: 100, // Spring
     C: 120, // Fall
-    D: 150  // Summer
-  }
+    D: 150, // Summer
+  },
 };
 
 const mockReservation: Reservation = {
@@ -96,7 +96,7 @@ const mockReservation: Reservation = {
   totalAmount: 512.25,
   bookingDate: new Date('2025-08-15'),
   lastModified: new Date('2025-08-15'),
-  notes: 'Test reservation'
+  notes: 'Test reservation',
 };
 
 const mockPhobsReservation: PhobsReservation = {
@@ -131,7 +131,7 @@ const mockPhobsReservation: PhobsReservation = {
     totalRevenue: 0,
     isVip: false,
     syncedAt: undefined,
-    lastUpdated: new Date()
+    lastUpdated: new Date(),
   },
   channel: 'booking.com',
   bookingReference: 'BDC-123456789',
@@ -151,7 +151,7 @@ const mockPhobsReservation: PhobsReservation = {
   lastModified: new Date('2025-08-15'),
   syncStatus: 'pending',
   syncedAt: undefined,
-  syncErrors: []
+  syncErrors: [],
 };
 
 describe('PhobsIntegration', () => {
@@ -185,7 +185,7 @@ describe('PhobsIntegration', () => {
         hotelId: 'test_hotel',
         baseUrl: 'https://api.test.com',
         webhookSecret: 'webhook_secret',
-        webhookUrl: 'https://test.com/webhook'
+        webhookUrl: 'https://test.com/webhook',
       };
 
       const result = await configurationService.updateCredentials(credentials);
@@ -202,7 +202,7 @@ describe('PhobsIntegration', () => {
         hotelId: 'test_hotel',
         baseUrl: 'invalid-url', // Invalid URL
         webhookSecret: 'webhook_secret',
-        webhookUrl: 'https://test.com/webhook'
+        webhookUrl: 'https://test.com/webhook',
       };
 
       const result = await configurationService.updateCredentials(invalidCredentials);
@@ -219,14 +219,17 @@ describe('PhobsIntegration', () => {
         maximumStay: 14,
         stopSale: false,
         closeToArrival: false,
-        closeToDeparture: false
+        closeToDeparture: false,
       };
 
-      const result = await configurationService.updateChannelConfiguration('booking.com', channelConfig);
+      const result = await configurationService.updateChannelConfiguration(
+        'booking.com',
+        channelConfig
+      );
       expect(result.success).toBe(true);
 
       const configs = configurationService.getChannelConfigurations();
-      const bookingConfig = configs.find(c => c.channel === 'booking.com');
+      const bookingConfig = configs.find((c) => c.channel === 'booking.com');
       expect(bookingConfig).toMatchObject({ channel: 'booking.com', ...channelConfig });
     });
   });
@@ -234,10 +237,10 @@ describe('PhobsIntegration', () => {
   describe('Data Mapper Service', () => {
     test('should map internal reservation to Phobs format', () => {
       const result = dataMapperService.mapReservationToPhobs(mockReservation, mockGuest, mockRoom);
-      
+
       expect(result.success).toBe(true);
       expect(result.data).toBeDefined();
-      
+
       if (result.data) {
         expect(result.data.internalReservationId).toBe(mockReservation.id);
         expect(result.data.channel).toBe('booking.com');
@@ -248,10 +251,10 @@ describe('PhobsIntegration', () => {
 
     test('should map Phobs reservation to internal format', () => {
       const result = dataMapperService.mapPhobsReservationToInternal(mockPhobsReservation);
-      
+
       expect(result.success).toBe(true);
       expect(result.data).toBeDefined();
-      
+
       if (result.data) {
         expect(result.data.totalAmount).toBe(mockPhobsReservation.totalAmount);
         expect(result.data.checkIn).toEqual(mockPhobsReservation.checkIn);
@@ -261,8 +264,12 @@ describe('PhobsIntegration', () => {
 
     test('should validate required fields during mapping', () => {
       const invalidReservation = { ...mockReservation, roomId: '' };
-      const result = dataMapperService.mapReservationToPhobs(invalidReservation, mockGuest, mockRoom);
-      
+      const result = dataMapperService.mapReservationToPhobs(
+        invalidReservation,
+        mockGuest,
+        mockRoom
+      );
+
       expect(result.success).toBe(false);
       expect(result.errors).toContain('Room ID is required');
     });
@@ -270,9 +277,11 @@ describe('PhobsIntegration', () => {
     test('should handle guest mapping with missing email', () => {
       const guestWithoutEmail = { ...mockGuest, email: '' };
       const result = dataMapperService.mapGuestToPhobs(guestWithoutEmail);
-      
+
       expect(result.success).toBe(true);
-      expect(result.warnings).toContain('Guest email is missing - this may cause issues with OTA channels');
+      expect(result.warnings).toContain(
+        'Guest email is missing - this may cause issues with OTA channels'
+      );
     });
   });
 
@@ -301,10 +310,9 @@ describe('PhobsIntegration', () => {
         throw error;
       };
 
-      const result = await errorHandlingService.withRetry(
-        authErrorOperation,
-        { operation: 'test_auth_error' }
-      );
+      const result = await errorHandlingService.withRetry(authErrorOperation, {
+        operation: 'test_auth_error',
+      });
 
       expect(result.success).toBe(false);
       expect(result.attempts).toBe(1);
@@ -316,10 +324,11 @@ describe('PhobsIntegration', () => {
       expect(initialMetrics.totalErrors).toBe(0);
 
       // This would be called internally by withRetry
-      const error = errorHandlingService.handleError(
-        new Error('Test error'),
-        { operation: 'test_operation', attempt: 1, timestamp: new Date() }
-      );
+      const error = errorHandlingService.handleError(new Error('Test error'), {
+        operation: 'test_operation',
+        attempt: 1,
+        timestamp: new Date(),
+      });
 
       expect(error).toBeDefined();
       expect(error.type).toBeDefined();
@@ -344,7 +353,7 @@ describe('PhobsIntegration', () => {
       expect(traceId).toBeDefined();
 
       monitoringService.addTraceStep(traceId, 'step_1');
-      await new Promise(resolve => setTimeout(resolve, 10)); // Small delay
+      await new Promise((resolve) => setTimeout(resolve, 10)); // Small delay
       monitoringService.completeTraceStep(traceId, 'step_1');
 
       const completedTrace = monitoringService.endTrace(traceId, true);
@@ -361,7 +370,7 @@ describe('PhobsIntegration', () => {
 
       const operationMetrics = monitoringService.getOperationMetrics('sync_reservations');
       expect(operationMetrics).toHaveLength(1);
-      
+
       const metrics = operationMetrics[0];
       expect(metrics.totalInvocations).toBe(3);
       expect(metrics.successfulInvocations).toBe(2);
@@ -375,7 +384,7 @@ describe('PhobsIntegration', () => {
 
       const channelMetrics = monitoringService.getChannelMetrics('booking.com');
       expect(channelMetrics).toHaveLength(1);
-      
+
       const metrics = channelMetrics[0];
       expect(metrics.totalOperations).toBe(2);
       expect(metrics.successfulOperations).toBe(2);
@@ -384,7 +393,7 @@ describe('PhobsIntegration', () => {
 
     test('should provide system health metrics', () => {
       const healthMetrics = monitoringService.getSystemHealthMetrics();
-      
+
       expect(healthMetrics.uptime).toBeGreaterThan(0);
       expect(healthMetrics.lastHealthCheck).toBeInstanceOf(Date);
       expect(typeof healthMetrics.totalOperations).toBe('number');
@@ -395,8 +404,8 @@ describe('PhobsIntegration', () => {
   describe('Reservation Sync Service', () => {
     test('should process incoming OTA reservation', async () => {
       const result = await reservationSyncService.processIncomingReservation(mockPhobsReservation);
-      
-      // Since we don't have actual database integration in tests, 
+
+      // Since we don't have actual database integration in tests,
       // we expect the process to handle the reservation appropriately
       expect(result).toBeDefined();
       expect(typeof result.success).toBe('boolean');
@@ -405,10 +414,13 @@ describe('PhobsIntegration', () => {
     test('should detect duplicate reservations', async () => {
       // First reservation should succeed
       const result1 = await reservationSyncService.processIncomingReservation(mockPhobsReservation);
-      
+
       // Second identical reservation should be detected as duplicate
-      const result2 = await reservationSyncService.processIncomingReservation(mockPhobsReservation, 'webhook');
-      
+      const result2 = await reservationSyncService.processIncomingReservation(
+        mockPhobsReservation,
+        'webhook'
+      );
+
       expect(result2.success).toBe(false);
       expect(result2.error).toContain('Duplicate reservation');
     });
@@ -417,23 +429,25 @@ describe('PhobsIntegration', () => {
       const modifiedReservation = {
         ...mockPhobsReservation,
         checkOut: new Date('2025-08-24'), // Extended stay
-        totalAmount: 650.00
+        totalAmount: 650.0,
       };
 
-      const result = await reservationSyncService.processReservationModification(modifiedReservation);
+      const result =
+        await reservationSyncService.processReservationModification(modifiedReservation);
       expect(result).toBeDefined();
       expect(typeof result.success).toBe('boolean');
     });
 
     test('should handle reservation cancellations', async () => {
-      const result = await reservationSyncService.processReservationCancellation(mockPhobsReservation);
+      const result =
+        await reservationSyncService.processReservationCancellation(mockPhobsReservation);
       expect(result).toBeDefined();
       expect(typeof result.success).toBe('boolean');
     });
 
     test('should get sync status', () => {
       const status = reservationSyncService.getSyncStatus();
-      
+
       expect(status).toBeDefined();
       expect(typeof status.totalReservationsSynced).toBe('number');
       expect(typeof status.queueLength).toBe('number');
@@ -445,7 +459,7 @@ describe('PhobsIntegration', () => {
     test('should sync room inventory', async () => {
       const rooms = [mockRoom];
       const result = await inventoryService.syncRoomInventory(rooms);
-      
+
       expect(result.success).toBe(true);
       expect(result.recordsProcessed).toBe(1);
       expect(result.operation).toBe('availability');
@@ -458,18 +472,18 @@ describe('PhobsIntegration', () => {
         roomType: 'double',
         channel: 'booking.com' as OTAChannel,
         advanceBookingDays: 30,
-        lengthOfStay: 3
+        lengthOfStay: 3,
       };
 
       const dynamicRate = inventoryService.calculateDynamicRate(baseRate, options);
-      
+
       expect(dynamicRate).toBeGreaterThan(baseRate); // Should be higher due to peak season
       expect(typeof dynamicRate).toBe('number');
     });
 
     test('should track sync status', () => {
       const status = inventoryService.getSyncStatus();
-      
+
       expect(status).toBeDefined();
       expect(typeof status.roomsSynced).toBe('number');
       expect(typeof status.ratesSynced).toBe('number');
@@ -491,7 +505,7 @@ describe('PhobsIntegration', () => {
         timestamp: new Date(),
         hotelId: 'test_hotel_789',
         data: mockPhobsReservation,
-        signature: 'test_signature'
+        signature: 'test_signature',
       };
 
       // This would normally be processed by the webhook handler
@@ -505,8 +519,8 @@ describe('PhobsIntegration', () => {
         eventType: 'reservation.modified',
         timestamp: new Date(),
         hotelId: 'test_hotel_789',
-        data: { ...mockPhobsReservation, totalAmount: 600.00 },
-        signature: 'test_signature'
+        data: { ...mockPhobsReservation, totalAmount: 600.0 },
+        signature: 'test_signature',
       };
 
       const result = await reservationSyncService.processReservationModification(webhookEvent.data);
@@ -520,7 +534,7 @@ describe('PhobsIntegration', () => {
         timestamp: new Date(),
         hotelId: 'test_hotel_789',
         data: mockPhobsReservation,
-        signature: 'test_signature'
+        signature: 'test_signature',
       };
 
       const result = await reservationSyncService.processReservationCancellation(webhookEvent.data);
@@ -531,7 +545,11 @@ describe('PhobsIntegration', () => {
   describe('Integration Flow Tests', () => {
     test('should complete full outbound reservation sync flow', async () => {
       // 1. Map reservation to Phobs format
-      const mappingResult = dataMapperService.mapReservationToPhobs(mockReservation, mockGuest, mockRoom);
+      const mappingResult = dataMapperService.mapReservationToPhobs(
+        mockReservation,
+        mockGuest,
+        mockRoom
+      );
       expect(mappingResult.success).toBe(true);
 
       // 2. Sync to Phobs (would normally make API call)
@@ -549,8 +567,9 @@ describe('PhobsIntegration', () => {
 
     test('should complete full inbound reservation processing flow', async () => {
       // 1. Process incoming Phobs reservation
-      const processingResult = await reservationSyncService.processIncomingReservation(mockPhobsReservation);
-      
+      const processingResult =
+        await reservationSyncService.processIncomingReservation(mockPhobsReservation);
+
       // 2. Map to internal format
       const mappingResult = dataMapperService.mapPhobsReservationToInternal(mockPhobsReservation);
       expect(mappingResult.success).toBe(true);
@@ -560,12 +579,12 @@ describe('PhobsIntegration', () => {
 
     test('should handle complete inventory sync flow', async () => {
       const rooms = [mockRoom];
-      
+
       // 1. Sync rooms
       const roomSyncResult = await inventoryService.syncRoomInventory(rooms);
       expect(roomSyncResult.success).toBe(true);
 
-      // 2. Sync rates  
+      // 2. Sync rates
       const rateSyncResult = await inventoryService.syncRatePlans(rooms);
       expect(rateSyncResult.success).toBe(true);
 
@@ -581,13 +600,13 @@ describe('PhobsIntegration', () => {
         reservationSyncService.processIncomingReservation({
           ...mockPhobsReservation,
           phobsReservationId: `phobs_res_${i}`,
-          bookingReference: `BDC-${i}`
+          bookingReference: `BDC-${i}`,
         })
       );
 
       const results = await Promise.all(operations);
       expect(results).toHaveLength(10);
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result).toBeDefined();
         expect(typeof result.success).toBe('boolean');
       });
@@ -597,7 +616,7 @@ describe('PhobsIntegration', () => {
       const rooms = Array.from({ length: 50 }, (_, i) => ({
         ...mockRoom,
         id: `room_${i}`,
-        number: `${100 + i}`
+        number: `${100 + i}`,
       }));
 
       const result = await inventoryService.syncRoomInventory(rooms);
@@ -609,7 +628,7 @@ describe('PhobsIntegration', () => {
   describe('Error Scenarios', () => {
     test('should handle API timeout gracefully', async () => {
       const timeoutOperation = async () => {
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
         throw new Error('Operation timed out after 30000ms');
       };
 
@@ -644,10 +663,12 @@ describe('PhobsIntegration', () => {
       const malformedReservation = {
         ...mockPhobsReservation,
         checkIn: 'invalid-date',
-        totalAmount: 'not-a-number'
+        totalAmount: 'not-a-number',
       };
 
-      const result = await reservationSyncService.processIncomingReservation(malformedReservation as any);
+      const result = await reservationSyncService.processIncomingReservation(
+        malformedReservation as any
+      );
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -661,24 +682,24 @@ export const mockApiResponses = {
       success: true,
       data: {
         token: 'test_jwt_token_here',
-        expiresIn: 86400
-      }
+        expiresIn: 86400,
+      },
     },
     failure: {
       success: false,
-      error: 'Invalid credentials'
-    }
+      error: 'Invalid credentials',
+    },
   },
-  
+
   connectionTest: {
     success: {
       success: true,
       data: {
         status: 'connected',
         version: '1.0.0',
-        features: ['reservations', 'inventory', 'rates']
-      }
-    }
+        features: ['reservations', 'inventory', 'rates'],
+      },
+    },
   },
 
   reservationSync: {
@@ -686,39 +707,39 @@ export const mockApiResponses = {
       success: true,
       data: {
         reservationId: 'phobs_res_123',
-        status: 'created'
-      }
+        status: 'created',
+      },
     },
     conflict: {
       success: false,
-      error: 'Room already booked for selected dates'
-    }
-  }
+      error: 'Room already booked for selected dates',
+    },
+  },
 };
 
 // Test utilities
 export const testUtils = {
   createMockReservation: (overrides: Partial<Reservation> = {}): Reservation => ({
     ...mockReservation,
-    ...overrides
+    ...overrides,
   }),
 
   createMockGuest: (overrides: Partial<Guest> = {}): Guest => ({
     ...mockGuest,
-    ...overrides
+    ...overrides,
   }),
 
   createMockRoom: (overrides: Partial<Room> = {}): Room => ({
     ...mockRoom,
-    ...overrides
+    ...overrides,
   }),
 
   createMockPhobsReservation: (overrides: Partial<PhobsReservation> = {}): PhobsReservation => ({
     ...mockPhobsReservation,
-    ...overrides
+    ...overrides,
   }),
 
   waitForAsyncOperations: async (ms: number = 100) => {
-    await new Promise(resolve => setTimeout(resolve, ms));
-  }
+    await new Promise((resolve) => setTimeout(resolve, ms));
+  },
 };

@@ -90,8 +90,7 @@ export class PhobsXmlParser {
           {
             type: 'ParseError',
             code: 'XML_PARSE_ERROR',
-            message:
-              error instanceof Error ? error.message : 'Unknown parsing error',
+            message: error instanceof Error ? error.message : 'Unknown parsing error',
           },
         ],
       };
@@ -166,8 +165,7 @@ export class PhobsXmlParser {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private parseSoapFault(fault: any): SoapResponse {
     const faultCode = fault.faultcode || fault.Code?.Value || 'UNKNOWN';
-    const faultString =
-      fault.faultstring || fault.Reason?.Text || 'Unknown SOAP fault';
+    const faultString = fault.faultstring || fault.Reason?.Text || 'Unknown SOAP fault';
     const faultDetail = fault.detail || fault.Detail;
 
     return {
@@ -270,8 +268,7 @@ export class PhobsXmlParser {
 
     // Extract reservation-specific data
     const otaResponse = response.data;
-    const hotelReservation =
-      otaResponse?.HotelReservations?.HotelReservation;
+    const hotelReservation = otaResponse?.HotelReservations?.HotelReservation;
 
     if (hotelReservation) {
       const uniqueId = hotelReservation.UniqueID;
@@ -318,14 +315,14 @@ export class PhobsXmlParser {
     warnings?: string[];
   } {
     const response = this.parseSoapResponse(xml);
-    
+
     if (!response.success || !response.data) {
       return {
         success: false,
-        errors: response.errors?.map(e => ({
+        errors: response.errors?.map((e) => ({
           code: e.code,
           message: e.message || e.shortText || 'Unknown error',
-          type: e.type
+          type: e.type,
         })),
       };
     }
@@ -333,7 +330,7 @@ export class PhobsXmlParser {
     try {
       const body = response.data;
       const resNotif = body['OTA_HotelResNotifRQ'];
-      
+
       if (!resNotif) {
         return {
           success: true,
@@ -342,7 +339,7 @@ export class PhobsXmlParser {
       }
 
       const hotelReservations = resNotif.HotelReservations?.HotelReservation;
-      
+
       if (!hotelReservations) {
         return {
           success: true,
@@ -378,8 +375,8 @@ export class PhobsXmlParser {
         const guestCountArray = Array.isArray(guestCountsData)
           ? guestCountsData
           : guestCountsData
-          ? [guestCountsData]
-          : [];
+            ? [guestCountsData]
+            : [];
 
         return {
           reservationId: uniqueId?.['@_ID'] || '',
@@ -413,7 +410,7 @@ export class PhobsXmlParser {
       return {
         success: true,
         reservations,
-        warnings: response.warnings?.map(w => w.message || w.shortText || 'Warning'),
+        warnings: response.warnings?.map((w) => w.message || w.shortText || 'Warning'),
       };
     } catch (error) {
       console.error('Error parsing reservation pull response:', error);
@@ -520,8 +517,7 @@ export class PhobsXmlParser {
     } catch (error) {
       return {
         success: false,
-        error:
-          error instanceof Error ? error.message : 'Failed to parse JSON',
+        error: error instanceof Error ? error.message : 'Failed to parse JSON',
       };
     }
   }

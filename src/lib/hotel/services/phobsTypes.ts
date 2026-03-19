@@ -1,12 +1,7 @@
 // Phobs Channel Manager Integration - TypeScript Interfaces
 // Integration with Hotel Porec inventory management system
 
-import type {
-  RoomType,
-  SeasonalPeriod,
-  ReservationStatus,
-  PaymentMethod
-} from '../types';
+import type { RoomType, SeasonalPeriod, ReservationStatus, PaymentMethod } from '../types';
 
 // Branded types for Phobs IDs to prevent mixing with internal IDs
 export type PhobsReservationId = string & { __brand: 'PhobsReservationId' };
@@ -16,14 +11,15 @@ export type PhobsChannelId = string & { __brand: 'PhobsChannelId' };
 export type PhobsRateId = string & { __brand: 'PhobsRateId' };
 
 // Helper functions to create branded types
-export const createPhobsReservationId = (id: string): PhobsReservationId => id as PhobsReservationId;
+export const createPhobsReservationId = (id: string): PhobsReservationId =>
+  id as PhobsReservationId;
 export const createPhobsGuestId = (id: string): PhobsGuestId => id as PhobsGuestId;
 export const createPhobsRoomId = (id: string): PhobsRoomId => id as PhobsRoomId;
 export const createPhobsChannelId = (id: string): PhobsChannelId => id as PhobsChannelId;
 export const createPhobsRateId = (id: string): PhobsRateId => id as PhobsRateId;
 
 // OTA Channel Types
-export type OTAChannel = 
+export type OTAChannel =
   | 'booking.com'
   | 'expedia'
   | 'airbnb'
@@ -40,7 +36,12 @@ export type OTAChannel =
 
 export type ChannelStatus = 'active' | 'inactive' | 'error' | 'syncing' | 'paused';
 export type SyncStatus = 'pending' | 'in_progress' | 'completed' | 'failed' | 'retry';
-export type SyncOperation = 'availability' | 'rates' | 'reservation' | 'cancellation' | 'modification';
+export type SyncOperation =
+  | 'availability'
+  | 'rates'
+  | 'reservation'
+  | 'cancellation'
+  | 'modification';
 
 // Phobs API Configuration
 export interface PhobsConfig {
@@ -75,34 +76,34 @@ export interface OTAChannelConfig {
   displayName: string;
   status: ChannelStatus;
   isEnabled: boolean;
-  
+
   // Channel-specific settings
   commission: number; // Percentage
   allowInstantBooking: boolean;
   minimumStay: number;
   maximumStay: number;
   cutoffHours: number; // Hours before check-in to stop accepting bookings
-  
+
   // Rate settings
   baseRateAdjustment: number; // Percentage adjustment from base rate
   availability: boolean;
-  
+
   // Restrictions
   restrictedRoomTypes: RoomType[];
   blackoutDates: DateRange[];
-  
+
   // Performance metrics
   totalBookings: number;
   revenue: number;
   averageBookingValue: number;
   conversionRate: number;
   lastBookingAt?: Date;
-  
+
   // Sync status
   lastSyncAt?: Date;
   syncStatus: SyncStatus;
   syncErrors: string[];
-  
+
   // Metadata
   createdAt: Date;
   updatedAt: Date;
@@ -125,7 +126,7 @@ export interface PhobsRoom {
   roomType: string;
   floor: number;
   maxOccupancy: number;
-  
+
   // OTA-specific room mapping
   channelRoomMappings: {
     [K in OTAChannel]?: {
@@ -134,16 +135,16 @@ export interface PhobsRoom {
       isActive: boolean;
     };
   };
-  
+
   // Amenities for OTA channels
   amenities: string[];
   description: {
     [language: string]: string; // Multi-language descriptions
   };
-  
+
   // Images
   images: string[];
-  
+
   // Status
   isActive: boolean;
   lastUpdated: Date;
@@ -154,16 +155,16 @@ export interface PhobsRatePlan {
   rateId: PhobsRateId;
   name: string;
   description: string;
-  
+
   // Rate structure
   baseRate: number;
   currency: 'EUR';
-  
+
   // Seasonal adjustments
   seasonalAdjustments: {
     [K in SeasonalPeriod]: number;
   };
-  
+
   // Channel-specific rates
   channelRates: {
     [K in OTAChannel]?: {
@@ -172,17 +173,17 @@ export interface PhobsRatePlan {
       commission: number;
     };
   };
-  
+
   // Restrictions
   minimumStay: number;
   maximumStay: number;
   advanceBookingDays: number;
-  
+
   // Availability
   isActive: boolean;
   validFrom: Date;
   validTo: Date;
-  
+
   // Metadata
   createdAt: Date;
   updatedAt: Date;
@@ -193,20 +194,20 @@ export interface PhobsAvailability {
   roomId: PhobsRoomId;
   rateId: PhobsRateId;
   date: Date;
-  
+
   // Availability details
   available: number; // Number of rooms available
   totalRooms: number;
   rate: number;
   currency: 'EUR';
-  
+
   // Restrictions
   minimumStay: number;
   maximumStay: number;
   closeToArrival: boolean;
   closeToDeparture: boolean;
   stopSale: boolean;
-  
+
   // Channel-specific availability
   channelAvailability: {
     [K in OTAChannel]?: {
@@ -215,7 +216,7 @@ export interface PhobsAvailability {
       isActive: boolean;
     };
   };
-  
+
   // Metadata
   lastUpdated: Date;
 }
@@ -225,11 +226,11 @@ export interface PhobsReservation {
   // Phobs identifiers
   phobsReservationId: PhobsReservationId;
   phobsGuestId: PhobsGuestId;
-  
+
   // Internal mapping
   internalReservationId?: string; // Maps to our Reservation.id
   internalGuestId?: string; // Maps to our Guest.id
-  
+
   // Basic reservation data
   roomId: PhobsRoomId;
   checkIn: Date;
@@ -237,45 +238,45 @@ export interface PhobsReservation {
   numberOfGuests: number;
   adults: number;
   children: number;
-  
+
   // Guest information
   guest: PhobsGuest;
-  
+
   // Booking details
   channel: OTAChannel;
   bookingReference: string; // OTA booking reference
   status: PhobsReservationStatus;
-  
+
   // Financial details
   totalAmount: number;
   currency: 'EUR';
   commission: number;
   netAmount: number; // Amount after commission
-  
+
   // Pricing breakdown
   roomRate: number;
   taxes: number;
   fees: number;
-  
+
   // Payment information
   paymentMethod: PaymentMethod;
   paymentStatus: 'pending' | 'confirmed' | 'paid' | 'cancelled';
-  
+
   // Special requests
   specialRequests: string;
   guestNotes: string;
-  
+
   // Timestamps
   bookingDate: Date;
   lastModified: Date;
-  
+
   // Sync status
   syncStatus: SyncStatus;
   syncedAt?: Date;
   syncErrors: string[];
 }
 
-export type PhobsReservationStatus = 
+export type PhobsReservationStatus =
   | 'new'
   | 'confirmed'
   | 'modified'
@@ -288,34 +289,34 @@ export type PhobsReservationStatus =
 export interface PhobsGuest {
   phobsGuestId: PhobsGuestId;
   internalGuestId?: string; // Maps to our Guest.id
-  
+
   // Basic information
   firstName: string;
   lastName: string;
   email: string;
   phone?: string;
-  
+
   // Location
   country: string;
   countryCode: string; // ISO country code
   city?: string;
   address?: string;
   postalCode?: string;
-  
+
   // Additional details
   language: string; // ISO language code
   dateOfBirth?: Date;
   nationality?: string;
-  
+
   // Preferences
   preferences: string[];
   specialRequests: string;
-  
+
   // Guest history
   totalBookings: number;
   totalRevenue: number;
   isVip: boolean;
-  
+
   // Sync status
   syncedAt?: Date;
   lastUpdated: Date;
@@ -327,20 +328,20 @@ export interface PhobsWebhookEvent {
   eventType: PhobsEventType;
   timestamp: Date;
   hotelId: string;
-  
+
   // Event data
   data: PhobsWebhookData;
-  
+
   // Signature for verification
   signature: string;
-  
+
   // Processing status
   processed: boolean;
   processedAt?: Date;
   error?: string;
 }
 
-export type PhobsEventType = 
+export type PhobsEventType =
   | 'reservation.created'
   | 'reservation.modified'
   | 'reservation.cancelled'
@@ -350,7 +351,7 @@ export type PhobsEventType =
   | 'sync.completed'
   | 'sync.failed';
 
-export type PhobsWebhookData = 
+export type PhobsWebhookData =
   | PhobsReservationEvent
   | PhobsAvailabilityEvent
   | PhobsRateEvent
@@ -458,12 +459,12 @@ export interface DataMapping {
       };
     };
   };
-  
+
   // Status mapping
   statusMappings: {
     [internalStatus in ReservationStatus]: PhobsReservationStatus;
   };
-  
+
   // Payment method mapping
   paymentMethodMappings: {
     [internalMethod in PaymentMethod]: string;
@@ -475,7 +476,7 @@ export interface ConflictResolution {
   conflictId: string;
   type: 'double_booking' | 'rate_mismatch' | 'availability_mismatch';
   severity: 'low' | 'medium' | 'high' | 'critical';
-  
+
   // Conflict details
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   internalData: any;
@@ -483,16 +484,16 @@ export interface ConflictResolution {
   phobsData: any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   channelData?: any;
-  
+
   // Resolution
   suggestedAction: 'accept_internal' | 'accept_phobs' | 'accept_channel' | 'manual_review';
   autoResolvable: boolean;
-  
+
   // Status
   status: 'detected' | 'resolving' | 'resolved' | 'escalated';
   resolvedAt?: Date;
   resolvedBy?: string;
-  
+
   // Metadata
   detectedAt: Date;
   channel?: OTAChannel;
@@ -503,30 +504,30 @@ export interface ConflictResolution {
 export interface ChannelPerformanceMetrics {
   channelId: PhobsChannelId;
   channel: OTAChannel;
-  
+
   // Time period
   startDate: Date;
   endDate: Date;
-  
+
   // Booking metrics
   totalBookings: number;
   totalRevenue: number;
   averageBookingValue: number;
   conversionRate: number;
-  
+
   // Performance metrics
   syncSuccessRate: number;
   averageSyncTime: number;
   errorRate: number;
-  
+
   // Comparison
   periodOverPeriodGrowth: number;
   marketShare: number;
-  
+
   // Top performing
   topRoomTypes: string[];
   topPeriods: SeasonalPeriod[];
-  
+
   // Issues
   commonErrors: string[];
   conflictsDetected: number;
@@ -539,24 +540,24 @@ export interface ChannelManagerSettings {
   autoSync: boolean;
   syncInterval: number; // Minutes
   maxRetries: number;
-  
+
   // Conflict resolution
   autoResolveConflicts: boolean;
   conflictResolutionStrategy: 'favor_internal' | 'favor_channel' | 'manual';
-  
+
   // Notifications
   emailNotifications: boolean;
   ntfyNotifications: boolean;
   slackWebhook?: string;
-  
+
   // Rate management
   dynamicPricing: boolean;
   competitorMonitoring: boolean;
-  
+
   // Availability management
   overbookingProtection: boolean;
   minimumAvailabilityBuffer: number;
-  
+
   // Channel specific overrides
   channelOverrides: {
     [channel in OTAChannel]?: {

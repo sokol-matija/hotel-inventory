@@ -37,9 +37,7 @@ jest.mock('../StatusIndicators', () => ({
     <div data-testid={`channel-card-${channel}`}>
       <span>{channel}</span>
       <span>{status}</span>
-      {onViewDetails && (
-        <button onClick={onViewDetails}>View Details</button>
-      )}
+      {onViewDetails && <button onClick={onViewDetails}>View Details</button>}
     </div>
   ),
   ConflictIndicator: ({ severity, onResolve }: any) => (
@@ -92,13 +90,16 @@ jest.mock('../../../../ui/switch', () => ({
 }));
 
 // Test App Component that includes routing
-const TestApp: React.FC<{ initialPath?: string }> = ({ 
-  initialPath = '/hotel/front-desk/channel-manager' 
+const TestApp: React.FC<{ initialPath?: string }> = ({
+  initialPath = '/hotel/front-desk/channel-manager',
 }) => (
   <MemoryRouter initialEntries={[initialPath]}>
     <Routes>
       <Route path="/hotel/front-desk/channel-manager" element={<ChannelManagerDashboard />} />
-      <Route path="/hotel/front-desk/channel-manager/settings" element={<ChannelManagerSettings />} />
+      <Route
+        path="/hotel/front-desk/channel-manager/settings"
+        element={<ChannelManagerSettings />}
+      />
     </Routes>
   </MemoryRouter>
 );
@@ -141,7 +142,9 @@ describe('Channel Manager Integration Tests', () => {
 
     // Set up service instances
     (PhobsChannelManagerService as any).getInstance = jest.fn().mockReturnValue(mockChannelManager);
-    (PhobsReservationSyncService as any).getInstance = jest.fn().mockReturnValue(mockReservationSync);
+    (PhobsReservationSyncService as any).getInstance = jest
+      .fn()
+      .mockReturnValue(mockReservationSync);
     (PhobsConfigurationService as any).getInstance = jest.fn().mockReturnValue(mockConfigService);
     (PhobsMonitoringService as any).getInstance = jest.fn().mockReturnValue(mockMonitoring);
     (PhobsErrorHandlingService as any).getInstance = jest.fn().mockReturnValue(mockErrorHandling);
@@ -171,8 +174,8 @@ describe('Channel Manager Integration Tests', () => {
               commissionRate: 0.15,
               rateAdjustment: 0,
               minimumStay: 1,
-              maximumStay: 30
-            }
+              maximumStay: 30,
+            },
           ],
           syncSettings: {
             autoSync: true,
@@ -182,10 +185,10 @@ describe('Channel Manager Integration Tests', () => {
             throttleDelayMs: 1000,
             conflictResolutionStrategy: 'manual_review',
             notifyOnConflicts: true,
-            notifyOnFailures: true
+            notifyOnFailures: true,
           },
           createdAt: new Date(),
-          lastUpdated: new Date()
+          lastUpdated: new Date(),
         });
         break;
 
@@ -208,7 +211,7 @@ describe('Channel Manager Integration Tests', () => {
           throttleDelayMs: 1000,
           conflictResolutionStrategy: 'manual_review',
           notifyOnConflicts: true,
-          notifyOnFailures: true
+          notifyOnFailures: true,
         });
         break;
 
@@ -227,16 +230,16 @@ describe('Channel Manager Integration Tests', () => {
             type: 'double_booking',
             severity: 'critical',
             autoResolvable: false,
-            affectedReservations: ['res_1', 'res_2']
-          }
+            affectedReservations: ['res_1', 'res_2'],
+          },
         ]);
 
         mockMonitoring.getRecentLogs.mockReturnValue([
           {
             message: 'Connection timeout',
             type: 'TIMEOUT_ERROR',
-            context: { operation: 'sync_reservations' }
-          }
+            context: { operation: 'sync_reservations' },
+          },
         ]);
         break;
     }
@@ -360,9 +363,9 @@ describe('Channel Manager Integration Tests', () => {
       });
 
       // Test connection
-      mockConfigService.testConnection.mockResolvedValue({ 
-        success: true, 
-        responseTime: 850 
+      mockConfigService.testConnection.mockResolvedValue({
+        success: true,
+        responseTime: 850,
       });
       const testButton = screen.getByRole('button', { name: /test connection/i });
       await user.click(testButton);
@@ -386,9 +389,9 @@ describe('Channel Manager Integration Tests', () => {
       });
 
       // Try to save invalid credentials
-      mockConfigService.updateCredentials.mockResolvedValue({ 
-        success: false, 
-        error: 'Invalid API credentials' 
+      mockConfigService.updateCredentials.mockResolvedValue({
+        success: false,
+        error: 'Invalid API credentials',
       });
 
       const saveButton = screen.getByRole('button', { name: /save credentials/i });
@@ -402,9 +405,9 @@ describe('Channel Manager Integration Tests', () => {
       });
 
       // Try connection test with invalid credentials
-      mockConfigService.testConnection.mockResolvedValue({ 
-        success: false, 
-        error: 'Authentication failed' 
+      mockConfigService.testConnection.mockResolvedValue({
+        success: false,
+        error: 'Authentication failed',
       });
 
       const testButton = screen.getByRole('button', { name: /test connection/i });
@@ -436,7 +439,7 @@ describe('Channel Manager Integration Tests', () => {
 
       // Enable/disable channels
       mockConfigService.updateChannelConfiguration.mockResolvedValue({ success: true });
-      
+
       const channelSwitches = screen.getAllByTestId('switch');
       if (channelSwitches.length > 0) {
         await user.click(channelSwitches[0]);
@@ -453,10 +456,9 @@ describe('Channel Manager Integration Tests', () => {
       fireEvent.blur(commissionInput);
 
       await waitFor(() => {
-        expect(mockConfigService.updateChannelConfiguration).toHaveBeenCalledWith(
-          'booking.com',
-          { commissionRate: 0.12 }
-        );
+        expect(mockConfigService.updateChannelConfiguration).toHaveBeenCalledWith('booking.com', {
+          commissionRate: 0.12,
+        });
       });
     });
   });

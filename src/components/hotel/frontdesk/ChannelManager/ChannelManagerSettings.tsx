@@ -11,7 +11,7 @@ import { Badge } from '../../../ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../ui/tabs';
 import { Switch } from '../../../ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/select';
-import { 
+import {
   ArrowLeft,
   Save,
   TestTube,
@@ -22,9 +22,15 @@ import {
   Clock,
   Shield,
   Download,
-  Trash2
+  Trash2,
 } from 'lucide-react';
-import { PhobsConfigurationService, PhobsConfiguration, PhobsChannelConfig, PhobsApiCredentials, PhobsSyncSettings } from '../../../../lib/hotel/services/PhobsConfigurationService';
+import {
+  PhobsConfigurationService,
+  PhobsConfiguration,
+  PhobsChannelConfig,
+  PhobsApiCredentials,
+  PhobsSyncSettings,
+} from '../../../../lib/hotel/services/PhobsConfigurationService';
 import { OTAChannel } from '../../../../lib/hotel/services/phobsTypes';
 import hotelNotification from '../../../../lib/hotel/notifications';
 
@@ -38,7 +44,7 @@ interface ConnectionTestResult {
 export default function ChannelManagerSettings() {
   const navigate = useNavigate();
   const configService = PhobsConfigurationService.getInstance();
-  
+
   const [configuration, setConfiguration] = useState<PhobsConfiguration | null>(null);
   const [credentials, setCredentials] = useState<PhobsApiCredentials>({
     apiKey: '',
@@ -46,7 +52,7 @@ export default function ChannelManagerSettings() {
     hotelId: '',
     baseUrl: 'https://api.phobs.net/v1',
     webhookSecret: '',
-    webhookUrl: ''
+    webhookUrl: '',
   });
   const [channelConfigs, setChannelConfigs] = useState<PhobsChannelConfig[]>([]);
   const [syncSettings, setSyncSettings] = useState<PhobsSyncSettings>({
@@ -57,7 +63,7 @@ export default function ChannelManagerSettings() {
     throttleDelayMs: 1000,
     conflictResolutionStrategy: 'manual_review',
     notifyOnConflicts: true,
-    notifyOnFailures: true
+    notifyOnFailures: true,
   });
 
   const [connectionTest, setConnectionTest] = useState<ConnectionTestResult>({ testing: false });
@@ -89,7 +95,10 @@ export default function ChannelManagerSettings() {
     try {
       const result = await configService.updateCredentials(credentials);
       if (result.success) {
-        hotelNotification.success('Credentials Saved', 'Phobs API credentials updated successfully');
+        hotelNotification.success(
+          'Credentials Saved',
+          'Phobs API credentials updated successfully'
+        );
         loadConfiguration(); // Reload to get updated config
       } else {
         hotelNotification.error('Save Failed', result.error || 'Failed to save credentials');
@@ -103,19 +112,19 @@ export default function ChannelManagerSettings() {
 
   const handleTestConnection = async () => {
     setConnectionTest({ testing: true });
-    
+
     try {
       const result = await configService.testConnection();
       setConnectionTest({
         testing: false,
         success: result.success,
         error: result.error,
-        responseTime: result.responseTime
+        responseTime: result.responseTime,
       });
 
       if (result.success) {
         hotelNotification.success(
-          'Connection Test Successful', 
+          'Connection Test Successful',
           `Connected to Phobs API in ${result.responseTime}ms`
         );
       } else {
@@ -125,12 +134,15 @@ export default function ChannelManagerSettings() {
       setConnectionTest({
         testing: false,
         success: false,
-        error: 'Connection test failed'
+        error: 'Connection test failed',
       });
     }
   };
 
-  const handleChannelConfigChange = async (channel: OTAChannel, updates: Partial<PhobsChannelConfig>) => {
+  const handleChannelConfigChange = async (
+    channel: OTAChannel,
+    updates: Partial<PhobsChannelConfig>
+  ) => {
     try {
       const result = await configService.updateChannelConfiguration(channel, updates);
       if (result.success) {
@@ -173,7 +185,7 @@ export default function ChannelManagerSettings() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      
+
       hotelNotification.success('Configuration Exported', 'Configuration file downloaded');
     } catch {
       hotelNotification.error('Export Failed', 'Failed to export configuration');
@@ -181,11 +193,18 @@ export default function ChannelManagerSettings() {
   };
 
   const handleResetConfig = async () => {
-    if (window.confirm('Are you sure you want to reset all configuration to defaults? This cannot be undone.')) {
+    if (
+      window.confirm(
+        'Are you sure you want to reset all configuration to defaults? This cannot be undone.'
+      )
+    ) {
       try {
         await configService.resetConfiguration();
         loadConfiguration();
-        hotelNotification.warning('Configuration Reset', 'All settings have been reset to defaults');
+        hotelNotification.warning(
+          'Configuration Reset',
+          'All settings have been reset to defaults'
+        );
       } catch {
         hotelNotification.error('Reset Failed', 'Failed to reset configuration');
       }
@@ -195,18 +214,18 @@ export default function ChannelManagerSettings() {
   const getChannelDisplayName = (channel: OTAChannel): string => {
     const displayNames: { [K in OTAChannel]: string } = {
       'booking.com': 'Booking.com',
-      'expedia': 'Expedia',
-      'airbnb': 'Airbnb',
-      'agoda': 'Agoda',
+      expedia: 'Expedia',
+      airbnb: 'Airbnb',
+      agoda: 'Agoda',
       'hotels.com': 'Hotels.com',
-      'hostelworld': 'Hostelworld',
-      'kayak': 'Kayak',
-      'trivago': 'Trivago',
-      'priceline': 'Priceline',
+      hostelworld: 'Hostelworld',
+      kayak: 'Kayak',
+      trivago: 'Trivago',
+      priceline: 'Priceline',
       'camping.info': 'Camping.info',
       'pitchup.com': 'Pitchup.com',
-      'eurocamp': 'Eurocamp',
-      'directBooking': 'Direct Booking'
+      eurocamp: 'Eurocamp',
+      directBooking: 'Direct Booking',
     };
     return displayNames[channel];
   };
@@ -216,8 +235,8 @@ export default function ChannelManagerSettings() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             onClick={() => navigate({ to: '/hotel/front-desk/channel-manager' })}
             className="flex items-center space-x-2"
           >
@@ -229,17 +248,17 @@ export default function ChannelManagerSettings() {
             <p className="text-gray-600">Configure Phobs integration and OTA channels</p>
           </div>
         </div>
-        
+
         <div className="flex items-center space-x-2">
           {configuration?.isConfigured && (
             <Badge className="bg-green-100 text-green-800">
-              <CheckCircle className="h-3 w-3 mr-1" />
+              <CheckCircle className="mr-1 h-3 w-3" />
               Configured
             </Badge>
           )}
           {!configuration?.isConfigured && (
             <Badge className="bg-yellow-100 text-yellow-800">
-              <AlertTriangle className="h-3 w-3 mr-1" />
+              <AlertTriangle className="mr-1 h-3 w-3" />
               Not Configured
             </Badge>
           )}
@@ -276,7 +295,7 @@ export default function ChannelManagerSettings() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="apiKey">API Key</Label>
                   <Input
@@ -287,7 +306,7 @@ export default function ChannelManagerSettings() {
                     placeholder="Enter your Phobs API key"
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="apiSecret">API Secret</Label>
                   <Input
@@ -335,25 +354,27 @@ export default function ChannelManagerSettings() {
                     id="webhookSecret"
                     type="password"
                     value={credentials.webhookSecret}
-                    onChange={(e) => setCredentials({ ...credentials, webhookSecret: e.target.value })}
+                    onChange={(e) =>
+                      setCredentials({ ...credentials, webhookSecret: e.target.value })
+                    }
                     placeholder="Webhook verification secret"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-between pt-4 border-t">
+              <div className="flex items-center justify-between border-t pt-4">
                 <div className="flex items-center space-x-4">
                   <Button onClick={handleSaveCredentials} disabled={saving}>
-                    <Save className="h-4 w-4 mr-2" />
+                    <Save className="mr-2 h-4 w-4" />
                     {saving ? 'Saving...' : 'Save Credentials'}
                   </Button>
-                  
-                  <Button 
-                    variant="outline" 
+
+                  <Button
+                    variant="outline"
                     onClick={handleTestConnection}
                     disabled={connectionTest.testing || !credentials.apiKey}
                   >
-                    <TestTube className="h-4 w-4 mr-2" />
+                    <TestTube className="mr-2 h-4 w-4" />
                     {connectionTest.testing ? 'Testing...' : 'Test Connection'}
                   </Button>
                 </div>
@@ -362,12 +383,12 @@ export default function ChannelManagerSettings() {
                   <div className="flex items-center space-x-2">
                     {connectionTest.success ? (
                       <Badge className="bg-green-100 text-green-800">
-                        <CheckCircle className="h-3 w-3 mr-1" />
+                        <CheckCircle className="mr-1 h-3 w-3" />
                         Connected ({connectionTest.responseTime}ms)
                       </Badge>
                     ) : (
                       <Badge className="bg-red-100 text-red-800">
-                        <AlertTriangle className="h-3 w-3 mr-1" />
+                        <AlertTriangle className="mr-1 h-3 w-3" />
                         Failed: {connectionTest.error}
                       </Badge>
                     )}
@@ -390,22 +411,24 @@ export default function ChannelManagerSettings() {
             <CardContent>
               <div className="space-y-4">
                 {channelConfigs.map((channelConfig) => (
-                  <div key={channelConfig.channel} className="border rounded-lg p-4 space-y-4">
+                  <div key={channelConfig.channel} className="space-y-4 rounded-lg border p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <Globe className="h-5 w-5 text-gray-600" />
-                        <span className="font-medium">{getChannelDisplayName(channelConfig.channel)}</span>
+                        <span className="font-medium">
+                          {getChannelDisplayName(channelConfig.channel)}
+                        </span>
                       </div>
                       <Switch
                         checked={channelConfig.isEnabled}
-                        onCheckedChange={(enabled) => 
+                        onCheckedChange={(enabled) =>
                           handleChannelConfigChange(channelConfig.channel, { isEnabled: enabled })
                         }
                       />
                     </div>
 
                     {channelConfig.isEnabled && (
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-2 border-t">
+                      <div className="grid grid-cols-2 gap-4 border-t pt-2 md:grid-cols-4">
                         <div className="space-y-2">
                           <Label>Commission Rate (%)</Label>
                           <Input
@@ -414,9 +437,9 @@ export default function ChannelManagerSettings() {
                             max="50"
                             step="0.1"
                             value={channelConfig.commissionRate * 100}
-                            onChange={(e) => 
-                              handleChannelConfigChange(channelConfig.channel, { 
-                                commissionRate: parseFloat(e.target.value) / 100 
+                            onChange={(e) =>
+                              handleChannelConfigChange(channelConfig.channel, {
+                                commissionRate: parseFloat(e.target.value) / 100,
                               })
                             }
                           />
@@ -430,9 +453,9 @@ export default function ChannelManagerSettings() {
                             max="50"
                             step="1"
                             value={channelConfig.rateAdjustment}
-                            onChange={(e) => 
-                              handleChannelConfigChange(channelConfig.channel, { 
-                                rateAdjustment: parseInt(e.target.value) 
+                            onChange={(e) =>
+                              handleChannelConfigChange(channelConfig.channel, {
+                                rateAdjustment: parseInt(e.target.value),
                               })
                             }
                           />
@@ -445,9 +468,9 @@ export default function ChannelManagerSettings() {
                             min="1"
                             max="30"
                             value={channelConfig.minimumStay}
-                            onChange={(e) => 
-                              handleChannelConfigChange(channelConfig.channel, { 
-                                minimumStay: parseInt(e.target.value) 
+                            onChange={(e) =>
+                              handleChannelConfigChange(channelConfig.channel, {
+                                minimumStay: parseInt(e.target.value),
                               })
                             }
                           />
@@ -460,9 +483,9 @@ export default function ChannelManagerSettings() {
                             min="1"
                             max="365"
                             value={channelConfig.maximumStay}
-                            onChange={(e) => 
-                              handleChannelConfigChange(channelConfig.channel, { 
-                                maximumStay: parseInt(e.target.value) 
+                            onChange={(e) =>
+                              handleChannelConfigChange(channelConfig.channel, {
+                                maximumStay: parseInt(e.target.value),
                               })
                             }
                           />
@@ -486,15 +509,13 @@ export default function ChannelManagerSettings() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="autoSync">Automatic Synchronization</Label>
                     <Switch
                       checked={syncSettings.autoSync}
-                      onCheckedChange={(checked) => 
-                        handleSyncSettingsChange({ autoSync: checked })
-                      }
+                      onCheckedChange={(checked) => handleSyncSettingsChange({ autoSync: checked })}
                     />
                   </div>
 
@@ -506,8 +527,11 @@ export default function ChannelManagerSettings() {
                       min="5"
                       max="1440"
                       value={syncSettings.syncIntervalMinutes}
-                      onChange={(e) => 
-                        setSyncSettings({ ...syncSettings, syncIntervalMinutes: parseInt(e.target.value) })
+                      onChange={(e) =>
+                        setSyncSettings({
+                          ...syncSettings,
+                          syncIntervalMinutes: parseInt(e.target.value),
+                        })
                       }
                     />
                   </div>
@@ -520,8 +544,11 @@ export default function ChannelManagerSettings() {
                       min="1"
                       max="10"
                       value={syncSettings.maxRetryAttempts}
-                      onChange={(e) => 
-                        setSyncSettings({ ...syncSettings, maxRetryAttempts: parseInt(e.target.value) })
+                      onChange={(e) =>
+                        setSyncSettings({
+                          ...syncSettings,
+                          maxRetryAttempts: parseInt(e.target.value),
+                        })
                       }
                     />
                   </div>
@@ -534,7 +561,7 @@ export default function ChannelManagerSettings() {
                       min="10"
                       max="1000"
                       value={syncSettings.batchSize}
-                      onChange={(e) => 
+                      onChange={(e) =>
                         setSyncSettings({ ...syncSettings, batchSize: parseInt(e.target.value) })
                       }
                     />
@@ -565,7 +592,7 @@ export default function ChannelManagerSettings() {
                     <Label htmlFor="notifyConflicts">Notify on Conflicts</Label>
                     <Switch
                       checked={syncSettings.notifyOnConflicts}
-                      onCheckedChange={(checked) => 
+                      onCheckedChange={(checked) =>
                         setSyncSettings({ ...syncSettings, notifyOnConflicts: checked })
                       }
                     />
@@ -575,7 +602,7 @@ export default function ChannelManagerSettings() {
                     <Label htmlFor="notifyFailures">Notify on Failures</Label>
                     <Switch
                       checked={syncSettings.notifyOnFailures}
-                      onCheckedChange={(checked) => 
+                      onCheckedChange={(checked) =>
                         setSyncSettings({ ...syncSettings, notifyOnFailures: checked })
                       }
                     />
@@ -583,9 +610,9 @@ export default function ChannelManagerSettings() {
                 </div>
               </div>
 
-              <div className="pt-4 border-t">
+              <div className="border-t pt-4">
                 <Button onClick={() => handleSyncSettingsChange({})} disabled={saving}>
-                  <Save className="h-4 w-4 mr-2" />
+                  <Save className="mr-2 h-4 w-4" />
                   {saving ? 'Saving...' : 'Save Sync Settings'}
                 </Button>
               </div>
@@ -603,12 +630,16 @@ export default function ChannelManagerSettings() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium">Configuration Management</h3>
-                  
-                  <Button variant="outline" onClick={handleExportConfig} className="w-full justify-start">
-                    <Download className="h-4 w-4 mr-2" />
+
+                  <Button
+                    variant="outline"
+                    onClick={handleExportConfig}
+                    className="w-full justify-start"
+                  >
+                    <Download className="mr-2 h-4 w-4" />
                     Export Configuration
                   </Button>
 
@@ -628,12 +659,21 @@ export default function ChannelManagerSettings() {
                               const result = await configService.importConfiguration(config);
                               if (result.success) {
                                 loadConfiguration();
-                                hotelNotification.success('Configuration Imported', 'Settings loaded successfully');
+                                hotelNotification.success(
+                                  'Configuration Imported',
+                                  'Settings loaded successfully'
+                                );
                               } else {
-                                hotelNotification.error('Import Failed', result.error || 'Invalid file');
+                                hotelNotification.error(
+                                  'Import Failed',
+                                  result.error || 'Invalid file'
+                                );
                               }
                             } catch {
-                              hotelNotification.error('Import Error', 'Failed to read configuration file');
+                              hotelNotification.error(
+                                'Import Error',
+                                'Failed to read configuration file'
+                              );
                             }
                           };
                           reader.readAsText(file);
@@ -645,27 +685,27 @@ export default function ChannelManagerSettings() {
 
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium">Reset & Recovery</h3>
-                  
-                  <Button 
-                    variant="destructive" 
+
+                  <Button
+                    variant="destructive"
                     onClick={handleResetConfig}
                     className="w-full justify-start"
                   >
-                    <Trash2 className="h-4 w-4 mr-2" />
+                    <Trash2 className="mr-2 h-4 w-4" />
                     Reset All Settings
                   </Button>
 
-                  <div className="text-sm text-gray-600 p-3 bg-yellow-50 rounded-lg border">
-                    <AlertTriangle className="h-4 w-4 inline mr-2" />
+                  <div className="rounded-lg border bg-yellow-50 p-3 text-sm text-gray-600">
+                    <AlertTriangle className="mr-2 inline h-4 w-4" />
                     Warning: Resetting will remove all current configuration and cannot be undone.
                   </div>
                 </div>
               </div>
 
               {configuration && (
-                <div className="pt-4 border-t">
-                  <h3 className="text-lg font-medium mb-4">Configuration Status</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div className="border-t pt-4">
+                  <h3 className="mb-4 text-lg font-medium">Configuration Status</h3>
+                  <div className="grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
                     <div>
                       <div className="text-gray-600">Status</div>
                       <div className="font-medium">
@@ -674,16 +714,21 @@ export default function ChannelManagerSettings() {
                     </div>
                     <div>
                       <div className="text-gray-600">Created</div>
-                      <div className="font-medium">{configuration.createdAt.toLocaleDateString()}</div>
+                      <div className="font-medium">
+                        {configuration.createdAt.toLocaleDateString()}
+                      </div>
                     </div>
                     <div>
                       <div className="text-gray-600">Last Updated</div>
-                      <div className="font-medium">{configuration.lastUpdated.toLocaleDateString()}</div>
+                      <div className="font-medium">
+                        {configuration.lastUpdated.toLocaleDateString()}
+                      </div>
                     </div>
                     <div>
                       <div className="text-gray-600">Active Channels</div>
                       <div className="font-medium">
-                        {configuration.channels.filter(c => c.isEnabled).length} / {configuration.channels.length}
+                        {configuration.channels.filter((c) => c.isEnabled).length} /{' '}
+                        {configuration.channels.length}
                       </div>
                     </div>
                   </div>

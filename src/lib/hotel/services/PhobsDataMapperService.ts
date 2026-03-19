@@ -19,7 +19,7 @@ import {
   RoomType,
   ReservationStatus,
   PaymentMethod,
-  SeasonalPeriod
+  SeasonalPeriod,
 } from '../types';
 
 export interface MappingResult<T> {
@@ -37,118 +37,121 @@ export interface ValidationResult {
 
 export class PhobsDataMapperService {
   private static instance: PhobsDataMapperService;
-  
+
   // Static mapping configurations
-  private static readonly ROOM_TYPE_MAPPINGS: { [key in RoomType]: {
-    phobsRoomType: string;
-    channelMappings: { [channel in OTAChannel]?: string; };
-  } } = {
+  private static readonly ROOM_TYPE_MAPPINGS: {
+    [key in RoomType]: {
+      phobsRoomType: string;
+      channelMappings: { [channel in OTAChannel]?: string };
+    };
+  } = {
     'big-double': {
       phobsRoomType: 'double_large',
       channelMappings: {
         'booking.com': 'Double Room - Large',
-        'expedia': 'Double Deluxe',
-        'airbnb': 'Large Double Room',
-        'directBooking': 'Big Double Room'
-      }
+        expedia: 'Double Deluxe',
+        airbnb: 'Large Double Room',
+        directBooking: 'Big Double Room',
+      },
     },
     'big-single': {
       phobsRoomType: 'single_large',
       channelMappings: {
         'booking.com': 'Single Room - Large',
-        'expedia': 'Single Deluxe',
-        'airbnb': 'Large Single Room',
-        'directBooking': 'Big Single Room'
-      }
+        expedia: 'Single Deluxe',
+        airbnb: 'Large Single Room',
+        directBooking: 'Big Single Room',
+      },
     },
-    'double': {
+    double: {
       phobsRoomType: 'double_standard',
       channelMappings: {
         'booking.com': 'Double Room',
-        'expedia': 'Standard Double',
-        'airbnb': 'Double Room',
-        'directBooking': 'Double Room'
-      }
+        expedia: 'Standard Double',
+        airbnb: 'Double Room',
+        directBooking: 'Double Room',
+      },
     },
-    'triple': {
+    triple: {
       phobsRoomType: 'triple_standard',
       channelMappings: {
         'booking.com': 'Triple Room',
-        'expedia': 'Triple Room',
-        'airbnb': 'Triple Room',
-        'directBooking': 'Triple Room'
-      }
+        expedia: 'Triple Room',
+        airbnb: 'Triple Room',
+        directBooking: 'Triple Room',
+      },
     },
-    'single': {
+    single: {
       phobsRoomType: 'single_standard',
       channelMappings: {
         'booking.com': 'Single Room',
-        'expedia': 'Standard Single',
-        'airbnb': 'Single Room',
-        'directBooking': 'Single Room'
-      }
+        expedia: 'Standard Single',
+        airbnb: 'Single Room',
+        directBooking: 'Single Room',
+      },
     },
-    'family': {
+    family: {
       phobsRoomType: 'family_room',
       channelMappings: {
         'booking.com': 'Family Room',
-        'expedia': 'Family Suite',
-        'airbnb': 'Family Room',
-        'directBooking': 'Family Room'
-      }
+        expedia: 'Family Suite',
+        airbnb: 'Family Room',
+        directBooking: 'Family Room',
+      },
     },
-    'apartment': {
+    apartment: {
       phobsRoomType: 'apartment',
       channelMappings: {
         'booking.com': 'Apartment',
-        'expedia': 'Apartment',
-        'airbnb': 'Entire Apartment',
-        'directBooking': 'Apartment'
-      }
+        expedia: 'Apartment',
+        airbnb: 'Entire Apartment',
+        directBooking: 'Apartment',
+      },
     },
     'rooftop-apartment': {
       phobsRoomType: 'apartment_premium',
       channelMappings: {
         'booking.com': 'Rooftop Apartment',
-        'expedia': 'Premium Apartment',
-        'airbnb': 'Rooftop Apartment',
-        'directBooking': 'Rooftop Apartment'
-      }
-    }
+        expedia: 'Premium Apartment',
+        airbnb: 'Rooftop Apartment',
+        directBooking: 'Rooftop Apartment',
+      },
+    },
   };
 
-  private static readonly STATUS_MAPPINGS: { [key in ReservationStatus]: PhobsReservationStatus } = {
-    'confirmed': 'confirmed',
-    'checked-in': 'checked_in',
-    'checked-out': 'checked_out',
-    'room-closure': 'cancelled',
-    'unallocated': 'new',
-    'incomplete-payment': 'new'
-  };
+  private static readonly STATUS_MAPPINGS: { [key in ReservationStatus]: PhobsReservationStatus } =
+    {
+      confirmed: 'confirmed',
+      'checked-in': 'checked_in',
+      'checked-out': 'checked_out',
+      'room-closure': 'cancelled',
+      unallocated: 'new',
+      'incomplete-payment': 'new',
+    };
 
   private static readonly PAYMENT_METHOD_MAPPINGS: { [key in PaymentMethod]: string } = {
-    'cash': 'cash',
-    'card': 'credit_card',
-    'bank_transfer': 'bank_transfer',
-    'online': 'online_payment',
+    cash: 'cash',
+    card: 'credit_card',
+    bank_transfer: 'bank_transfer',
+    online: 'online_payment',
     'booking-com': 'ota_payment',
-    'other': 'other'
+    other: 'other',
   };
 
   private static readonly OTA_CHANNEL_MAPPINGS: { [key: string]: OTAChannel } = {
     'booking.com': 'booking.com',
-    'expedia': 'expedia',
-    'airbnb': 'airbnb',
-    'agoda': 'agoda',
+    expedia: 'expedia',
+    airbnb: 'airbnb',
+    agoda: 'agoda',
     'hotels.com': 'hotels.com',
-    'hostelworld': 'hostelworld',
-    'kayak': 'kayak',
-    'trivago': 'trivago',
-    'priceline': 'priceline',
+    hostelworld: 'hostelworld',
+    kayak: 'kayak',
+    trivago: 'trivago',
+    priceline: 'priceline',
     'camping.info': 'camping.info',
     'pitchup.com': 'pitchup.com',
-    'eurocamp': 'eurocamp',
-    'direct': 'directBooking'
+    eurocamp: 'eurocamp',
+    direct: 'directBooking',
   };
 
   private constructor() {}
@@ -182,7 +185,7 @@ export class PhobsDataMapperService {
         return {
           success: false,
           errors: validation.errors,
-          warnings: validation.warnings
+          warnings: validation.warnings,
         };
       }
 
@@ -194,11 +197,16 @@ export class PhobsDataMapperService {
       // Map OTA channel
       const otaChannel = this.mapBookingSourceToOTA(reservation.bookingSource);
       if (!otaChannel) {
-        warnings.push(`Unknown booking source: ${reservation.bookingSource}, defaulting to direct booking`);
+        warnings.push(
+          `Unknown booking source: ${reservation.bookingSource}, defaulting to direct booking`
+        );
       }
 
       // Calculate commission and net amounts
-      const commission = this.calculateCommission(reservation.totalAmount, otaChannel || 'directBooking');
+      const commission = this.calculateCommission(
+        reservation.totalAmount,
+        otaChannel || 'directBooking'
+      );
       const netAmount = reservation.totalAmount - commission;
 
       const phobsReservation: PhobsReservation = {
@@ -212,53 +220,53 @@ export class PhobsDataMapperService {
         numberOfGuests: reservation.numberOfGuests,
         adults: reservation.adults,
         children: reservation.children.length,
-        
+
         guest: this.mapGuestToPhobs(guest).data!,
-        
+
         channel: otaChannel || 'directBooking',
         bookingReference: reservation.id, // Use internal ID as booking reference
         status: PhobsDataMapperService.STATUS_MAPPINGS[reservation.status] || 'confirmed',
-        
+
         totalAmount: reservation.totalAmount,
         currency: 'EUR',
         commission,
         netAmount,
-        
+
         roomRate: reservation.baseRoomRate,
         taxes: reservation.vatAmount + reservation.tourismTax,
         fees: reservation.petFee + reservation.parkingFee + reservation.additionalCharges,
-        
+
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        paymentMethod: ((reservation as any).paymentMethod ?
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          PhobsDataMapperService.PAYMENT_METHOD_MAPPINGS[(reservation as any).paymentMethod as PaymentMethod] || 'other'
+        paymentMethod: ((reservation as any).paymentMethod
+          ? PhobsDataMapperService.PAYMENT_METHOD_MAPPINGS[
+              (reservation as any).paymentMethod as PaymentMethod
+            ] || 'other'
           : 'other') as PaymentMethod,
         paymentStatus: this.mapPaymentStatus(reservation.paymentStatus || 'pending'),
-        
+
         specialRequests: reservation.specialRequests || '',
         guestNotes: reservation.notes || '',
-        
+
         bookingDate: reservation.bookingDate,
         lastModified: reservation.lastModified,
-        
+
         syncStatus: 'pending',
         syncedAt: undefined,
-        syncErrors: []
+        syncErrors: [],
       };
 
       return {
         success: true,
         data: phobsReservation,
         errors,
-        warnings
+        warnings,
       };
-
     } catch (error) {
       errors.push(`Mapping error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       return {
         success: false,
         errors,
-        warnings
+        warnings,
       };
     }
   }
@@ -276,11 +284,13 @@ export class PhobsDataMapperService {
       // Calculate nights
       const checkIn = new Date(phobsReservation.checkIn);
       const checkOut = new Date(phobsReservation.checkOut);
-      const numberOfNights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+      const numberOfNights = Math.ceil(
+        (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)
+      );
 
       // Map status
       const internalStatus = this.mapPhobsStatusToInternal(phobsReservation.status);
-      
+
       // Calculate pricing breakdown
       const pricing = this.calculateInternalPricing(phobsReservation);
 
@@ -296,7 +306,7 @@ export class PhobsDataMapperService {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         bookingSource: this.mapOTAToBookingSource(phobsReservation.channel) as any,
         specialRequests: phobsReservation.specialRequests,
-        
+
         // Pricing details
         seasonalPeriod: this.calculateSeasonalPeriod(checkIn),
         baseRoomRate: phobsReservation.roomRate,
@@ -311,26 +321,25 @@ export class PhobsDataMapperService {
         additionalCharges: pricing.additionalCharges,
         roomServiceItems: [],
         totalAmount: phobsReservation.totalAmount,
-        
+
         // Booking metadata
         bookingDate: new Date(phobsReservation.bookingDate),
         lastModified: new Date(phobsReservation.lastModified),
-        notes: `OTA Booking from ${phobsReservation.channel} - Ref: ${phobsReservation.bookingReference}`
+        notes: `OTA Booking from ${phobsReservation.channel} - Ref: ${phobsReservation.bookingReference}`,
       };
 
       return {
         success: true,
         data: internalReservation,
         errors,
-        warnings
+        warnings,
       };
-
     } catch (error) {
       errors.push(`Mapping error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       return {
         success: false,
         errors,
-        warnings
+        warnings,
       };
     }
   }
@@ -363,46 +372,47 @@ export class PhobsDataMapperService {
       const phobsGuest: PhobsGuest = {
         phobsGuestId: createPhobsGuestId(this.generatePhobsGuestId(guest)),
         internalGuestId: guest.id,
-        
+
         firstName: guest.firstName,
         lastName: guest.lastName,
         email: guest.email || '',
         phone: guest.phone,
-        
+
         country: guest.nationality || 'HR',
         countryCode: this.getCountryCode(guest.nationality || 'HR'),
         city: undefined, // Not available in current schema
         address: undefined, // Not available in current schema
         postalCode: undefined, // Not available in current schema
-        
+
         language: guest.preferredLanguage || 'en',
         dateOfBirth: guest.dateOfBirth,
         nationality: guest.nationality,
-        
+
         preferences: guest.dietaryRestrictions || [],
         specialRequests: guest.specialNeeds || '',
-        
+
         totalBookings: guest.totalStays,
         totalRevenue: 0, // TODO: Calculate from reservations
         isVip: guest.isVip,
-        
+
         syncedAt: undefined,
-        lastUpdated: guest.updatedAt
+        lastUpdated: guest.updatedAt,
       };
 
       return {
         success: true,
         data: phobsGuest,
         errors,
-        warnings
+        warnings,
       };
-
     } catch (error) {
-      errors.push(`Guest mapping error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      errors.push(
+        `Guest mapping error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
       return {
         success: false,
         errors,
-        warnings
+        warnings,
       };
     }
   }
@@ -434,22 +444,23 @@ export class PhobsDataMapperService {
         emergencyContactName: undefined,
         emergencyContactPhone: undefined,
         createdAt: new Date(),
-        updatedAt: phobsGuest.lastUpdated
+        updatedAt: phobsGuest.lastUpdated,
       };
 
       return {
         success: true,
         data: internalGuest,
         errors,
-        warnings
+        warnings,
       };
-
     } catch (error) {
-      errors.push(`Guest mapping error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      errors.push(
+        `Guest mapping error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
       return {
         success: false,
         errors,
-        warnings
+        warnings,
       };
     }
   }
@@ -473,36 +484,37 @@ export class PhobsDataMapperService {
         roomType: PhobsDataMapperService.ROOM_TYPE_MAPPINGS[room.type]?.phobsRoomType || room.type,
         floor: room.floor,
         maxOccupancy: room.maxOccupancy,
-        
+
         channelRoomMappings: {}, // TODO: Configure channel-specific mappings
-        
+
         amenities: room.amenities,
         description: {
           en: room.nameEnglish,
           hr: room.nameCroatian,
           de: room.nameEnglish, // TODO: Add German translations
-          it: room.nameEnglish  // TODO: Add Italian translations
+          it: room.nameEnglish, // TODO: Add Italian translations
         },
-        
+
         images: [], // TODO: Add room images
-        
+
         isActive: true,
-        lastUpdated: new Date()
+        lastUpdated: new Date(),
       };
 
       return {
         success: true,
         data: phobsRoom,
         errors,
-        warnings
+        warnings,
       };
-
     } catch (error) {
-      errors.push(`Room mapping error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      errors.push(
+        `Room mapping error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
       return {
         success: false,
         errors,
-        warnings
+        warnings,
       };
     }
   }
@@ -514,10 +526,7 @@ export class PhobsDataMapperService {
   /**
    * Validate reservation data for Phobs mapping
    */
-  private validateReservationForPhobs(
-    reservation: Reservation,
-    guest: Guest
-  ): ValidationResult {
+  private validateReservationForPhobs(reservation: Reservation, guest: Guest): ValidationResult {
     const errors: string[] = [];
     const warnings: string[] = [];
 
@@ -547,7 +556,7 @@ export class PhobsDataMapperService {
     return {
       isValid: errors.length === 0,
       errors,
-      warnings
+      warnings,
     };
   }
 
@@ -587,8 +596,9 @@ export class PhobsDataMapperService {
    * Map OTA channel back to booking source
    */
   private mapOTAToBookingSource(channel: OTAChannel): string {
-    const mapping = Object.entries(PhobsDataMapperService.OTA_CHANNEL_MAPPINGS)
-      .find(([, value]) => value === channel);
+    const mapping = Object.entries(PhobsDataMapperService.OTA_CHANNEL_MAPPINGS).find(
+      ([, value]) => value === channel
+    );
     return mapping ? mapping[0] : 'other';
   }
 
@@ -598,18 +608,18 @@ export class PhobsDataMapperService {
   private calculateCommission(totalAmount: number, channel: OTAChannel): number {
     const commissionRates: { [key in OTAChannel]: number } = {
       'booking.com': 0.15,
-      'expedia': 0.18,
-      'airbnb': 0.14,
-      'agoda': 0.16,
+      expedia: 0.18,
+      airbnb: 0.14,
+      agoda: 0.16,
       'hotels.com': 0.17,
-      'hostelworld': 0.12,
-      'kayak': 0.15,
-      'trivago': 0.15,
-      'priceline': 0.18,
-      'camping.info': 0.10,
+      hostelworld: 0.12,
+      kayak: 0.15,
+      trivago: 0.15,
+      priceline: 0.18,
+      'camping.info': 0.1,
       'pitchup.com': 0.12,
-      'eurocamp': 0.20,
-      'directBooking': 0.00
+      eurocamp: 0.2,
+      directBooking: 0.0,
     };
 
     const rate = commissionRates[channel] || 0;
@@ -621,11 +631,11 @@ export class PhobsDataMapperService {
    */
   private mapPaymentStatus(paymentStatus: string): 'pending' | 'confirmed' | 'paid' | 'cancelled' {
     const mapping: { [key: string]: 'pending' | 'confirmed' | 'paid' | 'cancelled' } = {
-      'pending': 'pending',
-      'partial': 'confirmed',
-      'paid': 'paid',
-      'refunded': 'cancelled',
-      'cancelled': 'cancelled'
+      pending: 'pending',
+      partial: 'confirmed',
+      paid: 'paid',
+      refunded: 'cancelled',
+      cancelled: 'cancelled',
     };
 
     return mapping[paymentStatus.toLowerCase()] || 'pending';
@@ -636,13 +646,13 @@ export class PhobsDataMapperService {
    */
   private mapPhobsStatusToInternal(phobsStatus: PhobsReservationStatus): ReservationStatus {
     const mapping: { [key in PhobsReservationStatus]: ReservationStatus } = {
-      'new': 'confirmed',
-      'confirmed': 'confirmed',
-      'modified': 'confirmed',
-      'cancelled': 'room-closure',
-      'checked_in': 'checked-in',
-      'checked_out': 'checked-out',
-      'no_show': 'incomplete-payment'
+      new: 'confirmed',
+      confirmed: 'confirmed',
+      modified: 'confirmed',
+      cancelled: 'room-closure',
+      checked_in: 'checked-in',
+      checked_out: 'checked-out',
+      no_show: 'incomplete-payment',
     };
 
     return mapping[phobsStatus] || 'confirmed';
@@ -653,7 +663,7 @@ export class PhobsDataMapperService {
    */
   private calculateSeasonalPeriod(date: Date): SeasonalPeriod {
     const month = date.getMonth() + 1; // JS months are 0-indexed
-    
+
     if (month >= 12 || month <= 2) return 'A'; // Winter
     if (month >= 3 && month <= 5) return 'B'; // Spring
     if (month >= 6 && month <= 8) return 'D'; // Summer (peak)
@@ -666,15 +676,15 @@ export class PhobsDataMapperService {
   private calculateInternalPricing(phobsReservation: PhobsReservation) {
     const totalTaxes = phobsReservation.taxes;
     const totalFees = phobsReservation.fees;
-    
+
     // Estimate breakdown (this would be more sophisticated in production)
     const vatAmount = totalTaxes * 0.8; // Assume 80% of taxes are VAT
     const tourismTax = totalTaxes * 0.2; // Assume 20% is tourism tax
-    
+
     const petFee = totalFees * 0.3; // Rough estimate
     const parkingFee = totalFees * 0.4; // Rough estimate
     const additionalCharges = totalFees * 0.3; // Remaining fees
-    
+
     const subtotal = phobsReservation.totalAmount - totalTaxes - totalFees;
 
     return {
@@ -685,7 +695,7 @@ export class PhobsDataMapperService {
       petFee,
       parkingFee,
       shortStaySuplement: 0, // TODO: Calculate based on stay length
-      additionalCharges
+      additionalCharges,
     };
   }
 
@@ -694,26 +704,26 @@ export class PhobsDataMapperService {
    */
   private getCountryCode(country: string): string {
     const countryCodes: { [key: string]: string } = {
-      'Croatia': 'HR',
-      'Germany': 'DE',
-      'Italy': 'IT',
-      'Austria': 'AT',
-      'Slovenia': 'SI',
+      Croatia: 'HR',
+      Germany: 'DE',
+      Italy: 'IT',
+      Austria: 'AT',
+      Slovenia: 'SI',
       'Bosnia and Herzegovina': 'BA',
-      'Serbia': 'RS',
-      'Hungary': 'HU',
+      Serbia: 'RS',
+      Hungary: 'HU',
       'Czech Republic': 'CZ',
-      'Slovakia': 'SK',
-      'Poland': 'PL',
+      Slovakia: 'SK',
+      Poland: 'PL',
       'United Kingdom': 'GB',
-      'France': 'FR',
-      'Spain': 'ES',
-      'Netherlands': 'NL',
-      'Belgium': 'BE',
-      'Switzerland': 'CH',
+      France: 'FR',
+      Spain: 'ES',
+      Netherlands: 'NL',
+      Belgium: 'BE',
+      Switzerland: 'CH',
       'United States': 'US',
-      'Canada': 'CA',
-      'Australia': 'AU'
+      Canada: 'CA',
+      Australia: 'AU',
     };
 
     return countryCodes[country] || 'HR'; // Default to Croatia
@@ -726,7 +736,7 @@ export class PhobsDataMapperService {
     return {
       roomTypeMappings: PhobsDataMapperService.ROOM_TYPE_MAPPINGS,
       statusMappings: PhobsDataMapperService.STATUS_MAPPINGS,
-      paymentMethodMappings: PhobsDataMapperService.PAYMENT_METHOD_MAPPINGS
+      paymentMethodMappings: PhobsDataMapperService.PAYMENT_METHOD_MAPPINGS,
     };
   }
 }

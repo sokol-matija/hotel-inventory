@@ -196,18 +196,16 @@ export function useHotelTimelineState(): HotelTimelineState & HotelTimelineActio
     (action: 'PREV' | 'NEXT' | 'TODAY') => {
       const newDate = timelineService.navigateTimeline(currentDate, action);
       setCurrentDate(newDate);
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     },
-    [currentDate]
+    [currentDate, timelineService]
   );
 
   const handleOverviewNavigate = useCallback(
     (action: 'PREV' | 'NEXT' | 'TODAY') => {
       const newDate = timelineService.navigateOverview(overviewDate, action);
       setOverviewDate(newDate);
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     },
-    [overviewDate]
+    [overviewDate, timelineService]
   );
 
   // Floor expansion actions
@@ -368,9 +366,8 @@ export function useHotelTimelineState(): HotelTimelineState & HotelTimelineActio
         );
         setDragCreateDates(dates);
       }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     },
-    [isDragCreateMode, currentDate]
+    [isDragCreateMode, currentDate, timelineService]
   );
 
   const handleDragCreateMove = useCallback(
@@ -393,9 +390,8 @@ export function useHotelTimelineState(): HotelTimelineState & HotelTimelineActio
         );
         setDragCreateDates(dates);
       }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     },
-    [isDragCreating, dragCreateStart, currentDate]
+    [isDragCreating, dragCreateStart, currentDate, timelineService]
   );
 
   const handleDragCreateEnd = useCallback(() => {
@@ -412,10 +408,12 @@ export function useHotelTimelineState(): HotelTimelineState & HotelTimelineActio
   }, []);
 
   // Utility functions
-  const positionContextMenu = useCallback((x: number, y: number) => {
-    return timelineService.positionContextMenu(x, y);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const positionContextMenu = useCallback(
+    (x: number, y: number) => {
+      return timelineService.positionContextMenu(x, y);
+    },
+    [timelineService]
+  );
 
   const validateReservationMove = useCallback(
     (reservation: Reservation, targetRoomId: string) => {
@@ -425,9 +423,8 @@ export function useHotelTimelineState(): HotelTimelineState & HotelTimelineActio
         reservations,
         rooms
       );
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     },
-    [reservations, rooms]
+    [reservations, rooms, timelineService]
   );
 
   // Return combined state and actions

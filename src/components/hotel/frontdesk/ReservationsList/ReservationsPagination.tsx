@@ -3,12 +3,7 @@
 
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight
-} from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { PaginationState } from '../../../../hooks/useReservationsList';
 import { Button } from '../../../ui/button';
 
@@ -29,7 +24,7 @@ export default function ReservationsPagination({
   onFirst,
   onPrevious,
   onNext,
-  onLast
+  onLast,
 }: ReservationsPaginationProps) {
   const { t } = useTranslation();
   const [jumpPage, setJumpPage] = useState('');
@@ -54,27 +49,27 @@ export default function ReservationsPagination({
   const pageSizeOptions = [10, 25, 50, 100];
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4">
+    <div className="flex flex-col items-center justify-between gap-4 py-4 sm:flex-row">
       {/* Results Summary */}
       <div className="text-sm text-gray-600">
         {t('reservationsList.showingResults', {
           start: startResult,
           end: endResult,
-          total: totalCount
+          total: totalCount,
         })}
       </div>
 
       {/* Pagination Controls */}
       <div className="flex items-center gap-2">
         {/* Page Size Selector */}
-        <div className="flex items-center gap-2 mr-4">
+        <div className="mr-4 flex items-center gap-2">
           <span className="text-sm text-gray-600">
             {t('reservationsList.pagination.rowsPerPage')}
           </span>
           <select
             value={pageSize}
             onChange={(e) => onPageSizeChange(Number(e.target.value))}
-            className="border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="rounded-md border border-gray-300 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
           >
             {pageSizeOptions.map((size) => (
               <option key={size} value={size}>
@@ -92,7 +87,7 @@ export default function ReservationsPagination({
           disabled={page === 1}
           title={t('reservationsList.pagination.first')}
         >
-          <ChevronsLeft className="w-4 h-4" />
+          <ChevronsLeft className="h-4 w-4" />
         </Button>
 
         {/* Previous Page */}
@@ -103,13 +98,14 @@ export default function ReservationsPagination({
           disabled={page === 1}
           title={t('reservationsList.pagination.previous')}
         >
-          <ChevronLeft className="w-4 h-4" />
+          <ChevronLeft className="h-4 w-4" />
         </Button>
 
         {/* Page Indicator */}
         <div className="flex items-center gap-2 px-2">
           <span className="text-sm text-gray-600">
-            {t('reservationsList.pagination.page')} {page} {t('reservationsList.pagination.of')} {totalPages}
+            {t('reservationsList.pagination.page')} {page} {t('reservationsList.pagination.of')}{' '}
+            {totalPages}
           </span>
         </div>
 
@@ -121,7 +117,7 @@ export default function ReservationsPagination({
           disabled={page >= totalPages}
           title={t('reservationsList.pagination.next')}
         >
-          <ChevronRight className="w-4 h-4" />
+          <ChevronRight className="h-4 w-4" />
         </Button>
 
         {/* Last Page */}
@@ -132,12 +128,12 @@ export default function ReservationsPagination({
           disabled={page >= totalPages}
           title={t('reservationsList.pagination.last')}
         >
-          <ChevronsRight className="w-4 h-4" />
+          <ChevronsRight className="h-4 w-4" />
         </Button>
 
         {/* Jump to Page */}
         {totalPages > 5 && (
-          <form onSubmit={handleJumpToPage} className="flex items-center gap-2 ml-4">
+          <form onSubmit={handleJumpToPage} className="ml-4 flex items-center gap-2">
             <input
               type="number"
               min="1"
@@ -145,14 +141,9 @@ export default function ReservationsPagination({
               value={jumpPage}
               onChange={(e) => setJumpPage(e.target.value)}
               placeholder={t('reservationsList.pagination.jumpToPage')}
-              className="w-20 border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-20 rounded-md border border-gray-300 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
             />
-            <Button
-              type="submit"
-              size="sm"
-              variant="outline"
-              disabled={!jumpPage}
-            >
+            <Button type="submit" size="sm" variant="outline" disabled={!jumpPage}>
               Go
             </Button>
           </form>

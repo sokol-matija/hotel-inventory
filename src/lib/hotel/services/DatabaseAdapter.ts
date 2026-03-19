@@ -127,7 +127,7 @@ export class DatabaseAdapter {
         fax: data.contact_info?.fax || '+385(0)52/433 462',
         email: data.contact_info?.email || 'hotelporec@pu.t-com.hr',
         website: data.contact_info?.website || 'www.hotelporec.com',
-        taxId: data.oib || '87246357068'
+        taxId: data.oib || '87246357068',
       };
     } catch (error) {
       console.error('Error fetching hotel:', error);
@@ -140,7 +140,7 @@ export class DatabaseAdapter {
         fax: '+385(0)52/433 462',
         email: 'hotelporec@pu.t-com.hr',
         website: 'www.hotelporec.com',
-        taxId: '87246357068'
+        taxId: '87246357068',
       };
     }
   }
@@ -158,7 +158,7 @@ export class DatabaseAdapter {
 
       if (error) throw error;
 
-      return (roomsData as CurrentDBRoom[]).map(room => this.mapRoomFromCurrentDB(room));
+      return (roomsData as CurrentDBRoom[]).map((room) => this.mapRoomFromCurrentDB(room));
     } catch (error) {
       console.error('Error fetching rooms:', error);
       return [];
@@ -224,9 +224,17 @@ export class DatabaseAdapter {
   /**
    * Get reservations by room and date range
    */
-  async getReservationsByRoomAndDateRange(roomId: string, startDate: Date, endDate: Date): Promise<Reservation[]> {
+  async getReservationsByRoomAndDateRange(
+    roomId: string,
+    startDate: Date,
+    endDate: Date
+  ): Promise<Reservation[]> {
     try {
-      console.log('🏨 DATABASE: getReservationsByRoomAndDateRange called with:', { roomId, startDate, endDate });
+      console.log('🏨 DATABASE: getReservationsByRoomAndDateRange called with:', {
+        roomId,
+        startDate,
+        endDate,
+      });
       // Get reservations for the specific room and date range
       const { data: reservationsData, error: reservationsError } = await supabase
         .from('reservations')
@@ -234,29 +242,28 @@ export class DatabaseAdapter {
         .eq('room_id', parseInt(roomId))
         .gte('check_in_date', startDate.toISOString().split('T')[0])
         .lte('check_out_date', endDate.toISOString().split('T')[0]);
-      console.log('✅ DATABASE: Got reservations query result:', { count: reservationsData?.length, error: reservationsError });
+      console.log('✅ DATABASE: Got reservations query result:', {
+        count: reservationsData?.length,
+        error: reservationsError,
+      });
 
       if (reservationsError) throw reservationsError;
 
       // Get guests separately to avoid JOIN issues
-      const { data: guestsData, error: guestsError } = await supabase
-        .from('guests')
-        .select('*');
+      const { data: guestsData, error: guestsError } = await supabase.from('guests').select('*');
 
       if (guestsError) throw guestsError;
 
       // Get rooms separately
-      const { data: roomsData, error: roomsError } = await supabase
-        .from('rooms')
-        .select('*');
+      const { data: roomsData, error: roomsError } = await supabase.from('rooms').select('*');
 
       if (roomsError) throw roomsError;
 
       // Create lookup maps
-      const guestLookup = new Map((guestsData as CurrentDBGuest[]).map(g => [g.id, g]));
-      const roomLookup = new Map((roomsData as CurrentDBRoom[]).map(r => [r.id, r]));
+      const guestLookup = new Map((guestsData as CurrentDBGuest[]).map((g) => [g.id, g]));
+      const roomLookup = new Map((roomsData as CurrentDBRoom[]).map((r) => [r.id, r]));
 
-      return (reservationsData as CurrentDBReservation[]).map(reservation => 
+      return (reservationsData as CurrentDBReservation[]).map((reservation) =>
         this.mapReservationFromCurrentDB(reservation, guestLookup, roomLookup)
       );
     } catch (error) {
@@ -270,14 +277,11 @@ export class DatabaseAdapter {
    */
   async getGuests(): Promise<Guest[]> {
     try {
-      const { data, error } = await supabase
-        .from('guests')
-        .select('*')
-        .order('last_name');
+      const { data, error } = await supabase.from('guests').select('*').order('last_name');
 
       if (error) throw error;
 
-      return (data as CurrentDBGuest[]).map(guest => this.mapGuestFromCurrentDB(guest));
+      return (data as CurrentDBGuest[]).map((guest) => this.mapGuestFromCurrentDB(guest));
     } catch (error) {
       console.error('Error fetching guests:', error);
       return [];
@@ -298,33 +302,27 @@ export class DatabaseAdapter {
       if (reservationsError) throw reservationsError;
 
       // Get guests separately to avoid JOIN issues
-      const { data: guestsData, error: guestsError } = await supabase
-        .from('guests')
-        .select('*');
+      const { data: guestsData, error: guestsError } = await supabase.from('guests').select('*');
 
       if (guestsError) throw guestsError;
 
       // Get rooms separately
-      const { data: roomsData, error: roomsError } = await supabase
-        .from('rooms')
-        .select('*');
+      const { data: roomsData, error: roomsError } = await supabase.from('rooms').select('*');
 
       if (roomsError) throw roomsError;
 
       // Get labels separately
-      const { data: labelsData, error: labelsError } = await supabase
-        .from('labels')
-        .select('*');
+      const { data: labelsData, error: labelsError } = await supabase.from('labels').select('*');
 
       if (labelsError) throw labelsError;
 
       // Create lookup maps
-      const guestLookup = new Map((guestsData as CurrentDBGuest[]).map(g => [g.id, g]));
-      const roomLookup = new Map((roomsData as CurrentDBRoom[]).map(r => [r.id, r]));
+      const guestLookup = new Map((guestsData as CurrentDBGuest[]).map((g) => [g.id, g]));
+      const roomLookup = new Map((roomsData as CurrentDBRoom[]).map((r) => [r.id, r]));
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const labelLookup = new Map((labelsData as any[]).map((l: any) => [l.id, l]));
 
-      return (reservationsData as CurrentDBReservation[]).map(reservation =>
+      return (reservationsData as CurrentDBReservation[]).map((reservation) =>
         this.mapReservationFromCurrentDB(reservation, guestLookup, roomLookup, labelLookup)
       );
     } catch (error) {
@@ -336,7 +334,9 @@ export class DatabaseAdapter {
   /**
    * Create reservation - adapt to current schema
    */
-  async createReservation(reservationData: Omit<Reservation, 'id' | 'bookingDate' | 'lastModified'>): Promise<Reservation> {
+  async createReservation(
+    reservationData: Omit<Reservation, 'id' | 'bookingDate' | 'lastModified'>
+  ): Promise<Reservation> {
     try {
       const { data, error } = await supabase
         .from('reservations')
@@ -366,7 +366,7 @@ export class DatabaseAdapter {
           payment_status: 'pending',
           has_pets: (reservationData.petFee || 0) > 0,
           confirmation_number: this.generateConfirmationNumber(),
-          label_id: reservationData.labelId || null
+          label_id: reservationData.labelId || null,
         })
         .select()
         .single();
@@ -375,7 +375,7 @@ export class DatabaseAdapter {
 
       // Fetch complete reservation with related data
       const reservations = await this.getReservations();
-      const newReservation = reservations.find(r => r.id === data.id.toString());
+      const newReservation = reservations.find((r) => r.id === data.id.toString());
 
       if (!newReservation) {
         throw new Error('Failed to fetch created reservation');
@@ -398,11 +398,13 @@ export class DatabaseAdapter {
       const updateData: Record<string, unknown> = {};
 
       if (updates.checkIn) updateData.check_in_date = updates.checkIn.toISOString().split('T')[0];
-      if (updates.checkOut) updateData.check_out_date = updates.checkOut.toISOString().split('T')[0];
+      if (updates.checkOut)
+        updateData.check_out_date = updates.checkOut.toISOString().split('T')[0];
       if (updates.roomId) updateData.room_id = parseInt(updates.roomId);
       if (updates.adults !== undefined) updateData.adults = updates.adults;
       if (updates.status) updateData.status = updates.status;
-      if (updates.specialRequests !== undefined) updateData.special_requests = updates.specialRequests;
+      if (updates.specialRequests !== undefined)
+        updateData.special_requests = updates.specialRequests;
       if (updates.totalAmount !== undefined) updateData.total_amount = updates.totalAmount;
       if (updates.labelId !== undefined) updateData.label_id = updates.labelId || null;
 
@@ -417,7 +419,7 @@ export class DatabaseAdapter {
 
       // Fetch updated reservation
       const reservations = await this.getReservations();
-      const updatedReservation = reservations.find(r => r.id === id);
+      const updatedReservation = reservations.find((r) => r.id === id);
 
       if (!updatedReservation) {
         throw new Error('Failed to fetch updated reservation');
@@ -448,7 +450,7 @@ export class DatabaseAdapter {
           has_pets: guestData.hasPets || false,
           date_of_birth: guestData.dateOfBirth?.toISOString().split('T')[0] || null,
           is_vip: false,
-          total_stays: 0
+          total_stays: 0,
         })
         .select()
         .single();
@@ -478,12 +480,12 @@ export class DatabaseAdapter {
         A: room.seasonal_rate_a || 50,
         B: room.seasonal_rate_b || 60,
         C: room.seasonal_rate_c || 80,
-        D: room.seasonal_rate_d || 100
+        D: room.seasonal_rate_d || 100,
       },
       maxOccupancy: room.max_occupancy || 2,
       isPremium: room.is_premium || false,
       amenities: room.amenities || [],
-      is_clean: room.is_clean ?? false
+      is_clean: room.is_clean ?? false,
     };
   }
 
@@ -507,7 +509,7 @@ export class DatabaseAdapter {
       emergencyContactName: '',
       emergencyContactPhone: '',
       createdAt: new Date(guest.created_at),
-      updatedAt: new Date(guest.updated_at)
+      updatedAt: new Date(guest.updated_at),
     };
   }
 
@@ -519,7 +521,8 @@ export class DatabaseAdapter {
     labelLookup?: Map<string, any>
   ): Reservation {
     const guestData = guestLookup.get(reservation.guest_id);
-    const labelData = labelLookup && reservation.label_id ? labelLookup.get(reservation.label_id) : undefined;
+    const labelData =
+      labelLookup && reservation.label_id ? labelLookup.get(reservation.label_id) : undefined;
 
     return {
       id: reservation.id.toString(),
@@ -557,42 +560,44 @@ export class DatabaseAdapter {
       notes: reservation.internal_notes || '',
       // Label/Group mapping
       labelId: reservation.label_id || undefined,
-      label: labelData ? {
-        id: labelData.id,
-        hotelId: labelData.hotel_id?.toString() || '',
-        name: labelData.name,
-        color: labelData.color || '#000000',
-        bgColor: labelData.bg_color || '#FFFFFF',
-        createdAt: new Date(labelData.created_at),
-        updatedAt: new Date(labelData.updated_at)
-      } : undefined
+      label: labelData
+        ? {
+            id: labelData.id,
+            hotelId: labelData.hotel_id?.toString() || '',
+            name: labelData.name,
+            color: labelData.color || '#000000',
+            bgColor: labelData.bg_color || '#FFFFFF',
+            createdAt: new Date(labelData.created_at),
+            updatedAt: new Date(labelData.updated_at),
+          }
+        : undefined,
     };
   }
 
   private mapRoomTypeCode(roomType: string): AppRoomType {
     const mapping: Record<string, AppRoomType> = {
-      'BD': 'big-double',
-      'BS': 'big-single', 
-      'D': 'double',
-      'T': 'triple',
-      'S': 'single',
-      'F': 'family',
-      'A': 'apartment',
-      'RA': 'rooftop-apartment'
+      BD: 'big-double',
+      BS: 'big-single',
+      D: 'double',
+      T: 'triple',
+      S: 'single',
+      F: 'family',
+      A: 'apartment',
+      RA: 'rooftop-apartment',
     };
     return mapping[roomType] || 'double';
   }
 
   private getRoomTypeCroatianName(roomType: string): string {
     const mapping: Record<string, string> = {
-      'BD': 'Velika dvokrevetna soba',
-      'BS': 'Velika jednokrevetna soba',
-      'D': 'Dvokrevetna soba',
-      'T': 'Trokrevetna soba',
-      'S': 'Jednokrevetna soba',
-      'F': 'Obiteljska soba',
-      'A': 'Apartman',
-      'RA': '401 ROOFTOP APARTMAN'
+      BD: 'Velika dvokrevetna soba',
+      BS: 'Velika jednokrevetna soba',
+      D: 'Dvokrevetna soba',
+      T: 'Trokrevetna soba',
+      S: 'Jednokrevetna soba',
+      F: 'Obiteljska soba',
+      A: 'Apartman',
+      RA: '401 ROOFTOP APARTMAN',
     };
     return mapping[roomType] || 'Dvokrevetna soba';
   }
@@ -600,20 +605,20 @@ export class DatabaseAdapter {
   private getRoomTypeEnglishName(roomType: string): string {
     const mapping: Record<string, string> = {
       // Legacy single letter codes
-      'BD': 'Big Double Room',
-      'BS': 'Big Single Room',
-      'D': 'Double Room',
-      'T': 'Triple Room',
-      'S': 'Single Room',
-      'F': 'Family Room',
-      'A': 'Apartment',
-      'RA': '401 Rooftop Apartment',
+      BD: 'Big Double Room',
+      BS: 'Big Single Room',
+      D: 'Double Room',
+      T: 'Triple Room',
+      S: 'Single Room',
+      F: 'Family Room',
+      A: 'Apartment',
+      RA: '401 Rooftop Apartment',
       // Current database room types (lowercase)
-      'single': 'Single Room',
-      'double': 'Double Room',
-      'triple': 'Triple Room',
-      'family': 'Family Room',
-      'apartment': 'Apartment'
+      single: 'Single Room',
+      double: 'Double Room',
+      triple: 'Triple Room',
+      family: 'Family Room',
+      apartment: 'Apartment',
     };
     return mapping[roomType] || `${roomType.charAt(0).toUpperCase()}${roomType.slice(1)} Room`;
   }
@@ -622,7 +627,9 @@ export class DatabaseAdapter {
     const date = new Date();
     const year = date.getFullYear().toString().slice(-2);
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+    const random = Math.floor(Math.random() * 10000)
+      .toString()
+      .padStart(4, '0');
     return `HP${year}${month}${random}`;
   }
 
@@ -633,35 +640,37 @@ export class DatabaseAdapter {
   /**
    * Get reservations with advanced filtering, pagination, and sorting
    */
-  async getReservationsWithFilters(options: {
-    // Search
-    searchQuery?: string;
+  async getReservationsWithFilters(
+    options: {
+      // Search
+      searchQuery?: string;
 
-    // Filters
-    statuses?: string[];
-    bookingSources?: string[];
-    paymentStatuses?: string[];
-    roomTypes?: string[];
-    nationalities?: string[];
-    vipOnly?: boolean;
-    hasSpecialRequests?: boolean;
+      // Filters
+      statuses?: string[];
+      bookingSources?: string[];
+      paymentStatuses?: string[];
+      roomTypes?: string[];
+      nationalities?: string[];
+      vipOnly?: boolean;
+      hasSpecialRequests?: boolean;
 
-    // Date filters
-    checkInFrom?: Date;
-    checkInTo?: Date;
-    checkOutFrom?: Date;
-    checkOutTo?: Date;
-    bookingDateFrom?: Date;
-    bookingDateTo?: Date;
+      // Date filters
+      checkInFrom?: Date;
+      checkInTo?: Date;
+      checkOutFrom?: Date;
+      checkOutTo?: Date;
+      bookingDateFrom?: Date;
+      bookingDateTo?: Date;
 
-    // Pagination
-    page?: number;
-    pageSize?: number;
+      // Pagination
+      page?: number;
+      pageSize?: number;
 
-    // Sorting
-    sortBy?: 'check_in_date' | 'check_out_date' | 'booking_date' | 'total_amount' | 'guest_name';
-    sortOrder?: 'asc' | 'desc';
-  } = {}): Promise<{
+      // Sorting
+      sortBy?: 'check_in_date' | 'check_out_date' | 'booking_date' | 'total_amount' | 'guest_name';
+      sortOrder?: 'asc' | 'desc';
+    } = {}
+  ): Promise<{
     reservations: Reservation[];
     totalCount: number;
     page: number;
@@ -687,7 +696,7 @@ export class DatabaseAdapter {
         page = 1,
         pageSize = 25,
         sortBy = 'check_in_date',
-        sortOrder = 'desc'
+        sortOrder = 'desc',
       } = options;
 
       // Build base query
@@ -752,27 +761,31 @@ export class DatabaseAdapter {
       const { data: allGuestsData } = await supabase.from('guests').select('*');
       const { data: allRoomsData } = await supabase.from('rooms').select('*');
 
-      const guestLookup = new Map((allGuestsData as CurrentDBGuest[] || []).map(g => [g.id, g]));
-      const roomLookup = new Map((allRoomsData as CurrentDBRoom[] || []).map(r => [r.id, r]));
+      const guestLookup = new Map(
+        ((allGuestsData as CurrentDBGuest[]) || []).map((g) => [g.id, g])
+      );
+      const roomLookup = new Map(((allRoomsData as CurrentDBRoom[]) || []).map((r) => [r.id, r]));
 
       // Map reservations - the data includes joined guest/room data but we use lookup for consistency
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let mappedReservations = (reservationsData as any[] || []).map((reservation: CurrentDBReservation & Record<string, unknown>) => {
-        // Use the joined guest data if available, otherwise fall back to lookup
-        const guestData = reservation.guests || guestLookup.get(reservation.guest_id);
-        const roomData = reservation.rooms || roomLookup.get(reservation.room_id);
+      let mappedReservations = ((reservationsData as any[]) || []).map(
+        (reservation: CurrentDBReservation & Record<string, unknown>) => {
+          // Use the joined guest data if available, otherwise fall back to lookup
+          const guestData = reservation.guests || guestLookup.get(reservation.guest_id);
+          const roomData = reservation.rooms || roomLookup.get(reservation.room_id);
 
-        return this.mapReservationFromCurrentDB(
-          reservation as CurrentDBReservation,
-          guestData ? new Map([[reservation.guest_id, guestData]]) : guestLookup,
-          roomData ? new Map([[reservation.room_id, roomData]]) : roomLookup
-        );
-      });
+          return this.mapReservationFromCurrentDB(
+            reservation as CurrentDBReservation,
+            guestData ? new Map([[reservation.guest_id, guestData]]) : guestLookup,
+            roomData ? new Map([[reservation.room_id, roomData]]) : roomLookup
+          );
+        }
+      );
 
       // Apply client-side filters that can't be done in SQL
       if (searchQuery) {
         const searchLower = searchQuery.toLowerCase();
-        mappedReservations = mappedReservations.filter(res => {
+        mappedReservations = mappedReservations.filter((res) => {
           const guest = res.guest;
           const room = roomLookup.get(Number(res.roomId));
 
@@ -787,21 +800,21 @@ export class DatabaseAdapter {
       }
 
       if (roomTypes && roomTypes.length > 0) {
-        mappedReservations = mappedReservations.filter(res => {
+        mappedReservations = mappedReservations.filter((res) => {
           const room = roomLookup.get(Number(res.roomId));
           return room && roomTypes.includes(room.room_type);
         });
       }
 
       if (nationalities && nationalities.length > 0) {
-        mappedReservations = mappedReservations.filter(res => {
+        mappedReservations = mappedReservations.filter((res) => {
           const guest = res.guest;
           return guest && guest.nationality && nationalities.includes(guest.nationality);
         });
       }
 
       if (vipOnly) {
-        mappedReservations = mappedReservations.filter(res => {
+        mappedReservations = mappedReservations.filter((res) => {
           const guest = res.guest;
           return guest && guest.isVip;
         });
@@ -815,7 +828,7 @@ export class DatabaseAdapter {
         totalCount,
         page,
         pageSize,
-        totalPages
+        totalPages,
       };
     } catch (error) {
       console.error('Error fetching filtered reservations:', error);
@@ -824,7 +837,7 @@ export class DatabaseAdapter {
         totalCount: 0,
         page: options.page || 1,
         pageSize: options.pageSize || 25,
-        totalPages: 0
+        totalPages: 0,
       };
     }
   }
@@ -840,9 +853,7 @@ export class DatabaseAdapter {
     checkInTo?: Date;
   }): Promise<number> {
     try {
-      let query = supabase
-        .from('reservations')
-        .select('*', { count: 'exact', head: true });
+      let query = supabase.from('reservations').select('*', { count: 'exact', head: true });
 
       if (filters?.statuses && filters.statuses.length > 0) {
         query = query.in('status', filters.statuses);

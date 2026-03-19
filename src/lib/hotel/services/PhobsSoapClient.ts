@@ -103,9 +103,7 @@ export class PhobsSoapClient {
           requestHeaders['Authorization'] = `Bearer ${this.bearerToken}`;
         } else if (this.config.username && this.config.password) {
           // Basic authentication
-          const credentials = btoa(
-            `${this.config.username}:${this.config.password}`
-          );
+          const credentials = btoa(`${this.config.username}:${this.config.password}`);
           requestHeaders['Authorization'] = `Basic ${credentials}`;
         }
       }
@@ -314,10 +312,10 @@ export class PhobsSoapClient {
       if (!response.success || !response.data) {
         return {
           success: false,
-          errors: response.errors?.map(e => ({
+          errors: response.errors?.map((e) => ({
             code: e.code,
             message: e.message || e.shortText || 'Unknown error',
-            type: e.type
+            type: e.type,
           })),
         };
       }
@@ -372,17 +370,17 @@ export class PhobsSoapClient {
       if (!response.success) {
         return {
           success: false,
-          errors: response.errors?.map(e => ({
+          errors: response.errors?.map((e) => ({
             code: e.code,
             message: e.message || e.shortText || 'Unknown error',
-            type: e.type
+            type: e.type,
           })),
         };
       }
 
       return {
         success: true,
-        warnings: response.warnings?.map(w => w.message || w.shortText || 'Warning'),
+        warnings: response.warnings?.map((w) => w.message || w.shortText || 'Warning'),
       };
     } catch (error) {
       console.error('Error confirming reservations:', error);
@@ -403,21 +401,20 @@ export class PhobsSoapClient {
    * Send rate plan request (fetch hotel rate plan)
    * Retrieves rate and room mapping data from Phobs
    */
-  async sendRatePlanRequest(params: {
-    hotelCode: string;
-    destinationSystemCode?: string;
-  }): Promise<SoapResponse<{
-    ratePlans: Array<{
-      ratePlanCode: string;
-      ratePlanName?: string;
-      ratePlanType?: string;
-      roomTypeCode?: string;
-      roomTypeName?: string;
-      description?: string;
-      minOccupancy?: number;
-      maxOccupancy?: number;
-    }>;
-  }>> {
+  async sendRatePlanRequest(params: { hotelCode: string; destinationSystemCode?: string }): Promise<
+    SoapResponse<{
+      ratePlans: Array<{
+        ratePlanCode: string;
+        ratePlanName?: string;
+        ratePlanType?: string;
+        roomTypeCode?: string;
+        roomTypeName?: string;
+        description?: string;
+        minOccupancy?: number;
+        maxOccupancy?: number;
+      }>;
+    }>
+  > {
     const xmlBody = phobsXmlBuilder.buildRatePlanRequest(params);
 
     const response = await this.sendSoapRequest(xmlBody, {

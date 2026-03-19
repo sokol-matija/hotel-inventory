@@ -28,11 +28,11 @@ export const LabelAutocomplete: React.FC<LabelAutocompleteProps> = ({
   hotelId,
   value,
   onChange,
-  placeholder = "Search or create label...",
-  disabled = false
+  placeholder = 'Search or create label...',
+  disabled = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
   const [labels, setLabels] = useState<LabelType[]>([]);
   const [allLabels, setAllLabels] = useState<LabelType[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -50,7 +50,7 @@ export const LabelAutocomplete: React.FC<LabelAutocompleteProps> = ({
 
         // Set selected label if value is provided
         if (value) {
-          const selected = allLabelsList.find(l => l.id === value);
+          const selected = allLabelsList.find((l) => l.id === value);
           if (selected) {
             setSelectedLabel(selected);
           }
@@ -107,16 +107,16 @@ export const LabelAutocomplete: React.FC<LabelAutocompleteProps> = ({
       setIsLoading(true);
       const newLabel = await labelService.createLabel({
         hotelId,
-        name: searchQuery
+        name: searchQuery,
         // Colors will be auto-assigned from random pool
       });
 
       // Update state
-      setAllLabels(prev => [...prev, newLabel]);
+      setAllLabels((prev) => [...prev, newLabel]);
       setSelectedLabel(newLabel);
       onChange(newLabel.id);
       setIsOpen(false);
-      setSearchQuery("");
+      setSearchQuery('');
     } catch (error) {
       console.error('Error creating label:', error);
       alert(error instanceof Error ? error.message : 'Failed to create label');
@@ -129,14 +129,14 @@ export const LabelAutocomplete: React.FC<LabelAutocompleteProps> = ({
     setSelectedLabel(label);
     onChange(label.id);
     setIsOpen(false);
-    setSearchQuery("");
+    setSearchQuery('');
   };
 
   const handleClearSelection = (e: React.MouseEvent) => {
     e.stopPropagation();
     setSelectedLabel(null);
     onChange(null);
-    setSearchQuery("");
+    setSearchQuery('');
   };
 
   const handleInputFocus = () => {
@@ -150,7 +150,7 @@ export const LabelAutocomplete: React.FC<LabelAutocompleteProps> = ({
     <div ref={containerRef} className="relative w-full">
       {/* Display selected label or input */}
       {selectedLabel && !isOpen ? (
-        <div className="flex items-center gap-2 p-2 border rounded-md bg-white">
+        <div className="flex items-center gap-2 rounded-md border bg-white p-2">
           <LabelBadge label={selectedLabel} />
           <button
             type="button"
@@ -163,7 +163,7 @@ export const LabelAutocomplete: React.FC<LabelAutocompleteProps> = ({
         </div>
       ) : (
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
           <Input
             ref={inputRef}
             type="text"
@@ -179,22 +179,22 @@ export const LabelAutocomplete: React.FC<LabelAutocompleteProps> = ({
 
       {/* Dropdown list */}
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
+        <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border bg-white shadow-lg">
           {isLoading ? (
-            <div className="p-3 text-sm text-gray-500 text-center">
-              Searching...
-            </div>
+            <div className="p-3 text-center text-sm text-gray-500">Searching...</div>
           ) : labels.length === 0 && searchQuery ? (
             <button
               type="button"
               onClick={handleCreateLabel}
-              className="w-full p-3 text-left hover:bg-gray-50 flex items-center gap-2 text-sm"
+              className="flex w-full items-center gap-2 p-3 text-left text-sm hover:bg-gray-50"
             >
               <Plus className="h-4 w-4 text-blue-500" />
-              <span>Create "<span className="font-medium">{searchQuery}</span>"</span>
+              <span>
+                Create "<span className="font-medium">{searchQuery}</span>"
+              </span>
             </button>
           ) : labels.length === 0 ? (
-            <div className="p-3 text-sm text-gray-500 text-center">
+            <div className="p-3 text-center text-sm text-gray-500">
               No labels yet. Type to create one.
             </div>
           ) : (
@@ -205,26 +205,29 @@ export const LabelAutocomplete: React.FC<LabelAutocompleteProps> = ({
                   type="button"
                   onClick={() => handleSelectLabel(label)}
                   className={cn(
-                    "w-full p-3 text-left hover:bg-gray-50 flex items-center gap-2",
-                    selectedLabel?.id === label.id && "bg-blue-50"
+                    'flex w-full items-center gap-2 p-3 text-left hover:bg-gray-50',
+                    selectedLabel?.id === label.id && 'bg-blue-50'
                   )}
                 >
                   <LabelBadge label={label} />
                   <span className="text-sm text-gray-700">{label.name}</span>
                 </button>
               ))}
-              {searchQuery && !labels.find(l => l.name === searchQuery.toLowerCase().replace(/\s+/g, '-')) && (
-                <div className="border-t">
-                  <button
-                    type="button"
-                    onClick={handleCreateLabel}
-                    className="w-full p-3 text-left hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-600"
-                  >
-                    <Plus className="h-4 w-4" />
-                    <span>Create "<span className="font-medium">{searchQuery}</span>"</span>
-                  </button>
-                </div>
-              )}
+              {searchQuery &&
+                !labels.find((l) => l.name === searchQuery.toLowerCase().replace(/\s+/g, '-')) && (
+                  <div className="border-t">
+                    <button
+                      type="button"
+                      onClick={handleCreateLabel}
+                      className="flex w-full items-center gap-2 p-3 text-left text-sm text-gray-600 hover:bg-gray-50"
+                    >
+                      <Plus className="h-4 w-4" />
+                      <span>
+                        Create "<span className="font-medium">{searchQuery}</span>"
+                      </span>
+                    </button>
+                  </div>
+                )}
             </>
           )}
         </div>

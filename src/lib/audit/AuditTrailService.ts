@@ -33,16 +33,34 @@ export interface AuditFilter {
   limit?: number;
 }
 
-export type AuditableAction = 
-  | 'create' | 'update' | 'delete' | 'view' | 'export'
-  | 'login' | 'logout' | 'password_change'
-  | 'payment_processed' | 'invoice_generated' | 'fiscal_submitted'
-  | 'backup_created' | 'data_imported' | 'settings_changed';
+export type AuditableAction =
+  | 'create'
+  | 'update'
+  | 'delete'
+  | 'view'
+  | 'export'
+  | 'login'
+  | 'logout'
+  | 'password_change'
+  | 'payment_processed'
+  | 'invoice_generated'
+  | 'fiscal_submitted'
+  | 'backup_created'
+  | 'data_imported'
+  | 'settings_changed';
 
-export type AuditableEntity = 
-  | 'reservation' | 'guest' | 'room' | 'company' | 'pricing_tier'
-  | 'invoice' | 'payment' | 'fiscal_record'
-  | 'user' | 'system' | 'settings';
+export type AuditableEntity =
+  | 'reservation'
+  | 'guest'
+  | 'room'
+  | 'company'
+  | 'pricing_tier'
+  | 'invoice'
+  | 'payment'
+  | 'fiscal_record'
+  | 'user'
+  | 'system'
+  | 'settings';
 
 class AuditTrailService {
   private static instance: AuditTrailService;
@@ -74,7 +92,7 @@ class AuditTrailService {
   public setCurrentUser(userId: string, sessionId: string): void {
     this.currentUserId = userId;
     this.currentSessionId = sessionId;
-    
+
     this.logAuditEvent('login', 'user', userId, undefined, undefined, 'success');
   }
 
@@ -112,7 +130,7 @@ class AuditTrailService {
       userAgent: this.getCurrentUserAgent(),
       result,
       errorMessage,
-      metadata
+      metadata,
     };
 
     // Add to local buffer
@@ -124,7 +142,7 @@ class AuditTrailService {
       userId: this.currentUserId,
       result,
       changedFields: auditEvent.changedFields,
-      errorMessage
+      errorMessage,
     });
 
     // For critical operations, immediately sync to database
@@ -136,7 +154,14 @@ class AuditTrailService {
   // Specific audit methods for common operations
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public logReservationCreate(reservationId: string, reservationData: any): void {
-    this.logAuditEvent('create', 'reservation', reservationId, undefined, reservationData, 'success');
+    this.logAuditEvent(
+      'create',
+      'reservation',
+      reservationId,
+      undefined,
+      reservationData,
+      'success'
+    );
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -146,45 +171,113 @@ class AuditTrailService {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public logReservationDelete(reservationId: string, reservationData: any): void {
-    this.logAuditEvent('delete', 'reservation', reservationId, reservationData, undefined, 'success');
+    this.logAuditEvent(
+      'delete',
+      'reservation',
+      reservationId,
+      reservationData,
+      undefined,
+      'success'
+    );
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  public logPaymentProcessed(paymentId: string, paymentData: any, result: 'success' | 'failure' = 'success', errorMessage?: string): void {
-    this.logAuditEvent('payment_processed', 'payment', paymentId, undefined, paymentData, result, errorMessage);
+  public logPaymentProcessed(
+    paymentId: string,
+    paymentData: any,
+    result: 'success' | 'failure' = 'success',
+    errorMessage?: string
+  ): void {
+    this.logAuditEvent(
+      'payment_processed',
+      'payment',
+      paymentId,
+      undefined,
+      paymentData,
+      result,
+      errorMessage
+    );
   }
 
   public logInvoiceGenerated(invoiceId: string, invoiceData: Record<string, unknown>): void {
-    this.logAuditEvent('invoice_generated', 'invoice', invoiceId, undefined, invoiceData, 'success');
+    this.logAuditEvent(
+      'invoice_generated',
+      'invoice',
+      invoiceId,
+      undefined,
+      invoiceData,
+      'success'
+    );
   }
 
-  public logFiscalSubmission(fiscalRecordId: string, fiscalData: Record<string, unknown>, result: 'success' | 'failure' = 'success', errorMessage?: string): void {
-    this.logAuditEvent('fiscal_submitted', 'fiscal_record', fiscalRecordId, undefined, fiscalData, result, errorMessage);
+  public logFiscalSubmission(
+    fiscalRecordId: string,
+    fiscalData: Record<string, unknown>,
+    result: 'success' | 'failure' = 'success',
+    errorMessage?: string
+  ): void {
+    this.logAuditEvent(
+      'fiscal_submitted',
+      'fiscal_record',
+      fiscalRecordId,
+      undefined,
+      fiscalData,
+      result,
+      errorMessage
+    );
   }
 
   public logDataExport(entityType: AuditableEntity, criteria: Record<string, unknown>): void {
-    this.logAuditEvent('export', entityType, 'bulk', undefined, undefined, 'success', undefined, { criteria });
+    this.logAuditEvent('export', entityType, 'bulk', undefined, undefined, 'success', undefined, {
+      criteria,
+    });
   }
 
-  public logDataImport(entityType: AuditableEntity, importedCount: number, result: 'success' | 'failure' | 'partial' = 'success', errorMessage?: string): void {
-    this.logAuditEvent('data_imported', entityType, 'bulk', undefined, undefined, result, errorMessage, { importedCount } as Record<string, unknown>);
+  public logDataImport(
+    entityType: AuditableEntity,
+    importedCount: number,
+    result: 'success' | 'failure' | 'partial' = 'success',
+    errorMessage?: string
+  ): void {
+    this.logAuditEvent(
+      'data_imported',
+      entityType,
+      'bulk',
+      undefined,
+      undefined,
+      result,
+      errorMessage,
+      { importedCount } as Record<string, unknown>
+    );
   }
 
   public logSettingsChange(settingKey: string, oldValue: unknown, newValue: unknown): void {
-    this.logAuditEvent('settings_changed', 'settings', settingKey, { [settingKey]: oldValue }, { [settingKey]: newValue }, 'success');
+    this.logAuditEvent(
+      'settings_changed',
+      'settings',
+      settingKey,
+      { [settingKey]: oldValue },
+      { [settingKey]: newValue },
+      'success'
+    );
   }
 
   public logSystemBackup(backupId: string, backupMetadata: Record<string, unknown>): void {
-    this.logAuditEvent('backup_created', 'system', backupId, undefined, undefined, 'success', undefined, backupMetadata);
+    this.logAuditEvent(
+      'backup_created',
+      'system',
+      backupId,
+      undefined,
+      undefined,
+      'success',
+      undefined,
+      backupMetadata
+    );
   }
 
   // Query audit trail
   public async getAuditTrail(filter: AuditFilter = {}): Promise<AuditEvent[]> {
     try {
-      let query = supabase
-        .from('audit_logs')
-        .select('*')
-        .order('timestamp', { ascending: false });
+      let query = supabase.from('audit_logs').select('*').order('timestamp', { ascending: false });
 
       if (filter.userId) {
         query = query.eq('user_id', filter.userId);
@@ -236,7 +329,7 @@ class AuditTrailService {
   }> {
     const auditEvents = await this.getAuditTrail({
       startDate: timeRange.start,
-      endDate: timeRange.end
+      endDate: timeRange.end,
     });
 
     const eventsByAction: Record<string, number> = {};
@@ -245,10 +338,10 @@ class AuditTrailService {
     let successfulEvents = 0;
     let criticalEvents = 0;
 
-    auditEvents.forEach(event => {
+    auditEvents.forEach((event) => {
       eventsByAction[event.action] = (eventsByAction[event.action] || 0) + 1;
       eventsByEntity[event.entityType] = (eventsByEntity[event.entityType] || 0) + 1;
-      
+
       if (event.userId) {
         eventsByUser[event.userId] = (eventsByUser[event.userId] || 0) + 1;
       }
@@ -257,7 +350,12 @@ class AuditTrailService {
         successfulEvents++;
       }
 
-      if (this.isCriticalOperation(event.action as AuditableAction, event.entityType as AuditableEntity)) {
+      if (
+        this.isCriticalOperation(
+          event.action as AuditableAction,
+          event.entityType as AuditableEntity
+        )
+      ) {
         criticalEvents++;
       }
     });
@@ -268,7 +366,7 @@ class AuditTrailService {
       eventsByEntity,
       eventsByUser,
       successRate: auditEvents.length > 0 ? (successfulEvents / auditEvents.length) * 100 : 100,
-      criticalEvents
+      criticalEvents,
     };
   }
 
@@ -283,23 +381,21 @@ class AuditTrailService {
   }> {
     const auditEvents = await this.getAuditTrail({
       startDate: period.start,
-      endDate: period.end
+      endDate: period.end,
     });
 
-    const securityEvents = auditEvents.filter(event => 
+    const securityEvents = auditEvents.filter((event) =>
       ['login', 'logout', 'password_change', 'settings_changed'].includes(event.action)
     );
 
-    const dataChanges = auditEvents.filter(event => 
+    const dataChanges = auditEvents.filter((event) =>
       ['create', 'update', 'delete'].includes(event.action)
     );
 
-    const failedOperations = auditEvents.filter(event => 
-      event.result === 'failure'
-    );
+    const failedOperations = auditEvents.filter((event) => event.result === 'failure');
 
     const userActivities: Record<string, number> = {};
-    auditEvents.forEach(event => {
+    auditEvents.forEach((event) => {
       if (event.userId) {
         userActivities[event.userId] = (userActivities[event.userId] || 0) + 1;
       }
@@ -313,7 +409,7 @@ class AuditTrailService {
       dataChanges,
       failedOperations,
       userActivities,
-      recommendations
+      recommendations,
     };
   }
 
@@ -328,10 +424,10 @@ class AuditTrailService {
   }> {
     const recentEvents = await this.getAuditTrail({
       startDate: new Date(Date.now() - 24 * 60 * 60 * 1000), // Last 24 hours
-      limit: 1000
+      limit: 1000,
     });
 
-    const suspiciousEvents = recentEvents.filter(event => 
+    const suspiciousEvents = recentEvents.filter((event) =>
       this.isSuspiciousActivity(event, recentEvents)
     );
 
@@ -339,7 +435,7 @@ class AuditTrailService {
 
     return {
       suspiciousEvents,
-      patterns
+      patterns,
     };
   }
 
@@ -352,7 +448,7 @@ class AuditTrailService {
       this.localAuditBuffer = [];
 
       // Map to actual database schema (columns: id, user_id, action, table_name, record_id, old_values, new_values, description, created_at)
-      const dbLogs = logsToSync.map(event => ({
+      const dbLogs = logsToSync.map((event) => ({
         user_id: event.userId || null,
         action: event.action,
         table_name: event.entityType,
@@ -360,12 +456,10 @@ class AuditTrailService {
         old_values: event.oldValues || null,
         new_values: event.newValues || null,
         description: event.metadata ? JSON.stringify(event.metadata) : null,
-        created_at: event.timestamp.toISOString()
+        created_at: event.timestamp.toISOString(),
       }));
 
-      const { error } = await supabase
-        .from('audit_logs')
-        .insert(dbLogs);
+      const { error } = await supabase.from('audit_logs').insert(dbLogs);
 
       if (error) {
         // Restore logs to buffer if sync failed
@@ -379,13 +473,16 @@ class AuditTrailService {
     }
   }
 
-  private detectChangedFields(oldValues: Record<string, unknown> | undefined, newValues: Record<string, unknown> | undefined): string[] {
+  private detectChangedFields(
+    oldValues: Record<string, unknown> | undefined,
+    newValues: Record<string, unknown> | undefined
+  ): string[] {
     if (!oldValues || !newValues) return [];
 
     const changedFields: string[] = [];
     const allKeys = new Set([...Object.keys(oldValues), ...Object.keys(newValues)]);
 
-    allKeys.forEach(key => {
+    allKeys.forEach((key) => {
       if (JSON.stringify(oldValues[key]) !== JSON.stringify(newValues[key])) {
         changedFields.push(key);
       }
@@ -396,27 +493,31 @@ class AuditTrailService {
 
   private isCriticalOperation(action: AuditableAction, entityType: AuditableEntity): boolean {
     const criticalActions: AuditableAction[] = [
-      'delete', 'payment_processed', 'fiscal_submitted', 'settings_changed', 'data_imported'
+      'delete',
+      'payment_processed',
+      'fiscal_submitted',
+      'settings_changed',
+      'data_imported',
     ];
-    
-    const criticalEntities: AuditableEntity[] = [
-      'payment', 'fiscal_record', 'settings', 'user'
-    ];
+
+    const criticalEntities: AuditableEntity[] = ['payment', 'fiscal_record', 'settings', 'user'];
 
     return criticalActions.includes(action) || criticalEntities.includes(entityType);
   }
 
   private filterLocalAuditEvents(filter: AuditFilter): AuditEvent[] {
-    return this.localAuditBuffer.filter(event => {
-      if (filter.userId && event.userId !== filter.userId) return false;
-      if (filter.entityType && event.entityType !== filter.entityType) return false;
-      if (filter.entityId && event.entityId !== filter.entityId) return false;
-      if (filter.action && event.action !== filter.action) return false;
-      if (filter.result && event.result !== filter.result) return false;
-      if (filter.startDate && event.timestamp < filter.startDate) return false;
-      if (filter.endDate && event.timestamp > filter.endDate) return false;
-      return true;
-    }).slice(0, filter.limit || 100);
+    return this.localAuditBuffer
+      .filter((event) => {
+        if (filter.userId && event.userId !== filter.userId) return false;
+        if (filter.entityType && event.entityType !== filter.entityType) return false;
+        if (filter.entityId && event.entityId !== filter.entityId) return false;
+        if (filter.action && event.action !== filter.action) return false;
+        if (filter.result && event.result !== filter.result) return false;
+        if (filter.startDate && event.timestamp < filter.startDate) return false;
+        if (filter.endDate && event.timestamp > filter.endDate) return false;
+        return true;
+      })
+      .slice(0, filter.limit || 100);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -436,37 +537,41 @@ class AuditTrailService {
       userAgent: undefined,
       result: 'success',
       errorMessage: undefined,
-      metadata: dbEvent.description ? JSON.parse(dbEvent.description) : undefined
+      metadata: dbEvent.description ? JSON.parse(dbEvent.description) : undefined,
     };
   }
 
   private calculateAuditCoverage(events: AuditEvent[]): number {
     // Simple audit coverage calculation based on critical operations
-    const criticalOperations = events.filter(event => 
+    const criticalOperations = events.filter((event) =>
       this.isCriticalOperation(event.action as AuditableAction, event.entityType as AuditableEntity)
     );
-    
+
     return events.length > 0 ? (criticalOperations.length / events.length) * 100 : 0;
   }
 
   private generateSecurityRecommendations(events: AuditEvent[]): string[] {
     const recommendations: string[] = [];
-    
-    const failureRate = events.filter(e => e.result === 'failure').length / events.length;
+
+    const failureRate = events.filter((e) => e.result === 'failure').length / events.length;
     if (failureRate > 0.1) {
-      recommendations.push('High failure rate detected. Review system stability and user training.');
+      recommendations.push(
+        'High failure rate detected. Review system stability and user training.'
+      );
     }
 
-    const uniqueUsers = new Set(events.map(e => e.userId)).size;
+    const uniqueUsers = new Set(events.map((e) => e.userId)).size;
     if (uniqueUsers < 2) {
       recommendations.push('Consider implementing multi-user access controls for better security.');
     }
 
-    const criticalEvents = events.filter(e => 
+    const criticalEvents = events.filter((e) =>
       this.isCriticalOperation(e.action as AuditableAction, e.entityType as AuditableEntity)
     );
     if (criticalEvents.length === 0) {
-      recommendations.push('No critical operations logged. Ensure audit coverage is comprehensive.');
+      recommendations.push(
+        'No critical operations logged. Ensure audit coverage is comprehensive.'
+      );
     }
 
     return recommendations;
@@ -474,21 +579,19 @@ class AuditTrailService {
 
   private isSuspiciousActivity(event: AuditEvent, allEvents: AuditEvent[]): boolean {
     // Simple suspicious activity detection
-    const userEvents = allEvents.filter(e => e.userId === event.userId);
-    
+    const userEvents = allEvents.filter((e) => e.userId === event.userId);
+
     // Too many failed operations
-    const recentFailures = userEvents.filter(e => 
-      e.result === 'failure' && 
-      Date.now() - e.timestamp.getTime() < 60 * 60 * 1000 // Last hour
+    const recentFailures = userEvents.filter(
+      (e) => e.result === 'failure' && Date.now() - e.timestamp.getTime() < 60 * 60 * 1000 // Last hour
     );
-    
+
     if (recentFailures.length > 5) return true;
 
     // Multiple delete operations in short time
     if (event.action === 'delete') {
-      const recentDeletes = userEvents.filter(e => 
-        e.action === 'delete' && 
-        Date.now() - e.timestamp.getTime() < 10 * 60 * 1000 // Last 10 minutes
+      const recentDeletes = userEvents.filter(
+        (e) => e.action === 'delete' && Date.now() - e.timestamp.getTime() < 10 * 60 * 1000 // Last 10 minutes
       );
       if (recentDeletes.length > 3) return true;
     }
@@ -505,18 +608,18 @@ class AuditTrailService {
     const patterns = [];
 
     // Detect bulk data access
-    const bulkAccess = events.filter(e => e.action === 'view' && e.entityType === 'guest');
+    const bulkAccess = events.filter((e) => e.action === 'view' && e.entityType === 'guest');
     if (bulkAccess.length > 100) {
       patterns.push({
         type: 'bulk_data_access',
         description: 'Unusual bulk data access detected',
         events: bulkAccess,
-        riskLevel: 'medium' as const
+        riskLevel: 'medium' as const,
       });
     }
 
     // Detect after-hours activity
-    const afterHours = events.filter(e => {
+    const afterHours = events.filter((e) => {
       const hour = e.timestamp.getHours();
       return hour < 6 || hour > 22; // Before 6 AM or after 10 PM
     });
@@ -525,7 +628,7 @@ class AuditTrailService {
         type: 'after_hours_activity',
         description: 'Significant after-hours activity detected',
         events: afterHours,
-        riskLevel: 'low' as const
+        riskLevel: 'low' as const,
       });
     }
 

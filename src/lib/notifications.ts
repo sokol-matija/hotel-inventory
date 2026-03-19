@@ -6,37 +6,39 @@ import { gsap } from 'gsap';
 export type NotificationType = 'success' | 'error' | 'info' | 'warning';
 
 class HotelNotification {
-    private container: HTMLElement | null = null;
-    private notification: HTMLElement | null = null;
-    private progressBar: HTMLElement | null = null;
-    private activeNotifications: Array<{
-        container: HTMLElement;
-        height: number;
-        timeline: gsap.core.Timeline;
-    }> = [];
-    private notificationGap = 12;
-    private lastNotificationTime: Map<string, number> = new Map();
-    private debounceDelay = 2000; // 2 seconds debounce
+  private container: HTMLElement | null = null;
+  private notification: HTMLElement | null = null;
+  private progressBar: HTMLElement | null = null;
+  private activeNotifications: Array<{
+    container: HTMLElement;
+    height: number;
+    timeline: gsap.core.Timeline;
+  }> = [];
+  private notificationGap = 12;
+  private lastNotificationTime: Map<string, number> = new Map();
+  private debounceDelay = 2000; // 2 seconds debounce
 
-    constructor() {
-        this.createNotificationContainer();
+  constructor() {
+    this.createNotificationContainer();
+  }
+
+  private createNotificationContainer() {
+    // Check if container already exists
+    if (document.getElementById('hotelNotificationContainer')) {
+      this.container = document.getElementById('hotelNotificationContainer');
+      this.notification = this.container?.querySelector('.hotel-notification') as HTMLElement;
+      this.progressBar = this.notification?.querySelector(
+        '.hotel-notification-progress-bar'
+      ) as HTMLElement;
+      return;
     }
 
-    private createNotificationContainer() {
-        // Check if container already exists
-        if (document.getElementById('hotelNotificationContainer')) {
-            this.container = document.getElementById('hotelNotificationContainer');
-            this.notification = this.container?.querySelector('.hotel-notification') as HTMLElement;
-            this.progressBar = this.notification?.querySelector('.hotel-notification-progress-bar') as HTMLElement;
-            return;
-        }
+    // Create container and add to body
+    const container = document.createElement('div');
+    container.id = 'hotelNotificationContainer';
+    container.className = 'hotel-notification-container';
 
-        // Create container and add to body
-        const container = document.createElement('div');
-        container.id = 'hotelNotificationContainer';
-        container.className = 'hotel-notification-container';
-        
-        container.innerHTML = `
+    container.innerHTML = `
             <div class="hotel-notification">
                 <div class="hotel-notification-content">
                     <div class="hotel-notification-icon">
@@ -62,25 +64,27 @@ class HotelNotification {
             </div>
         `;
 
-        document.body.appendChild(container);
-        
-        // Apply styles programmatically for better integration
-        this.applyStyles();
-        
-        this.container = container;
-        this.notification = container.querySelector('.hotel-notification') as HTMLElement;
-        this.progressBar = this.notification.querySelector('.hotel-notification-progress-bar') as HTMLElement;
+    document.body.appendChild(container);
+
+    // Apply styles programmatically for better integration
+    this.applyStyles();
+
+    this.container = container;
+    this.notification = container.querySelector('.hotel-notification') as HTMLElement;
+    this.progressBar = this.notification.querySelector(
+      '.hotel-notification-progress-bar'
+    ) as HTMLElement;
+  }
+
+  private applyStyles() {
+    // Check if styles already applied
+    if (document.getElementById('hotelNotificationStyles')) {
+      return;
     }
 
-    private applyStyles() {
-        // Check if styles already applied
-        if (document.getElementById('hotelNotificationStyles')) {
-            return;
-        }
-
-        const style = document.createElement('style');
-        style.id = 'hotelNotificationStyles';
-        style.textContent = `
+    const style = document.createElement('style');
+    style.id = 'hotelNotificationStyles';
+    style.textContent = `
             /* Hotel Notification Container */
             .hotel-notification-container {
                 position: fixed;
@@ -272,70 +276,80 @@ class HotelNotification {
                 }
             }
         `;
-        
-        document.head.appendChild(style);
+
+    document.head.appendChild(style);
+  }
+
+  /**
+   * Show a notification
+   * @param type - Type of notification: 'success', 'error', 'info', or 'warning'
+   * @param title - Title of the notification
+   * @param message - Message to display
+   * @param duration - Duration in seconds before notification disappears
+   * @returns The GSAP timeline for the animation
+   */
+  show(
+    type: NotificationType = 'success',
+    title: string = 'Success!',
+    message: string = 'Your action has been completed successfully.',
+    duration: number = 4
+  ): gsap.core.Timeline | null {
+    // Create a unique key for this notification
+    const notificationKey = `${type}-${title}`;
+    const now = Date.now();
+    const lastTime = this.lastNotificationTime.get(notificationKey) || 0;
+
+    // If the same notification was shown recently, skip it
+    if (now - lastTime < this.debounceDelay) {
+      console.log(`Notification debounced: ${title}`);
+      return null;
     }
 
-    /**
-     * Show a notification
-     * @param type - Type of notification: 'success', 'error', 'info', or 'warning'
-     * @param title - Title of the notification
-     * @param message - Message to display
-     * @param duration - Duration in seconds before notification disappears
-     * @returns The GSAP timeline for the animation
-     */
-    show(type: NotificationType = 'success', title: string = 'Success!', message: string = 'Your action has been completed successfully.', duration: number = 4): gsap.core.Timeline | null {
-        // Create a unique key for this notification
-        const notificationKey = `${type}-${title}`;
-        const now = Date.now();
-        const lastTime = this.lastNotificationTime.get(notificationKey) || 0;
-        
-        // If the same notification was shown recently, skip it
-        if (now - lastTime < this.debounceDelay) {
-            console.log(`Notification debounced: ${title}`);
-            return null;
-        }
-        
-        // Update last notification time
-        this.lastNotificationTime.set(notificationKey, now);
-        // Create a new notification for stacking
-        const notificationContainer = this.createStackedNotification(type, title, message, duration);
-        
-        return this.animateNotification(notificationContainer, duration);
+    // Update last notification time
+    this.lastNotificationTime.set(notificationKey, now);
+    // Create a new notification for stacking
+    const notificationContainer = this.createStackedNotification(type, title, message, duration);
+
+    return this.animateNotification(notificationContainer, duration);
+  }
+
+  private createStackedNotification(
+    type: NotificationType,
+    title: string,
+    message: string,
+    _duration: number
+  ): HTMLElement {
+    const container = document.createElement('div');
+    container.className = 'hotel-notification-container';
+    container.style.position = 'fixed';
+    container.style.bottom = '20px';
+    container.style.right = '20px';
+    container.style.zIndex = '1000';
+    container.style.opacity = '0';
+    container.style.visibility = 'hidden';
+    container.style.pointerEvents = 'none';
+
+    const notification = document.createElement('div');
+    notification.className = `hotel-notification ${type}`;
+
+    // Update icon based on type
+    let iconSvg = '';
+    switch (type) {
+      case 'success':
+        iconSvg = `<path fill="none" d="M0 0h24v24H0z"/><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z" fill="currentColor"/>`;
+        break;
+      case 'error':
+        iconSvg = `<path fill="none" d="M0 0h24v24H0z"/><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="currentColor"/>`;
+        break;
+      case 'info':
+        iconSvg = `<path fill="none" d="M0 0h24v24H0z"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" fill="currentColor"/>`;
+        break;
+      case 'warning':
+        iconSvg = `<path fill="none" d="M0 0h24v24H0z"/><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2zm0 4.15L9.85 8.5 7.22 8.95l2.28 2.23-.54 3.18L12 13.13l3.04 1.23-.54-3.18 2.28-2.23-2.63-.45L12 6.15z" fill="currentColor"/>`;
+        break;
     }
 
-    private createStackedNotification(type: NotificationType, title: string, message: string, _duration: number): HTMLElement {
-        const container = document.createElement('div');
-        container.className = 'hotel-notification-container';
-        container.style.position = 'fixed';
-        container.style.bottom = '20px';
-        container.style.right = '20px';
-        container.style.zIndex = '1000';
-        container.style.opacity = '0';
-        container.style.visibility = 'hidden';
-        container.style.pointerEvents = 'none';
-
-        const notification = document.createElement('div');
-        notification.className = `hotel-notification ${type}`;
-        
-        // Update icon based on type
-        let iconSvg = '';
-        switch (type) {
-            case 'success':
-                iconSvg = `<path fill="none" d="M0 0h24v24H0z"/><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z" fill="currentColor"/>`;
-                break;
-            case 'error':
-                iconSvg = `<path fill="none" d="M0 0h24v24H0z"/><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="currentColor"/>`;
-                break;
-            case 'info':
-                iconSvg = `<path fill="none" d="M0 0h24v24H0z"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" fill="currentColor"/>`;
-                break;
-            case 'warning':
-                iconSvg = `<path fill="none" d="M0 0h24v24H0z"/><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2zm0 4.15L9.85 8.5 7.22 8.95l2.28 2.23-.54 3.18L12 13.13l3.04 1.23-.54-3.18 2.28-2.23-2.63-.45L12 6.15z" fill="currentColor"/>`;
-                break;
-        }
-
-        notification.innerHTML = `
+    notification.innerHTML = `
             <div class="hotel-notification-content">
                 <div class="hotel-notification-icon">
                     <svg viewBox="0 0 24 24" width="20" height="20">
@@ -358,157 +372,194 @@ class HotelNotification {
             </div>
         `;
 
-        container.appendChild(notification);
-        document.body.appendChild(container);
+    container.appendChild(notification);
+    document.body.appendChild(container);
 
-        // Apply styles if not already applied
-        this.applyStyles();
+    // Apply styles if not already applied
+    this.applyStyles();
 
-        return container;
-    }
+    return container;
+  }
 
-    private animateNotification(notificationContainer: HTMLElement, duration: number): gsap.core.Timeline {
-        const notification = notificationContainer.querySelector('.hotel-notification') as HTMLElement;
-        const progressBar = notification.querySelector('.hotel-notification-progress-bar') as HTMLElement;
-        const closeButton = notification.querySelector('.hotel-notification-close') as HTMLElement;
+  private animateNotification(
+    notificationContainer: HTMLElement,
+    duration: number
+  ): gsap.core.Timeline {
+    const notification = notificationContainer.querySelector('.hotel-notification') as HTMLElement;
+    const progressBar = notification.querySelector(
+      '.hotel-notification-progress-bar'
+    ) as HTMLElement;
+    const closeButton = notification.querySelector('.hotel-notification-close') as HTMLElement;
 
-        // Add to active notifications
-        const notificationObj = {
-            container: notificationContainer,
-            height: 0,
-            timeline: gsap.timeline()
-        };
-        this.activeNotifications.push(notificationObj);
+    // Add to active notifications
+    const notificationObj = {
+      container: notificationContainer,
+      height: 0,
+      timeline: gsap.timeline(),
+    };
+    this.activeNotifications.push(notificationObj);
 
-        // Position notifications
-        this.positionNotifications();
+    // Position notifications
+    this.positionNotifications();
 
-        // Create timeline
-        const tl = gsap.timeline({
-            onComplete: () => {
-                // Remove from active notifications
-                const index = this.activeNotifications.findIndex(n => n.container === notificationContainer);
-                if (index !== -1) {
-                    this.activeNotifications.splice(index, 1);
-                }
-
-                // Remove DOM element
-                if (document.body.contains(notificationContainer)) {
-                    document.body.removeChild(notificationContainer);
-                }
-
-                // Reposition remaining notifications
-                this.positionNotifications();
-            }
-        });
-
-        notificationObj.timeline = tl;
-
-        // Show container
-        tl.set(notificationContainer, {
-            visibility: 'visible',
-            pointerEvents: 'auto'
-        });
-
-        // Animate in
-        tl.fromTo(notificationContainer, {
-            opacity: 0,
-            x: 30,
-            scale: 0.95
-        }, {
-            opacity: 1,
-            x: 0,
-            scale: 1,
-            duration: 0.4,
-            ease: 'back.out(1.2)',
-            onComplete: () => {
-                // Set height after animation
-                notificationObj.height = notificationContainer.offsetHeight;
-                this.positionNotifications();
-            }
-        });
-
-        // Animate icon
-        tl.fromTo(notification.querySelector('.hotel-notification-icon'), {
-            scale: 0,
-            rotation: -180
-        }, {
-            scale: 1,
-            rotation: 0,
-            duration: 0.3,
-            ease: 'back.out(2)'
-        }, '-=0.2');
-
-        // Animate progress bar
-        tl.fromTo(progressBar, {
-            scaleX: 0
-        }, {
-            scaleX: 1,
-            duration: duration,
-            ease: 'none'
-        }, '<');
-
-        // Animate out
-        tl.to(notificationContainer, {
-            opacity: 0,
-            x: 50,
-            scale: 0.95,
-            duration: 0.3,
-            ease: 'power2.in'
-        });
-
-        // Close button handler
-        closeButton.addEventListener('click', () => {
-            tl.progress(1);
-        });
-
-        return tl;
-    }
-
-    private positionNotifications() {
-        let currentOffset = 0;
-
-        // Position from bottom to top (reverse order for stacking upwards)
-        for (let i = this.activeNotifications.length - 1; i >= 0; i--) {
-            const notification = this.activeNotifications[i];
-            gsap.to(notification.container, {
-                y: -currentOffset,
-                duration: 0.3,
-                ease: 'power2.out'
-            });
-
-            const height = notification.height || 80;
-            currentOffset += height + this.notificationGap;
+    // Create timeline
+    const tl = gsap.timeline({
+      onComplete: () => {
+        // Remove from active notifications
+        const index = this.activeNotifications.findIndex(
+          (n) => n.container === notificationContainer
+        );
+        if (index !== -1) {
+          this.activeNotifications.splice(index, 1);
         }
-    }
 
-    /**
-     * Show a success notification
-     */
-    success(title: string = 'Success!', message: string = 'Your action has been completed successfully.', duration: number = 4): gsap.core.Timeline | null {
-        return this.show('success', title, message, duration);
-    }
+        // Remove DOM element
+        if (document.body.contains(notificationContainer)) {
+          document.body.removeChild(notificationContainer);
+        }
 
-    /**
-     * Show an error notification
-     */
-    error(title: string = 'Error!', message: string = 'Something went wrong. Please try again.', duration: number = 5): gsap.core.Timeline | null {
-        return this.show('error', title, message, duration);
-    }
+        // Reposition remaining notifications
+        this.positionNotifications();
+      },
+    });
 
-    /**
-     * Show an info notification
-     */
-    info(title: string = 'Information', message: string = 'Here is some important information for you.', duration: number = 4): gsap.core.Timeline | null {
-        return this.show('info', title, message, duration);
-    }
+    notificationObj.timeline = tl;
 
-    /**
-     * Show a warning notification
-     */
-    warning(title: string = 'Warning', message: string = 'Please pay attention to this information.', duration: number = 5): gsap.core.Timeline | null {
-        return this.show('warning', title, message, duration);
+    // Show container
+    tl.set(notificationContainer, {
+      visibility: 'visible',
+      pointerEvents: 'auto',
+    });
+
+    // Animate in
+    tl.fromTo(
+      notificationContainer,
+      {
+        opacity: 0,
+        x: 30,
+        scale: 0.95,
+      },
+      {
+        opacity: 1,
+        x: 0,
+        scale: 1,
+        duration: 0.4,
+        ease: 'back.out(1.2)',
+        onComplete: () => {
+          // Set height after animation
+          notificationObj.height = notificationContainer.offsetHeight;
+          this.positionNotifications();
+        },
+      }
+    );
+
+    // Animate icon
+    tl.fromTo(
+      notification.querySelector('.hotel-notification-icon'),
+      {
+        scale: 0,
+        rotation: -180,
+      },
+      {
+        scale: 1,
+        rotation: 0,
+        duration: 0.3,
+        ease: 'back.out(2)',
+      },
+      '-=0.2'
+    );
+
+    // Animate progress bar
+    tl.fromTo(
+      progressBar,
+      {
+        scaleX: 0,
+      },
+      {
+        scaleX: 1,
+        duration: duration,
+        ease: 'none',
+      },
+      '<'
+    );
+
+    // Animate out
+    tl.to(notificationContainer, {
+      opacity: 0,
+      x: 50,
+      scale: 0.95,
+      duration: 0.3,
+      ease: 'power2.in',
+    });
+
+    // Close button handler
+    closeButton.addEventListener('click', () => {
+      tl.progress(1);
+    });
+
+    return tl;
+  }
+
+  private positionNotifications() {
+    let currentOffset = 0;
+
+    // Position from bottom to top (reverse order for stacking upwards)
+    for (let i = this.activeNotifications.length - 1; i >= 0; i--) {
+      const notification = this.activeNotifications[i];
+      gsap.to(notification.container, {
+        y: -currentOffset,
+        duration: 0.3,
+        ease: 'power2.out',
+      });
+
+      const height = notification.height || 80;
+      currentOffset += height + this.notificationGap;
     }
+  }
+
+  /**
+   * Show a success notification
+   */
+  success(
+    title: string = 'Success!',
+    message: string = 'Your action has been completed successfully.',
+    duration: number = 4
+  ): gsap.core.Timeline | null {
+    return this.show('success', title, message, duration);
+  }
+
+  /**
+   * Show an error notification
+   */
+  error(
+    title: string = 'Error!',
+    message: string = 'Something went wrong. Please try again.',
+    duration: number = 5
+  ): gsap.core.Timeline | null {
+    return this.show('error', title, message, duration);
+  }
+
+  /**
+   * Show an info notification
+   */
+  info(
+    title: string = 'Information',
+    message: string = 'Here is some important information for you.',
+    duration: number = 4
+  ): gsap.core.Timeline | null {
+    return this.show('info', title, message, duration);
+  }
+
+  /**
+   * Show a warning notification
+   */
+  warning(
+    title: string = 'Warning',
+    message: string = 'Please pay attention to this information.',
+    duration: number = 5
+  ): gsap.core.Timeline | null {
+    return this.show('warning', title, message, duration);
+  }
 }
 
 // Create a global instance

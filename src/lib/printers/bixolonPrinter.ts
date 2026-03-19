@@ -3,13 +3,13 @@ import { printWindowsReceipt } from './windowsPrinter';
 
 /**
  * Bixolon Printer Integration
- * 
+ *
  * Bixolon printers typically support multiple connection methods:
  * 1. Network (TCP/IP) - Most common for POS systems
  * 2. USB with ESC/POS commands
  * 3. Bluetooth (mobile integration)
  * 4. Serial connection
- * 
+ *
  * This implementation provides multiple approaches:
  * - ESC/POS command generation for direct printer communication
  * - Web browser printing with custom formatting
@@ -29,20 +29,20 @@ const ESC_POS_COMMANDS = {
   UNDERLINE_OFF: ESC + '-\x00',
   CENTER: ESC + 'a\x01',
   LEFT: ESC + 'a\x00',
-  
+
   // Font sizes
   NORMAL_TEXT: GS + '!\x00',
   DOUBLE_HEIGHT: GS + '!\x10',
   DOUBLE_WIDTH: GS + '!\x20',
   DOUBLE_SIZE: GS + '!\x30',
-  
+
   // Paper control
   CUT_PAPER: GS + 'V\x42\x00',
   FEED_LINES: (lines: number) => ESC + 'd' + String.fromCharCode(lines),
-  
+
   // Line separators
   LINE_SEPARATOR: '-'.repeat(32),
-  DOUBLE_LINE: '='.repeat(32)
+  DOUBLE_LINE: '='.repeat(32),
 };
 
 /**
@@ -50,9 +50,9 @@ const ESC_POS_COMMANDS = {
  */
 export function generateESCPOSReceipt(data: PrintReceiptData): string {
   const { order, hotelInfo } = data;
-  
+
   let receipt = ESC_POS_COMMANDS.RESET;
-  
+
   // Header
   receipt += ESC_POS_COMMANDS.CENTER;
   receipt += ESC_POS_COMMANDS.DOUBLE_SIZE;
@@ -61,7 +61,7 @@ export function generateESCPOSReceipt(data: PrintReceiptData): string {
   receipt += hotelInfo.address + '\n';
   receipt += 'Tel: ' + hotelInfo.phone + '\n';
   receipt += ESC_POS_COMMANDS.DOUBLE_LINE + '\n';
-  
+
   // Order info
   receipt += ESC_POS_COMMANDS.LEFT;
   receipt += ESC_POS_COMMANDS.BOLD_ON;
@@ -72,52 +72,51 @@ export function generateESCPOSReceipt(data: PrintReceiptData): string {
   receipt += `Guest: ${order.guestName}\n`;
   receipt += `Date: ${order.orderedAt.toLocaleString()}\n`;
   receipt += ESC_POS_COMMANDS.LINE_SEPARATOR + '\n';
-  
+
   // Items
   receipt += ESC_POS_COMMANDS.BOLD_ON;
   receipt += 'QTY ITEM                    TOTAL\n';
   receipt += ESC_POS_COMMANDS.BOLD_OFF;
   receipt += ESC_POS_COMMANDS.LINE_SEPARATOR + '\n';
-  
-  order.items.forEach(item => {
+
+  order.items.forEach((item) => {
     const qty = item.quantity.toString().padEnd(3);
-    const itemName = item.itemName.length > 18 
-      ? item.itemName.substring(0, 15) + '...' 
-      : item.itemName.padEnd(18);
+    const itemName =
+      item.itemName.length > 18 ? item.itemName.substring(0, 15) + '...' : item.itemName.padEnd(18);
     const total = `€${item.totalPrice.toFixed(2)}`.padStart(7);
-    
+
     receipt += `${qty} ${itemName} ${total}\n`;
   });
-  
+
   receipt += ESC_POS_COMMANDS.LINE_SEPARATOR + '\n';
-  
+
   // Totals
   receipt += `Subtotal:               €${order.subtotal.toFixed(2)}\n`;
   receipt += `VAT (25%):              €${order.tax.toFixed(2)}\n`;
   receipt += ESC_POS_COMMANDS.BOLD_ON;
   receipt += `TOTAL:                  €${order.totalAmount.toFixed(2)}\n`;
   receipt += ESC_POS_COMMANDS.BOLD_OFF;
-  
+
   // Payment info
   receipt += ESC_POS_COMMANDS.LINE_SEPARATOR + '\n';
   receipt += `Payment: ${order.paymentMethod.replace('_', ' ').toUpperCase()}\n`;
   receipt += `Status: ${order.paymentStatus.toUpperCase()}\n`;
-  
+
   // Footer
   if (order.notes) {
     receipt += ESC_POS_COMMANDS.LINE_SEPARATOR + '\n';
     receipt += 'Notes: ' + order.notes + '\n';
   }
-  
+
   receipt += ESC_POS_COMMANDS.DOUBLE_LINE + '\n';
   receipt += ESC_POS_COMMANDS.CENTER;
   receipt += 'Thank you for your stay!\n';
   receipt += 'Enjoy your order!\n';
-  
+
   // Cut paper and feed
   receipt += ESC_POS_COMMANDS.FEED_LINES(3);
   receipt += ESC_POS_COMMANDS.CUT_PAPER;
-  
+
   return receipt;
 }
 
@@ -126,13 +125,13 @@ export function generateESCPOSReceipt(data: PrintReceiptData): string {
  * Many modern Bixolon printers have built-in web servers
  */
 export async function printViaNetwork(
-  printerIP: string, 
+  printerIP: string,
   data: PrintReceiptData,
   _port: number = 9100
 ): Promise<boolean> {
   try {
     const escposData = generateESCPOSReceipt(data);
-    
+
     // Try HTTP interface first (some Bixolon models support this)
     try {
       const response = await fetch(`http://${printerIP}/print`, {
@@ -140,21 +139,20 @@ export async function printViaNetwork(
         headers: {
           'Content-Type': 'application/octet-stream',
         },
-        body: escposData
+        body: escposData,
       });
-      
+
       if (response.ok) {
         return true;
       }
     } catch {
       console.log('HTTP interface not available, trying raw TCP...');
     }
-    
+
     // Fallback: Raw TCP socket (requires server-side proxy in production)
     // This would typically need a WebSocket or server-side component
     console.warn('Raw TCP printing requires server-side implementation');
     return false;
-    
   } catch (error) {
     console.error('Network printing failed:', error);
     return false;
@@ -167,18 +165,18 @@ export async function printViaNetwork(
  */
 export function printViaBrowser(data: PrintReceiptData): void {
   const { order, hotelInfo } = data;
-  
+
   // Create a hidden iframe for printing
   const printFrame = document.createElement('iframe');
   printFrame.style.display = 'none';
   document.body.appendChild(printFrame);
-  
+
   const printDocument = printFrame.contentDocument || printFrame.contentWindow?.document;
   if (!printDocument) {
     console.error('Could not access print frame document');
     return;
   }
-  
+
   // Generate HTML receipt with CSS for thermal printer formatting
   const receiptHTML = `
     <!DOCTYPE html>
@@ -246,12 +244,16 @@ export function printViaBrowser(data: PrintReceiptData): void {
       
       <div class="bold">QTY ITEM                    TOTAL</div>
       
-      ${order.items.map(item => `
+      ${order.items
+        .map(
+          (item) => `
         <div class="item-line">
           <span>${item.quantity}x ${item.itemName}</span>
           <span>€${item.totalPrice.toFixed(2)}</span>
         </div>
-      `).join('')}
+      `
+        )
+        .join('')}
       
       <div class="separator"></div>
       
@@ -273,10 +275,14 @@ export function printViaBrowser(data: PrintReceiptData): void {
       <div>Payment: ${order.paymentMethod.replace('_', ' ').toUpperCase()}</div>
       <div>Status: ${order.paymentStatus.toUpperCase()}</div>
       
-      ${order.notes ? `
+      ${
+        order.notes
+          ? `
         <div class="separator"></div>
         <div>Notes: ${order.notes}</div>
-      ` : ''}
+      `
+          : ''
+      }
       
       <div class="separator"></div>
       
@@ -285,17 +291,17 @@ export function printViaBrowser(data: PrintReceiptData): void {
     </body>
     </html>
   `;
-  
+
   printDocument.open();
   printDocument.write(receiptHTML);
   printDocument.close();
-  
+
   // Wait for content to load, then print
   setTimeout(() => {
     if (printFrame.contentWindow) {
       printFrame.contentWindow.print();
     }
-    
+
     // Clean up after printing
     setTimeout(() => {
       document.body.removeChild(printFrame);
@@ -314,7 +320,7 @@ export async function printReceipt(
   } = {}
 ): Promise<boolean> {
   const { printerIP, preferredMethod = 'windows' } = options;
-  
+
   try {
     // Try Windows WinPrint first (best for thermal printers)
     if (preferredMethod === 'windows' || !printerIP) {
@@ -323,7 +329,7 @@ export async function printReceipt(
         return true;
       }
     }
-    
+
     // Try network printing if IP is provided
     if (printerIP && (preferredMethod === 'network' || preferredMethod === 'escpos')) {
       const networkSuccess = await printViaNetwork(printerIP, data);
@@ -331,11 +337,10 @@ export async function printReceipt(
         return true;
       }
     }
-    
+
     // Fallback to basic browser printing
     printViaBrowser(data);
     return true;
-    
   } catch (error) {
     console.error('All printing methods failed:', error);
     return false;
@@ -354,29 +359,29 @@ export async function testPrinter(printerIP?: string): Promise<{
     try {
       const response = await fetch(`http://${printerIP}/status`, {
         method: 'GET',
-        timeout: 3000
+        timeout: 3000,
       } as RequestInit);
-      
+
       if (response.ok) {
         return {
           success: true,
           method: 'network',
-          message: 'Printer connected via network'
+          message: 'Printer connected via network',
         };
       }
     } catch {
       return {
         success: false,
         method: 'network',
-        message: 'Network printer not accessible'
+        message: 'Network printer not accessible',
       };
     }
   }
-  
+
   // Browser printing is always available
   return {
     success: true,
     method: 'browser',
-    message: 'Browser printing available'
+    message: 'Browser printing available',
   };
 }

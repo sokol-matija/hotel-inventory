@@ -49,7 +49,7 @@ class PerformanceMonitoringService {
   private systemMetrics: SystemMetrics[] = [];
   private performanceObserver?: PerformanceObserver;
   private isMonitoring = false;
-  
+
   private readonly MAX_METRICS_STORAGE = 10000;
   private readonly METRIC_CLEANUP_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
@@ -81,9 +81,11 @@ class PerformanceMonitoringService {
       });
 
       // Observe different types of performance entries
-      this.performanceObserver.observe({ entryTypes: ['navigation', 'resource', 'measure', 'paint'] });
+      this.performanceObserver.observe({
+        entryTypes: ['navigation', 'resource', 'measure', 'paint'],
+      });
       this.isMonitoring = true;
-      
+
       logger.info('PerformanceMonitoring', 'Performance monitoring initialized');
     } catch (error) {
       logger.error('PerformanceMonitoring', 'Failed to initialize performance monitoring', error);
@@ -112,12 +114,16 @@ class PerformanceMonitoringService {
       { name: 'dns_lookup', value: entry.domainLookupEnd - entry.domainLookupStart, unit: 'ms' },
       { name: 'tcp_connection', value: entry.connectEnd - entry.connectStart, unit: 'ms' },
       { name: 'request_response', value: entry.responseEnd - entry.requestStart, unit: 'ms' },
-      { name: 'dom_parse', value: entry.domContentLoadedEventEnd - entry.domContentLoadedEventStart, unit: 'ms' },
+      {
+        name: 'dom_parse',
+        value: entry.domContentLoadedEventEnd - entry.domContentLoadedEventStart,
+        unit: 'ms',
+      },
       { name: 'page_load', value: entry.loadEventEnd - entry.loadEventStart, unit: 'ms' },
-      { name: 'ttfb', value: entry.responseStart - entry.requestStart, unit: 'ms' }
+      { name: 'ttfb', value: entry.responseStart - entry.requestStart, unit: 'ms' },
     ];
 
-    metrics.forEach(metric => {
+    metrics.forEach((metric) => {
       this.recordMetric(metric.name, metric.value, metric.unit, 'navigation');
     });
   }
@@ -125,8 +131,8 @@ class PerformanceMonitoringService {
   private recordResourceMetrics(entry: PerformanceResourceTiming): void {
     // Record metrics for critical resources only
     const criticalResources = ['.js', '.css', '.json'];
-    const isCritical = criticalResources.some(ext => entry.name.includes(ext));
-    
+    const isCritical = criticalResources.some((ext) => entry.name.includes(ext));
+
     if (isCritical) {
       this.recordMetric(
         'resource_load_time',
@@ -148,10 +154,10 @@ class PerformanceMonitoringService {
 
   // Public API for recording metrics
   public recordMetric(
-    name: string, 
-    value: number, 
-    unit: string, 
-    category: string, 
+    name: string,
+    value: number,
+    unit: string,
+    category: string,
     tags?: Record<string, string>
   ): void {
     const metric: PerformanceMetric = {
@@ -161,12 +167,12 @@ class PerformanceMonitoringService {
       unit,
       timestamp: new Date(),
       category,
-      tags
+      tags,
     };
 
     this.metrics.push(metric);
     this.enforceMetricLimits();
-    
+
     logger.debug('PerformanceMetric', `${name}: ${value}${unit}`, { category, tags });
   }
 
@@ -183,25 +189,26 @@ class PerformanceMonitoringService {
       duration,
       recordCount,
       queryType,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
     this.dbMetrics.push(metric);
     this.enforceMetricLimits();
 
     // Log slow queries
-    if (duration > 1000) { // 1 second threshold
+    if (duration > 1000) {
+      // 1 second threshold
       logger.warn('SlowQuery', `Slow ${queryType} on ${table}`, {
         operation,
         duration,
-        recordCount
+        recordCount,
       });
     }
 
     logger.debug('DatabasePerformance', `${operation} on ${table}`, {
       duration,
       recordCount,
-      queryType
+      queryType,
     });
   }
 
@@ -220,18 +227,19 @@ class PerformanceMonitoringService {
       success,
       timestamp: new Date(),
       userId,
-      metadata
+      metadata,
     };
 
     this.userMetrics.push(metric);
     this.enforceMetricLimits();
 
     // Log slow user interactions
-    if (duration > 2000) { // 2 second threshold
+    if (duration > 2000) {
+      // 2 second threshold
       logger.warn('SlowInteraction', `Slow ${action} in ${component}`, {
         duration,
         success,
-        metadata: metadata as Record<string, unknown>
+        metadata: metadata as Record<string, unknown>,
       });
     }
 
@@ -239,7 +247,7 @@ class PerformanceMonitoringService {
       duration,
       success,
       userId,
-      metadata: metadata as Record<string, unknown>
+      metadata: metadata as Record<string, unknown>,
     });
   }
 
@@ -250,7 +258,7 @@ class PerformanceMonitoringService {
       networkLatency: this.getNetworkLatency(),
       renderTime: this.getRenderTime(),
       errorRate: this.getErrorRate(),
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
     this.systemMetrics.push(systemMetric);
@@ -266,27 +274,23 @@ class PerformanceMonitoringService {
     category: string = 'async_operation'
   ): Promise<T> {
     const startTime = performance.now();
-    
+
     return operation()
-      .then(result => {
+      .then((result) => {
         const duration = performance.now() - startTime;
         this.recordMetric(name, duration, 'ms', category);
         return result;
       })
-      .catch(error => {
+      .catch((error) => {
         const duration = performance.now() - startTime;
         this.recordMetric(`${name}_error`, duration, 'ms', category);
         throw error;
       });
   }
 
-  public measureSync<T>(
-    name: string,
-    operation: () => T,
-    category: string = 'sync_operation'
-  ): T {
+  public measureSync<T>(name: string, operation: () => T, category: string = 'sync_operation'): T {
     const startTime = performance.now();
-    
+
     try {
       const result = operation();
       const duration = performance.now() - startTime;
@@ -325,11 +329,11 @@ class PerformanceMonitoringService {
     const filteredSystemMetrics = this.filterMetricsByTimeRange(this.systemMetrics, timeRange);
 
     return {
-      avgResponseTime: this.calculateAverage(filteredMetrics.map(m => m.value)),
+      avgResponseTime: this.calculateAverage(filteredMetrics.map((m) => m.value)),
       slowestOperations: this.getSlowestOperations(filteredMetrics),
       databasePerformance: this.analyzeDatabasePerformance(filteredDbMetrics),
       userInteractionMetrics: this.analyzeUserInteractions(filteredUserMetrics),
-      systemHealth: this.analyzeSystemHealth(filteredSystemMetrics)
+      systemHealth: this.analyzeSystemHealth(filteredSystemMetrics),
     };
   }
 
@@ -339,46 +343,46 @@ class PerformanceMonitoringService {
     activeOperations: number;
     responseTimeP95: number;
   } {
-    const recentMetrics = this.metrics.filter(m => 
-      Date.now() - m.timestamp.getTime() < 60000 // Last minute
+    const recentMetrics = this.metrics.filter(
+      (m) => Date.now() - m.timestamp.getTime() < 60000 // Last minute
     );
 
-    const responseTimes = recentMetrics.map(m => m.value).sort((a, b) => a - b);
+    const responseTimes = recentMetrics.map((m) => m.value).sort((a, b) => a - b);
     const p95Index = Math.floor(responseTimes.length * 0.95);
 
     return {
       currentMemoryUsage: this.getMemoryUsage(),
-      recentErrors: this.systemMetrics.filter(m => 
-        Date.now() - m.timestamp.getTime() < 60000
-      ).reduce((sum, m) => sum + m.errorRate, 0),
+      recentErrors: this.systemMetrics
+        .filter((m) => Date.now() - m.timestamp.getTime() < 60000)
+        .reduce((sum, m) => sum + m.errorRate, 0),
       activeOperations: recentMetrics.length,
-      responseTimeP95: responseTimes[p95Index] || 0
+      responseTimeP95: responseTimes[p95Index] || 0,
     };
   }
 
   // Helper methods
   private filterMetricsByTimeRange<T extends { timestamp: Date }>(
-    metrics: T[], 
+    metrics: T[],
     timeRange?: { start: Date; end: Date }
   ): T[] {
     if (!timeRange) return metrics;
-    return metrics.filter(m => 
-      m.timestamp >= timeRange.start && m.timestamp <= timeRange.end
-    );
+    return metrics.filter((m) => m.timestamp >= timeRange.start && m.timestamp <= timeRange.end);
   }
 
   private calculateAverage(values: number[]): number {
     return values.length > 0 ? values.reduce((sum, val) => sum + val, 0) / values.length : 0;
   }
 
-  private getSlowestOperations(metrics: PerformanceMetric[]): Array<{ name: string; avgDuration: number; count: number }> {
+  private getSlowestOperations(
+    metrics: PerformanceMetric[]
+  ): Array<{ name: string; avgDuration: number; count: number }> {
     const operationMap = new Map<string, { total: number; count: number }>();
-    
-    metrics.forEach(metric => {
+
+    metrics.forEach((metric) => {
       const existing = operationMap.get(metric.name) || { total: 0, count: 0 };
       operationMap.set(metric.name, {
         total: existing.total + metric.value,
-        count: existing.count + 1
+        count: existing.count + 1,
       });
     });
 
@@ -386,24 +390,24 @@ class PerformanceMonitoringService {
       .map(([name, data]) => ({
         name,
         avgDuration: data.total / data.count,
-        count: data.count
+        count: data.count,
       }))
       .sort((a, b) => b.avgDuration - a.avgDuration)
       .slice(0, 10);
   }
 
   private analyzeDatabasePerformance(metrics: DatabasePerformanceMetric[]) {
-    const avgQueryTime = this.calculateAverage(metrics.map(m => m.duration));
-    
+    const avgQueryTime = this.calculateAverage(metrics.map((m) => m.duration));
+
     const queryMap = new Map<string, { total: number; count: number }>();
     const queryCountByType: Record<string, number> = {};
 
-    metrics.forEach(metric => {
+    metrics.forEach((metric) => {
       const key = `${metric.operation}_${metric.table}`;
       const existing = queryMap.get(key) || { total: 0, count: 0 };
       queryMap.set(key, {
         total: existing.total + metric.duration,
-        count: existing.count + 1
+        count: existing.count + 1,
       });
 
       queryCountByType[metric.queryType] = (queryCountByType[metric.queryType] || 0) + 1;
@@ -415,7 +419,7 @@ class PerformanceMonitoringService {
         return {
           operation,
           table,
-          avgDuration: data.total / data.count
+          avgDuration: data.total / data.count,
         };
       })
       .sort((a, b) => b.avgDuration - a.avgDuration)
@@ -424,23 +428,23 @@ class PerformanceMonitoringService {
     return {
       avgQueryTime,
       slowestQueries,
-      queryCountByType
+      queryCountByType,
     };
   }
 
   private analyzeUserInteractions(metrics: UserInteractionMetric[]) {
-    const avgInteractionTime = this.calculateAverage(metrics.map(m => m.duration));
-    const successRate = metrics.length > 0 ? 
-      (metrics.filter(m => m.success).length / metrics.length) * 100 : 100;
+    const avgInteractionTime = this.calculateAverage(metrics.map((m) => m.duration));
+    const successRate =
+      metrics.length > 0 ? (metrics.filter((m) => m.success).length / metrics.length) * 100 : 100;
 
     const interactionMap = new Map<string, { total: number; count: number }>();
-    
-    metrics.forEach(metric => {
+
+    metrics.forEach((metric) => {
       const key = `${metric.action}_${metric.component}`;
       const existing = interactionMap.get(key) || { total: 0, count: 0 };
       interactionMap.set(key, {
         total: existing.total + metric.duration,
-        count: existing.count + 1
+        count: existing.count + 1,
       });
     });
 
@@ -450,7 +454,7 @@ class PerformanceMonitoringService {
         return {
           action,
           component,
-          avgDuration: data.total / data.count
+          avgDuration: data.total / data.count,
         };
       })
       .sort((a, b) => b.avgDuration - a.avgDuration)
@@ -459,15 +463,15 @@ class PerformanceMonitoringService {
     return {
       avgInteractionTime,
       successRate,
-      slowestInteractions
+      slowestInteractions,
     };
   }
 
   private analyzeSystemHealth(metrics: SystemMetrics[]) {
     return {
-      avgMemoryUsage: this.calculateAverage(metrics.map(m => m.memoryUsage)),
-      avgRenderTime: this.calculateAverage(metrics.map(m => m.renderTime)),
-      errorRate: this.calculateAverage(metrics.map(m => m.errorRate))
+      avgMemoryUsage: this.calculateAverage(metrics.map((m) => m.memoryUsage)),
+      avgRenderTime: this.calculateAverage(metrics.map((m) => m.renderTime)),
+      errorRate: this.calculateAverage(metrics.map((m) => m.errorRate)),
     };
   }
 
@@ -496,19 +500,19 @@ class PerformanceMonitoringService {
 
   private getRenderTime(): number {
     const paintEntries = performance.getEntriesByType('paint');
-    const fcp = paintEntries.find(entry => entry.name === 'first-contentful-paint');
+    const fcp = paintEntries.find((entry) => entry.name === 'first-contentful-paint');
     return fcp ? fcp.startTime : 0;
   }
 
   private getErrorRate(): number {
     const recentLogs = logger.getLogs({
       startTime: new Date(Date.now() - 60000), // Last minute
-      level: 2 // ERROR level and above
+      level: 2, // ERROR level and above
     });
     const totalRecentLogs = logger.getLogs({
-      startTime: new Date(Date.now() - 60000)
+      startTime: new Date(Date.now() - 60000),
     });
-    
+
     return totalRecentLogs.length > 0 ? (recentLogs.length / totalRecentLogs.length) * 100 : 0;
   }
 
@@ -538,12 +542,12 @@ class PerformanceMonitoringService {
   private startMetricCleanup(): void {
     setInterval(() => {
       const cutoffTime = new Date(Date.now() - 24 * 60 * 60 * 1000); // 24 hours ago
-      
-      this.metrics = this.metrics.filter(m => m.timestamp > cutoffTime);
-      this.dbMetrics = this.dbMetrics.filter(m => m.timestamp > cutoffTime);
-      this.userMetrics = this.userMetrics.filter(m => m.timestamp > cutoffTime);
-      this.systemMetrics = this.systemMetrics.filter(m => m.timestamp > cutoffTime);
-      
+
+      this.metrics = this.metrics.filter((m) => m.timestamp > cutoffTime);
+      this.dbMetrics = this.dbMetrics.filter((m) => m.timestamp > cutoffTime);
+      this.userMetrics = this.userMetrics.filter((m) => m.timestamp > cutoffTime);
+      this.systemMetrics = this.systemMetrics.filter((m) => m.timestamp > cutoffTime);
+
       logger.debug('PerformanceMonitoring', 'Cleaned up old metrics');
     }, this.METRIC_CLEANUP_INTERVAL);
   }

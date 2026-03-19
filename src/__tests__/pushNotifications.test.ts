@@ -2,11 +2,11 @@
  * Tests for Push Notifications functionality
  */
 
-import { 
+import {
   isPushNotificationSupported,
   getNotificationSeverity,
   createExpirationNotification,
-  sendLocalNotification
+  sendLocalNotification,
 } from '../lib/pushNotifications';
 
 // Mock browser APIs
@@ -16,31 +16,31 @@ const mockNavigator = {
     ready: Promise.resolve({
       pushManager: {
         getSubscription: jest.fn(),
-        subscribe: jest.fn()
-      }
-    })
-  }
+        subscribe: jest.fn(),
+      },
+    }),
+  },
 };
 
 const mockNotification = {
-  requestPermission: jest.fn()
+  requestPermission: jest.fn(),
 };
 
 // Setup global mocks
 beforeAll(() => {
   Object.defineProperty(global, 'navigator', {
     value: mockNavigator,
-    writable: true
+    writable: true,
   });
-  
+
   Object.defineProperty(global, 'Notification', {
     value: mockNotification,
-    writable: true
+    writable: true,
   });
-  
+
   Object.defineProperty(global, 'PushManager', {
     value: {},
-    writable: true
+    writable: true,
   });
 });
 
@@ -57,9 +57,9 @@ describe('Push Notifications', () => {
     it('should return false when service worker is not supported', () => {
       const originalServiceWorker = navigator.serviceWorker;
       delete (navigator as any).serviceWorker;
-      
+
       expect(isPushNotificationSupported()).toBe(false);
-      
+
       // Restore
       (navigator as any).serviceWorker = originalServiceWorker;
     });
@@ -67,9 +67,9 @@ describe('Push Notifications', () => {
     it('should return false when PushManager is not supported', () => {
       const originalPushManager = (global as any).PushManager;
       delete (global as any).PushManager;
-      
+
       expect(isPushNotificationSupported()).toBe(false);
-      
+
       // Restore
       (global as any).PushManager = originalPushManager;
     });
@@ -102,7 +102,7 @@ describe('Push Notifications', () => {
   describe('createExpirationNotification', () => {
     it('should create critical notification for items expiring in 1 day', () => {
       const notification = createExpirationNotification('Milk', 'Kitchen Fridge', 1, 5);
-      
+
       expect(notification.title).toBe('🚨 Critical: Item Expires Today!');
       expect(notification.body).toBe('Milk (5 units) at Kitchen Fridge expires in 1 day');
       expect(notification.icon).toBe('/icons/critical-notification.png');
@@ -112,7 +112,7 @@ describe('Push Notifications', () => {
 
     it('should create warning notification for items expiring in 5 days', () => {
       const notification = createExpirationNotification('Bread', 'Pantry', 5, 10);
-      
+
       expect(notification.title).toBe('⚠️ Warning: Item Expires Soon');
       expect(notification.body).toBe('Bread (10 units) at Pantry expires in 5 days');
       expect(notification.icon).toBe('/icons/warning-notification.png');
@@ -121,7 +121,7 @@ describe('Push Notifications', () => {
 
     it('should create info notification for items expiring in 20 days', () => {
       const notification = createExpirationNotification('Canned Tomatoes', 'Storage', 20, 12);
-      
+
       expect(notification.title).toBe('💛 Notice: Item Expires in 30 Days');
       expect(notification.body).toBe('Canned Tomatoes (12 units) at Storage expires in 20 days');
       expect(notification.icon).toBe('/icons/info-notification.png');
@@ -131,7 +131,7 @@ describe('Push Notifications', () => {
     it('should handle plural vs singular days correctly', () => {
       const singular = createExpirationNotification('Item', 'Location', 1, 1);
       const plural = createExpirationNotification('Item', 'Location', 2, 1);
-      
+
       expect(singular.body).toContain('expires in 1 day');
       expect(plural.body).toContain('expires in 2 days');
     });
@@ -143,11 +143,11 @@ describe('Push Notifications', () => {
     beforeEach(() => {
       mockNotificationConstructor = jest.fn();
       (global as any).Notification = mockNotificationConstructor;
-      
+
       // Mock permission as granted
       Object.defineProperty(Notification, 'permission', {
         value: 'granted',
-        writable: true
+        writable: true,
       });
     });
 
@@ -156,7 +156,7 @@ describe('Push Notifications', () => {
         title: 'Test Title',
         body: 'Test Body',
         icon: '/test-icon.png',
-        data: { test: 'data' }
+        data: { test: 'data' },
       };
 
       sendLocalNotification(notificationData);
@@ -166,19 +166,19 @@ describe('Push Notifications', () => {
         icon: '/test-icon.png',
         badge: '/logo192.png',
         data: { test: 'data' },
-        tag: undefined
+        tag: undefined,
       });
     });
 
     it('should not create notification when permission is denied', () => {
       Object.defineProperty(Notification, 'permission', {
         value: 'denied',
-        writable: true
+        writable: true,
       });
 
       const notificationData = {
         title: 'Test Title',
-        body: 'Test Body'
+        body: 'Test Body',
       };
 
       sendLocalNotification(notificationData);
@@ -188,10 +188,10 @@ describe('Push Notifications', () => {
 
     it('should handle missing Notification API gracefully', () => {
       delete (global as any).Notification;
-      
+
       const notificationData = {
         title: 'Test Title',
-        body: 'Test Body'
+        body: 'Test Body',
       };
 
       // Should not throw
@@ -207,9 +207,9 @@ describe('Service Worker Integration', () => {
         getSubscription: jest.fn().mockResolvedValue(null),
         subscribe: jest.fn().mockResolvedValue({
           endpoint: 'test-endpoint',
-          keys: { p256dh: 'test-key', auth: 'test-auth' }
-        })
-      }
+          keys: { p256dh: 'test-key', auth: 'test-auth' },
+        }),
+      },
     };
 
     mockNavigator.serviceWorker.register.mockResolvedValue(mockRegistration);
@@ -223,16 +223,16 @@ describe('Service Worker Integration', () => {
 export const createMockInventoryItem = (daysUntilExpiration: number) => {
   const expirationDate = new Date();
   expirationDate.setDate(expirationDate.getDate() + daysUntilExpiration);
-  
+
   return {
     id: 1,
     quantity: 10,
     expiration_date: expirationDate.toISOString(),
     item: {
       name: 'Test Item',
-      category: { requires_expiration: true }
+      category: { requires_expiration: true },
     },
-    location: { name: 'Test Location' }
+    location: { name: 'Test Location' },
   };
 };
 
@@ -243,7 +243,7 @@ export const createMockUser = () => ({
     endpoint: 'https://test-endpoint.com',
     keys: {
       p256dh: 'test-p256dh-key',
-      auth: 'test-auth-key'
-    }
-  })
+      auth: 'test-auth-key',
+    },
+  }),
 });

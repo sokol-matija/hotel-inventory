@@ -42,7 +42,7 @@ export enum PhobsErrorType {
   TIMEOUT_ERROR = 'timeout_error',
   CONFLICT_ERROR = 'conflict_error',
   NOT_FOUND_ERROR = 'not_found_error',
-  UNKNOWN_ERROR = 'unknown_error'
+  UNKNOWN_ERROR = 'unknown_error',
 }
 
 export class PhobsError extends Error {
@@ -93,7 +93,7 @@ export class PhobsErrorHandlingService {
       lastError: null,
       successfulRetries: 0,
       failedRetries: 0,
-      averageRetryTime: 0
+      averageRetryTime: 0,
     };
 
     this.defaultRetryConfig = {
@@ -102,7 +102,7 @@ export class PhobsErrorHandlingService {
       maxDelayMs: 30000,
       backoffMultiplier: 2,
       retryableStatuses: [408, 429, 500, 502, 503, 504],
-      timeoutMs: 30000
+      timeoutMs: 30000,
     };
   }
 
@@ -130,12 +130,12 @@ export class PhobsErrorHandlingService {
       try {
         // Add timeout wrapper
         const result = await this.withTimeout(operation(), config.timeoutMs);
-        
+
         // Success - update metrics if this was a retry
         if (attempt > 1) {
           this.errorMetrics.successfulRetries++;
           this.updateAverageRetryTime(Date.now() - startTime);
-          
+
           hotelNotification.success(
             'Operation Recovered',
             `${context.operation} succeeded after ${attempt} attempts`,
@@ -148,14 +148,13 @@ export class PhobsErrorHandlingService {
           data: result,
           attempts: attempt,
           totalTime: Date.now() - startTime,
-          wasRetried: attempt > 1
+          wasRetried: attempt > 1,
         };
-
       } catch (error) {
         const phobsError = this.handleError(error, {
           ...context,
           attempt,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
 
         lastError = phobsError;
@@ -164,7 +163,7 @@ export class PhobsErrorHandlingService {
         // Check if we should retry
         if (attempt < config.maxAttempts && phobsError.retryable) {
           const delayMs = this.calculateDelay(attempt, config);
-          
+
           hotelNotification.warning(
             'Retrying Operation',
             `${context.operation} failed, retrying in ${Math.round(delayMs / 1000)}s (attempt ${attempt}/${config.maxAttempts})`,
@@ -177,7 +176,7 @@ export class PhobsErrorHandlingService {
 
         // Max attempts reached or non-retryable error
         this.errorMetrics.failedRetries++;
-        
+
         hotelNotification.error(
           'Operation Failed',
           `${context.operation} failed after ${attempt} attempts: ${phobsError.message}`,
@@ -189,7 +188,7 @@ export class PhobsErrorHandlingService {
           error: phobsError,
           attempts: attempt,
           totalTime: Date.now() - startTime,
-          wasRetried: attempt > 1
+          wasRetried: attempt > 1,
         };
       }
     }
@@ -197,14 +196,16 @@ export class PhobsErrorHandlingService {
     // This should never be reached, but included for type safety
     return {
       success: false,
-      error: lastError || new PhobsError(
-        'Unknown error occurred',
-        PhobsErrorType.UNKNOWN_ERROR,
-        { ...context, attempt, timestamp: new Date() }
-      ),
+      error:
+        lastError ||
+        new PhobsError('Unknown error occurred', PhobsErrorType.UNKNOWN_ERROR, {
+          ...context,
+          attempt,
+          timestamp: new Date(),
+        }),
       attempts: attempt,
       totalTime: Date.now() - startTime,
-      wasRetried: true
+      wasRetried: true,
     };
   }
 
@@ -260,13 +261,7 @@ export class PhobsErrorHandlingService {
     }
     // String errors
     else if (typeof error === 'string') {
-      phobsError = new PhobsError(
-        error,
-        PhobsErrorType.UNKNOWN_ERROR,
-        context,
-        undefined,
-        false
-      );
+      phobsError = new PhobsError(error, PhobsErrorType.UNKNOWN_ERROR, context, undefined, false);
     }
     // Unknown error type
     else {
@@ -288,7 +283,7 @@ export class PhobsErrorHandlingService {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private classifyHttpError(error: any, status: number, context: ErrorContext): PhobsError {
     const message = error.message || error.statusText || `HTTP ${status} Error`;
-    
+
     switch (status) {
       case 400:
         return new PhobsError(
@@ -299,7 +294,7 @@ export class PhobsErrorHandlingService {
           false,
           error
         );
-      
+
       case 401:
       case 403:
         return new PhobsError(
@@ -310,7 +305,7 @@ export class PhobsErrorHandlingService {
           false,
           error
         );
-      
+
       case 404:
         return new PhobsError(
           `Resource not found: ${message}`,
@@ -320,7 +315,7 @@ export class PhobsErrorHandlingService {
           false,
           error
         );
-      
+
       case 408:
         return new PhobsError(
           `Request timeout: ${message}`,
@@ -330,7 +325,7 @@ export class PhobsErrorHandlingService {
           true,
           error
         );
-      
+
       case 409:
         return new PhobsError(
           `Conflict error: ${message}`,
@@ -340,7 +335,7 @@ export class PhobsErrorHandlingService {
           false,
           error
         );
-      
+
       case 429:
         return new PhobsError(
           `Rate limit exceeded: ${message}`,
@@ -350,7 +345,7 @@ export class PhobsErrorHandlingService {
           true,
           error
         );
-      
+
       case 500:
       case 502:
       case 503:
@@ -363,7 +358,7 @@ export class PhobsErrorHandlingService {
           true,
           error
         );
-      
+
       default:
         return new PhobsError(
           `HTTP ${status} error: ${message}`,
@@ -402,7 +397,7 @@ export class PhobsErrorHandlingService {
    * Simple delay utility
    */
   private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**
@@ -411,13 +406,13 @@ export class PhobsErrorHandlingService {
   private trackError(error: PhobsError): void {
     this.errorMetrics.totalErrors++;
     this.errorMetrics.lastError = new Date();
-    
+
     // Track by error type
     if (!this.errorMetrics.errorsByType[error.type]) {
       this.errorMetrics.errorsByType[error.type] = 0;
     }
     this.errorMetrics.errorsByType[error.type]++;
-    
+
     // Track by endpoint
     if (error.context.endpoint) {
       if (!this.errorMetrics.errorsByEndpoint[error.context.endpoint]) {
@@ -433,9 +428,9 @@ export class PhobsErrorHandlingService {
   private updateAverageRetryTime(retryTime: number): void {
     const totalRetries = this.errorMetrics.successfulRetries + this.errorMetrics.failedRetries;
     const currentAverage = this.errorMetrics.averageRetryTime;
-    
-    this.errorMetrics.averageRetryTime = 
-      ((currentAverage * (totalRetries - 1)) + retryTime) / totalRetries;
+
+    this.errorMetrics.averageRetryTime =
+      (currentAverage * (totalRetries - 1) + retryTime) / totalRetries;
   }
 
   /**
@@ -456,7 +451,7 @@ export class PhobsErrorHandlingService {
       lastError: null,
       successfulRetries: 0,
       failedRetries: 0,
-      averageRetryTime: 0
+      averageRetryTime: 0,
     };
   }
 
@@ -466,7 +461,7 @@ export class PhobsErrorHandlingService {
   canRetry(operation: string): boolean {
     const activeRetries = this.activeRetries.get(operation) || 0;
     const maxConcurrentRetries = 5; // Prevent too many concurrent retries
-    
+
     return activeRetries < maxConcurrentRetries;
   }
 
@@ -531,7 +526,7 @@ export class PhobsErrorHandlingService {
       statusCode: error.statusCode,
       retryable: error.retryable,
       timestamp: error.context.timestamp.toISOString(),
-      originalError: error.originalError?.message
+      originalError: error.originalError?.message,
     };
 
     switch (level) {

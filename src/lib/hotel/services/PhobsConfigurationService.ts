@@ -84,7 +84,9 @@ export class PhobsConfigurationService {
   /**
    * Update API credentials
    */
-  async updateCredentials(credentials: Partial<PhobsApiCredentials>): Promise<{ success: boolean; error?: string }> {
+  async updateCredentials(
+    credentials: Partial<PhobsApiCredentials>
+  ): Promise<{ success: boolean; error?: string }> {
     try {
       if (!this.config) {
         this.config = this.createDefaultConfiguration();
@@ -92,7 +94,7 @@ export class PhobsConfigurationService {
 
       this.config.credentials = {
         ...this.config.credentials,
-        ...credentials
+        ...credentials,
       };
 
       // Validate credentials
@@ -106,12 +108,11 @@ export class PhobsConfigurationService {
 
       await this.saveConfiguration();
       return { success: true };
-
     } catch (error) {
       console.error('Error updating credentials:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -127,7 +128,7 @@ export class PhobsConfigurationService {
    * Update channel configuration
    */
   async updateChannelConfiguration(
-    channel: OTAChannel, 
+    channel: OTAChannel,
     config: Partial<PhobsChannelConfig>
   ): Promise<{ success: boolean; error?: string }> {
     try {
@@ -135,31 +136,30 @@ export class PhobsConfigurationService {
         this.config = this.createDefaultConfiguration();
       }
 
-      const channelIndex = this.config.channels.findIndex(c => c.channel === channel);
+      const channelIndex = this.config.channels.findIndex((c) => c.channel === channel);
       if (channelIndex === -1) {
         // Add new channel config
         this.config.channels.push({
           channel,
           ...this.getDefaultChannelConfig(),
-          ...config
+          ...config,
         });
       } else {
         // Update existing channel config
         this.config.channels[channelIndex] = {
           ...this.config.channels[channelIndex],
-          ...config
+          ...config,
         };
       }
 
       this.config.lastUpdated = new Date();
       await this.saveConfiguration();
       return { success: true };
-
     } catch (error) {
       console.error('Error updating channel configuration:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -174,7 +174,9 @@ export class PhobsConfigurationService {
   /**
    * Update sync settings
    */
-  async updateSyncSettings(settings: Partial<PhobsSyncSettings>): Promise<{ success: boolean; error?: string }> {
+  async updateSyncSettings(
+    settings: Partial<PhobsSyncSettings>
+  ): Promise<{ success: boolean; error?: string }> {
     try {
       if (!this.config) {
         this.config = this.createDefaultConfiguration();
@@ -182,18 +184,17 @@ export class PhobsConfigurationService {
 
       this.config.syncSettings = {
         ...this.config.syncSettings,
-        ...settings
+        ...settings,
       };
 
       this.config.lastUpdated = new Date();
       await this.saveConfiguration();
       return { success: true };
-
     } catch (error) {
       console.error('Error updating sync settings:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -212,15 +213,14 @@ export class PhobsConfigurationService {
     try {
       // TODO: Implement actual API test call to Phobs
       // For now, simulate a test
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
       const responseTime = Date.now() - startTime;
       return { success: true, responseTime };
-
     } catch (error) {
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Connection test failed' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Connection test failed',
       };
     }
   }
@@ -248,8 +248,8 @@ export class PhobsConfigurationService {
         ...this.config.credentials,
         apiKey: '***',
         apiSecret: '***',
-        webhookSecret: '***'
-      }
+        webhookSecret: '***',
+      },
     };
 
     return JSON.stringify(exportConfig, null, 2);
@@ -261,7 +261,7 @@ export class PhobsConfigurationService {
   async importConfiguration(configJson: string): Promise<{ success: boolean; error?: string }> {
     try {
       const importedConfig = JSON.parse(configJson) as PhobsConfiguration;
-      
+
       // Validate imported configuration
       const validation = this.validateConfiguration(importedConfig);
       if (!validation.isValid) {
@@ -270,14 +270,13 @@ export class PhobsConfigurationService {
 
       this.config = importedConfig;
       this.config.lastUpdated = new Date();
-      
+
       await this.saveConfiguration();
       return { success: true };
-
     } catch (error) {
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Invalid configuration format' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Invalid configuration format',
       };
     }
   }
@@ -322,24 +321,28 @@ export class PhobsConfigurationService {
         hotelId: '',
         baseUrl: 'https://api.phobs.net/v1',
         webhookSecret: '',
-        webhookUrl: ''
+        webhookUrl: '',
       },
       channels: this.getDefaultChannelConfigurations(),
       syncSettings: this.getDefaultSyncSettings(),
       isConfigured: false,
       lastUpdated: new Date(),
-      createdAt: new Date()
+      createdAt: new Date(),
     };
   }
 
   private getDefaultChannelConfigurations(): PhobsChannelConfig[] {
     const defaultChannels: OTAChannel[] = [
-      'booking.com', 'expedia', 'airbnb', 'agoda', 'hotels.com'
+      'booking.com',
+      'expedia',
+      'airbnb',
+      'agoda',
+      'hotels.com',
     ];
 
-    return defaultChannels.map(channel => ({
+    return defaultChannels.map((channel) => ({
       ...this.getDefaultChannelConfig(),
-      channel
+      channel,
     }));
   }
 
@@ -352,7 +355,7 @@ export class PhobsConfigurationService {
       maximumStay: 30,
       stopSale: false,
       closeToArrival: false,
-      closeToDeparture: false
+      closeToDeparture: false,
     };
   }
 
@@ -365,11 +368,14 @@ export class PhobsConfigurationService {
       throttleDelayMs: 1000,
       conflictResolutionStrategy: 'manual_review',
       notifyOnConflicts: true,
-      notifyOnFailures: true
+      notifyOnFailures: true,
     };
   }
 
-  private validateCredentials(credentials: PhobsApiCredentials): { isValid: boolean; errors: string[] } {
+  private validateCredentials(credentials: PhobsApiCredentials): {
+    isValid: boolean;
+    errors: string[];
+  } {
     const errors: string[] = [];
 
     if (!credentials.apiKey) errors.push('API Key is required');
@@ -388,11 +394,14 @@ export class PhobsConfigurationService {
 
     return {
       isValid: errors.length === 0,
-      errors
+      errors,
     };
   }
 
-  private validateConfiguration(config: PhobsConfiguration): { isValid: boolean; errors: string[] } {
+  private validateConfiguration(config: PhobsConfiguration): {
+    isValid: boolean;
+    errors: string[];
+  } {
     const errors: string[] = [];
 
     // Validate credentials
@@ -415,7 +424,7 @@ export class PhobsConfigurationService {
 
     return {
       isValid: errors.length === 0,
-      errors
+      errors,
     };
   }
 

@@ -72,7 +72,9 @@ export class FiscalXMLSigner {
       console.log('✅ XML Signer initialized successfully');
       console.log(`📄 Certificate: ${this.certificate.subject.getField('CN')?.value}`);
     } catch (error) {
-      throw new Error(`Failed to load certificate: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to load certificate: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -92,7 +94,7 @@ export class FiscalXMLSigner {
         privateKey: this.privateKeyPem,
         publicCert: this.certPem,
         signatureAlgorithm: 'http://www.w3.org/2000/09/xmldsig#rsa-sha1',
-        canonicalizationAlgorithm: 'http://www.w3.org/2001/10/xml-exc-c14n#'
+        canonicalizationAlgorithm: 'http://www.w3.org/2001/10/xml-exc-c14n#',
       });
 
       // Add reference to the element we're signing
@@ -101,8 +103,8 @@ export class FiscalXMLSigner {
         digestAlgorithm: 'http://www.w3.org/2000/09/xmldsig#sha1',
         transforms: [
           'http://www.w3.org/2000/09/xmldsig#enveloped-signature',
-          'http://www.w3.org/2001/10/xml-exc-c14n#'
-        ]
+          'http://www.w3.org/2001/10/xml-exc-c14n#',
+        ],
       });
 
       // Set the location where the signature should be inserted
@@ -110,7 +112,7 @@ export class FiscalXMLSigner {
       // NOTE: Don't set Signature Id attribute - xml-crypto will handle it correctly
       sig.computeSignature(xml, {
         location: { reference: `//*[@Id='${refId}']`, action: 'append' },
-        prefix: ''
+        prefix: '',
       });
 
       const signedXml = sig.getSignedXml();
@@ -120,14 +122,13 @@ export class FiscalXMLSigner {
 
       return {
         success: true,
-        signedXml
+        signedXml,
       };
-
     } catch (error) {
       console.error('❌ XML signing failed:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown signing error'
+        error: error instanceof Error ? error.message : 'Unknown signing error',
       };
     }
   }
@@ -147,7 +148,7 @@ export class FiscalXMLSigner {
       issuer: this.certificate.issuer.getField('CN')?.value || 'Unknown',
       validFrom: this.certificate.validity.notBefore,
       validTo: this.certificate.validity.notAfter,
-      serialNumber: this.certificate.serialNumber
+      serialNumber: this.certificate.serialNumber,
     };
   }
 

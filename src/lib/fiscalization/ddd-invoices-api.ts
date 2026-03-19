@@ -117,7 +117,7 @@ export class DDDInvoicesAPI {
       Cash: 'CASH',
       Card: 'CARD',
       BankTransfer: 'NONCASH', // Changed from CREDITTRANSFER
-      Other: 'CASH'
+      Other: 'CASH',
     };
     return mapping[type] || 'CASH';
   }
@@ -140,11 +140,15 @@ export class DDDInvoicesAPI {
   /**
    * Calculate totals from items
    */
-  private calculateTotals(items: DDDInvoiceItem[]): { totalNet: number; totalVat: number; totalGross: number } {
+  private calculateTotals(items: DDDInvoiceItem[]): {
+    totalNet: number;
+    totalVat: number;
+    totalGross: number;
+  } {
     let totalNet = 0;
     let totalVat = 0;
 
-    items.forEach(item => {
+    items.forEach((item) => {
       const itemNet = item.unitPrice * item.quantity;
       const discount = item.discount || 0;
       const netAfterDiscount = itemNet * (1 - discount / 100);
@@ -157,7 +161,7 @@ export class DDDInvoicesAPI {
     return {
       totalNet: parseFloat(totalNet.toFixed(2)),
       totalVat: parseFloat(totalVat.toFixed(2)),
-      totalGross: parseFloat((totalNet + totalVat).toFixed(2))
+      totalGross: parseFloat((totalNet + totalVat).toFixed(2)),
     };
   }
 
@@ -206,7 +210,7 @@ export class DDDInvoicesAPI {
         OperatorTAPRegistration: null,
         PDFOriginal: null,
         _details: {
-          Items: request.items.map(item => ({
+          Items: request.items.map((item) => ({
             ItemName: item.name,
             ItemQuantity: item.quantity,
             ItemUmcCode: 'piece', // Unit of measure
@@ -215,7 +219,7 @@ export class DDDInvoicesAPI {
             ItemAllowancePercent: item.discount || 0,
             ItemVatRate: 0, // Will be calculated by DDD from ItemVatCode
             ItemVatCode: this.mapVatCode(item.vatRate),
-            ItemExciseAmount: 0
+            ItemExciseAmount: 0,
           })),
           Payments: [
             {
@@ -225,10 +229,10 @@ export class DDDInvoicesAPI {
               PayPayeeAccountType: null,
               PayNetworkProvider: null,
               PayCardHolderOrReference: null,
-              PayDocDate: null
-            }
-          ]
-        }
+              PayDocDate: null,
+            },
+          ],
+        },
       };
 
       // Get steps for invoice type
@@ -240,8 +244,8 @@ export class DDDInvoicesAPI {
         Steps: steps,
         ReturnDoc: ['PDFP', 'XMLS'], // Return PDF and XML
         Object: {
-          Invoice: invoiceObject
-        }
+          Invoice: invoiceObject,
+        },
       };
 
       console.log('📤 Sending invoice to DDD Invoices API...');
@@ -252,10 +256,10 @@ export class DDDInvoicesAPI {
       const response = await fetch(`${this.apiUrl}/EUeInvoices.DDDI_Save`, {
         method: 'POST',
         headers: {
-          'Authorization': `IoT ${this.apiKey}:${this.projectName}`,
-          'Content-Type': 'application/json'
+          Authorization: `IoT ${this.apiKey}:${this.projectName}`,
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(apiRequest)
+        body: JSON.stringify(apiRequest),
       });
 
       if (!response.ok) {
@@ -271,7 +275,7 @@ export class DDDInvoicesAPI {
         return {
           success: false,
           error: result.Reason || 'Unknown API error',
-          errorCode: result.Code?.toString()
+          errorCode: result.Code?.toString(),
         };
       }
 
@@ -281,7 +285,7 @@ export class DDDInvoicesAPI {
         return {
           success: false,
           error: result.Result.Reason || 'Unknown extension error',
-          errorCode: result.Result.Step?.toString()
+          errorCode: result.Result.Step?.toString(),
         };
       }
 
@@ -297,14 +301,13 @@ export class DDDInvoicesAPI {
         invoiceId: invoiceId,
         jir: undefined, // DDD doesn't return JIR directly - need to check TAP response
         pdfUrl: returnDoc.PDFP,
-        xmlUrl: returnDoc.XMLS
+        xmlUrl: returnDoc.XMLS,
       };
-
     } catch (error) {
       console.error('💥 DDD Invoices API Error:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -320,11 +323,11 @@ export class DDDInvoicesAPI {
     return this.createInvoice({
       invoiceType: 'b2c',
       customer: {
-        name: customerName
+        name: customerName,
       },
       items,
       paymentType,
-      currency: 'EUR'
+      currency: 'EUR',
     });
   }
 
@@ -347,7 +350,7 @@ export class DDDInvoicesAPI {
       items,
       paymentType,
       invoiceNumber,
-      currency: 'EUR'
+      currency: 'EUR',
     });
   }
 
@@ -370,7 +373,7 @@ export class DDDInvoicesAPI {
       items,
       paymentType,
       invoiceNumber,
-      currency: 'EUR'
+      currency: 'EUR',
     });
   }
 }

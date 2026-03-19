@@ -8,14 +8,14 @@
 import QRCode from 'qrcode';
 
 export interface FiscalReceiptData {
-  jir: string;          // Jedinstveni Identifikator Računa (from Tax Authority)
-  zki: string;          // Zaštitni Kod Izdavatelja (security code)
-  oib: string;          // Seller's OIB
-  dateTime: Date;       // Receipt date/time
-  totalAmount: number;  // Total amount
+  jir: string; // Jedinstveni Identifikator Računa (from Tax Authority)
+  zki: string; // Zaštitni Kod Izdavatelja (security code)
+  oib: string; // Seller's OIB
+  dateTime: Date; // Receipt date/time
+  totalAmount: number; // Total amount
   invoiceNumber: string; // Invoice/receipt number
   businessSpace: string; // Poslovni prostor
-  cashRegister: string;  // Naplatni uređaj
+  cashRegister: string; // Naplatni uređaj
 }
 
 /**
@@ -30,22 +30,19 @@ export function generateQRCodeData(
   format: 'url' | 'structured' = 'structured',
   environment: 'test' | 'production' = 'test'
 ): string {
-
   if (format === 'url') {
     // Format: Verification URL
     // TEST: https://cistest.apis-it.hr/provjera?...
     // PROD: https://porezna-uprava.hr/rn?...
 
-    const baseUrl = environment === 'test'
-      ? 'https://cistest.apis-it.hr/provjera'
-      : 'https://porezna-uprava.hr/rn';
+    const baseUrl =
+      environment === 'test'
+        ? 'https://cistest.apis-it.hr/provjera'
+        : 'https://porezna-uprava.hr/rn';
 
-    const dateTimeStr = receiptData.dateTime.toISOString()
-      .replace('T', ' ')
-      .substring(0, 19); // Format: YYYY-MM-DD HH:mm:ss
+    const dateTimeStr = receiptData.dateTime.toISOString().replace('T', ' ').substring(0, 19); // Format: YYYY-MM-DD HH:mm:ss
 
     return `${baseUrl}?jir=${receiptData.jir}&datv=${encodeURIComponent(dateTimeStr)}&izn=${receiptData.totalAmount.toFixed(2)}`;
-
   } else {
     // Format: Structured data (recommended for production)
     // Each line contains one piece of information
@@ -57,7 +54,7 @@ export function generateQRCodeData(
       `Broj: ${receiptData.invoiceNumber}`,
       `Prostor: ${receiptData.businessSpace}`,
       `Uređaj: ${receiptData.cashRegister}`,
-      `Iznos: ${receiptData.totalAmount.toFixed(2)} EUR`
+      `Iznos: ${receiptData.totalAmount.toFixed(2)} EUR`,
     ].join('\n');
   }
 }
@@ -89,12 +86,7 @@ export async function generateQRCodeDataURL(
     margin?: number; // Margin in modules
   } = {}
 ): Promise<string> {
-  const {
-    format = 'structured',
-    environment = 'test',
-    size = 200,
-    margin = 2
-  } = options;
+  const { format = 'structured', environment = 'test', size = 200, margin = 2 } = options;
 
   const qrData = generateQRCodeData(receiptData, format, environment);
 
@@ -102,7 +94,7 @@ export async function generateQRCodeDataURL(
     width: size,
     margin: margin,
     errorCorrectionLevel: 'M', // Medium error correction
-    type: 'image/png'
+    type: 'image/png',
   });
 }
 
@@ -119,12 +111,7 @@ export async function generateQRCodeBuffer(
     margin?: number;
   } = {}
 ): Promise<Buffer> {
-  const {
-    format = 'structured',
-    environment = 'test',
-    size = 200,
-    margin = 2
-  } = options;
+  const { format = 'structured', environment = 'test', size = 200, margin = 2 } = options;
 
   const qrData = generateQRCodeData(receiptData, format, environment);
 
@@ -132,7 +119,7 @@ export async function generateQRCodeBuffer(
     width: size,
     margin: margin,
     errorCorrectionLevel: 'M',
-    type: 'png'
+    type: 'png',
   });
 }
 
@@ -149,12 +136,7 @@ export async function saveQRCodeToFile(
     margin?: number;
   } = {}
 ): Promise<void> {
-  const {
-    format = 'structured',
-    environment = 'test',
-    size = 200,
-    margin = 2
-  } = options;
+  const { format = 'structured', environment = 'test', size = 200, margin = 2 } = options;
 
   const qrData = generateQRCodeData(receiptData, format, environment);
 
@@ -162,7 +144,7 @@ export async function saveQRCodeToFile(
     width: size,
     margin: margin,
     errorCorrectionLevel: 'M',
-    type: 'png'
+    type: 'png',
   });
 }
 
@@ -179,12 +161,7 @@ export async function generateQRCodeSVG(
     margin?: number;
   } = {}
 ): Promise<string> {
-  const {
-    format = 'structured',
-    environment = 'test',
-    size = 200,
-    margin = 2
-  } = options;
+  const { format = 'structured', environment = 'test', size = 200, margin = 2 } = options;
 
   const qrData = generateQRCodeData(receiptData, format, environment);
 
@@ -192,6 +169,6 @@ export async function generateQRCodeSVG(
     type: 'svg',
     width: size,
     margin: margin,
-    errorCorrectionLevel: 'M'
+    errorCorrectionLevel: 'M',
   });
 }

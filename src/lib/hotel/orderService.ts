@@ -10,7 +10,8 @@ export async function getFoodAndBeverageItems(): Promise<InventoryItem[]> {
   try {
     const { data: items, error } = await supabase
       .from('items')
-      .select(`
+      .select(
+        `
         id,
         name,
         description,
@@ -25,47 +26,58 @@ export async function getFoodAndBeverageItems(): Promise<InventoryItem[]> {
           expiration_date,
           location:locations(id, name)
         )
-      `)
+      `
+      )
       .eq('is_active', true)
       .in('categories.name', [
-        'Food', 'Beverage', 'Drinks', 'Bar', 'Restaurant', 
-        'Alcohol', 'Coffee', 'Tea', 'Snacks', 'foodbeverage'
+        'Food',
+        'Beverage',
+        'Drinks',
+        'Bar',
+        'Restaurant',
+        'Alcohol',
+        'Coffee',
+        'Tea',
+        'Snacks',
+        'foodbeverage',
       ]);
 
     if (error) throw error;
 
     // Transform the data to match our interface
-    const inventoryItems: InventoryItem[] = items?.map(item => {
-      const totalStock = item.inventory?.reduce((sum, inv) => sum + (inv.quantity || 0), 0) || 0;
-      
-      return {
-        id: item.id,
-        name: item.name,
-        description: item.description,
-        category: {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          id: (item.category as any).id,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          name: (item.category as any).name,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          requires_expiration: (item.category as any).requires_expiration
-        },
-        unit: item.unit,
-        price: item.price || 0,
-        minimum_stock: item.minimum_stock,
-        is_active: item.is_active,
-        totalStock,
-        locations: item.inventory?.map(inv => ({
-          locationId: inv.location_id,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          locationName: (inv.location as any)?.name || 'Unknown',
-          quantity: inv.quantity || 0,
-          expiration_date: inv.expiration_date
-        })) || []
-      };
-    }) || [];
+    const inventoryItems: InventoryItem[] =
+      items?.map((item) => {
+        const totalStock = item.inventory?.reduce((sum, inv) => sum + (inv.quantity || 0), 0) || 0;
 
-    return inventoryItems.filter(item => item.totalStock > 0); // Only show items in stock
+        return {
+          id: item.id,
+          name: item.name,
+          description: item.description,
+          category: {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            id: (item.category as any).id,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            name: (item.category as any).name,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            requires_expiration: (item.category as any).requires_expiration,
+          },
+          unit: item.unit,
+          price: item.price || 0,
+          minimum_stock: item.minimum_stock,
+          is_active: item.is_active,
+          totalStock,
+          locations:
+            item.inventory?.map((inv) => ({
+              locationId: inv.location_id,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              locationName: (inv.location as any)?.name || 'Unknown',
+              quantity: inv.quantity || 0,
+              expiration_date: inv.expiration_date,
+            })) || [],
+        };
+      }) || [];
+
+    return inventoryItems.filter((item) => item.totalStock > 0); // Only show items in stock
   } catch (error) {
     console.error('Error fetching food and beverage items:', error);
     throw error;
@@ -83,13 +95,15 @@ export function validateOrder(items: OrderItem[]): OrderValidationResult {
     errors.push('Order must contain at least one item');
   }
 
-  items.forEach(item => {
+  items.forEach((item) => {
     if (item.quantity <= 0) {
       errors.push(`Invalid quantity for ${item.itemName}`);
     }
-    
+
     if (item.quantity > item.availableStock) {
-      errors.push(`Insufficient stock for ${item.itemName}. Available: ${item.availableStock}, Requested: ${item.quantity}`);
+      errors.push(
+        `Insufficient stock for ${item.itemName}. Available: ${item.availableStock}, Requested: ${item.quantity}`
+      );
     }
 
     if (item.availableStock <= 5) {
@@ -100,7 +114,7 @@ export function validateOrder(items: OrderItem[]): OrderValidationResult {
   return {
     isValid: errors.length === 0,
     errors,
-    warnings
+    warnings,
   };
 }
 
@@ -111,14 +125,19 @@ export function generateOrderNumber(): string {
   const date = new Date();
   const dateStr = date.toISOString().slice(0, 10).replace(/-/g, '');
   const timeStr = date.toTimeString().slice(0, 8).replace(/:/g, '');
-  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  const random = Math.floor(Math.random() * 1000)
+    .toString()
+    .padStart(3, '0');
   return `RS${dateStr}${timeStr}${random}`;
 }
 
 /**
  * Calculate order totals
  */
-export function calculateOrderTotal(items: OrderItem[], taxRate: number = 0.25): {
+export function calculateOrderTotal(
+  items: OrderItem[],
+  taxRate: number = 0.25
+): {
   subtotal: number;
   tax: number;
   total: number;
@@ -130,14 +149,16 @@ export function calculateOrderTotal(items: OrderItem[], taxRate: number = 0.25):
   return {
     subtotal: Number(subtotal.toFixed(2)),
     tax: Number(tax.toFixed(2)),
-    total: Number(total.toFixed(2))
+    total: Number(total.toFixed(2)),
   };
 }
 
 /**
  * Process room service order and update inventory
  */
-export async function processRoomServiceOrder(order: Omit<RoomServiceOrder, 'id' | 'orderNumber' | 'orderedAt'>): Promise<RoomServiceOrder> {
+export async function processRoomServiceOrder(
+  order: Omit<RoomServiceOrder, 'id' | 'orderNumber' | 'orderedAt'>
+): Promise<RoomServiceOrder> {
   try {
     // Validate order first
     const validation = validateOrder(order.items);
@@ -156,7 +177,7 @@ export async function processRoomServiceOrder(order: Omit<RoomServiceOrder, 'id'
       id: orderId,
       orderNumber,
       orderedAt,
-      printedReceipt: false
+      printedReceipt: false,
     };
 
     // Update inventory quantities
@@ -214,7 +235,9 @@ async function reduceInventoryQuantity(itemId: number, quantityToReduce: number)
     }
 
     if (remainingToReduce > 0) {
-      throw new Error(`Insufficient inventory: Could not reduce ${quantityToReduce} units of item ${itemId}`);
+      throw new Error(
+        `Insufficient inventory: Could not reduce ${quantityToReduce} units of item ${itemId}`
+      );
     }
   } catch (error) {
     console.error('Error reducing inventory quantity:', error);
@@ -226,7 +249,7 @@ async function reduceInventoryQuantity(itemId: number, quantityToReduce: number)
  * Get available rooms for room service
  */
 export function getAvailableRooms(rooms: Room[]): Room[] {
-  // For now, return all rooms. In a real implementation, 
+  // For now, return all rooms. In a real implementation,
   // you might filter by occupancy status
   return rooms.sort((a, b) => a.number.localeCompare(b.number));
 }
@@ -237,6 +260,6 @@ export function getAvailableRooms(rooms: Room[]): Room[] {
 export function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('hr-HR', {
     style: 'currency',
-    currency: 'EUR'
+    currency: 'EUR',
   }).format(amount);
 }

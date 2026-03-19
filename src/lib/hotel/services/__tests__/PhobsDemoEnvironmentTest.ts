@@ -8,12 +8,7 @@ import { PhobsDataMapperService } from '../PhobsDataMapperService';
 import { PhobsConfigurationService } from '../PhobsConfigurationService';
 import { PhobsErrorHandlingService } from '../PhobsErrorHandlingService';
 import { PhobsMonitoringService } from '../PhobsMonitoringService';
-import { 
-  PhobsConfig, 
-  PhobsReservation, 
-  PhobsWebhookEvent, 
-  OTAChannel 
-} from '../phobsTypes';
+import { PhobsConfig, PhobsReservation, PhobsWebhookEvent, OTAChannel } from '../phobsTypes';
 import { testUtils } from './setup';
 
 // Mock external dependencies
@@ -63,7 +58,7 @@ export class PhobsDemoEnvironmentTester {
     baseUrl: 'https://demo-api.phobs.net/v1',
     environment: 'demo',
     webhookSecret: 'demo_webhook_secret_345',
-    webhookUrl: 'https://demo-hotel.example.com/api/phobs/webhook'
+    webhookUrl: 'https://demo-hotel.example.com/api/phobs/webhook',
   };
 
   private testResults: TestSuite[] = [];
@@ -90,7 +85,7 @@ export class PhobsDemoEnvironmentTester {
     suites: TestSuite[];
   }> {
     console.log('🚀 Starting Phobs Demo Environment Integration Tests...\n');
-    
+
     const startTime = Date.now();
     this.testResults = [];
 
@@ -106,14 +101,13 @@ export class PhobsDemoEnvironmentTester {
       await this.runErrorHandlingTests();
       await this.runPerformanceTests();
       await this.runMonitoringTests();
-
     } catch (error) {
       console.error('❌ Test execution failed:', error);
     }
 
     const totalDuration = Date.now() - startTime;
     const summary = this.generateSummary(totalDuration);
-    
+
     this.printResults(summary);
     return summary;
   }
@@ -128,7 +122,7 @@ export class PhobsDemoEnvironmentTester {
       totalTests: 0,
       passedTests: 0,
       failedTests: 0,
-      totalDuration: 0
+      totalDuration: 0,
     };
 
     console.log('📝 Testing Configuration Management...');
@@ -155,26 +149,26 @@ export class PhobsDemoEnvironmentTester {
     await this.runTest(suite, 'Test Connection Settings', async () => {
       const result = await this.configurationService.testConnection();
       // For demo environment, we expect this might fail but should be handled gracefully
-      return { 
-        connectionTested: true, 
+      return {
+        connectionTested: true,
         connected: result.success,
-        responseTime: result.responseTime 
+        responseTime: result.responseTime,
       };
     });
 
     // Test 4: Channel configuration
     await this.runTest(suite, 'Configure Demo Channels', async () => {
       const channels: OTAChannel[] = ['booking.com', 'expedia', 'airbnb'];
-      
+
       for (const channel of channels) {
         const result = await this.configurationService.updateChannelConfiguration(channel, {
           isEnabled: true,
           commissionRate: 0.15,
           rateAdjustment: 0,
           minimumStay: 1,
-          maximumStay: 30
+          maximumStay: 30,
         });
-        
+
         if (!result.success) {
           throw new Error(`Failed to configure ${channel}: ${result.error}`);
         }
@@ -196,7 +190,7 @@ export class PhobsDemoEnvironmentTester {
       totalTests: 0,
       passedTests: 0,
       failedTests: 0,
-      totalDuration: 0
+      totalDuration: 0,
     };
 
     console.log('🔌 Testing API Connectivity...');
@@ -204,21 +198,21 @@ export class PhobsDemoEnvironmentTester {
     // Test 1: Base URL reachability
     await this.runTest(suite, 'Base URL Reachability', async () => {
       try {
-        const response = await fetch(this.demoConfig.baseUrl, { 
+        const response = await fetch(this.demoConfig.baseUrl, {
           method: 'HEAD',
-          timeout: 5000 
+          timeout: 5000,
         });
-        return { 
+        return {
           reachable: response.ok || response.status < 500,
           status: response.status,
-          statusText: response.statusText
+          statusText: response.statusText,
         };
       } catch (error) {
         // For demo environment, connection might fail - this is expected
-        return { 
-          reachable: false, 
+        return {
+          reachable: false,
           error: error instanceof Error ? error.message : 'Connection failed',
-          expected: true // This failure is expected in demo environment
+          expected: true, // This failure is expected in demo environment
         };
       }
     });
@@ -227,9 +221,9 @@ export class PhobsDemoEnvironmentTester {
     await this.runTest(suite, 'API Version Check', async () => {
       try {
         const response = await fetch(`${this.demoConfig.baseUrl}/version`, {
-          timeout: 5000
+          timeout: 5000,
         });
-        
+
         if (response.ok) {
           const data = await response.json();
           return { version: data.version || 'unknown', supported: true };
@@ -238,10 +232,10 @@ export class PhobsDemoEnvironmentTester {
         }
       } catch (error) {
         // Expected to fail in demo environment
-        return { 
-          supported: false, 
+        return {
+          supported: false,
           error: 'Demo environment - endpoint not available',
-          expected: true
+          expected: true,
         };
       }
     });
@@ -252,21 +246,21 @@ export class PhobsDemoEnvironmentTester {
         const response = await fetch(`${this.demoConfig.baseUrl}/health`, {
           method: 'OPTIONS',
           headers: {
-            'Origin': 'https://demo-hotel.example.com',
-            'Access-Control-Request-Method': 'POST'
+            Origin: 'https://demo-hotel.example.com',
+            'Access-Control-Request-Method': 'POST',
           },
-          timeout: 5000
+          timeout: 5000,
         });
 
         return {
           corsEnabled: response.headers.get('Access-Control-Allow-Origin') !== null,
-          allowedMethods: response.headers.get('Access-Control-Allow-Methods')
+          allowedMethods: response.headers.get('Access-Control-Allow-Methods'),
         };
       } catch (error) {
-        return { 
-          corsEnabled: false, 
+        return {
+          corsEnabled: false,
           error: 'CORS check failed - expected in demo environment',
-          expected: true
+          expected: true,
         };
       }
     });
@@ -284,7 +278,7 @@ export class PhobsDemoEnvironmentTester {
       totalTests: 0,
       passedTests: 0,
       failedTests: 0,
-      totalDuration: 0
+      totalDuration: 0,
     };
 
     console.log('🔐 Testing Authentication...');
@@ -293,10 +287,10 @@ export class PhobsDemoEnvironmentTester {
     await this.runTest(suite, 'Initialize Channel Manager', async () => {
       const result = await this.channelManagerService.initialize(this.demoConfig);
       // In demo environment, this might fail but should be handled gracefully
-      return { 
+      return {
         initialized: result.success,
         error: result.error,
-        expected: !result.success // Failure is expected in demo environment
+        expected: !result.success, // Failure is expected in demo environment
       };
     });
 
@@ -304,15 +298,15 @@ export class PhobsDemoEnvironmentTester {
     await this.runTest(suite, 'Token Validation', async () => {
       // Mock token validation since we can't connect to real demo API
       const mockToken = 'demo_jwt_token_' + Date.now();
-      
+
       // Simulate token validation logic
       const isValidFormat = mockToken.startsWith('demo_jwt_token_');
       const isNotExpired = true; // Mock expiration check
-      
+
       return {
         tokenFormat: isValidFormat,
         notExpired: isNotExpired,
-        valid: isValidFormat && isNotExpired
+        valid: isValidFormat && isNotExpired,
       };
     });
 
@@ -321,11 +315,11 @@ export class PhobsDemoEnvironmentTester {
       // Mock token refresh
       const oldToken = 'demo_old_token';
       const newToken = 'demo_new_token_' + Date.now();
-      
+
       return {
         oldToken: oldToken,
         newToken: newToken,
-        refreshed: newToken !== oldToken
+        refreshed: newToken !== oldToken,
       };
     });
 
@@ -342,7 +336,7 @@ export class PhobsDemoEnvironmentTester {
       totalTests: 0,
       passedTests: 0,
       failedTests: 0,
-      totalDuration: 0
+      totalDuration: 0,
     };
 
     console.log('🔄 Testing Data Mapping...');
@@ -375,7 +369,7 @@ export class PhobsDemoEnvironmentTester {
       totalAmount: 274,
       bookingDate: new Date('2025-08-15'),
       lastModified: new Date('2025-08-15'),
-      notes: 'Demo testing reservation'
+      notes: 'Demo testing reservation',
     };
 
     const mockGuest = {
@@ -398,7 +392,7 @@ export class PhobsDemoEnvironmentTester {
       emergencyContactName: undefined,
       emergencyContactPhone: undefined,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
     const mockRoom = {
@@ -410,13 +404,17 @@ export class PhobsDemoEnvironmentTester {
       nameEnglish: 'Demo Double Room',
       nameCroatian: 'Demo dvokrevetna soba',
       amenities: ['WiFi', 'TV', 'AC'],
-      seasonalRates: { A: 80, B: 100, C: 120, D: 150 }
+      seasonalRates: { A: 80, B: 100, C: 120, D: 150 },
     };
 
     // Test 1: Reservation to Phobs mapping
     await this.runTest(suite, 'Reservation to Phobs Mapping', async () => {
-      const result = this.dataMapperService.mapReservationToPhobs(mockReservation, mockGuest, mockRoom);
-      
+      const result = this.dataMapperService.mapReservationToPhobs(
+        mockReservation,
+        mockGuest,
+        mockRoom
+      );
+
       if (!result.success) {
         throw new Error(`Mapping failed: ${result.errors.join(', ')}`);
       }
@@ -428,19 +426,25 @@ export class PhobsDemoEnvironmentTester {
         channel: phobsReservation.channel,
         totalAmount: phobsReservation.totalAmount,
         commission: phobsReservation.commission,
-        warnings: result.warnings
+        warnings: result.warnings,
       };
     });
 
     // Test 2: Phobs to internal mapping
     await this.runTest(suite, 'Phobs to Internal Mapping', async () => {
       // First map to Phobs, then back to internal
-      const toPhobsResult = this.dataMapperService.mapReservationToPhobs(mockReservation, mockGuest, mockRoom);
+      const toPhobsResult = this.dataMapperService.mapReservationToPhobs(
+        mockReservation,
+        mockGuest,
+        mockRoom
+      );
       if (!toPhobsResult.success) {
         throw new Error('Initial mapping failed');
       }
 
-      const fromPhobsResult = this.dataMapperService.mapPhobsReservationToInternal(toPhobsResult.data!);
+      const fromPhobsResult = this.dataMapperService.mapPhobsReservationToInternal(
+        toPhobsResult.data!
+      );
       if (!fromPhobsResult.success) {
         throw new Error(`Reverse mapping failed: ${fromPhobsResult.errors.join(', ')}`);
       }
@@ -451,14 +455,14 @@ export class PhobsDemoEnvironmentTester {
         totalAmount: internalReservation.totalAmount,
         checkIn: internalReservation.checkIn,
         checkOut: internalReservation.checkOut,
-        nights: internalReservation.numberOfNights
+        nights: internalReservation.numberOfNights,
       };
     });
 
     // Test 3: Guest mapping
     await this.runTest(suite, 'Guest Mapping', async () => {
       const result = this.dataMapperService.mapGuestToPhobs(mockGuest);
-      
+
       if (!result.success) {
         throw new Error(`Guest mapping failed: ${result.errors.join(', ')}`);
       }
@@ -470,14 +474,14 @@ export class PhobsDemoEnvironmentTester {
         firstName: phobsGuest.firstName,
         lastName: phobsGuest.lastName,
         email: phobsGuest.email,
-        warnings: result.warnings
+        warnings: result.warnings,
       };
     });
 
     // Test 4: Room mapping
     await this.runTest(suite, 'Room Mapping', async () => {
       const result = this.dataMapperService.mapRoomToPhobs(mockRoom);
-      
+
       if (!result.success) {
         throw new Error(`Room mapping failed: ${result.errors.join(', ')}`);
       }
@@ -488,7 +492,7 @@ export class PhobsDemoEnvironmentTester {
         phobsRoomId: phobsRoom.roomId,
         roomNumber: phobsRoom.roomNumber,
         roomType: phobsRoom.roomType,
-        maxOccupancy: phobsRoom.maxOccupancy
+        maxOccupancy: phobsRoom.maxOccupancy,
       };
     });
 
@@ -505,7 +509,7 @@ export class PhobsDemoEnvironmentTester {
       totalTests: 0,
       passedTests: 0,
       failedTests: 0,
-      totalDuration: 0
+      totalDuration: 0,
     };
 
     console.log('📦 Testing Inventory Management...');
@@ -520,7 +524,7 @@ export class PhobsDemoEnvironmentTester {
         nameEnglish: 'Demo Double Room',
         nameCroatian: 'Demo dvokrevetna soba',
         amenities: ['WiFi', 'TV'],
-        seasonalRates: { A: 80, B: 100, C: 120, D: 150 }
+        seasonalRates: { A: 80, B: 100, C: 120, D: 150 },
       },
       {
         id: 'demo_room_102',
@@ -531,52 +535,52 @@ export class PhobsDemoEnvironmentTester {
         nameEnglish: 'Demo Single Room',
         nameCroatian: 'Demo jednokrevetna soba',
         amenities: ['WiFi'],
-        seasonalRates: { A: 60, B: 80, C: 100, D: 120 }
-      }
+        seasonalRates: { A: 60, B: 80, C: 100, D: 120 },
+      },
     ];
 
     // Test 1: Room inventory sync
     await this.runTest(suite, 'Room Inventory Sync', async () => {
       const result = await this.inventoryService.syncRoomInventory(mockRooms, { dryRun: true });
-      
+
       return {
         success: result.success,
         recordsProcessed: result.recordsProcessed,
         recordsSuccessful: result.recordsSuccessful,
         recordsFailed: result.recordsFailed,
-        duration: result.duration
+        duration: result.duration,
       };
     });
 
     // Test 2: Rate plans sync
     await this.runTest(suite, 'Rate Plans Sync', async () => {
       const result = await this.inventoryService.syncRatePlans(mockRooms, { dryRun: true });
-      
+
       return {
         success: result.success,
         recordsProcessed: result.recordsProcessed,
         recordsSuccessful: result.recordsSuccessful,
         recordsFailed: result.recordsFailed,
-        duration: result.duration
+        duration: result.duration,
       };
     });
 
     // Test 3: Availability sync
     await this.runTest(suite, 'Availability Sync', async () => {
-      const result = await this.inventoryService.syncAvailabilityData(mockRooms, { 
+      const result = await this.inventoryService.syncAvailabilityData(mockRooms, {
         dryRun: true,
         dateRange: {
           startDate: new Date('2025-09-01'),
-          endDate: new Date('2025-09-30')
-        }
+          endDate: new Date('2025-09-30'),
+        },
       });
-      
+
       return {
         success: result.success,
         recordsProcessed: result.recordsProcessed,
         recordsSuccessful: result.recordsSuccessful,
         recordsFailed: result.recordsFailed,
-        duration: result.duration
+        duration: result.duration,
       };
     });
 
@@ -591,8 +595,8 @@ export class PhobsDemoEnvironmentTester {
             roomType: 'double',
             channel: 'booking.com',
             advanceBookingDays: 30,
-            lengthOfStay: 3
-          })
+            lengthOfStay: 3,
+          }),
         },
         {
           scenario: 'Winter Low Season',
@@ -601,8 +605,8 @@ export class PhobsDemoEnvironmentTester {
             roomType: 'double',
             channel: 'directBooking',
             advanceBookingDays: 60,
-            lengthOfStay: 7
-          })
+            lengthOfStay: 7,
+          }),
         },
         {
           scenario: 'Last Minute Booking',
@@ -611,15 +615,15 @@ export class PhobsDemoEnvironmentTester {
             roomType: 'double',
             channel: 'expedia',
             advanceBookingDays: 2,
-            lengthOfStay: 1
-          })
-        }
+            lengthOfStay: 1,
+          }),
+        },
       ];
 
       return {
         baseRate,
         calculations,
-        varianceDetected: calculations.some(c => c.rate !== baseRate)
+        varianceDetected: calculations.some((c) => c.rate !== baseRate),
       };
     });
 
@@ -636,7 +640,7 @@ export class PhobsDemoEnvironmentTester {
       totalTests: 0,
       passedTests: 0,
       failedTests: 0,
-      totalDuration: 0
+      totalDuration: 0,
     };
 
     console.log('🔄 Testing Reservation Synchronization...');
@@ -674,7 +678,7 @@ export class PhobsDemoEnvironmentTester {
         totalRevenue: 0,
         isVip: false,
         syncedAt: undefined,
-        lastUpdated: new Date()
+        lastUpdated: new Date(),
       },
       channel: 'booking.com',
       bookingReference: 'DEMO-BDC-123456',
@@ -694,18 +698,21 @@ export class PhobsDemoEnvironmentTester {
       lastModified: new Date('2025-08-15'),
       syncStatus: 'pending',
       syncedAt: undefined,
-      syncErrors: []
+      syncErrors: [],
     };
 
     // Test 1: Process incoming reservation
     await this.runTest(suite, 'Process Incoming Reservation', async () => {
-      const result = await this.reservationSyncService.processIncomingReservation(mockPhobsReservation, 'pull_sync');
-      
+      const result = await this.reservationSyncService.processIncomingReservation(
+        mockPhobsReservation,
+        'pull_sync'
+      );
+
       return {
         success: result.success,
         internalReservationId: result.internalReservationId,
         conflicts: result.conflicts?.length || 0,
-        error: result.error
+        error: result.error,
       };
     });
 
@@ -715,38 +722,40 @@ export class PhobsDemoEnvironmentTester {
         ...mockPhobsReservation,
         checkOut: new Date('2025-09-08'), // Extended stay
         totalAmount: 360, // Updated amount
-        numberOfNights: 3
+        numberOfNights: 3,
       };
 
-      const result = await this.reservationSyncService.processReservationModification(modifiedReservation);
-      
+      const result =
+        await this.reservationSyncService.processReservationModification(modifiedReservation);
+
       return {
         success: result.success,
-        error: result.error
+        error: result.error,
       };
     });
 
     // Test 3: Process reservation cancellation
     await this.runTest(suite, 'Process Reservation Cancellation', async () => {
-      const result = await this.reservationSyncService.processReservationCancellation(mockPhobsReservation);
-      
+      const result =
+        await this.reservationSyncService.processReservationCancellation(mockPhobsReservation);
+
       return {
         success: result.success,
-        error: result.error
+        error: result.error,
       };
     });
 
     // Test 4: Sync status monitoring
     await this.runTest(suite, 'Sync Status Monitoring', async () => {
       const status = this.reservationSyncService.getSyncStatus();
-      
+
       return {
         queueLength: status.queueLength,
         activeConflicts: status.activeConflicts,
         totalReservationsSynced: status.totalReservationsSynced,
         pendingOutbound: status.pendingOutbound,
         pendingInbound: status.pendingInbound,
-        syncErrors: status.syncErrors
+        syncErrors: status.syncErrors,
       };
     });
 
@@ -763,7 +772,7 @@ export class PhobsDemoEnvironmentTester {
       totalTests: 0,
       passedTests: 0,
       failedTests: 0,
-      totalDuration: 0
+      totalDuration: 0,
     };
 
     console.log('🔗 Testing Webhook Processing...');
@@ -807,7 +816,7 @@ export class PhobsDemoEnvironmentTester {
             totalRevenue: 0,
             isVip: false,
             syncedAt: undefined,
-            lastUpdated: new Date()
+            lastUpdated: new Date(),
           },
           channel: 'expedia',
           bookingReference: 'DEMO-EXP-789012',
@@ -827,20 +836,23 @@ export class PhobsDemoEnvironmentTester {
           lastModified: new Date(),
           syncStatus: 'pending',
           syncedAt: undefined,
-          syncErrors: []
+          syncErrors: [],
         },
-        signature: 'demo_webhook_signature'
+        signature: 'demo_webhook_signature',
       };
 
-      const result = await this.reservationSyncService.processIncomingReservation(webhookEvent.data, 'webhook');
-      
+      const result = await this.reservationSyncService.processIncomingReservation(
+        webhookEvent.data,
+        'webhook'
+      );
+
       return {
         processed: true,
         success: result.success,
         eventId: webhookEvent.eventId,
         eventType: webhookEvent.eventType,
         reservationId: result.internalReservationId,
-        error: result.error
+        error: result.error,
       };
     });
 
@@ -848,17 +860,17 @@ export class PhobsDemoEnvironmentTester {
     await this.runTest(suite, 'Webhook Signature Validation', async () => {
       const payload = JSON.stringify({ test: 'webhook', timestamp: Date.now() });
       const secret = this.demoConfig.webhookSecret;
-      
+
       // Mock signature validation (in real implementation this would use crypto)
       const expectedSignature = `sha256=${secret}_${payload.length}`;
       const providedSignature = `sha256=${secret}_${payload.length}`;
-      
+
       return {
         payloadLength: payload.length,
         secretConfigured: !!secret,
         signatureValid: expectedSignature === providedSignature,
         expectedSignature,
-        providedSignature
+        providedSignature,
       };
     });
 
@@ -866,7 +878,7 @@ export class PhobsDemoEnvironmentTester {
     await this.runTest(suite, 'Webhook Retry Mechanism', async () => {
       let attempt = 0;
       const maxAttempts = 3;
-      
+
       const webhookProcessor = async () => {
         attempt++;
         if (attempt < 2) {
@@ -886,13 +898,13 @@ export class PhobsDemoEnvironmentTester {
           success: result.success,
           totalAttempts: result.attempts,
           wasRetried: result.wasRetried,
-          finalAttempt: attempt
+          finalAttempt: attempt,
         };
       } catch (error) {
         return {
           success: false,
           error: error instanceof Error ? error.message : 'Unknown error',
-          totalAttempts: attempt
+          totalAttempts: attempt,
         };
       }
     });
@@ -910,7 +922,7 @@ export class PhobsDemoEnvironmentTester {
       totalTests: 0,
       passedTests: 0,
       failedTests: 0,
-      totalDuration: 0
+      totalDuration: 0,
     };
 
     console.log('⚠️ Testing Error Handling...');
@@ -932,7 +944,7 @@ export class PhobsDemoEnvironmentTester {
         success: result.success,
         attempts: result.attempts,
         wasRetried: result.wasRetried,
-        errorType: result.error?.type
+        errorType: result.error?.type,
       };
     });
 
@@ -960,7 +972,7 @@ export class PhobsDemoEnvironmentTester {
         success: result.success,
         finalCallCount: callCount,
         attempts: result.attempts,
-        wasRetried: result.wasRetried
+        wasRetried: result.wasRetried,
       };
     });
 
@@ -972,10 +984,9 @@ export class PhobsDemoEnvironmentTester {
         throw error;
       };
 
-      const result = await this.errorHandlingService.withRetry(
-        authFailureOperation,
-        { operation: 'demo_auth_test' }
-      );
+      const result = await this.errorHandlingService.withRetry(authFailureOperation, {
+        operation: 'demo_auth_test',
+      });
 
       return {
         handled: true,
@@ -983,34 +994,38 @@ export class PhobsDemoEnvironmentTester {
         attempts: result.attempts,
         wasRetried: result.wasRetried,
         errorType: result.error?.type,
-        retryable: result.error?.retryable
+        retryable: result.error?.retryable,
       };
     });
 
     // Test 4: Error metrics tracking
     await this.runTest(suite, 'Error Metrics Tracking', async () => {
       const initialMetrics = this.errorHandlingService.getMetrics();
-      
+
       // Generate some test errors
       await this.errorHandlingService.withRetry(
-        async () => { throw new Error('Test error 1'); },
+        async () => {
+          throw new Error('Test error 1');
+        },
         { operation: 'demo_metrics_test_1' },
         { maxAttempts: 1 }
       );
 
       await this.errorHandlingService.withRetry(
-        async () => { throw new Error('Test error 2'); },
+        async () => {
+          throw new Error('Test error 2');
+        },
         { operation: 'demo_metrics_test_2' },
         { maxAttempts: 1 }
       );
 
       const finalMetrics = this.errorHandlingService.getMetrics();
-      
+
       return {
         initialErrors: initialMetrics.totalErrors,
         finalErrors: finalMetrics.totalErrors,
         errorsIncreased: finalMetrics.totalErrors > initialMetrics.totalErrors,
-        newErrors: finalMetrics.totalErrors - initialMetrics.totalErrors
+        newErrors: finalMetrics.totalErrors - initialMetrics.totalErrors,
       };
     });
 
@@ -1027,7 +1042,7 @@ export class PhobsDemoEnvironmentTester {
       totalTests: 0,
       passedTests: 0,
       failedTests: 0,
-      totalDuration: 0
+      totalDuration: 0,
     };
 
     console.log('🚀 Testing Performance...');
@@ -1037,7 +1052,7 @@ export class PhobsDemoEnvironmentTester {
       const concurrentOps = 10;
       const operations = Array.from({ length: concurrentOps }, (_, i) =>
         this.dataMapperService.mapReservationToPhobs(
-          { 
+          {
             id: `concurrent_test_${i}`,
             roomId: `room_${i}`,
             guestId: `guest_${i}`,
@@ -1064,7 +1079,7 @@ export class PhobsDemoEnvironmentTester {
             totalAmount: 229,
             bookingDate: new Date(),
             lastModified: new Date(),
-            notes: `Concurrent test ${i}`
+            notes: `Concurrent test ${i}`,
           },
           {
             id: `guest_${i}`,
@@ -1086,7 +1101,7 @@ export class PhobsDemoEnvironmentTester {
             emergencyContactName: undefined,
             emergencyContactPhone: undefined,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
           },
           {
             id: `room_${i}`,
@@ -1097,7 +1112,7 @@ export class PhobsDemoEnvironmentTester {
             nameEnglish: `Test Room ${i}`,
             nameCroatian: `Test soba ${i}`,
             amenities: ['WiFi'],
-            seasonalRates: { A: 80, B: 100, C: 120, D: 150 }
+            seasonalRates: { A: 80, B: 100, C: 120, D: 150 },
           }
         )
       );
@@ -1105,46 +1120,46 @@ export class PhobsDemoEnvironmentTester {
       const startTime = Date.now();
       const results = await Promise.all(operations);
       const endTime = Date.now();
-      
-      const successCount = results.filter(r => r.success).length;
-      
+
+      const successCount = results.filter((r) => r.success).length;
+
       return {
         totalOperations: concurrentOps,
         successfulOperations: successCount,
         failedOperations: concurrentOps - successCount,
         duration: endTime - startTime,
         averagePerOperation: (endTime - startTime) / concurrentOps,
-        successRate: (successCount / concurrentOps) * 100
+        successRate: (successCount / concurrentOps) * 100,
       };
     });
 
     // Test 2: Memory usage test
     await this.runTest(suite, 'Memory Usage', async () => {
       const initialMemory = process.memoryUsage();
-      
+
       // Create many objects to test memory handling
       const largeDataSet = Array.from({ length: 1000 }, (_, i) => ({
         id: `memory_test_${i}`,
         data: Array.from({ length: 100 }, (_, j) => `data_${i}_${j}`),
-        timestamp: new Date()
+        timestamp: new Date(),
       }));
 
       // Process the data
-      const processedData = largeDataSet.map(item => ({
+      const processedData = largeDataSet.map((item) => ({
         ...item,
         processed: true,
-        processedAt: new Date()
+        processedAt: new Date(),
       }));
 
       const finalMemory = process.memoryUsage();
-      
+
       return {
         initialHeapUsed: initialMemory.heapUsed,
         finalHeapUsed: finalMemory.heapUsed,
         heapDifference: finalMemory.heapUsed - initialMemory.heapUsed,
         objectsCreated: largeDataSet.length,
         objectsProcessed: processedData.length,
-        memoryEfficient: (finalMemory.heapUsed - initialMemory.heapUsed) < 50 * 1024 * 1024 // Less than 50MB
+        memoryEfficient: finalMemory.heapUsed - initialMemory.heapUsed < 50 * 1024 * 1024, // Less than 50MB
       };
     });
 
@@ -1155,49 +1170,51 @@ export class PhobsDemoEnvironmentTester {
         'error_handling',
         'monitoring_log',
         'status_check',
-        'configuration_read'
+        'configuration_read',
       ];
 
-      const benchmarks = await Promise.all(operations.map(async (operation) => {
-        const times: number[] = [];
-        
-        for (let i = 0; i < 10; i++) {
-          const startTime = Date.now();
-          
-          switch (operation) {
-            case 'data_mapping':
-              this.dataMapperService.getDataMapping();
-              break;
-            case 'error_handling':
-              this.errorHandlingService.getMetrics();
-              break;
-            case 'monitoring_log':
-              this.monitoringService.getSystemHealthMetrics();
-              break;
-            case 'status_check':
-              this.reservationSyncService.getSyncStatus();
-              break;
-            case 'configuration_read':
-              this.configurationService.getConfiguration();
-              break;
+      const benchmarks = await Promise.all(
+        operations.map(async (operation) => {
+          const times: number[] = [];
+
+          for (let i = 0; i < 10; i++) {
+            const startTime = Date.now();
+
+            switch (operation) {
+              case 'data_mapping':
+                this.dataMapperService.getDataMapping();
+                break;
+              case 'error_handling':
+                this.errorHandlingService.getMetrics();
+                break;
+              case 'monitoring_log':
+                this.monitoringService.getSystemHealthMetrics();
+                break;
+              case 'status_check':
+                this.reservationSyncService.getSyncStatus();
+                break;
+              case 'configuration_read':
+                this.configurationService.getConfiguration();
+                break;
+            }
+
+            times.push(Date.now() - startTime);
           }
-          
-          times.push(Date.now() - startTime);
-        }
-        
-        return {
-          operation,
-          times,
-          average: times.reduce((a, b) => a + b, 0) / times.length,
-          min: Math.min(...times),
-          max: Math.max(...times)
-        };
-      }));
+
+          return {
+            operation,
+            times,
+            average: times.reduce((a, b) => a + b, 0) / times.length,
+            min: Math.min(...times),
+            max: Math.max(...times),
+          };
+        })
+      );
 
       return {
         benchmarks,
         overallAverage: benchmarks.reduce((sum, b) => sum + b.average, 0) / benchmarks.length,
-        allUnderThreshold: benchmarks.every(b => b.average < 100) // All under 100ms
+        allUnderThreshold: benchmarks.every((b) => b.average < 100), // All under 100ms
       };
     });
 
@@ -1214,7 +1231,7 @@ export class PhobsDemoEnvironmentTester {
       totalTests: 0,
       passedTests: 0,
       failedTests: 0,
-      totalDuration: 0
+      totalDuration: 0,
     };
 
     console.log('📊 Testing Monitoring & Logging...');
@@ -1222,50 +1239,50 @@ export class PhobsDemoEnvironmentTester {
     // Test 1: Logging functionality
     await this.runTest(suite, 'Logging Functionality', async () => {
       const initialLogCount = this.monitoringService.getRecentLogs(1000).length;
-      
+
       // Generate various log levels
       this.monitoringService.debug('demo_test', 'Debug message for testing');
       this.monitoringService.info('demo_test', 'Info message for testing');
       this.monitoringService.warn('demo_test', 'Warning message for testing');
       this.monitoringService.error('demo_test', 'Error message for testing');
-      
+
       const finalLogCount = this.monitoringService.getRecentLogs(1000).length;
-      
+
       return {
         initialLogCount,
         finalLogCount,
         newLogs: finalLogCount - initialLogCount,
-        logsCreated: finalLogCount > initialLogCount
+        logsCreated: finalLogCount > initialLogCount,
       };
     });
 
     // Test 2: Performance tracing
     await this.runTest(suite, 'Performance Tracing', async () => {
       const traceId = this.monitoringService.startTrace('demo_performance_test');
-      
+
       this.monitoringService.addTraceStep(traceId, 'step_1');
       await testUtils.wait(10);
       this.monitoringService.completeTraceStep(traceId, 'step_1');
-      
+
       this.monitoringService.addTraceStep(traceId, 'step_2');
       await testUtils.wait(15);
       this.monitoringService.completeTraceStep(traceId, 'step_2');
-      
+
       const completedTrace = this.monitoringService.endTrace(traceId, true);
-      
+
       return {
         traceId,
         completed: !!completedTrace,
         duration: completedTrace?.duration || 0,
         stepCount: completedTrace?.steps.length || 0,
-        allStepsCompleted: completedTrace?.steps.every(s => s.duration !== undefined) || false
+        allStepsCompleted: completedTrace?.steps.every((s) => s.duration !== undefined) || false,
       };
     });
 
     // Test 3: Metrics collection
     await this.runTest(suite, 'Metrics Collection', async () => {
       const healthMetrics = this.monitoringService.getSystemHealthMetrics();
-      
+
       return {
         uptime: healthMetrics.uptime,
         totalOperations: healthMetrics.totalOperations,
@@ -1273,14 +1290,14 @@ export class PhobsDemoEnvironmentTester {
         errorRate: healthMetrics.errorRate,
         averageResponseTime: healthMetrics.averageResponseTime,
         lastHealthCheck: healthMetrics.lastHealthCheck,
-        metricsAvailable: Object.keys(healthMetrics).length > 0
+        metricsAvailable: Object.keys(healthMetrics).length > 0,
       };
     });
 
     // Test 4: Alert system
     await this.runTest(suite, 'Alert System', async () => {
       const initialAlerts = this.monitoringService.getAlertRules();
-      
+
       // Add a test alert rule
       this.monitoringService.addAlertRule({
         id: 'demo_test_alert',
@@ -1289,16 +1306,16 @@ export class PhobsDemoEnvironmentTester {
         threshold: 50,
         duration: 1,
         isEnabled: true,
-        notificationMethods: ['notification']
+        notificationMethods: ['notification'],
       });
-      
+
       const finalAlerts = this.monitoringService.getAlertRules();
-      
+
       return {
         initialAlertCount: initialAlerts.length,
         finalAlertCount: finalAlerts.length,
         alertAdded: finalAlerts.length > initialAlerts.length,
-        testAlertExists: finalAlerts.some(a => a.id === 'demo_test_alert')
+        testAlertExists: finalAlerts.some((a) => a.id === 'demo_test_alert'),
       };
     });
 
@@ -1309,42 +1326,44 @@ export class PhobsDemoEnvironmentTester {
    * Run individual test with error handling and timing
    */
   private async runTest(
-    suite: TestSuite, 
-    testName: string, 
+    suite: TestSuite,
+    testName: string,
     testFunction: () => Promise<any>
   ): Promise<void> {
     const startTime = Date.now();
     suite.totalTests++;
-    
+
     try {
       const result = await testFunction();
       const duration = Date.now() - startTime;
-      
+
       suite.results.push({
         testName,
         passed: true,
         duration,
-        details: result
+        details: result,
       });
-      
+
       suite.passedTests++;
       suite.totalDuration += duration;
-      
+
       console.log(`  ✅ ${testName} (${duration}ms)`);
     } catch (error) {
       const duration = Date.now() - startTime;
-      
+
       suite.results.push({
         testName,
         passed: false,
         duration,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
-      
+
       suite.failedTests++;
       suite.totalDuration += duration;
-      
-      console.log(`  ❌ ${testName} (${duration}ms): ${error instanceof Error ? error.message : 'Unknown error'}`);
+
+      console.log(
+        `  ❌ ${testName} (${duration}ms): ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -1362,7 +1381,7 @@ export class PhobsDemoEnvironmentTester {
       passedTests,
       failedTests,
       totalDuration,
-      suites: this.testResults
+      suites: this.testResults,
     };
   }
 
@@ -1373,40 +1392,46 @@ export class PhobsDemoEnvironmentTester {
     console.log('\n' + '='.repeat(80));
     console.log('📋 PHOBS DEMO ENVIRONMENT TEST RESULTS');
     console.log('='.repeat(80));
-    
+
     console.log(`\n📊 Overall Summary:`);
     console.log(`   Total Tests: ${summary.totalTests}`);
-    console.log(`   Passed: ${summary.passedTests} (${((summary.passedTests / summary.totalTests) * 100).toFixed(1)}%)`);
-    console.log(`   Failed: ${summary.failedTests} (${((summary.failedTests / summary.totalTests) * 100).toFixed(1)}%)`);
+    console.log(
+      `   Passed: ${summary.passedTests} (${((summary.passedTests / summary.totalTests) * 100).toFixed(1)}%)`
+    );
+    console.log(
+      `   Failed: ${summary.failedTests} (${((summary.failedTests / summary.totalTests) * 100).toFixed(1)}%)`
+    );
     console.log(`   Duration: ${summary.totalDuration}ms`);
     console.log(`   Status: ${summary.overallSuccess ? '✅ PASS' : '❌ FAIL'}`);
 
     console.log(`\n📋 Test Suite Details:`);
-    
+
     summary.suites.forEach((suite: TestSuite) => {
       const successRate = suite.totalTests > 0 ? (suite.passedTests / suite.totalTests) * 100 : 0;
       console.log(`\n   ${suite.suiteName}:`);
-      console.log(`     Tests: ${suite.passedTests}/${suite.totalTests} passed (${successRate.toFixed(1)}%)`);
+      console.log(
+        `     Tests: ${suite.passedTests}/${suite.totalTests} passed (${successRate.toFixed(1)}%)`
+      );
       console.log(`     Duration: ${suite.totalDuration}ms`);
-      
+
       if (suite.failedTests > 0) {
         console.log(`     Failed Tests:`);
         suite.results
-          .filter(r => !r.passed)
-          .forEach(r => {
+          .filter((r) => !r.passed)
+          .forEach((r) => {
             console.log(`       ❌ ${r.testName}: ${r.error}`);
           });
       }
     });
 
     console.log('\n' + '='.repeat(80));
-    
+
     if (summary.overallSuccess) {
       console.log('🎉 All tests passed! Phobs integration is ready for demo environment.');
     } else {
       console.log('⚠️  Some tests failed. Review the failures above before proceeding.');
     }
-    
+
     console.log('='.repeat(80) + '\n');
   }
 }
@@ -1424,15 +1449,15 @@ describe('Phobs Demo Environment Integration Tests', () => {
 
   test('should run all integration tests successfully', async () => {
     const results = await tester.runAllTests();
-    
+
     expect(results).toBeDefined();
     expect(results.totalTests).toBeGreaterThan(0);
     expect(results.passedTests).toBeGreaterThan(0);
     expect(results.suites).toHaveLength(10); // We have 10 test suites
-    
+
     // Log results for debugging
     console.log(`Integration Test Results: ${results.passedTests}/${results.totalTests} passed`);
-    
+
     // Don't fail the test if some demo environment tests fail (expected)
     // Just ensure the test framework is working
     expect(typeof results.overallSuccess).toBe('boolean');

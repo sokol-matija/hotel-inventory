@@ -3,14 +3,14 @@
 
 export type SeasonalPeriod = 'A' | 'B' | 'C' | 'D';
 
-export type RoomType = 
-  | 'big-double' 
-  | 'big-single' 
-  | 'double' 
-  | 'triple' 
-  | 'single' 
-  | 'family' 
-  | 'apartment' 
+export type RoomType =
+  | 'big-double'
+  | 'big-single'
+  | 'double'
+  | 'triple'
+  | 'single'
+  | 'family'
+  | 'apartment'
   | 'rooftop-apartment';
 
 export type ReservationStatus =
@@ -43,7 +43,7 @@ export interface Room {
   nameEnglish: string;
   seasonalRates: {
     A: number; // Winter/Early Spring
-    B: number; // Spring/Late Fall  
+    B: number; // Spring/Late Fall
     C: number; // Early Summer/Early Fall
     D: number; // Peak Summer
   };
@@ -107,11 +107,11 @@ export interface Reservation {
   status: ReservationStatus;
   bookingSource: BookingSource;
   specialRequests: string;
-  
+
   // Corporate booking
   companyId?: string;
   pricingTierId?: string; // Added this property
-  
+
   // Pricing breakdown - using pricing object for consistency with services
   pricing?: {
     subtotal: number;
@@ -124,7 +124,7 @@ export interface Reservation {
     additionalCharges: number;
     total: number;
   };
-  
+
   // Flat pricing properties for backward compatibility
   seasonalPeriod: SeasonalPeriod;
   baseRoomRate: number;
@@ -139,7 +139,7 @@ export interface Reservation {
   additionalCharges: number;
   roomServiceItems: RoomServiceItem[];
   totalAmount: number;
-  
+
   // Payment status
   paymentStatus?: string;
 
@@ -149,7 +149,7 @@ export interface Reservation {
   // Timestamps
   checkedInAt?: Date;
   checkedOutAt?: Date;
-  
+
   // Booking metadata
   bookingDate: Date;
   lastModified: Date;
@@ -185,27 +185,27 @@ export interface PricingCalculation {
   numberOfNights: number;
   seasonalPeriod: SeasonalPeriod;
   subtotal: number;
-  
+
   // Discounts
   discounts: {
-    children0to3: number;  // Free
-    children3to7: number;  // 50% discount
+    children0to3: number; // Free
+    children3to7: number; // 50% discount
     children7to14: number; // 20% discount
-    longStay: number;      // Future: 7+ nights discount
+    longStay: number; // Future: 7+ nights discount
   };
   totalDiscounts: number;
-  
+
   // Fees and taxes
   fees: {
-    tourism: number;       // €1.10 or €1.50 per person per night
-    vat: number;          // 25% Croatian VAT
-    pets: number;         // €20.00 per stay
-    parking: number;      // €7.00 per night
-    shortStay: number;    // +20% for stays < 3 days
-    additional: number;   // Room service, extras
+    tourism: number; // €1.10 or €1.50 per person per night
+    vat: number; // 25% Croatian VAT
+    pets: number; // €20.00 per stay
+    parking: number; // €7.00 per night
+    shortStay: number; // +20% for stays < 3 days
+    additional: number; // Room service, extras
   };
   totalFees: number;
-  
+
   // Final calculation
   total: number;
 }
@@ -255,27 +255,29 @@ export interface HotelContextType {
   rooms: Room[];
   guests: Guest[];
   reservations: Reservation[];
-  
+
   // Loading states
   loading: boolean;
   error: string | null;
-  
+
   // Actions - Reservations
-  createReservation: (reservation: Omit<Reservation, 'id' | 'bookingDate' | 'lastModified'>) => Promise<void>;
+  createReservation: (
+    reservation: Omit<Reservation, 'id' | 'bookingDate' | 'lastModified'>
+  ) => Promise<void>;
   updateReservation: (id: string, updates: Partial<Reservation>) => Promise<void>;
   deleteReservation: (id: string) => Promise<void>;
-  
+
   // Actions - Guests
   createGuest: (guest: Omit<Guest, 'id' | 'totalStays' | 'isVip'>) => Promise<void>;
   updateGuest: (id: string, updates: Partial<Guest>) => Promise<void>;
   findGuestByLastname: (lastname: string) => Guest[];
-  
+
   // Utilities
   calculatePricing: (
-    roomId: string, 
-    checkIn: Date, 
-    checkOut: Date, 
-    adults: number, 
+    roomId: string,
+    checkIn: Date,
+    checkOut: Date,
+    adults: number,
     children: GuestChild[],
     options?: {
       hasPets?: boolean;
@@ -283,13 +285,13 @@ export interface HotelContextType {
       additionalCharges?: number;
     }
   ) => PricingCalculation;
-  
+
   getSeasonalPeriod: (date: Date) => SeasonalPeriod;
   getRoomsByFloor: (floor: number) => Room[];
   getAvailableRooms: (checkIn: Date, checkOut: Date) => Room[];
   checkRoomAvailability: (roomId: string, checkIn: Date, checkOut: Date) => boolean;
   getReservationsForDateRange: (start: Date, end: Date) => Reservation[];
-  
+
   // Calendar helpers
   getCalendarEvents: (start: Date, end: Date) => CalendarEvent[];
   getReservationsByRoom: (roomId: string, start: Date, end: Date) => Reservation[];
@@ -298,15 +300,15 @@ export interface HotelContextType {
 // Constants
 export const HOTEL_CONSTANTS = {
   VAT_RATE: 0.25, // 25% VAT (already included in room prices per Croatian law)
-  PET_FEE: 20.00, // €20 per stay
-  PARKING_FEE: 7.00, // €7 per night
-  SHORT_STAY_SUPPLEMENT: 0.20, // +20% for stays < 3 days
-  TOURISM_TAX_LOW: 1.10, // €1.10 periods I,II,III,X,XI,XII
-  TOURISM_TAX_HIGH: 1.50, // €1.50 periods IV,V,VI,VII,VIII,IX
+  PET_FEE: 20.0, // €20 per stay
+  PARKING_FEE: 7.0, // €7 per night
+  SHORT_STAY_SUPPLEMENT: 0.2, // +20% for stays < 3 days
+  TOURISM_TAX_LOW: 1.1, // €1.10 periods I,II,III,X,XI,XII
+  TOURISM_TAX_HIGH: 1.5, // €1.50 periods IV,V,VI,VII,VIII,IX
   CHILDREN_FREE_AGE: 3,
   CHILDREN_HALF_PRICE_AGE: 7,
   CHILDREN_DISCOUNT_AGE: 14,
-  MIN_NIGHTS_NO_SUPPLEMENT: 3
+  MIN_NIGHTS_NO_SUPPLEMENT: 3,
 } as const;
 
 // Financial Management - Invoice and Payment Tracking
@@ -329,10 +331,10 @@ export interface Invoice {
   dueDate: Date;
   serviceDate?: Date;
   paidDate?: Date;
-  
+
   // Status tracking
   status: InvoiceStatus;
-  
+
   // Financial details (copies from reservation for audit trail)
   currency: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -344,10 +346,10 @@ export interface Invoice {
   totalAmount: number;
   paidAmount: number;
   remainingAmount: number;
-  
+
   // Payment details
   paymentMethod?: string;
-  
+
   // Croatian fiscal compliance
   fiscalData?: {
     oib: string; // Hotel's OIB tax ID
@@ -357,16 +359,16 @@ export interface Invoice {
     fiscalReceiptUrl?: string; // URL to fiscal receipt
     operatorOib?: string; // Operator's OIB who issued invoice
   };
-  
+
   // Payment tracking
   payments?: Payment[]; // Made optional
-  
+
   // Document management
   issuedBy?: string;
   pdfPath?: string;
   isEmailSent?: boolean;
   emailSentAt?: Date;
-  
+
   // Metadata
   notes: string;
   createdAt: Date;
@@ -381,17 +383,17 @@ export interface Payment {
   currency: string;
   method: PaymentMethod;
   status: PaymentStatus;
-  
+
   // Payment details
   transactionId?: string;
   referenceNumber?: string;
   receivedDate: Date;
   processedDate?: Date;
-  
+
   // Bank/card details (anonymized)
   cardLastFour?: string;
   bankReference?: string;
-  
+
   // Financial processing
   processingFee?: number;
   netAmount?: number;
@@ -400,11 +402,11 @@ export interface Payment {
   originalCurrency?: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   gatewayResponse?: any;
-  
+
   // Refund support
   isRefund?: boolean;
   parentPaymentId?: string;
-  
+
   // Metadata
   processedBy?: string; // Staff member who processed - made optional
   notes?: string; // Made optional
@@ -414,7 +416,7 @@ export interface Payment {
 export interface FiscalRecord {
   id: string;
   invoiceId: string;
-  
+
   // Croatian fiscal compliance details
   jir: string; // Jedinstveni identifikator računa
   zki: string; // Zaštitni kod izdavatelja
@@ -423,11 +425,11 @@ export interface FiscalRecord {
   naknadnaDostavaPoruke: boolean; // Subsequent message delivery
   paragonBroj?: string; // Paragon number
   specificniNamjetRacuna: string; // Specific purpose of receipt
-  
+
   // Submission details
   dateTimeSubmitted: Date;
   dateTimeReceived?: Date;
-  
+
   // Financial totals
   ukupanIznos: number; // Total amount
   naknadaZaZastituOkolisa?: number; // Environmental protection fee
@@ -437,17 +439,17 @@ export interface FiscalRecord {
   ukupanIznosPoreza: number; // Total tax amount
   ukupanIznosNaplata: number; // Total collection amount
   nacinPlacanja: string; // Payment method
-  
+
   // Operator details
   oibOper: string; // Operator OIB
   nap: string; // Note or additional info
-  
+
   // Status and error handling
   status: string;
   errorMessage?: string;
   xmlRequest?: string;
   xmlResponse?: string;
-  
+
   // Audit trail
   createdAt: Date;
 }
@@ -456,38 +458,38 @@ export interface RevenueAnalytics {
   period: 'daily' | 'weekly' | 'monthly' | 'yearly';
   startDate: Date;
   endDate: Date;
-  
+
   // Revenue breakdown
   totalRevenue: number;
   totalBookings: number; // Added this property
   roomRevenue: number;
   taxRevenue: number;
   additionalRevenue: number;
-  
+
   // Tax breakdown
   vatCollected: number;
   tourismTaxCollected: number;
-  
+
   // Booking sources
   directBookings: number;
   bookingComRevenue: number;
   otherSourcesRevenue: number;
-  
+
   // Payment methods
   cashPayments: number;
   cardPayments: number;
   bankTransfers: number;
   onlinePayments: number;
-  
+
   // Statistics
   totalInvoices: number;
   averageBookingValue: number;
   occupancyRate: number;
-  
+
   // Croatian fiscal compliance
   fiscalReportsGenerated: number;
   fiscalSubmissions: number;
-  
+
   // Time series data
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   periods: any[];
@@ -500,37 +502,40 @@ export interface FinancialHotelContextType extends HotelContextType {
   payments: Payment[];
   fiscalRecords: FiscalRecord[];
   revenueAnalytics: RevenueAnalytics[];
-  
+
   // Financial actions - Invoices
   generateInvoice: (reservationId: string) => Promise<Invoice>;
   updateInvoiceStatus: (invoiceId: string, status: InvoiceStatus) => Promise<void>;
   getInvoicesByGuest: (guestId: string) => Invoice[];
   getInvoicesByDateRange: (start: Date, end: Date) => Invoice[];
   getOverdueInvoices: () => Invoice[];
-  
+
   // Financial actions - Payments
   addPayment: (payment: Omit<Payment, 'id' | 'createdAt'>) => Promise<void>;
   updatePaymentStatus: (paymentId: string, status: PaymentStatus) => Promise<void>;
   getPaymentsByInvoice: (invoiceId: string) => Payment[];
   getPaymentsByMethod: (method: PaymentMethod) => Payment[];
-  
+
   // Revenue analytics
   calculateRevenueAnalytics: (
     period: 'daily' | 'weekly' | 'monthly' | 'yearly',
     startDate: Date,
     endDate: Date
   ) => RevenueAnalytics;
-  
+
   // Croatian fiscal compliance
   submitFiscalRecord: (invoiceId: string) => Promise<FiscalRecord>;
   validateFiscalCompliance: (invoiceId: string) => Promise<boolean>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   generateFiscalReport: (startDate: Date, endDate: Date) => Promise<any>;
-  
+
   // Financial utilities
   getTotalRevenue: (startDate: Date, endDate: Date) => number;
   getUnpaidInvoices: () => Invoice[];
-  getPaymentSummary: (startDate: Date, endDate: Date) => {
+  getPaymentSummary: (
+    startDate: Date,
+    endDate: Date
+  ) => {
     total: number;
     cash: number;
     card: number;
@@ -554,13 +559,13 @@ export interface Company {
   email: string;
   phone: string;
   fax?: string;
-  
+
   // Additional business details
   vatNumber?: string;
   businessRegistrationNumber?: string;
   discountPercentage?: number;
   paymentTerms?: string;
-  
+
   // Billing address (if different from main address)
   billingAddress?: {
     street: string;
@@ -568,13 +573,13 @@ export interface Company {
     postalCode: string;
     country: string;
   };
-  
+
   // Business relationship
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   pricingTier?: any; // For joined queries
   pricingTierId?: string; // Links to PricingTier
   roomAllocationGuarantee?: number; // Number of guaranteed rooms
-  
+
   // Metadata
   isActive: boolean;
   createdAt: Date;
@@ -585,11 +590,11 @@ export interface Company {
 // Enhanced Reservation with Corporate Billing
 export interface EnhancedReservation extends Omit<Reservation, 'roomServiceItems'> {
   roomServiceItems: RoomServiceItem[];
-  
+
   // Corporate billing fields
   companyId?: string; // For R1 bills
   isR1Bill: boolean; // Corporate billing flag
-  
+
   // Enhanced metadata
   lastModified: Date;
 }
@@ -599,35 +604,35 @@ export interface PricingTier {
   id: string;
   name: string;
   description: string;
-  
+
   // Pricing configuration
   discountPercentage: number;
   isDefault: boolean;
   isActive: boolean;
-  
+
   // Seasonal rates
   seasonalRates: {
     A: number; // Winter/Early Spring
-    B: number; // Spring/Late Fall  
+    B: number; // Spring/Late Fall
     C: number; // Early Summer/Early Fall
     D: number; // Peak Summer
   };
-  
+
   // Room type multipliers
   roomTypeMultipliers: Record<string, number>;
-  
+
   // Business rules
   minimumStayRequirement?: number;
   advanceBookingDiscount?: number;
   lastMinuteDiscount?: number;
-  
+
   // Validity period
   validFrom?: Date;
   validTo?: Date;
-  
+
   // Services this tier applies to
   applicableServices: string[];
-  
+
   // Metadata
   createdAt: Date;
   updatedAt: Date;

@@ -6,7 +6,7 @@ export enum LogLevel {
   INFO = 1,
   WARN = 2,
   ERROR = 3,
-  CRITICAL = 4
+  CRITICAL = 4,
 }
 
 export interface LogEntry {
@@ -55,9 +55,9 @@ class LoggingService {
       enableRemote: process.env.NODE_ENV === 'production',
       maxStorageEntries: 1000,
       includeStackTrace: process.env.NODE_ENV !== 'production',
-      enablePerformanceMetrics: true
+      enablePerformanceMetrics: true,
     };
-    
+
     this.initializeLogging();
   }
 
@@ -72,19 +72,23 @@ class LoggingService {
     // Set up global error handlers
     if (typeof window !== 'undefined') {
       window.addEventListener('error', (event) => {
-        this.error('Global Error', `${event.message} at ${event.filename}:${event.lineno}:${event.colno}`, {
-          message: event.message,
-          filename: event.filename,
-          lineno: event.lineno,
-          colno: event.colno,
-          error: event.error
-        });
+        this.error(
+          'Global Error',
+          `${event.message} at ${event.filename}:${event.lineno}:${event.colno}`,
+          {
+            message: event.message,
+            filename: event.filename,
+            lineno: event.lineno,
+            colno: event.colno,
+            error: event.error,
+          }
+        );
       });
 
       window.addEventListener('unhandledrejection', (event) => {
         this.error('Unhandled Promise Rejection', `Promise rejection: ${event.reason}`, {
           reason: event.reason,
-          promise: event.promise
+          promise: event.promise,
         });
       });
     }
@@ -93,7 +97,7 @@ class LoggingService {
     this.info('LoggingService', 'Logging service initialized', {
       sessionId: this.sessionId,
       config: this.config,
-      environment: process.env.NODE_ENV
+      environment: process.env.NODE_ENV,
     });
   }
 
@@ -132,36 +136,42 @@ class LoggingService {
   public performanceStart(operation: string): string {
     const startTime = performance.now();
     const operationId = this.generateOperationId();
-    
+
     this.debug('Performance', `Started: ${operation}`, {
       operationId,
       startTime,
-      operation
+      operation,
     });
-    
+
     return operationId;
   }
 
   public performanceEnd(operationId: string, operation: string, additionalData?: unknown): void {
     const endTime = performance.now();
-    const duration = endTime - (performance.getEntriesByName(`perf-${operationId}`)[0]?.startTime || endTime);
-    
+    const duration =
+      endTime - (performance.getEntriesByName(`perf-${operationId}`)[0]?.startTime || endTime);
+
     this.info('Performance', `Completed: ${operation}`, {
       operationId,
       operation,
       duration: Math.round(duration * 100) / 100,
       memoryUsage: this.getMemoryUsage(),
-      ...additionalData
+      ...additionalData,
     });
   }
 
   // Database operation logging
-  public logDatabaseOperation(operation: string, table: string, duration: number, data?: unknown): void {
+  public logDatabaseOperation(
+    operation: string,
+    table: string,
+    duration: number,
+    data?: unknown
+  ): void {
     this.debug('Database', `${operation} on ${table}`, {
       operation,
       table,
       duration,
-      data
+      data,
     });
   }
 
@@ -172,18 +182,23 @@ class LoggingService {
       timestamp: new Date().toISOString(),
       url: typeof window !== 'undefined' ? window.location.href : undefined,
       userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
-      ...details
+      ...details,
     });
   }
 
   // Business operation logging
-  public logBusinessOperation(operation: string, entityType: string, entityId: string, data?: unknown): void {
+  public logBusinessOperation(
+    operation: string,
+    entityType: string,
+    entityId: string,
+    data?: unknown
+  ): void {
     this.info('Business', `${operation} ${entityType}`, {
       operation,
       entityType,
       entityId,
       userId: this.userId,
-      data
+      data,
     });
   }
 
@@ -196,7 +211,7 @@ class LoggingService {
       context,
       url: typeof window !== 'undefined' ? window.location.href : undefined,
       userId: this.userId,
-      sessionId: this.sessionId
+      sessionId: this.sessionId,
     });
   }
 
@@ -216,7 +231,7 @@ class LoggingService {
       userId: this.userId,
       sessionId: this.sessionId,
       userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
-      url: typeof window !== 'undefined' ? window.location.href : undefined
+      url: typeof window !== 'undefined' ? window.location.href : undefined,
     };
 
     // Add stack trace for errors in development
@@ -227,7 +242,7 @@ class LoggingService {
     // Add performance metrics if enabled
     if (this.config.enablePerformanceMetrics) {
       logEntry.performance = {
-        memoryUsage: this.getMemoryUsage()
+        memoryUsage: this.getMemoryUsage(),
       };
     }
 
@@ -249,7 +264,7 @@ class LoggingService {
     const timestamp = entry.timestamp.toISOString();
     const levelName = LogLevel[entry.level];
     const prefix = `[${timestamp}] [${levelName}] [${entry.category}]`;
-    
+
     switch (entry.level) {
       case LogLevel.DEBUG:
         console.debug(prefix, entry.message, entry.data);
@@ -272,7 +287,7 @@ class LoggingService {
 
   private outputToStorage(entry: LogEntry): void {
     this.logBuffer.push(entry);
-    
+
     // Maintain buffer size
     if (this.logBuffer.length > this.config.maxStorageEntries) {
       this.logBuffer = this.logBuffer.slice(-this.config.maxStorageEntries);
@@ -298,9 +313,9 @@ class LoggingService {
       await fetch(this.config.remoteEndpoint, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(entry)
+        body: JSON.stringify(entry),
       });
     } catch (error) {
       // Fail silently for remote logging errors
@@ -341,16 +356,16 @@ class LoggingService {
 
     if (filter) {
       if (filter.level !== undefined) {
-        logs = logs.filter(log => log.level >= filter.level!);
+        logs = logs.filter((log) => log.level >= filter.level!);
       }
       if (filter.category) {
-        logs = logs.filter(log => log.category.includes(filter.category!));
+        logs = logs.filter((log) => log.category.includes(filter.category!));
       }
       if (filter.startTime) {
-        logs = logs.filter(log => log.timestamp >= filter.startTime!);
+        logs = logs.filter((log) => log.timestamp >= filter.startTime!);
       }
       if (filter.endTime) {
-        logs = logs.filter(log => log.timestamp <= filter.endTime!);
+        logs = logs.filter((log) => log.timestamp <= filter.endTime!);
       }
       if (filter.limit) {
         logs = logs.slice(-filter.limit);
@@ -382,17 +397,17 @@ class LoggingService {
   } {
     const now = new Date();
     const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-    const recentLogs = this.logBuffer.filter(log => log.timestamp >= oneHourAgo);
+    const recentLogs = this.logBuffer.filter((log) => log.timestamp >= oneHourAgo);
 
     const logsByLevel: Record<string, number> = {};
     const logsByCategory: Record<string, number> = {};
     let errorCount = 0;
 
-    this.logBuffer.forEach(log => {
+    this.logBuffer.forEach((log) => {
       const levelName = LogLevel[log.level];
       logsByLevel[levelName] = (logsByLevel[levelName] || 0) + 1;
       logsByCategory[log.category] = (logsByCategory[log.category] || 0) + 1;
-      
+
       if (log.level >= LogLevel.ERROR) {
         errorCount++;
       }
@@ -403,7 +418,7 @@ class LoggingService {
       logsByLevel,
       logsByCategory,
       errorRate: this.logBuffer.length > 0 ? (errorCount / this.logBuffer.length) * 100 : 0,
-      averageLogsPerHour: recentLogs.length
+      averageLogsPerHour: recentLogs.length,
     };
   }
 }
@@ -414,7 +429,8 @@ export const logger = LoggingService.getInstance();
 // Convenience functions for common use cases
 export const logPerformance = {
   start: (operation: string) => logger.performanceStart(operation),
-  end: (operationId: string, operation: string, data?: unknown) => logger.performanceEnd(operationId, operation, data)
+  end: (operationId: string, operation: string, data?: unknown) =>
+    logger.performanceEnd(operationId, operation, data),
 };
 
 export const logDatabase = (operation: string, table: string, duration: number, data?: unknown) =>
@@ -423,8 +439,11 @@ export const logDatabase = (operation: string, table: string, duration: number, 
 export const logUserActivity = (action: string, details?: unknown) =>
   logger.logUserActivity(action, details);
 
-export const logBusinessOperation = (operation: string, entityType: string, entityId: string, data?: unknown) =>
-  logger.logBusinessOperation(operation, entityType, entityId, data);
+export const logBusinessOperation = (
+  operation: string,
+  entityType: string,
+  entityId: string,
+  data?: unknown
+) => logger.logBusinessOperation(operation, entityType, entityId, data);
 
-export const trackError = (error: Error, context?: unknown) =>
-  logger.trackError(error, context);
+export const trackError = (error: Error, context?: unknown) => logger.trackError(error, context);

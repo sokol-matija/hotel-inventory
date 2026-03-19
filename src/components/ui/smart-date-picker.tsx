@@ -30,7 +30,7 @@ export function SmartDatePicker({
   required = false,
   reservations,
   roomId,
-  disabled = false
+  disabled = false,
 }: SmartDatePickerProps) {
   const [occupiedDates, setOccupiedDates] = useState<Date[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -47,7 +47,7 @@ export function SmartDatePicker({
     const today = new Date();
     const startDate = new Date(today.getFullYear(), today.getMonth() - 1, 1); // One month ago
     const endDate = new Date(today.getFullYear() + 1, today.getMonth(), 0); // One year from now
-    
+
     const occupied = getRoomOccupiedDates(reservations, roomId, startDate, endDate);
     setOccupiedDates(occupied);
   }, [reservations, roomId, value]);
@@ -64,9 +64,10 @@ export function SmartDatePicker({
     }
 
     // Create CSS rules for each occupied date
-    const cssRules = occupiedDates.map(date => {
-      const dateStr = format(date, 'yyyy-MM-dd');
-      return `
+    const cssRules = occupiedDates
+      .map((date) => {
+        const dateStr = format(date, 'yyyy-MM-dd');
+        return `
         input[type="date"][value="${dateStr}"]::before,
         input[type="date"]::-webkit-calendar-picker-indicator ~ *[aria-label*="${dateStr}"]::after,
         input[type="date"] + .date-picker-overlay[data-occupied-dates*="${dateStr}"]::after {
@@ -81,7 +82,8 @@ export function SmartDatePicker({
           pointer-events: none;
         }
       `;
-    }).join('\n');
+      })
+      .join('\n');
 
     // Create or update style element
     if (!styleElementRef.current) {
@@ -126,31 +128,30 @@ export function SmartDatePicker({
   }, [occupiedDates, id]);
 
   // Check if the current value is an occupied date
-  const isCurrentValueOccupied = value && !isDateAvailableForRoom(
-    reservations,
-    roomId,
-    new Date(value)
-  );
+  const isCurrentValueOccupied =
+    value && !isDateAvailableForRoom(reservations, roomId, new Date(value));
 
   // Create data attribute with occupied dates for CSS targeting
-  const occupiedDatesStr = occupiedDates.map(date => format(date, 'yyyy-MM-dd')).join(',');
+  const occupiedDatesStr = occupiedDates.map((date) => format(date, 'yyyy-MM-dd')).join(',');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
-    
+
     // Check if the selected date is occupied
     if (newValue && !isDateAvailableForRoom(reservations, roomId, new Date(newValue))) {
       // Optionally show a warning or prevent the selection
       // For now, we'll allow the selection but show visual feedback
       console.warn('Selected date is occupied:', newValue);
     }
-    
+
     onChange(newValue);
   };
 
   return (
     <div className="smart-date-picker-container">
-      <Label htmlFor={id}>{label} {required && '*'}</Label>
+      <Label htmlFor={id}>
+        {label} {required && '*'}
+      </Label>
       <Input
         ref={inputRef}
         id={id}
@@ -164,12 +165,12 @@ export function SmartDatePicker({
         data-occupied-dates={occupiedDatesStr}
       />
       {isCurrentValueOccupied && (
-        <div className="text-sm text-red-600 mt-1">
+        <div className="mt-1 text-sm text-red-600">
           ⚠️ This date is occupied by another reservation
         </div>
       )}
       {occupiedDates.length > 0 && (
-        <div className="text-xs text-gray-500 mt-1">
+        <div className="mt-1 text-xs text-gray-500">
           {occupiedDates.length} occupied date{occupiedDates.length !== 1 ? 's' : ''} in calendar
         </div>
       )}

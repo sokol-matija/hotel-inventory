@@ -23,14 +23,14 @@ export type EmailLanguage = 'en' | 'de' | 'it';
 export type EmailType = 'welcome' | 'thankyou' | 'reminder';
 
 export class HotelEmailService {
-  
   // Translations for different languages
   private static translations = {
     en: {
       welcome: {
         subject: 'Welcome to Hotel Porec - Your Stay Information',
         greeting: 'Dear',
-        welcomeText: "We're delighted to welcome you to Hotel Porec! Your reservation is confirmed and we're looking forward to hosting you. Here's everything you need to know for a comfortable stay.",
+        welcomeText:
+          "We're delighted to welcome you to Hotel Porec! Your reservation is confirmed and we're looking forward to hosting you. Here's everything you need to know for a comfortable stay.",
         bookingDetails: 'Your Booking Details',
         importantInfo: 'Important Check-in Information',
         dining: 'Dining & Amenities',
@@ -42,13 +42,14 @@ export class HotelEmailService {
         checkOutTime: 'Check-out time: Until 10:00 AM',
         breakfastHours: 'Breakfast: 7:00 AM - 10:30 AM (Continental buffet)',
         parking: 'Parking: €7/night (limited spaces)',
-      }
+      },
     },
     de: {
       welcome: {
         subject: 'Willkommen im Hotel Porec - Ihre Aufenthaltsinformationen',
         greeting: 'Liebe/r',
-        welcomeText: "Wir freuen uns sehr, Sie im Hotel Porec begrüßen zu dürfen! Ihre Reservierung ist bestätigt und wir freuen uns darauf, Sie zu beherbergen. Hier ist alles, was Sie für einen komfortablen Aufenthalt wissen müssen.",
+        welcomeText:
+          'Wir freuen uns sehr, Sie im Hotel Porec begrüßen zu dürfen! Ihre Reservierung ist bestätigt und wir freuen uns darauf, Sie zu beherbergen. Hier ist alles, was Sie für einen komfortablen Aufenthalt wissen müssen.',
         bookingDetails: 'Ihre Buchungsdetails',
         importantInfo: 'Wichtige Check-in Informationen',
         dining: 'Gastronomie & Ausstattung',
@@ -60,13 +61,14 @@ export class HotelEmailService {
         checkOutTime: 'Check-out Zeit: Bis 10:00 Uhr',
         breakfastHours: 'Frühstück: 7:00 - 10:30 Uhr (Kontinentales Buffet)',
         parking: 'Parkplatz: €7/Nacht (begrenzte Plätze)',
-      }
+      },
     },
     it: {
       welcome: {
-        subject: 'Benvenuti all\'Hotel Porec - Informazioni sul Soggiorno',
+        subject: "Benvenuti all'Hotel Porec - Informazioni sul Soggiorno",
         greeting: 'Gentile',
-        welcomeText: "Siamo lieti di darvi il benvenuto all'Hotel Porec! La vostra prenotazione è confermata e non vediamo l'ora di ospitarvi. Ecco tutto quello che dovete sapere per un soggiorno confortevole.",
+        welcomeText:
+          "Siamo lieti di darvi il benvenuto all'Hotel Porec! La vostra prenotazione è confermata e non vediamo l'ora di ospitarvi. Ecco tutto quello che dovete sapere per un soggiorno confortevole.",
         bookingDetails: 'Dettagli della Prenotazione',
         importantInfo: 'Informazioni Importanti per il Check-in',
         dining: 'Ristorazione e Servizi',
@@ -78,8 +80,8 @@ export class HotelEmailService {
         checkOutTime: 'Orario check-out: Fino alle 10:00',
         breakfastHours: 'Colazione: 7:00 - 10:30 (Buffet continentale)',
         parking: 'Parcheggio: €7/notte (posti limitati)',
-      }
-    }
+      },
+    },
   };
 
   /**
@@ -227,11 +229,16 @@ export class HotelEmailService {
   /**
    * Generate welcome email with hotel information for guest
    */
-  static generateWelcomeEmail(data: HotelInfoEmailData, language: EmailLanguage = 'en'): EmailTemplate {
+  static generateWelcomeEmail(
+    data: HotelInfoEmailData,
+    language: EmailLanguage = 'en'
+  ): EmailTemplate {
     const { guest, reservation, room } = data;
     const checkInDate = format(reservation.checkIn, 'EEEE, MMMM do, yyyy');
     const checkOutDate = format(reservation.checkOut, 'EEEE, MMMM do, yyyy');
-    const nights = Math.ceil((reservation.checkOut.getTime() - reservation.checkIn.getTime()) / (24 * 60 * 60 * 1000));
+    const nights = Math.ceil(
+      (reservation.checkOut.getTime() - reservation.checkIn.getTime()) / (24 * 60 * 60 * 1000)
+    );
 
     const t = this.translations[language].welcome;
     const subject = `${t.subject} (${checkInDate})`;
@@ -264,7 +271,7 @@ ${this.getEmailStyles()}
                 <div class="info-grid">
                     <div class="info-item">
                         <div class="info-label">Room</div>
-                        <div class="info-value">${formatRoomNumber(room)} - ${room.type.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}</div>
+                        <div class="info-value">${formatRoomNumber(room)} - ${room.type.replace('-', ' ').replace(/\b\w/g, (l) => l.toUpperCase())}</div>
                     </div>
                     <div class="info-item">
                         <div class="info-label">Guests</div>
@@ -299,9 +306,10 @@ ${this.getEmailStyles()}
                     <li><strong>Key cards:</strong> Will be provided at check-in</li>
                 </ul>
                 
-                ${reservation.checkIn.getHours() < 14 ? 
-                    '<div class="highlight">🕐 Early Check-in Notice: Your check-in is scheduled before 2:00 PM. Please contact us to confirm room availability.</div>' : 
-                    ''
+                ${
+                  reservation.checkIn.getHours() < 14
+                    ? '<div class="highlight">🕐 Early Check-in Notice: Your check-in is scheduled before 2:00 PM. Please contact us to confirm room availability.</div>'
+                    : ''
                 }
             </div>
 
@@ -360,7 +368,9 @@ ${this.getEmailStyles()}
                 </div>
             </div>
 
-            ${guest.hasPets ? `
+            ${
+              guest.hasPets
+                ? `
             <div class="section" style="background: rgba(254, 243, 199, 0.9); border-left-color: #F59E0B;">
                 <h3>🐕 ${t.petFriendly}</h3>
                 <p>We're happy to welcome your furry friend! Please note:</p>
@@ -371,7 +381,9 @@ ${this.getEmailStyles()}
                     <li>Let us know if you need pet beds or bowls</li>
                 </ul>
             </div>
-            ` : ''}
+            `
+                : ''
+            }
 
             <div class="section">
                 <h3>❓ ${t.assistance}</h3>
@@ -594,7 +606,9 @@ ${this.getEmailStyles()}
   static generateReminderEmail(data: HotelInfoEmailData): EmailTemplate {
     const { guest, reservation, room } = data;
     const checkInDate = format(reservation.checkIn, 'EEEE, MMMM do, yyyy');
-    const daysUntilCheckIn = Math.ceil((reservation.checkIn.getTime() - new Date().getTime()) / (24 * 60 * 60 * 1000));
+    const daysUntilCheckIn = Math.ceil(
+      (reservation.checkIn.getTime() - new Date().getTime()) / (24 * 60 * 60 * 1000)
+    );
 
     const subject = `Your stay at Hotel Porec is in ${daysUntilCheckIn} day${daysUntilCheckIn > 1 ? 's' : ''} - ${checkInDate}`;
 
@@ -683,16 +697,16 @@ ${this.getEmailStyles()}
       if (!supabaseUrl || !supabaseAnonKey) {
         console.warn('⚠️ Supabase not configured, falling back to simulation');
         // Fallback to simulation if no Supabase config
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        await new Promise((resolve) => setTimeout(resolve, 1500));
         console.log('📧 Email simulated (no Supabase config):', {
           to,
           subject: template.subject,
           bodyLength: template.body.length,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
         return {
           success: true,
-          message: `Email simulated successfully to ${to} (no Supabase configured)`
+          message: `Email simulated successfully to ${to} (no Supabase configured)`,
         };
       }
 
@@ -702,7 +716,7 @@ ${this.getEmailStyles()}
       const response = await fetch(edgeFunctionUrl, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${supabaseAnonKey}`,
+          Authorization: `Bearer ${supabaseAnonKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -719,26 +733,25 @@ ${this.getEmailStyles()}
           to,
           subject: template.subject,
           emailId: result.emailId,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
-        
+
         return {
           success: true,
-          message: `Welcome email sent successfully to ${to}`
+          message: `Welcome email sent successfully to ${to}`,
         };
       } else {
         console.error('❌ Supabase Edge Function error:', result);
         return {
           success: false,
-          message: result.message || 'Failed to send email via Supabase'
+          message: result.message || 'Failed to send email via Supabase',
         };
       }
-      
     } catch (error) {
       console.error('❌ Failed to send email via Supabase:', error);
       return {
         success: false,
-        message: `Failed to send email to ${to}. Please try again.`
+        message: `Failed to send email to ${to}. Please try again.`,
       };
     }
   }
@@ -754,29 +767,26 @@ ${this.getEmailStyles()}
   ): Promise<{ success: boolean; message: string }> {
     try {
       // Try to get guest and room from parameters, fallback to sample data
-      const guestData = guest || SAMPLE_GUESTS.find(g => g.id === reservation.guestId);
-      const roomData = room || HOTEL_POREC_ROOMS.find(r => r.id === reservation.roomId);
+      const guestData = guest || SAMPLE_GUESTS.find((g) => g.id === reservation.guestId);
+      const roomData = room || HOTEL_POREC_ROOMS.find((r) => r.id === reservation.roomId);
 
       if (!guestData || !roomData) {
         throw new Error('Guest or room not found');
       }
 
       // Use provided language, or guest's preferred language, or default to 'en'
-      const emailLanguage = language ||
-        (guestData.preferredLanguage as EmailLanguage) ||
-        'en';
+      const emailLanguage = language || (guestData.preferredLanguage as EmailLanguage) || 'en';
 
       const template = this.generateWelcomeEmail(
         { guest: guestData, reservation, room: roomData },
         emailLanguage
       );
       return await this.sendEmail(guestData.email || '', template, guestData.fullName);
-
     } catch (error) {
       console.error('Error sending welcome email:', error);
       return {
         success: false,
-        message: 'Failed to send welcome email. Missing guest or room information.'
+        message: 'Failed to send welcome email. Missing guest or room information.',
       };
     }
   }
@@ -791,21 +801,24 @@ ${this.getEmailStyles()}
   ): Promise<{ success: boolean; message: string }> {
     try {
       // Try to get guest and room from parameters, fallback to sample data
-      const guestData = guest || SAMPLE_GUESTS.find(g => g.id === reservation.guestId);
-      const roomData = room || HOTEL_POREC_ROOMS.find(r => r.id === reservation.roomId);
+      const guestData = guest || SAMPLE_GUESTS.find((g) => g.id === reservation.guestId);
+      const roomData = room || HOTEL_POREC_ROOMS.find((r) => r.id === reservation.roomId);
 
       if (!guestData || !roomData) {
         throw new Error('Guest or room not found');
       }
 
-      const template = this.generateReminderEmail({ guest: guestData, reservation, room: roomData });
+      const template = this.generateReminderEmail({
+        guest: guestData,
+        reservation,
+        room: roomData,
+      });
       return await this.sendEmail(guestData.email || '', template, guestData.fullName);
-
     } catch (error) {
       console.error('Error sending reminder email:', error);
       return {
         success: false,
-        message: 'Failed to send reminder email. Missing guest or room information.'
+        message: 'Failed to send reminder email. Missing guest or room information.',
       };
     }
   }
@@ -820,21 +833,24 @@ ${this.getEmailStyles()}
   ): Promise<{ success: boolean; message: string }> {
     try {
       // Try to get guest and room from parameters, fallback to sample data
-      const guestData = guest || SAMPLE_GUESTS.find(g => g.id === reservation.guestId);
-      const roomData = room || HOTEL_POREC_ROOMS.find(r => r.id === reservation.roomId);
+      const guestData = guest || SAMPLE_GUESTS.find((g) => g.id === reservation.guestId);
+      const roomData = room || HOTEL_POREC_ROOMS.find((r) => r.id === reservation.roomId);
 
       if (!guestData || !roomData) {
         throw new Error('Guest or room not found');
       }
 
-      const template = this.generateThankYouEmail({ guest: guestData, reservation, room: roomData });
+      const template = this.generateThankYouEmail({
+        guest: guestData,
+        reservation,
+        room: roomData,
+      });
       return await this.sendEmail(guestData.email || '', template, guestData.fullName);
-
     } catch (error) {
       console.error('Error sending thank you email:', error);
       return {
         success: false,
-        message: 'Failed to send thank you email. Missing guest or room information.'
+        message: 'Failed to send thank you email. Missing guest or room information.',
       };
     }
   }

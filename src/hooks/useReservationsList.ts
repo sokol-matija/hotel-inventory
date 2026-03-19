@@ -155,7 +155,7 @@ export function useReservationsList(): UseReservationsListReturn {
       });
 
       setReservations(result.reservations);
-      setPagination(prev => ({
+      setPagination((prev) => ({
         ...prev,
         totalCount: result.totalCount,
         totalPages: result.totalPages,
@@ -175,27 +175,27 @@ export function useReservationsList(): UseReservationsListReturn {
 
   // Filter management
   const updateFilters = useCallback((updates: Partial<ReservationsFilters>) => {
-    setFilters(prev => ({ ...prev, ...updates }));
-    setPagination(prev => ({ ...prev, page: 1 })); // Reset to first page
+    setFilters((prev) => ({ ...prev, ...updates }));
+    setPagination((prev) => ({ ...prev, page: 1 })); // Reset to first page
   }, []);
 
   const clearFilters = useCallback(() => {
     setFilters(initialFilters);
     setSearchQuery('');
-    setPagination(prev => ({ ...prev, page: 1 }));
+    setPagination((prev) => ({ ...prev, page: 1 }));
   }, []);
 
   // Pagination management
   const goToPage = useCallback((page: number) => {
-    setPagination(prev => ({ ...prev, page }));
+    setPagination((prev) => ({ ...prev, page }));
   }, []);
 
   const setPageSize = useCallback((size: number) => {
-    setPagination(prev => ({ ...prev, pageSize: size, page: 1 }));
+    setPagination((prev) => ({ ...prev, pageSize: size, page: 1 }));
   }, []);
 
   const nextPage = useCallback(() => {
-    setPagination(prev => {
+    setPagination((prev) => {
       if (prev.page < prev.totalPages) {
         return { ...prev, page: prev.page + 1 };
       }
@@ -204,7 +204,7 @@ export function useReservationsList(): UseReservationsListReturn {
   }, []);
 
   const previousPage = useCallback(() => {
-    setPagination(prev => {
+    setPagination((prev) => {
       if (prev.page > 1) {
         return { ...prev, page: prev.page - 1 };
       }
@@ -213,16 +213,16 @@ export function useReservationsList(): UseReservationsListReturn {
   }, []);
 
   const goToFirstPage = useCallback(() => {
-    setPagination(prev => ({ ...prev, page: 1 }));
+    setPagination((prev) => ({ ...prev, page: 1 }));
   }, []);
 
   const goToLastPage = useCallback(() => {
-    setPagination(prev => ({ ...prev, page: prev.totalPages }));
+    setPagination((prev) => ({ ...prev, page: prev.totalPages }));
   }, []);
 
   // Sorting management
   const updateSort = useCallback((sortBy: SortState['sortBy']) => {
-    setSort(prev => {
+    setSort((prev) => {
       // Toggle order if same column
       if (prev.sortBy === sortBy) {
         return {
@@ -236,12 +236,12 @@ export function useReservationsList(): UseReservationsListReturn {
         sortOrder: 'desc',
       };
     });
-    setPagination(prev => ({ ...prev, page: 1 })); // Reset to first page
+    setPagination((prev) => ({ ...prev, page: 1 })); // Reset to first page
   }, []);
 
   // Selection management
   const toggleSelection = useCallback((id: string) => {
-    setSelectedIds(prev => {
+    setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) {
         next.delete(id);
@@ -258,7 +258,7 @@ export function useReservationsList(): UseReservationsListReturn {
       setSelectedIds(new Set());
     } else {
       // Select all current page
-      setSelectedIds(new Set(reservations.map(r => r.id)));
+      setSelectedIds(new Set(reservations.map((r) => r.id)));
     }
   }, [reservations, selectedIds.size]);
 

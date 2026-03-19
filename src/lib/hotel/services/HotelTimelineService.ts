@@ -54,9 +54,9 @@ export interface TimelineDateRange {
 
 export class HotelTimelineService {
   private static instance: HotelTimelineService;
-  
+
   private constructor() {}
-  
+
   public static getInstance(): HotelTimelineService {
     if (!HotelTimelineService.instance) {
       HotelTimelineService.instance = new HotelTimelineService();
@@ -71,11 +71,11 @@ export class HotelTimelineService {
     const startDate = startOfDay(currentDate);
     const endDate = addDays(startDate, 13);
     const dates = Array.from({ length: 14 }, (_, i) => addDays(startDate, i));
-    
+
     return {
       startDate,
       endDate,
-      dates
+      dates,
     };
   }
 
@@ -115,25 +115,25 @@ export class HotelTimelineService {
    * Generate calendar events from reservations for timeline display
    */
   generateCalendarEvents(
-    reservations: Reservation[], 
+    reservations: Reservation[],
     startDate: Date,
     rooms: Room[]
   ): CalendarEvent[] {
     const timelineStart = startOfDay(startDate);
     const timelineEnd = addDays(timelineStart, 14);
-    
+
     return reservations
-      .filter(reservation => {
+      .filter((reservation) => {
         const checkIn = startOfDay(reservation.checkIn);
         const checkOut = startOfDay(reservation.checkOut);
-        
+
         // Show reservation if it overlaps with timeline period
         return checkIn < timelineEnd && checkOut > timelineStart;
       })
-      .map(reservation => {
-        const guest = SAMPLE_GUESTS.find(g => g.id === reservation.guestId);
-        const room = rooms.find(r => r.id === reservation.roomId);
-        
+      .map((reservation) => {
+        const guest = SAMPLE_GUESTS.find((g) => g.id === reservation.guestId);
+        const room = rooms.find((r) => r.id === reservation.roomId);
+
         return {
           id: `${reservation.id}-${reservation.roomId}`,
           reservationId: reservation.id,
@@ -146,8 +146,8 @@ export class HotelTimelineService {
             guestName: guest ? guest.fullName : 'Unknown Guest',
             roomNumber: room ? room.number : 'Unknown Room',
             numberOfGuests: reservation.adults + reservation.children.length,
-            hasPets: reservation.petFee > 0
-          }
+            hasPets: reservation.petFee > 0,
+          },
         };
       });
   }
@@ -156,7 +156,7 @@ export class HotelTimelineService {
    * Generate reservation title for display
    */
   private getReservationTitle(reservation: Reservation): string {
-    const guest = SAMPLE_GUESTS.find(g => g.id === reservation.guestId);
+    const guest = SAMPLE_GUESTS.find((g) => g.id === reservation.guestId);
     return guest ? guest.fullName : 'Unknown Guest';
   }
 
@@ -177,61 +177,63 @@ export class HotelTimelineService {
     const checkOutDate = startOfDay(reservation.checkOut);
     const timelineStart = startOfDay(startDate);
 
-    const startDayIndex = Math.floor((checkInDate.getTime() - timelineStart.getTime()) / (24 * 60 * 60 * 1000));
-    const endDayIndex = Math.floor((checkOutDate.getTime() - timelineStart.getTime()) / (24 * 60 * 60 * 1000));
+    const startDayIndex = Math.floor(
+      (checkInDate.getTime() - timelineStart.getTime()) / (24 * 60 * 60 * 1000)
+    );
+    const endDayIndex = Math.floor(
+      (checkOutDate.getTime() - timelineStart.getTime()) / (24 * 60 * 60 * 1000)
+    );
 
     const startHalfDayIndex = startDayIndex * 2 + 1; // Second half (PM) = day * 2 + 1
-    const endHalfDayIndex = endDayIndex * 2;         // First half (AM) = day * 2
+    const endHalfDayIndex = endDayIndex * 2; // First half (AM) = day * 2
 
     // Clamp to visible range
     const visibleStartHalfDay = Math.max(0, startHalfDayIndex);
     const visibleEndHalfDay = Math.min(27, endHalfDayIndex);
 
     const gridColumnStart = visibleStartHalfDay + 2; // day 0 PM = column 3
-    const gridColumnEnd = visibleEndHalfDay + 3;     // +3 because CSS grid end is exclusive
+    const gridColumnEnd = visibleEndHalfDay + 3; // +3 because CSS grid end is exclusive
 
-    const reservationDays = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (24 * 60 * 60 * 1000));
+    const reservationDays = Math.ceil(
+      (checkOutDate.getTime() - checkInDate.getTime()) / (24 * 60 * 60 * 1000)
+    );
 
     return {
       gridColumnStart,
       gridColumnEnd,
       visibleStartHalfDay,
       visibleEndHalfDay,
-      reservationDays
+      reservationDays,
     };
   }
 
   /**
    * Calculate occupancy data for room status overview
    */
-  calculateOccupancyData(
-    reservations: Reservation[],
-    date: Date,
-    rooms: Room[]
-  ): OccupancyData {
+  calculateOccupancyData(reservations: Reservation[], date: Date, rooms: Room[]): OccupancyData {
     const targetDate = startOfDay(date);
     const occupancy: OccupancyData = {};
 
     // Initialize all rooms as available
-    rooms.forEach(room => {
+    rooms.forEach((room) => {
       occupancy[room.id] = { status: 'available' };
     });
 
     // Process reservations for the target date
-    reservations.forEach(reservation => {
+    reservations.forEach((reservation) => {
       const checkInDate = startOfDay(reservation.checkIn);
       const checkOutDate = startOfDay(reservation.checkOut);
 
       // Check if reservation covers the target date
       if (checkInDate <= targetDate && checkOutDate > targetDate) {
-        const guest = SAMPLE_GUESTS.find(g => g.id === reservation.guestId);
+        const guest = SAMPLE_GUESTS.find((g) => g.id === reservation.guestId);
 
         occupancy[reservation.roomId] = {
           status: reservation.status, // Use the actual reservation status for color coding
           guest,
           reservation,
           checkInTime: isSameDay(checkInDate, targetDate) ? '15:00' : undefined,
-          checkOutTime: isSameDay(checkOutDate, targetDate) ? '11:00' : undefined
+          checkOutTime: isSameDay(checkOutDate, targetDate) ? '11:00' : undefined,
         };
       }
     });
@@ -255,12 +257,12 @@ export class HotelTimelineService {
     const occupancy: OccupancyData = {};
 
     // Initialize all rooms as available
-    rooms.forEach(room => {
+    rooms.forEach((room) => {
       occupancy[room.id] = { status: 'available' };
     });
 
     // Process each reservation
-    reservations.forEach(reservation => {
+    reservations.forEach((reservation) => {
       const checkInDate = startOfDay(reservation.checkIn);
       const checkOutDate = startOfDay(reservation.checkOut);
 
@@ -273,7 +275,7 @@ export class HotelTimelineService {
       const isCheckingInToday = isSameDay(checkInDate, targetDate);
       const isMiddleDay = !isCheckingOutToday && !isCheckingInToday;
 
-      const guest = SAMPLE_GUESTS.find(g => g.id === reservation.guestId);
+      const guest = SAMPLE_GUESTS.find((g) => g.id === reservation.guestId);
       let shouldInclude = false;
 
       if (period === 'AM') {
@@ -290,7 +292,7 @@ export class HotelTimelineService {
           guest,
           reservation,
           checkInTime: isCheckingInToday ? '15:00' : undefined,
-          checkOutTime: isCheckingOutToday ? '11:00' : undefined
+          checkOutTime: isCheckingOutToday ? '11:00' : undefined,
         };
       }
     });
@@ -303,14 +305,14 @@ export class HotelTimelineService {
    */
   getRoomsByFloor(rooms: Room[]): Record<number, Room[]> {
     const roomsByFloor: Record<number, Room[]> = {};
-    
-    rooms.forEach(room => {
+
+    rooms.forEach((room) => {
       if (!roomsByFloor[room.floor]) {
         roomsByFloor[room.floor] = [];
       }
       roomsByFloor[room.floor].push(room);
     });
-    
+
     return roomsByFloor;
   }
 
@@ -322,14 +324,14 @@ export class HotelTimelineService {
     end: DragCreateState | null
   ): DragCreatePreview | null {
     if (!start || !end || start.roomId !== end.roomId) return null;
-    
+
     const startDay = Math.min(start.dayIndex, end.dayIndex);
     const endDay = Math.max(start.dayIndex, end.dayIndex);
-    
+
     return {
       roomId: start.roomId,
       startDay,
-      endDay
+      endDay,
     };
   }
 
@@ -344,7 +346,7 @@ export class HotelTimelineService {
     const baseDate = startOfDay(currentDate);
     const checkIn = addDays(baseDate, startDay);
     const checkOut = addDays(baseDate, endDay + 1); // +1 because end day is inclusive
-    
+
     return { checkIn, checkOut };
   }
 
@@ -359,19 +361,19 @@ export class HotelTimelineService {
   ): { x: number; y: number } {
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
-    
+
     // Adjust X position if menu would go off-screen
     let adjustedX = x;
     if (x + menuWidth > screenWidth) {
       adjustedX = screenWidth - menuWidth - 10; // 10px padding from edge
     }
-    
+
     // Adjust Y position if menu would go off-screen
     let adjustedY = y;
     if (y + menuHeight > screenHeight) {
       adjustedY = screenHeight - menuHeight - 10; // 10px padding from edge
     }
-    
+
     return { x: Math.max(10, adjustedX), y: Math.max(10, adjustedY) };
   }
 
@@ -385,26 +387,27 @@ export class HotelTimelineService {
     rooms: Room[]
   ): { valid: boolean; error?: string } {
     // Check if target room exists
-    const targetRoom = rooms.find(r => r.id === targetRoomId);
+    const targetRoom = rooms.find((r) => r.id === targetRoomId);
     if (!targetRoom) {
       return { valid: false, error: 'Target room not found' };
     }
-    
+
     // Check for conflicts with existing reservations in target room
-    const conflicts = existingReservations.filter(r => 
-      r.id !== reservation.id && 
-      r.roomId === targetRoomId &&
-      r.checkIn < reservation.checkOut &&
-      r.checkOut > reservation.checkIn
+    const conflicts = existingReservations.filter(
+      (r) =>
+        r.id !== reservation.id &&
+        r.roomId === targetRoomId &&
+        r.checkIn < reservation.checkOut &&
+        r.checkOut > reservation.checkIn
     );
-    
+
     if (conflicts.length > 0) {
-      return { 
-        valid: false, 
-        error: `Room ${targetRoom.number} has conflicting reservations during this period` 
+      return {
+        valid: false,
+        error: `Room ${targetRoom.number} has conflicting reservations during this period`,
       };
     }
-    
+
     return { valid: true };
   }
 
@@ -440,7 +443,11 @@ export class HotelTimelineService {
   /**
    * Get timeline statistics
    */
-  getTimelineStats(reservations: Reservation[], startDate: Date, rooms: Room[]): {
+  getTimelineStats(
+    reservations: Reservation[],
+    startDate: Date,
+    rooms: Room[]
+  ): {
     totalReservations: number;
     occupiedRooms: number;
     availableRooms: number;
@@ -448,33 +455,33 @@ export class HotelTimelineService {
     checkOutsToday: number;
   } {
     const today = startOfDay(new Date());
-    const timelineReservations = reservations.filter(r => {
+    const timelineReservations = reservations.filter((r) => {
       const checkIn = startOfDay(r.checkIn);
       const checkOut = startOfDay(r.checkOut);
       const timelineEnd = addDays(startDate, 14);
       return checkIn < timelineEnd && checkOut > startDate;
     });
-    
+
     const occupiedRooms = new Set(
       timelineReservations
-        .filter(r => r.status === 'checked-in' || r.status === 'confirmed')
-        .map(r => r.roomId)
+        .filter((r) => r.status === 'checked-in' || r.status === 'confirmed')
+        .map((r) => r.roomId)
     ).size;
-    
-    const checkInsToday = reservations.filter(r => 
-      isSameDay(r.checkIn, today) && (r.status === 'confirmed' || r.status === 'checked-in')
+
+    const checkInsToday = reservations.filter(
+      (r) => isSameDay(r.checkIn, today) && (r.status === 'confirmed' || r.status === 'checked-in')
     ).length;
-    
-    const checkOutsToday = reservations.filter(r => 
-      isSameDay(r.checkOut, today) && r.status === 'checked-in'
+
+    const checkOutsToday = reservations.filter(
+      (r) => isSameDay(r.checkOut, today) && r.status === 'checked-in'
     ).length;
-    
+
     return {
       totalReservations: timelineReservations.length,
       occupiedRooms,
       availableRooms: rooms.length - occupiedRooms,
       checkInsToday,
-      checkOutsToday
+      checkOutsToday,
     };
   }
 }

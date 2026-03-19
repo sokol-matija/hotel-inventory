@@ -1,31 +1,31 @@
-import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { simulateNFCTap, generateNFCUri, batchTestNFCTaps } from '@/utils/nfcTest'
-import { supabase } from '@/lib/supabase'
-import { CheckCircle2, Loader2, Copy, Smartphone } from 'lucide-react'
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { simulateNFCTap, generateNFCUri, batchTestNFCTaps } from '@/utils/nfcTest';
+import { supabase } from '@/lib/supabase';
+import { CheckCircle2, Loader2, Copy, Smartphone } from 'lucide-react';
 
 interface RoomStatus {
-  id: string
-  number: string
-  is_cleaned: boolean
-  last_updated: Date | null
+  id: string;
+  number: string;
+  is_cleaned: boolean;
+  last_updated: Date | null;
 }
 
 export const NFCTestPage = () => {
-  const [rooms, setRooms] = useState<RoomStatus[]>([])
-  const [testRoomId, setTestRoomId] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [testResults, setTestResults] = useState<{ [key: string]: Record<string, unknown> }>({})
-  const [selectedRoom, setSelectedRoom] = useState<string | null>(null)
-  const [copiedUri, setCopiedUri] = useState<string | null>(null)
+  const [rooms, setRooms] = useState<RoomStatus[]>([]);
+  const [testRoomId, setTestRoomId] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [testResults, setTestResults] = useState<{ [key: string]: Record<string, unknown> }>({});
+  const [selectedRoom, setSelectedRoom] = useState<string | null>(null);
+  const [copiedUri, setCopiedUri] = useState<string | null>(null);
 
   // Fetch rooms on mount
   useEffect(() => {
-    loadRooms()
-  }, [])
+    loadRooms();
+  }, []);
 
   // Subscribe to room changes
   useEffect(() => {
@@ -45,21 +45,24 @@ export const NFCTestPage = () => {
                 ? { ...room, is_cleaned: payload.new.is_cleaned, last_updated: new Date() }
                 : room
             )
-          )
+          );
         }
       )
-      .subscribe()
+      .subscribe();
 
     return () => {
-      subscription.unsubscribe()
-    }
-  }, [])
+      subscription.unsubscribe();
+    };
+  }, []);
 
   async function loadRooms() {
     try {
-      const { data, error } = await supabase.from('rooms').select('id, number, is_cleaned').limit(10)
+      const { data, error } = await supabase
+        .from('rooms')
+        .select('id, number, is_cleaned')
+        .limit(10);
 
-      if (error) throw error
+      if (error) throw error;
 
       setRooms(
         (data || []).map((room) => ({
@@ -68,66 +71,69 @@ export const NFCTestPage = () => {
           is_cleaned: room.is_cleaned || false,
           last_updated: null,
         }))
-      )
+      );
     } catch (error) {
-      console.error('Failed to load rooms:', error)
+      console.error('Failed to load rooms:', error);
     }
   }
 
   async function handleSimulateNFCTap(roomId: string) {
-    setIsLoading(true)
-    setSelectedRoom(roomId)
+    setIsLoading(true);
+    setSelectedRoom(roomId);
 
     try {
-      const result = await simulateNFCTap({ roomId })
+      const result = await simulateNFCTap({ roomId });
       setTestResults((prev) => ({
         ...prev,
         [roomId]: result,
-      }))
+      }));
     } catch (error) {
       setTestResults((prev) => ({
         ...prev,
-        [roomId]: { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
-      }))
+        [roomId]: {
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        },
+      }));
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 
   async function handleBatchTest() {
-    setIsLoading(true)
+    setIsLoading(true);
 
     try {
-      const roomIds = rooms.map((r) => r.id)
-      await batchTestNFCTaps(roomIds)
-      await loadRooms()
+      const roomIds = rooms.map((r) => r.id);
+      await batchTestNFCTaps(roomIds);
+      await loadRooms();
     } catch (error) {
-      console.error('Batch test failed:', error)
+      console.error('Batch test failed:', error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 
   function copyToClipboard(text: string) {
-    navigator.clipboard.writeText(text)
-    setCopiedUri(text)
-    setTimeout(() => setCopiedUri(null), 2000)
+    navigator.clipboard.writeText(text);
+    setCopiedUri(text);
+    setTimeout(() => setCopiedUri(null), 2000);
   }
 
   function toggleRoomCleanStatus(roomId: string) {
-    const room = rooms.find((r) => r.id === roomId)
-    if (!room) return
+    const room = rooms.find((r) => r.id === roomId);
+    if (!room) return;
 
     // Mark as dirty for testing
     supabase
       .from('rooms')
       .update({ is_cleaned: false })
       .eq('id', roomId)
-      .then(() => console.log(`Room ${roomId} marked as dirty for next test`))
+      .then(() => console.log(`Room ${roomId} marked as dirty for next test`));
   }
 
   return (
-    <div className="space-y-6 p-6 max-w-6xl mx-auto">
+    <div className="mx-auto max-w-6xl space-y-6 p-6">
       {/* Header */}
       <div className="space-y-2">
         <h1 className="text-3xl font-bold">🏷️ NFC Room Cleaning Test</h1>
@@ -137,12 +143,12 @@ export const NFCTestPage = () => {
       </div>
 
       {/* Instructions */}
-      <div className="border border-blue-200 bg-blue-50 rounded p-4">
+      <div className="rounded border border-blue-200 bg-blue-50 p-4">
         <div className="flex items-start gap-2">
-          <Smartphone className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+          <Smartphone className="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600" />
           <div>
             <strong className="text-blue-900">How it works:</strong>
-            <ol className="mt-2 space-y-1 ml-4 list-decimal text-sm text-blue-800">
+            <ol className="mt-2 ml-4 list-decimal space-y-1 text-sm text-blue-800">
               <li>Click "Simulate NFC Tap" below to simulate an NFC tag being scanned</li>
               <li>Watch the room status update in real-time</li>
               <li>Copy the NFC URI to test with real NFC tags (see below)</li>
@@ -162,7 +168,7 @@ export const NFCTestPage = () => {
           <Button onClick={handleBatchTest} disabled={isLoading} className="w-full">
             {isLoading ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Testing...
               </>
             ) : (
@@ -205,12 +211,12 @@ export const NFCTestPage = () => {
               <p className="text-gray-500">No rooms found</p>
             ) : (
               rooms.map((room) => {
-                const result = testResults[room.id]
+                const result = testResults[room.id];
 
                 return (
                   <div
                     key={room.id}
-                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
+                    className="flex items-center justify-between rounded-lg border p-3 hover:bg-gray-50"
                   >
                     <div className="flex-1">
                       <div className="flex items-center gap-3">
@@ -228,7 +234,7 @@ export const NFCTestPage = () => {
 
                       {/* Show test result */}
                       {result && (
-                        <div className="mt-2 p-2 bg-blue-50 rounded text-sm">
+                        <div className="mt-2 rounded bg-blue-50 p-2 text-sm">
                           <p>{result.message}</p>
                           {result.timestamp && (
                             <p className="text-gray-600">
@@ -263,7 +269,7 @@ export const NFCTestPage = () => {
                       </Button>
                     </div>
                   </div>
-                )
+                );
               })
             )}
           </div>
@@ -279,13 +285,16 @@ export const NFCTestPage = () => {
         <CardContent>
           <div className="space-y-2">
             {rooms.map((room) => {
-              const uri = generateNFCUri(room.id)
+              const uri = generateNFCUri(room.id);
 
               return (
-                <div key={room.id} className="flex items-center justify-between p-2 border rounded bg-gray-50">
+                <div
+                  key={room.id}
+                  className="flex items-center justify-between rounded border bg-gray-50 p-2"
+                >
                   <div>
                     <p className="text-sm font-medium">Room {room.number}</p>
-                    <p className="text-xs text-gray-500 break-all">{uri}</p>
+                    <p className="text-xs break-all text-gray-500">{uri}</p>
                   </div>
                   <Button
                     size="sm"
@@ -300,7 +309,7 @@ export const NFCTestPage = () => {
                     )}
                   </Button>
                 </div>
-              )
+              );
             })}
           </div>
         </CardContent>
@@ -314,30 +323,29 @@ export const NFCTestPage = () => {
         <CardContent className="space-y-4">
           <div className="space-y-3 text-sm">
             <div>
-              <h4 className="font-semibold mb-1">Step 1: Get NFC Tags</h4>
+              <h4 className="mb-1 font-semibold">Step 1: Get NFC Tags</h4>
               <p className="text-gray-600">
                 Buy blank NFC tags online (NTAG213 or NTAG215, ~$0.50 each). You need one per room.
               </p>
             </div>
 
             <div>
-              <h4 className="font-semibold mb-1">Step 2: Download NFC Tools App</h4>
-              <p className="text-gray-600">
-                Install "NFC Tools" app (free):
-              </p>
-              <ul className="ml-4 mt-1 space-y-1">
+              <h4 className="mb-1 font-semibold">Step 2: Download NFC Tools App</h4>
+              <p className="text-gray-600">Install "NFC Tools" app (free):</p>
+              <ul className="mt-1 ml-4 space-y-1">
                 <li>
-                  📱 iOS: <code className="bg-gray-100 px-2 py-1 rounded">Apple App Store</code>
+                  📱 iOS: <code className="rounded bg-gray-100 px-2 py-1">Apple App Store</code>
                 </li>
                 <li>
-                  🤖 Android: <code className="bg-gray-100 px-2 py-1 rounded">Google Play Store</code>
+                  🤖 Android:{' '}
+                  <code className="rounded bg-gray-100 px-2 py-1">Google Play Store</code>
                 </li>
               </ul>
             </div>
 
             <div>
-              <h4 className="font-semibold mb-1">Step 3: Write URI to Tag</h4>
-              <ol className="ml-4 space-y-1 list-decimal">
+              <h4 className="mb-1 font-semibold">Step 3: Write URI to Tag</h4>
+              <ol className="ml-4 list-decimal space-y-1">
                 <li>Open NFC Tools app</li>
                 <li>Click "Write"</li>
                 <li>Click "Add a record" → "URI"</li>
@@ -347,8 +355,8 @@ export const NFCTestPage = () => {
             </div>
 
             <div>
-              <h4 className="font-semibold mb-1">Step 4: Attach & Test</h4>
-              <ol className="ml-4 space-y-1 list-decimal">
+              <h4 className="mb-1 font-semibold">Step 4: Attach & Test</h4>
+              <ol className="ml-4 list-decimal space-y-1">
                 <li>Stick NFC tag on room door</li>
                 <li>Tap tag with any smartphone to test</li>
                 <li>Phone should open the browser with the cleaning endpoint</li>
@@ -356,16 +364,16 @@ export const NFCTestPage = () => {
               </ol>
             </div>
 
-            <div className="border border-green-200 bg-green-50 rounded p-3 flex items-start gap-2">
-              <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+            <div className="flex items-start gap-2 rounded border border-green-200 bg-green-50 p-3">
+              <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-green-600" />
               <div className="text-sm text-green-800">
-                <strong>No authentication needed!</strong> The NFC tag contains a direct link to the Edge
-                Function. Any staff member can tap it with any phone to mark the room clean.
+                <strong>No authentication needed!</strong> The NFC tag contains a direct link to the
+                Edge Function. Any staff member can tap it with any phone to mark the room clean.
               </div>
             </div>
           </div>
         </CardContent>
       </Card>
     </div>
-  )
-}
+  );
+};

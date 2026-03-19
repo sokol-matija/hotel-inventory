@@ -26,7 +26,7 @@ export const LabelBadge: React.FC<LabelBadgeProps> = ({
   className = '',
   alwaysExpanded = false,
   expandDirection = 'right',
-  semiCircle = false
+  semiCircle = false,
 }) => {
   const badgeRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLSpanElement>(null);
@@ -46,12 +46,12 @@ export const LabelBadge: React.FC<LabelBadgeProps> = ({
         paddingBottom: '4px',
         paddingLeft: '8px',
         paddingRight: '8px',
-        borderRadius: '6px'
+        borderRadius: '6px',
       });
 
       gsap.set(text, {
         opacity: 1,
-        width: 'auto'
+        width: 'auto',
       });
 
       return; // Skip hover listeners
@@ -67,7 +67,7 @@ export const LabelBadge: React.FC<LabelBadgeProps> = ({
         paddingBottom: '2px',
         paddingLeft: 0,
         paddingRight: '8px',
-        borderRadius: '0 8px 0 12px' // Top-right matches card (8px), bottom-left rounded
+        borderRadius: '0 8px 0 12px', // Top-right matches card (8px), bottom-left rounded
       });
     } else {
       // Full circle
@@ -78,13 +78,13 @@ export const LabelBadge: React.FC<LabelBadgeProps> = ({
         paddingBottom: 0,
         paddingLeft: 0,
         paddingRight: 0,
-        borderRadius: '50%' // Perfect circle
+        borderRadius: '50%', // Perfect circle
       });
     }
 
     gsap.set(text, {
       opacity: 0,
-      width: 0
+      width: 0,
     });
 
     const handleMouseEnter = () => {
@@ -92,25 +92,33 @@ export const LabelBadge: React.FC<LabelBadgeProps> = ({
       const tl = gsap.timeline();
 
       // Expand badge width and add padding (circle → rounded pill)
-      tl.to(badge, {
-        width: 'auto',
-        height: 'auto',
-        paddingTop: '4px',
-        paddingBottom: '4px',
-        paddingLeft: '8px',
-        paddingRight: '8px',
-        borderRadius: '12px', // Rounded pill shape when expanded
-        duration: 0.3,
-        ease: 'power2.out'
-      }, 0);
+      tl.to(
+        badge,
+        {
+          width: 'auto',
+          height: 'auto',
+          paddingTop: '4px',
+          paddingBottom: '4px',
+          paddingLeft: '8px',
+          paddingRight: '8px',
+          borderRadius: '12px', // Rounded pill shape when expanded
+          duration: 0.3,
+          ease: 'power2.out',
+        },
+        0
+      );
 
       // Reveal text
-      tl.to(text, {
-        opacity: 1,
-        width: 'auto',
-        duration: 0.3,
-        ease: 'power2.out'
-      }, 0);
+      tl.to(
+        text,
+        {
+          opacity: 1,
+          width: 'auto',
+          duration: 0.3,
+          ease: 'power2.out',
+        },
+        0
+      );
     };
 
     const handleMouseLeave = () => {
@@ -118,25 +126,33 @@ export const LabelBadge: React.FC<LabelBadgeProps> = ({
       const tl = gsap.timeline();
 
       // Hide text
-      tl.to(text, {
-        opacity: 0,
-        width: 0,
-        duration: 0.2,
-        ease: 'power2.in'
-      }, 0);
+      tl.to(
+        text,
+        {
+          opacity: 0,
+          width: 0,
+          duration: 0.2,
+          ease: 'power2.in',
+        },
+        0
+      );
 
       // Collapse badge back to corner label or circle
-      tl.to(badge, {
-        width: semiCircle ? '20px' : '16px',
-        height: semiCircle ? '20px' : '16px',
-        paddingTop: semiCircle ? '2px' : 0,
-        paddingBottom: semiCircle ? '2px' : 0,
-        paddingLeft: 0,
-        paddingRight: semiCircle ? '8px' : 0,
-        borderRadius: semiCircle ? '0 8px 0 12px' : '50%', // Back to corner label or circle
-        duration: 0.2,
-        ease: 'power2.in'
-      }, 0.05);
+      tl.to(
+        badge,
+        {
+          width: semiCircle ? '20px' : '16px',
+          height: semiCircle ? '20px' : '16px',
+          paddingTop: semiCircle ? '2px' : 0,
+          paddingBottom: semiCircle ? '2px' : 0,
+          paddingLeft: 0,
+          paddingRight: semiCircle ? '8px' : 0,
+          borderRadius: semiCircle ? '0 8px 0 12px' : '50%', // Back to corner label or circle
+          duration: 0.2,
+          ease: 'power2.in',
+        },
+        0.05
+      );
     };
 
     badge.addEventListener('mouseenter', handleMouseEnter);
@@ -151,16 +167,9 @@ export const LabelBadge: React.FC<LabelBadgeProps> = ({
   return (
     <div
       ref={badgeRef}
-      className={`
-        inline-flex items-center overflow-hidden
-        cursor-pointer
-        shadow-md hover:shadow-lg
-        transition-shadow duration-300
-        ${expandDirection === 'left' ? 'justify-end' : 'justify-start'}
-        ${className}
-      `}
+      className={`inline-flex cursor-pointer items-center overflow-hidden shadow-md transition-shadow duration-300 hover:shadow-lg ${expandDirection === 'left' ? 'justify-end' : 'justify-start'} ${className} `}
       style={{
-        backgroundColor: label.bgColor || '#3B82F6'
+        backgroundColor: label.bgColor || '#3B82F6',
       }}
       title={`Group: ${label.name}`}
     >
@@ -168,7 +177,7 @@ export const LabelBadge: React.FC<LabelBadgeProps> = ({
         ref={textRef}
         className="text-xs font-semibold whitespace-nowrap"
         style={{
-          color: label.color || '#FFFFFF'
+          color: label.color || '#FFFFFF',
         }}
       >
         {label.name}

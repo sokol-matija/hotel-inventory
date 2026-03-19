@@ -1,92 +1,89 @@
-import React, { useState, useEffect } from 'react'
-import { Button } from '../ui/button'
-import { Input } from '../ui/input'
-import { Label } from '../ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
-import { supabase } from '@/lib/supabase'
-import { auditLog } from '@/lib/auditLog'
-import { useTranslation } from 'react-i18next'
-import { X, Package, DollarSign, Hash, AlertCircle } from 'lucide-react'
+import React, { useState, useEffect } from 'react';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
+import { supabase } from '@/lib/supabase';
+import { auditLog } from '@/lib/auditLog';
+import { useTranslation } from 'react-i18next';
+import { X, Package, DollarSign, Hash, AlertCircle } from 'lucide-react';
 
 interface Category {
-  id: number
-  name: string
-  requires_expiration: boolean
+  id: number;
+  name: string;
+  requires_expiration: boolean;
 }
 
 interface AddItemDialogProps {
-  isOpen: boolean
-  onClose: () => void
-  onItemAdded: () => void
+  isOpen: boolean;
+  onClose: () => void;
+  onItemAdded: () => void;
 }
 
 export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemDialogProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     category_id: '',
     unit: 'pieces',
     price: '',
-    minimum_stock: '0'
-  })
-  const [categories, setCategories] = useState<Category[]>([])
-  const [loading, setLoading] = useState(false)
-  const [errors, setErrors] = useState<Record<string, string>>({})
+    minimum_stock: '0',
+  });
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (isOpen) {
-      fetchCategories()
+      fetchCategories();
     }
-  }, [isOpen])
+  }, [isOpen]);
 
   const fetchCategories = async () => {
     try {
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .order('name')
+      const { data, error } = await supabase.from('categories').select('*').order('name');
 
-      if (error) throw error
-      setCategories(data || [])
+      if (error) throw error;
+      setCategories(data || []);
     } catch (error) {
-      console.error('Error fetching categories:', error)
+      console.error('Error fetching categories:', error);
     }
-  }
+  };
 
   const validateForm = () => {
-    const newErrors: Record<string, string> = {}
+    const newErrors: Record<string, string> = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = t('validation.nameRequired')
+      newErrors.name = t('validation.nameRequired');
     }
 
     if (!formData.category_id) {
-      newErrors.category_id = t('validation.categoryRequired')
+      newErrors.category_id = t('validation.categoryRequired');
     }
 
     if (!formData.unit.trim()) {
-      newErrors.unit = t('validation.unitRequired')
+      newErrors.unit = t('validation.unitRequired');
     }
 
     if (formData.price && parseFloat(formData.price) < 0) {
-      newErrors.price = t('validation.priceNegative')
+      newErrors.price = t('validation.priceNegative');
     }
 
     if (parseInt(formData.minimum_stock) < 0) {
-      newErrors.minimum_stock = t('validation.minStockNegative')
+      newErrors.minimum_stock = t('validation.minStockNegative');
     }
 
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    if (!validateForm()) return
+    e.preventDefault();
 
-    setLoading(true)
+    if (!validateForm()) return;
+
+    setLoading(true);
     try {
       const itemData = {
         name: formData.name.trim(),
@@ -94,19 +91,16 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
         category_id: parseInt(formData.category_id),
         unit: formData.unit.trim(),
         price: formData.price ? parseFloat(formData.price) : null,
-        minimum_stock: parseInt(formData.minimum_stock)
-      }
+        minimum_stock: parseInt(formData.minimum_stock),
+      };
 
       // Temporarily disable safeSupabaseCall to test if it's causing issues
-      const { data, error } = await supabase
-        .from('items')
-        .insert([itemData])
-        .select()
-      if (error) throw error
+      const { data, error } = await supabase.from('items').insert([itemData]).select();
+      if (error) throw error;
 
       // Log the item creation
       if (data && data[0]) {
-        await auditLog.itemCreated(data[0].id, itemData)
+        await auditLog.itemCreated(data[0].id, itemData);
       }
 
       // Reset form
@@ -116,33 +110,33 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
         category_id: '',
         unit: 'pieces',
         price: '',
-        minimum_stock: '0'
-      })
-      setErrors({})
-      
-      onItemAdded()
-      onClose()
+        minimum_stock: '0',
+      });
+      setErrors({});
+
+      onItemAdded();
+      onClose();
     } catch (error) {
-      console.error('Error adding item:', error)
-      setErrors({ submit: t('items.failedToAdd') })
+      console.error('Error adding item:', error);
+      setErrors({ submit: t('items.failedToAdd') });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
+    setFormData((prev) => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }))
+      setErrors((prev) => ({ ...prev, [field]: '' }));
     }
-  }
+  };
 
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
+    <div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black p-4">
+      <Card className="max-h-[90vh] w-full max-w-md overflow-y-auto">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
@@ -153,11 +147,9 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
               <X className="h-4 w-4" />
             </Button>
           </div>
-          <CardDescription>
-            {t('items.addItemDescription')}
-          </CardDescription>
+          <CardDescription>{t('items.addItemDescription')}</CardDescription>
         </CardHeader>
-        
+
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Item Name */}
@@ -172,8 +164,8 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
                 className={errors.name ? 'border-red-500' : ''}
               />
               {errors.name && (
-                <p className="text-red-500 text-sm mt-1 flex items-center">
-                  <AlertCircle className="h-3 w-3 mr-1" />
+                <p className="mt-1 flex items-center text-sm text-red-500">
+                  <AlertCircle className="mr-1 h-3 w-3" />
                   {errors.name}
                 </p>
               )}
@@ -187,7 +179,7 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
                 value={formData.description}
                 onChange={(e) => handleInputChange('description', e.target.value)}
                 placeholder={t('items.enterDescription')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[80px]"
+                className="min-h-[80px] w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
             </div>
 
@@ -198,20 +190,20 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
                 id="category"
                 value={formData.category_id}
                 onChange={(e) => handleInputChange('category_id', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                className={`w-full rounded-md border px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none ${
                   errors.category_id ? 'border-red-500' : 'border-gray-300'
                 }`}
               >
                 <option value="">{t('common.selectCategory')}</option>
-                {categories.map(category => (
+                {categories.map((category) => (
                   <option key={category.id} value={category.id}>
                     {category.name}
                   </option>
                 ))}
               </select>
               {errors.category_id && (
-                <p className="text-red-500 text-sm mt-1 flex items-center">
-                  <AlertCircle className="h-3 w-3 mr-1" />
+                <p className="mt-1 flex items-center text-sm text-red-500">
+                  <AlertCircle className="mr-1 h-3 w-3" />
                   {errors.category_id}
                 </p>
               )}
@@ -225,7 +217,7 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
                   id="unit"
                   value={formData.unit}
                   onChange={(e) => handleInputChange('unit', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  className={`w-full rounded-md border px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none ${
                     errors.unit ? 'border-red-500' : 'border-gray-300'
                   }`}
                 >
@@ -238,8 +230,8 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
                   <option value="packages">{t('units.packages')}</option>
                 </select>
                 {errors.unit && (
-                  <p className="text-red-500 text-sm mt-1 flex items-center">
-                    <AlertCircle className="h-3 w-3 mr-1" />
+                  <p className="mt-1 flex items-center text-sm text-red-500">
+                    <AlertCircle className="mr-1 h-3 w-3" />
                     {errors.unit}
                   </p>
                 )}
@@ -249,7 +241,7 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
               <div>
                 <Label htmlFor="minimum_stock">{t('common.minStock')} *</Label>
                 <div className="relative">
-                  <Hash className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Hash className="absolute top-3 left-3 h-4 w-4 text-gray-400" />
                   <Input
                     id="minimum_stock"
                     type="number"
@@ -261,8 +253,8 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
                   />
                 </div>
                 {errors.minimum_stock && (
-                  <p className="text-red-500 text-sm mt-1 flex items-center">
-                    <AlertCircle className="h-3 w-3 mr-1" />
+                  <p className="mt-1 flex items-center text-sm text-red-500">
+                    <AlertCircle className="mr-1 h-3 w-3" />
                     {errors.minimum_stock}
                   </p>
                 )}
@@ -273,7 +265,7 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
             <div>
               <Label htmlFor="price">{t('items.priceOptional')}</Label>
               <div className="relative">
-                <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <DollarSign className="absolute top-3 left-3 h-4 w-4 text-gray-400" />
                 <Input
                   id="price"
                   type="number"
@@ -286,28 +278,30 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
                 />
               </div>
               {errors.price && (
-                <p className="text-red-500 text-sm mt-1 flex items-center">
-                  <AlertCircle className="h-3 w-3 mr-1" />
+                <p className="mt-1 flex items-center text-sm text-red-500">
+                  <AlertCircle className="mr-1 h-3 w-3" />
                   {errors.price}
                 </p>
               )}
             </div>
 
             {/* Expiration Warning */}
-            {formData.category_id && categories.find(c => c.id === parseInt(formData.category_id))?.requires_expiration && (
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-md">
-                <p className="text-amber-800 text-sm flex items-center">
-                  <AlertCircle className="h-4 w-4 mr-2 text-amber-600" />
-                  {t('items.expirationWarning')}
-                </p>
-              </div>
-            )}
+            {formData.category_id &&
+              categories.find((c) => c.id === parseInt(formData.category_id))
+                ?.requires_expiration && (
+                <div className="rounded-md border border-amber-200 bg-amber-50 p-3">
+                  <p className="flex items-center text-sm text-amber-800">
+                    <AlertCircle className="mr-2 h-4 w-4 text-amber-600" />
+                    {t('items.expirationWarning')}
+                  </p>
+                </div>
+              )}
 
             {/* Submit Error */}
             {errors.submit && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-                <p className="text-red-700 text-sm flex items-center">
-                  <AlertCircle className="h-4 w-4 mr-2" />
+              <div className="rounded-md border border-red-200 bg-red-50 p-3">
+                <p className="flex items-center text-sm text-red-700">
+                  <AlertCircle className="mr-2 h-4 w-4" />
                   {errors.submit}
                 </p>
               </div>
@@ -321,7 +315,7 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
               <Button type="submit" disabled={loading} className="flex-1">
                 {loading ? (
                   <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                     <span>{t('common.adding')}</span>
                   </div>
                 ) : (
@@ -333,5 +327,5 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

@@ -43,7 +43,7 @@ export default function ReservationsListPage() {
     refetch,
     selectedIds,
     toggleSelection,
-    toggleSelectAll
+    toggleSelectAll,
   } = useReservationsList();
 
   // Convert Reservation to CalendarEvent for the popup
@@ -60,8 +60,8 @@ export default function ReservationsListPage() {
         guestName: `${reservation.guest?.firstName} ${reservation.guest?.lastName}`,
         roomNumber: reservation.roomId,
         numberOfGuests: reservation.numberOfGuests || reservation.adults,
-        hasPets: reservation.hasPets || false
-      }
+        hasPets: reservation.hasPets || false,
+      },
     };
     setSelectedReservation(event);
   };
@@ -72,31 +72,21 @@ export default function ReservationsListPage() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-              <List className="w-8 h-8 text-blue-600" />
+            <h1 className="flex items-center gap-2 text-3xl font-bold text-gray-900">
+              <List className="h-8 w-8 text-blue-600" />
               {t('reservationsList.title')}
             </h1>
-            <p className="text-gray-600 mt-1">
-              {t('reservationsList.subtitle')}
-            </p>
+            <p className="mt-1 text-gray-600">{t('reservationsList.subtitle')}</p>
           </div>
 
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={refetch}
-              disabled={isLoading}
-            >
-              <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+            <Button variant="outline" size="sm" onClick={refetch} disabled={isLoading}>
+              <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
               {t('common.refresh')}
             </Button>
 
-            <Button
-              variant="outline"
-              size="sm"
-            >
-              <Download className="w-4 h-4 mr-2" />
+            <Button variant="outline" size="sm">
+              <Download className="mr-2 h-4 w-4" />
               {t('common.export')}
             </Button>
           </div>
@@ -115,7 +105,7 @@ export default function ReservationsListPage() {
       <div className="mb-6">
         <Card className="mb-4">
           <CardContent className="pt-6">
-            <div className="flex flex-col lg:flex-row gap-4 items-start">
+            <div className="flex flex-col items-start gap-4 lg:flex-row">
               <div className="flex-1">
                 <ReservationsSearch
                   value={searchQuery}

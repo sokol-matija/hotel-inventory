@@ -23,7 +23,7 @@ export default function ReservationsFilters({
   onUpdateFilters,
   onClearFilters,
   isOpen,
-  onToggle
+  onToggle,
 }: ReservationsFiltersProps) {
   const { t } = useTranslation();
 
@@ -36,7 +36,7 @@ export default function ReservationsFilters({
     'no-show',
     'room-closure',
     'unallocated',
-    'incomplete-payment'
+    'incomplete-payment',
   ];
 
   // Booking source options
@@ -47,17 +47,11 @@ export default function ReservationsFilters({
     'phone',
     'email',
     'walk-in',
-    'other'
+    'other',
   ];
 
   // Payment status options
-  const paymentStatusOptions = [
-    'paid',
-    'partial',
-    'pending',
-    'refunded',
-    'cancelled'
-  ];
+  const paymentStatusOptions = ['paid', 'partial', 'pending', 'refunded', 'cancelled'];
 
   // Room type options (from your database)
   const roomTypeOptions = [
@@ -68,7 +62,7 @@ export default function ReservationsFilters({
     'single',
     'family',
     'apartment',
-    'rooftop-apartment'
+    'rooftop-apartment',
   ];
 
   // Common nationalities (can be expanded)
@@ -83,13 +77,13 @@ export default function ReservationsFilters({
     'Hungarian',
     'British',
     'French',
-    'Other'
+    'Other',
   ];
 
   // Toggle multi-select option
   const toggleArrayOption = (array: string[], value: string) => {
     if (array.includes(value)) {
-      return array.filter(v => v !== value);
+      return array.filter((v) => v !== value);
     }
     return [...array, value];
   };
@@ -106,17 +100,13 @@ export default function ReservationsFilters({
     filters.checkInFrom ? 1 : 0,
     filters.checkInTo ? 1 : 0,
     filters.checkOutFrom ? 1 : 0,
-    filters.checkOutTo ? 1 : 0
+    filters.checkOutTo ? 1 : 0,
   ].reduce((sum, count) => sum + count, 0);
 
   if (!isOpen) {
     return (
-      <Button
-        variant="outline"
-        onClick={onToggle}
-        className="relative"
-      >
-        <Filter className="w-4 h-4 mr-2" />
+      <Button variant="outline" onClick={onToggle} className="relative">
+        <Filter className="mr-2 h-4 w-4" />
         {t('reservationsList.filters')}
         {activeFilterCount > 0 && (
           <Badge variant="default" className="ml-2 bg-blue-600">
@@ -132,7 +122,7 @@ export default function ReservationsFilters({
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
-            <Filter className="w-5 h-5" />
+            <Filter className="h-5 w-5" />
             {t('reservationsList.filters.apply')}
             {activeFilterCount > 0 && (
               <Badge variant="default" className="bg-blue-600">
@@ -142,20 +132,12 @@ export default function ReservationsFilters({
           </CardTitle>
           <div className="flex items-center gap-2">
             {activeFilterCount > 0 && (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={onClearFilters}
-              >
+              <Button size="sm" variant="ghost" onClick={onClearFilters}>
                 {t('reservationsList.filters.clearAll')}
               </Button>
             )}
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={onToggle}
-            >
-              <X className="w-4 h-4" />
+            <Button size="sm" variant="ghost" onClick={onToggle}>
+              <X className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -164,7 +146,7 @@ export default function ReservationsFilters({
       <CardContent className="space-y-6">
         {/* Status Filter */}
         <div>
-          <Label className="text-sm font-semibold mb-2 block">
+          <Label className="mb-2 block text-sm font-semibold">
             {t('reservationsList.filters.status')}
           </Label>
           <div className="flex flex-wrap gap-2">
@@ -175,7 +157,7 @@ export default function ReservationsFilters({
                 className="cursor-pointer hover:bg-gray-100"
                 onClick={() =>
                   onUpdateFilters({
-                    statuses: toggleArrayOption(filters.statuses, status)
+                    statuses: toggleArrayOption(filters.statuses, status),
                   })
                 }
               >
@@ -187,7 +169,7 @@ export default function ReservationsFilters({
 
         {/* Booking Source Filter */}
         <div>
-          <Label className="text-sm font-semibold mb-2 block">
+          <Label className="mb-2 block text-sm font-semibold">
             {t('reservationsList.filters.bookingSource')}
           </Label>
           <div className="flex flex-wrap gap-2">
@@ -198,7 +180,7 @@ export default function ReservationsFilters({
                 className="cursor-pointer hover:bg-gray-100"
                 onClick={() =>
                   onUpdateFilters({
-                    bookingSources: toggleArrayOption(filters.bookingSources, source)
+                    bookingSources: toggleArrayOption(filters.bookingSources, source),
                   })
                 }
               >
@@ -210,7 +192,7 @@ export default function ReservationsFilters({
 
         {/* Payment Status Filter */}
         <div>
-          <Label className="text-sm font-semibold mb-2 block">
+          <Label className="mb-2 block text-sm font-semibold">
             {t('reservationsList.filters.paymentStatus')}
           </Label>
           <div className="flex flex-wrap gap-2">
@@ -221,7 +203,7 @@ export default function ReservationsFilters({
                 className="cursor-pointer hover:bg-gray-100"
                 onClick={() =>
                   onUpdateFilters({
-                    paymentStatuses: toggleArrayOption(filters.paymentStatuses, status)
+                    paymentStatuses: toggleArrayOption(filters.paymentStatuses, status),
                   })
                 }
               >
@@ -233,7 +215,7 @@ export default function ReservationsFilters({
 
         {/* Room Type Filter */}
         <div>
-          <Label className="text-sm font-semibold mb-2 block">
+          <Label className="mb-2 block text-sm font-semibold">
             {t('reservationsList.filters.roomType')}
           </Label>
           <div className="flex flex-wrap gap-2">
@@ -244,7 +226,7 @@ export default function ReservationsFilters({
                 className="cursor-pointer hover:bg-gray-100"
                 onClick={() =>
                   onUpdateFilters({
-                    roomTypes: toggleArrayOption(filters.roomTypes, type)
+                    roomTypes: toggleArrayOption(filters.roomTypes, type),
                   })
                 }
               >
@@ -256,7 +238,7 @@ export default function ReservationsFilters({
 
         {/* Nationality Filter */}
         <div>
-          <Label className="text-sm font-semibold mb-2 block">
+          <Label className="mb-2 block text-sm font-semibold">
             {t('reservationsList.filters.nationality')}
           </Label>
           <div className="flex flex-wrap gap-2">
@@ -267,7 +249,7 @@ export default function ReservationsFilters({
                 className="cursor-pointer hover:bg-gray-100"
                 onClick={() =>
                   onUpdateFilters({
-                    nationalities: toggleArrayOption(filters.nationalities, nationality)
+                    nationalities: toggleArrayOption(filters.nationalities, nationality),
                   })
                 }
               >
@@ -278,14 +260,14 @@ export default function ReservationsFilters({
         </div>
 
         {/* Special Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="flex items-center space-x-2">
             <input
               type="checkbox"
               id="vipOnly"
               checked={filters.vipOnly}
               onChange={(e) => onUpdateFilters({ vipOnly: e.target.checked })}
-              className="w-4 h-4 rounded border-gray-300"
+              className="h-4 w-4 rounded border-gray-300"
             />
             <Label htmlFor="vipOnly" className="cursor-pointer">
               {t('reservationsList.filters.vipOnly')}
@@ -298,7 +280,7 @@ export default function ReservationsFilters({
               id="hasSpecialRequests"
               checked={filters.hasSpecialRequests}
               onChange={(e) => onUpdateFilters({ hasSpecialRequests: e.target.checked })}
-              className="w-4 h-4 rounded border-gray-300"
+              className="h-4 w-4 rounded border-gray-300"
             />
             <Label htmlFor="hasSpecialRequests" className="cursor-pointer">
               {t('reservationsList.filters.specialRequests')}
@@ -307,14 +289,12 @@ export default function ReservationsFilters({
         </div>
 
         {/* Date Range Filters - Simplified for now */}
-        <div className="pt-4 border-t">
-          <p className="text-sm text-gray-600 mb-2">
-            <Calendar className="w-4 h-4 inline mr-2" />
+        <div className="border-t pt-4">
+          <p className="mb-2 text-sm text-gray-600">
+            <Calendar className="mr-2 inline h-4 w-4" />
             {t('reservationsList.filters.dateRange')}
           </p>
-          <p className="text-xs text-gray-500">
-            Date range filters will be enhanced in Phase 4
-          </p>
+          <p className="text-xs text-gray-500">Date range filters will be enhanced in Phase 4</p>
         </div>
       </CardContent>
     </Card>

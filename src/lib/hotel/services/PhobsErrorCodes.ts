@@ -29,7 +29,7 @@ export enum PhobsEWTCode {
   /** Authentication model - type of authentication not recognized */
   AUTHENTICATION_MODEL = '9',
   /** Required field missing - element or attribute required but missing */
-  REQUIRED_FIELD_MISSING = '10'
+  REQUIRED_FIELD_MISSING = '10',
 }
 
 /**
@@ -67,7 +67,7 @@ export enum PhobsERRCode {
   /** Rate does not exist */
   RATE_DOES_NOT_EXIST = '436',
   /** Reservation cannot be cancelled */
-  RESERVATION_CANNOT_BE_CANCELLED = '264'
+  RESERVATION_CANNOT_BE_CANCELLED = '264',
 }
 
 /**
@@ -116,7 +116,7 @@ export enum PhobsSpecialRequestCode {
   /** Voucher for room and breakfast */
   VOUCHER_BREAKFAST = 'VB',
   /** Voucher for room only */
-  VOUCHER_ROOM_ONLY = 'VR'
+  VOUCHER_ROOM_ONLY = 'VR',
 }
 
 /**
@@ -156,7 +156,7 @@ export enum PhobsPaymentCardCode {
   /** Big Fish */
   BIGFISH = 'BIGFISH',
   /** Stripe */
-  STRIPE = 'STRIPE'
+  STRIPE = 'STRIPE',
 }
 
 /**
@@ -189,7 +189,7 @@ export const PhobsErrorMessages: Record<string, string> = {
   '436': 'Rate plan does not exist',
   '448': 'Internal system error occurred',
   '450': 'Unable to process the request',
-  '264': 'Reservation cannot be cancelled'
+  '264': 'Reservation cannot be cancelled',
 };
 
 /**

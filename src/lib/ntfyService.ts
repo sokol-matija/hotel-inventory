@@ -38,7 +38,7 @@ class NtfyService {
   private async sendNotification(notification: NtfyNotification): Promise<boolean> {
     try {
       const url = `${this.baseUrl}/${notification.topic}`;
-      
+
       const headers: Record<string, string> = {
         'Content-Type': 'text/plain',
       };
@@ -82,7 +82,7 @@ class NtfyService {
 
     const guestCount = bookingData.adults + bookingData.children;
     const guestText = guestCount === 1 ? 'guest' : 'guests';
-    
+
     const message = `🏨 New Room 401 Booking
 
 🏨 New Booking Created
@@ -99,7 +99,7 @@ class NtfyService {
     const notification: NtfyNotification = {
       topic: this.defaultTopic,
       message,
-      title: `New Room 401 Booking`,  // Removed emoji from title header
+      title: `New Room 401 Booking`, // Removed emoji from title header
       priority: 'default',
       tags: 'hotel,booking,room401',
     };
@@ -110,8 +110,9 @@ class NtfyService {
   async sendTestNotification(): Promise<boolean> {
     const testNotification: NtfyNotification = {
       topic: this.defaultTopic,
-      message: '🧪 Test notification from Hotel Porec reservation system. If you receive this, the ntfy integration is working correctly!',
-      title: 'Test Notification',  // Removed emoji from title header
+      message:
+        '🧪 Test notification from Hotel Porec reservation system. If you receive this, the ntfy integration is working correctly!',
+      title: 'Test Notification', // Removed emoji from title header
       priority: 'low',
       tags: 'test,hotel',
     };

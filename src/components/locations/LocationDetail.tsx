@@ -11,7 +11,7 @@ import { useLocationState } from '@/lib/hooks/useLocationState';
 import { useAuth } from '../auth/AuthProvider';
 import AddInventoryDialog from './AddInventoryDialog';
 import { formatDate } from '@/lib/dateUtils';
-import { 
+import {
   ArrowLeft,
   Refrigerator,
   Warehouse,
@@ -25,7 +25,7 @@ import {
   Check,
   X,
   Move,
-  Settings
+  Settings,
 } from 'lucide-react';
 
 // Drag and drop components
@@ -46,9 +46,7 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import {
-  useSortable,
-} from '@dnd-kit/sortable';
+import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
 // Sortable inventory item component
@@ -65,7 +63,7 @@ function SortableInventoryItem({
   getExpirationStatus,
   isLowStock,
   formatDate,
-  userCanEdit
+  userCanEdit,
 }: {
   item: Record<string, unknown>;
   editingQuantity: number | null;
@@ -81,14 +79,9 @@ function SortableInventoryItem({
   formatDate: (date: string) => string;
   userCanEdit: boolean;
 }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: item.id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: item.id,
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -101,22 +94,22 @@ function SortableInventoryItem({
 
   const expirationClasses: Record<string, string> = {
     expired: 'bg-red-50 border-red-200',
-    expiring: 'bg-yellow-50 border-yellow-200', 
+    expiring: 'bg-yellow-50 border-yellow-200',
     good: 'bg-green-50 border-green-200',
-    none: 'bg-white'
+    none: 'bg-white',
   };
 
   const expirationTextClasses: Record<string, string> = {
     expired: 'text-red-700',
     expiring: 'text-yellow-700',
-    good: 'text-green-700', 
-    none: 'text-gray-600'
+    good: 'text-green-700',
+    none: 'text-gray-600',
   };
 
   return (
-    <Card 
-      ref={setNodeRef} 
-      style={style} 
+    <Card
+      ref={setNodeRef}
+      style={style}
       className={`mb-3 ${expirationClasses[expirationStatus.status]} ${lowStock ? 'ring-2 ring-orange-300' : ''}`}
     >
       <CardContent className="p-4">
@@ -124,21 +117,27 @@ function SortableInventoryItem({
           <div className="flex-1">
             <div className="flex items-center space-x-2">
               <h3 className="font-semibold">{item.item.name}</h3>
-              {lowStock && <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">Low Stock</span>}
+              {lowStock && (
+                <span className="rounded bg-orange-100 px-2 py-1 text-xs text-orange-800">
+                  Low Stock
+                </span>
+              )}
             </div>
-            
+
             <p className="text-sm text-gray-600">{translateCategory(item.item.category.name)}</p>
-            
+
             {item.expiration_date && (
               <p className={`text-xs ${expirationTextClasses[expirationStatus.status]}`}>
-                <Calendar className="inline h-3 w-3 mr-1" />
+                <Calendar className="mr-1 inline h-3 w-3" />
                 Expires: {formatDate(item.expiration_date)}
-                {expirationStatus.status === 'expired' && ` (${expirationStatus.daysUntilExpiration} days ago)`}
-                {expirationStatus.status === 'expiring' && ` (${expirationStatus.daysUntilExpiration} days)`}
+                {expirationStatus.status === 'expired' &&
+                  ` (${expirationStatus.daysUntilExpiration} days ago)`}
+                {expirationStatus.status === 'expiring' &&
+                  ` (${expirationStatus.daysUntilExpiration} days)`}
               </p>
             )}
           </div>
-          
+
           <div className="flex items-center space-x-3">
             {/* Quantity editing */}
             {editingQuantity === item.id ? (
@@ -147,7 +146,7 @@ function SortableInventoryItem({
                   type="number"
                   value={tempQuantity}
                   onChange={(e) => onTempQuantityChange(e.target.value)}
-                  className="w-16 h-8 text-sm"
+                  className="h-8 w-16 text-sm"
                   min="0"
                 />
                 <Button size="sm" onClick={() => onSaveEdit(item.id)} className="h-8 w-8 p-0">
@@ -160,11 +159,13 @@ function SortableInventoryItem({
             ) : (
               <div className="text-right">
                 <div className="flex items-center space-x-2">
-                  <span className="font-medium">{item.quantity} {item.item.unit}</span>
+                  <span className="font-medium">
+                    {item.quantity} {item.item.unit}
+                  </span>
                   {userCanEdit && (
-                    <Button 
-                      size="sm" 
-                      variant="ghost" 
+                    <Button
+                      size="sm"
+                      variant="ghost"
                       onClick={() => onStartEdit(item.id, item.quantity)}
                       className="h-6 w-6 p-0"
                     >
@@ -175,7 +176,7 @@ function SortableInventoryItem({
                 <p className="text-xs text-gray-500">Min: {item.item.minimum_stock}</p>
               </div>
             )}
-            
+
             {/* Actions */}
             <div className="flex items-center space-x-1">
               <Button
@@ -183,11 +184,11 @@ function SortableInventoryItem({
                 {...listeners}
                 size="sm"
                 variant="ghost"
-                className="h-6 w-6 p-0 cursor-grab active:cursor-grabbing"
+                className="h-6 w-6 cursor-grab p-0 active:cursor-grabbing"
               >
                 <Move className="h-3 w-3" />
               </Button>
-              
+
               {userCanEdit && (
                 <Button
                   size="sm"
@@ -208,7 +209,7 @@ function SortableInventoryItem({
 
 export default function LocationDetail() {
   const { user } = useAuth();
-  
+
   // Use our new state management hook - replaces all individual useState calls
   const {
     state,
@@ -231,7 +232,7 @@ export default function LocationDetail() {
     clearError,
     getExpirationStatus,
     isLowStock,
-    translateCategory
+    translateCategory,
   } = useLocationState();
 
   // Drag and drop sensors - optimized for both desktop and mobile
@@ -261,8 +262,8 @@ export default function LocationDetail() {
 
     if (!over || active.id === over.id) return;
 
-    const oldIndex = state.filteredInventory.findIndex(item => item.id === active.id);
-    const newIndex = state.filteredInventory.findIndex(item => item.id === over.id);
+    const oldIndex = state.filteredInventory.findIndex((item) => item.id === active.id);
+    const newIndex = state.filteredInventory.findIndex((item) => item.id === over.id);
 
     if (oldIndex !== -1 && newIndex !== -1) {
       await handleDragEnd(oldIndex, newIndex, active.id as number);
@@ -280,9 +281,9 @@ export default function LocationDetail() {
 
   if (state.loading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex h-64 items-center justify-center">
         <div className="text-center">
-          <Package className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+          <Package className="mx-auto mb-4 h-12 w-12 text-gray-400" />
           <p className="text-gray-500">Loading location details...</p>
         </div>
       </div>
@@ -292,9 +293,11 @@ export default function LocationDetail() {
   if (state.error) {
     return (
       <div className="p-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
           <p className="text-red-700">{state.error}</p>
-          <Button onClick={clearError} className="mt-2">Try Again</Button>
+          <Button onClick={clearError} className="mt-2">
+            Try Again
+          </Button>
         </div>
       </div>
     );
@@ -306,7 +309,7 @@ export default function LocationDetail() {
         <p className="text-gray-500">Location not found</p>
         <Link to="/locations">
           <Button variant="outline" className="mt-2">
-            <ArrowLeft className="h-4 w-4 mr-2" />
+            <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Locations
           </Button>
         </Link>
@@ -314,20 +317,20 @@ export default function LocationDetail() {
     );
   }
 
-  const activeItem = state.filteredInventory.find(item => item.id === state.activeId);
+  const activeItem = state.filteredInventory.find((item) => item.id === state.activeId);
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="mx-auto max-w-6xl p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <Link to="/locations">
             <Button variant="outline" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" />
+              <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
           </Link>
-          
+
           <div className="flex items-center space-x-3">
             {state.location.type === 'refrigerated' ? (
               <Refrigerator className="h-8 w-8 text-blue-500" />
@@ -345,17 +348,17 @@ export default function LocationDetail() {
           {state.supportsOrdering && (
             <Button
               onClick={toggleOrderingMode}
-              variant={state.orderingMode ? "default" : "outline"}
+              variant={state.orderingMode ? 'default' : 'outline'}
               size="sm"
             >
-              <Settings className="h-4 w-4 mr-2" />
+              <Settings className="mr-2 h-4 w-4" />
               {state.orderingMode ? 'Exit Ordering' : 'Reorder Items'}
             </Button>
           )}
-          
+
           {userCanEdit && (
             <Button onClick={openAddDialog} size="sm">
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="mr-2 h-4 w-4" />
               Add Item
             </Button>
           )}
@@ -363,7 +366,7 @@ export default function LocationDetail() {
       </div>
 
       {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -375,7 +378,7 @@ export default function LocationDetail() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -387,7 +390,7 @@ export default function LocationDetail() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -399,7 +402,7 @@ export default function LocationDetail() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -416,10 +419,10 @@ export default function LocationDetail() {
       {/* Search and Filter */}
       <Card className="mb-6">
         <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4">
+          <div className="flex flex-col space-y-2 md:flex-row md:space-y-0 md:space-x-4">
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
                 <Input
                   placeholder="Search items or categories..."
                   value={state.searchTerm}
@@ -428,21 +431,21 @@ export default function LocationDetail() {
                 />
               </div>
             </div>
-            
+
             <Select value={state.selectedCategory} onValueChange={setSelectedCategory}>
               <SelectTrigger className="w-48">
                 <SelectValue placeholder="All categories" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All categories</SelectItem>
-                {uniqueCategories.map(category => (
+                {uniqueCategories.map((category) => (
                   <SelectItem key={category.id} value={category.name}>
                     {translateCategory(category.name)}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            
+
             {(state.searchTerm || state.selectedCategory !== 'all') && (
               <Button variant="outline" onClick={clearFilters}>
                 Clear Filters
@@ -456,11 +459,11 @@ export default function LocationDetail() {
       {state.filteredInventory.length === 0 ? (
         <Card>
           <CardContent className="p-8 text-center">
-            <Package className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+            <Package className="mx-auto mb-4 h-12 w-12 text-gray-400" />
             <p className="text-gray-500">No items found</p>
             {userCanEdit && (
               <Button onClick={openAddDialog} className="mt-4">
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="mr-2 h-4 w-4" />
                 Add Your First Item
               </Button>
             )}
@@ -473,7 +476,10 @@ export default function LocationDetail() {
           onDragStart={handleDragStart}
           onDragEnd={handleDragEndEvent}
         >
-          <SortableContext items={state.filteredInventory.map(item => item.id)} strategy={verticalListSortingStrategy}>
+          <SortableContext
+            items={state.filteredInventory.map((item) => item.id)}
+            strategy={verticalListSortingStrategy}
+          >
             <div>
               {state.filteredInventory.map((item) => (
                 <SortableInventoryItem
@@ -502,7 +508,9 @@ export default function LocationDetail() {
                 <Card className="mb-3 shadow-lg">
                   <CardContent className="p-4">
                     <h3 className="font-semibold">{activeItem.item.name}</h3>
-                    <p className="text-sm text-gray-600">{translateCategory(activeItem.item.category.name)}</p>
+                    <p className="text-sm text-gray-600">
+                      {translateCategory(activeItem.item.category.name)}
+                    </p>
                   </CardContent>
                 </Card>
               </div>
@@ -512,7 +520,7 @@ export default function LocationDetail() {
       )}
 
       {/* Add Inventory Dialog */}
-      <AddInventoryDialog 
+      <AddInventoryDialog
         isOpen={state.showAddDialog}
         onClose={closeAddDialog}
         locationId={parseInt(state.location.id, 10)}

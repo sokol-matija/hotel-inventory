@@ -8,21 +8,23 @@ import { Badge } from '../../ui/badge';
 import {
   getFiscalizationService,
   getCurrentEnvironment,
-  CERTIFICATE_EXTRACTION_GUIDE
+  CERTIFICATE_EXTRACTION_GUIDE,
 } from '../../../lib/fiscalization';
 import { FiscalInvoiceData, FiscalResponse } from '../../../lib/fiscalization/types';
 import { AlertTriangle, CheckCircle, XCircle, Download, FileText, Shield } from 'lucide-react';
 
 // Simple alert component using existing patterns
-const Alert: React.FC<{ 
-  variant?: 'default' | 'destructive'; 
-  children: React.ReactNode; 
+const Alert: React.FC<{
+  variant?: 'default' | 'destructive';
+  children: React.ReactNode;
 }> = ({ variant = 'default', children }) => (
-  <div className={`rounded-lg border p-4 ${
-    variant === 'destructive' 
-      ? 'border-red-200 bg-red-50 text-red-800' 
-      : 'border-blue-200 bg-blue-50 text-blue-800'
-  }`}>
+  <div
+    className={`rounded-lg border p-4 ${
+      variant === 'destructive'
+        ? 'border-red-200 bg-red-50 text-red-800'
+        : 'border-blue-200 bg-blue-50 text-blue-800'
+    }`}
+  >
     {children}
   </div>
 );
@@ -31,12 +33,10 @@ const AlertDescription: React.FC<{ children: React.ReactNode }> = ({ children })
   <div className="text-sm">{children}</div>
 );
 
-const Separator: React.FC = () => (
-  <hr className="border-gray-200 my-4" />
-);
+const Separator: React.FC = () => <hr className="my-4 border-gray-200" />;
 
 const CardDescription: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <p className="text-sm text-muted-foreground">{children}</p>
+  <p className="text-muted-foreground text-sm">{children}</p>
 );
 
 export default function FiscalizationTestPage() {
@@ -54,22 +54,22 @@ export default function FiscalizationTestPage() {
   const TEST_INVOICE: FiscalInvoiceData = {
     invoiceNumber: 'HP-2025-000001',
     dateTime: new Date(),
-    totalAmount: 150.00,
-    vatAmount: 30.00,
+    totalAmount: 150.0,
+    vatAmount: 30.0,
     items: [
       {
         name: 'Hotel Accommodation',
         quantity: 2,
-        unitPrice: 60.00,
+        unitPrice: 60.0,
         vatRate: 25,
-        totalAmount: 120.00,
+        totalAmount: 120.0,
       },
       {
         name: 'Tourism Tax',
         quantity: 2,
-        unitPrice: 1.50,
+        unitPrice: 1.5,
         vatRate: 0,
-        totalAmount: 3.00,
+        totalAmount: 3.0,
       },
     ],
     paymentMethod: 'CASH',
@@ -90,7 +90,7 @@ export default function FiscalizationTestPage() {
       console.log('🧪 Starting fiscalization test...');
       const result = await fiscalizationService.fiscalizeInvoice(TEST_INVOICE);
       setTestResult(result);
-      
+
       if (result.success) {
         console.log('✅ Fiscalization test successful:', result);
       } else {
@@ -144,8 +144,8 @@ export default function FiscalizationTestPage() {
       <Alert>
         <Shield className="h-4 w-4" />
         <AlertDescription>
-          <strong>SAFETY MODE ACTIVE:</strong> This system is configured to use Croatian Tax Authority 
-          TEST environment only. No real fiscal receipts will be generated.
+          <strong>SAFETY MODE ACTIVE:</strong> This system is configured to use Croatian Tax
+          Authority TEST environment only. No real fiscal receipts will be generated.
         </AlertDescription>
       </Alert>
 
@@ -156,23 +156,21 @@ export default function FiscalizationTestPage() {
             <FileText className="h-5 w-5" />
             Current Configuration
           </CardTitle>
-          <CardDescription>
-            Croatian fiscal system configuration and status
-          </CardDescription>
+          <CardDescription>Croatian fiscal system configuration and status</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium">Environment</label>
-              <p className="text-sm text-muted-foreground">{environment.mode}</p>
+              <p className="text-muted-foreground text-sm">{environment.mode}</p>
             </div>
             <div>
               <label className="text-sm font-medium">OIB</label>
-              <p className="text-sm text-muted-foreground">{environment.oib}</p>
+              <p className="text-muted-foreground text-sm">{environment.oib}</p>
             </div>
             <div>
               <label className="text-sm font-medium">URL</label>
-              <p className="text-sm text-muted-foreground break-all">{environment.url}</p>
+              <p className="text-muted-foreground text-sm break-all">{environment.url}</p>
             </div>
             <div>
               <label className="text-sm font-medium">Certificate Status</label>
@@ -186,11 +184,11 @@ export default function FiscalizationTestPage() {
 
           <div className="flex gap-2">
             <Button onClick={handleValidateConfiguration} variant="outline" size="sm">
-              <CheckCircle className="h-4 w-4 mr-2" />
+              <CheckCircle className="mr-2 h-4 w-4" />
               Validate Configuration
             </Button>
             <Button onClick={downloadCertificateGuide} variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" />
+              <Download className="mr-2 h-4 w-4" />
               Download Certificate Guide
             </Button>
           </div>
@@ -203,7 +201,7 @@ export default function FiscalizationTestPage() {
                   <XCircle className="h-4 w-4" />
                   <AlertDescription>
                     <strong>Configuration Errors:</strong>
-                    <ul className="list-disc list-inside mt-2">
+                    <ul className="mt-2 list-inside list-disc">
                       {serviceStatus.validation.errors.map((error: string, index: number) => (
                         <li key={index}>{error}</li>
                       ))}
@@ -217,7 +215,7 @@ export default function FiscalizationTestPage() {
                   <AlertTriangle className="h-4 w-4" />
                   <AlertDescription>
                     <strong>Warnings:</strong>
-                    <ul className="list-disc list-inside mt-2">
+                    <ul className="mt-2 list-inside list-disc">
                       {serviceStatus.validation.warnings.map((warning: string, index: number) => (
                         <li key={index}>{warning}</li>
                       ))}
@@ -237,36 +235,36 @@ export default function FiscalizationTestPage() {
             <Shield className="h-5 w-5" />
             Certificate Setup
           </CardTitle>
-          <CardDescription>
-            P12 certificate extraction from DOS system
-          </CardDescription>
+          <CardDescription>P12 certificate extraction from DOS system</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="text-sm space-y-2">
-            <p><strong>Certificate File:</strong> 87246357068.49208351934.A.1.p12</p>
-            <p><strong>Password:</strong> Marvel247@$&</p>
-            <p><strong>Valid Until:</strong> July 31, 2030</p>
-            <p><strong>Location:</strong> .certificates/</p>
-            <p className="text-xs text-muted-foreground mt-2">
+          <div className="space-y-2 text-sm">
+            <p>
+              <strong>Certificate File:</strong> 87246357068.49208351934.A.1.p12
+            </p>
+            <p>
+              <strong>Password:</strong> Marvel247@$&
+            </p>
+            <p>
+              <strong>Valid Until:</strong> July 31, 2030
+            </p>
+            <p>
+              <strong>Location:</strong> .certificates/
+            </p>
+            <p className="text-muted-foreground mt-2 text-xs">
               <strong>OLD:</strong> FISKAL_3.p12 (Hporec1) - DEPRECATED
             </p>
           </div>
 
           <div className="flex gap-2">
-            <Button 
-              onClick={() => setShowCertGuide(!showCertGuide)} 
-              variant="outline" 
-              size="sm"
-            >
+            <Button onClick={() => setShowCertGuide(!showCertGuide)} variant="outline" size="sm">
               {showCertGuide ? 'Hide' : 'Show'} Certificate Instructions
             </Button>
           </div>
 
           {showCertGuide && (
-            <div className="bg-muted p-4 rounded-lg">
-              <pre className="text-xs whitespace-pre-wrap">
-                {CERTIFICATE_EXTRACTION_GUIDE}
-              </pre>
+            <div className="bg-muted rounded-lg p-4">
+              <pre className="text-xs whitespace-pre-wrap">{CERTIFICATE_EXTRACTION_GUIDE}</pre>
             </div>
           )}
         </CardContent>
@@ -285,30 +283,35 @@ export default function FiscalizationTestPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Test Invoice Data */}
-          <div className="bg-muted p-4 rounded-lg">
-            <h4 className="font-medium mb-2">Test Invoice Data:</h4>
-            <div className="text-sm space-y-1">
-              <p><strong>Invoice:</strong> {TEST_INVOICE.invoiceNumber}</p>
-              <p><strong>Amount:</strong> €{TEST_INVOICE.totalAmount.toFixed(2)} (incl. €{TEST_INVOICE.vatAmount.toFixed(2)} VAT)</p>
-              <p><strong>Items:</strong> {TEST_INVOICE.items.length} items</p>
-              <p><strong>Payment:</strong> {TEST_INVOICE.paymentMethod}</p>
+          <div className="bg-muted rounded-lg p-4">
+            <h4 className="mb-2 font-medium">Test Invoice Data:</h4>
+            <div className="space-y-1 text-sm">
+              <p>
+                <strong>Invoice:</strong> {TEST_INVOICE.invoiceNumber}
+              </p>
+              <p>
+                <strong>Amount:</strong> €{TEST_INVOICE.totalAmount.toFixed(2)} (incl. €
+                {TEST_INVOICE.vatAmount.toFixed(2)} VAT)
+              </p>
+              <p>
+                <strong>Items:</strong> {TEST_INVOICE.items.length} items
+              </p>
+              <p>
+                <strong>Payment:</strong> {TEST_INVOICE.paymentMethod}
+              </p>
             </div>
           </div>
 
           {/* Test Button */}
-          <Button 
-            onClick={handleTestFiscalization}
-            disabled={isProcessing}
-            className="w-full"
-          >
+          <Button onClick={handleTestFiscalization} disabled={isProcessing} className="w-full">
             {isProcessing ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white" />
                 Testing Fiscalization...
               </>
             ) : (
               <>
-                <FileText className="h-4 w-4 mr-2" />
+                <FileText className="mr-2 h-4 w-4" />
                 Test Croatian Tax Authority Connection
               </>
             )}
@@ -325,28 +328,37 @@ export default function FiscalizationTestPage() {
                 )}
                 <AlertDescription>
                   <strong>
-                    {testResult.success ? 'Fiscalization Test Successful!' : 'Fiscalization Test Failed'}
+                    {testResult.success
+                      ? 'Fiscalization Test Successful!'
+                      : 'Fiscalization Test Failed'}
                   </strong>
                   <div className="mt-2 text-sm">
                     {testResult.success ? (
                       <div className="space-y-1">
-                        <p><strong>JIR:</strong> {testResult.jir}</p>
+                        <p>
+                          <strong>JIR:</strong> {testResult.jir}
+                        </p>
                         {testResult.fiscalReceiptUrl && (
-                          <p><strong>Receipt URL:</strong> 
-                            <a 
-                              href={testResult.fiscalReceiptUrl} 
-                              target="_blank" 
+                          <p>
+                            <strong>Receipt URL:</strong>
+                            <a
+                              href={testResult.fiscalReceiptUrl}
+                              target="_blank"
                               rel="noopener noreferrer"
-                              className="text-blue-600 hover:underline ml-1"
+                              className="ml-1 text-blue-600 hover:underline"
                             >
                               {testResult.fiscalReceiptUrl}
                             </a>
                           </p>
                         )}
-                        <p><strong>Timestamp:</strong> {testResult.timestamp.toLocaleString()}</p>
+                        <p>
+                          <strong>Timestamp:</strong> {testResult.timestamp.toLocaleString()}
+                        </p>
                       </div>
                     ) : (
-                      <p><strong>Error:</strong> {testResult.error}</p>
+                      <p>
+                        <strong>Error:</strong> {testResult.error}
+                      </p>
                     )}
                   </div>
                 </AlertDescription>
@@ -366,7 +378,7 @@ export default function FiscalizationTestPage() {
           <div className="space-y-2">
             {serviceStatus?.recommendations.map((recommendation: string, index: number) => (
               <div key={index} className="flex items-start gap-2">
-                <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0" />
+                <div className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500" />
                 <p className="text-sm">{recommendation}</p>
               </div>
             ))}

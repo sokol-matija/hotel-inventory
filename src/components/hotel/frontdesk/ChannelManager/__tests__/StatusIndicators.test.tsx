@@ -11,20 +11,23 @@ import {
   SyncProgress,
   PerformanceMetrics,
   StatusBadge,
-  ErrorDetails
+  ErrorDetails,
 } from '../StatusIndicators';
-import { PhobsError, PhobsErrorType } from '../../../../../lib/hotel/services/PhobsErrorHandlingService';
+import {
+  PhobsError,
+  PhobsErrorType,
+} from '../../../../../lib/hotel/services/PhobsErrorHandlingService';
 import { OTAChannel } from '../../../../../lib/hotel/services/phobsTypes';
 
 // Mock the utilities
 jest.mock('../../../../../lib/utils', () => ({
-  cn: (...args: any[]) => args.filter(Boolean).join(' ')
+  cn: (...args: any[]) => args.filter(Boolean).join(' '),
 }));
 
 describe('StatusIndicator Component', () => {
   it('renders idle status correctly', () => {
     render(<StatusIndicator status="idle" />);
-    
+
     expect(screen.getByText('Idle')).toBeInTheDocument();
     const iconDiv = document.querySelector('.text-gray-500.bg-gray-100');
     expect(iconDiv).toBeInTheDocument();
@@ -32,7 +35,7 @@ describe('StatusIndicator Component', () => {
 
   it('renders syncing status with animation', () => {
     render(<StatusIndicator status="syncing" />);
-    
+
     expect(screen.getByText('Syncing')).toBeInTheDocument();
     // Check for animation class
     const icon = document.querySelector('.animate-spin');
@@ -41,7 +44,7 @@ describe('StatusIndicator Component', () => {
 
   it('renders success status correctly', () => {
     render(<StatusIndicator status="success" />);
-    
+
     expect(screen.getByText('Success')).toBeInTheDocument();
     const iconDiv = document.querySelector('.text-green-600.bg-green-100');
     expect(iconDiv).toBeInTheDocument();
@@ -49,7 +52,7 @@ describe('StatusIndicator Component', () => {
 
   it('renders error status correctly', () => {
     render(<StatusIndicator status="error" />);
-    
+
     expect(screen.getByText('Error')).toBeInTheDocument();
     const iconDiv = document.querySelector('.text-red-600.bg-red-100');
     expect(iconDiv).toBeInTheDocument();
@@ -57,13 +60,13 @@ describe('StatusIndicator Component', () => {
 
   it('renders custom label when provided', () => {
     render(<StatusIndicator status="warning" label="Custom Warning" />);
-    
+
     expect(screen.getByText('Custom Warning')).toBeInTheDocument();
   });
 
   it('hides label when showLabel is false', () => {
     render(<StatusIndicator status="success" showLabel={false} />);
-    
+
     expect(screen.queryByText('Success')).not.toBeInTheDocument();
   });
 
@@ -84,12 +87,12 @@ describe('ChannelStatusCard Component', () => {
     lastSync: new Date('2025-08-15T10:30:00Z'),
     errorCount: 0,
     reservationCount: 15,
-    responseTime: 1250
+    responseTime: 1250,
   };
 
   it('renders channel information correctly', () => {
     render(<ChannelStatusCard {...defaultProps} />);
-    
+
     expect(screen.getByText('Booking.com')).toBeInTheDocument();
     expect(screen.getByText('15')).toBeInTheDocument();
     expect(screen.getByText('Reservations')).toBeInTheDocument();
@@ -102,29 +105,29 @@ describe('ChannelStatusCard Component', () => {
   it('formats last sync time correctly', () => {
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
     render(<ChannelStatusCard {...defaultProps} lastSync={fiveMinutesAgo} />);
-    
+
     expect(screen.getByText(/5m ago/)).toBeInTheDocument();
   });
 
   it('shows "Never" when no last sync', () => {
     render(<ChannelStatusCard {...defaultProps} lastSync={undefined} />);
-    
+
     expect(screen.getByText(/Never/)).toBeInTheDocument();
   });
 
   it('calls onViewDetails when View Details button is clicked', () => {
     const mockOnViewDetails = jest.fn();
     render(<ChannelStatusCard {...defaultProps} onViewDetails={mockOnViewDetails} />);
-    
+
     const viewButton = screen.getByRole('button', { name: /view details/i });
     fireEvent.click(viewButton);
-    
+
     expect(mockOnViewDetails).toHaveBeenCalledTimes(1);
   });
 
   it('does not render View Details button when onViewDetails is not provided', () => {
     render(<ChannelStatusCard {...defaultProps} />);
-    
+
     expect(screen.queryByRole('button', { name: /view details/i })).not.toBeInTheDocument();
   });
 
@@ -142,25 +145,25 @@ describe('ConflictIndicator Component', () => {
     severity: 'medium' as const,
     conflictType: 'double_booking',
     affectedItems: 2,
-    autoResolvable: false
+    autoResolvable: false,
   };
 
   it('renders conflict information correctly', () => {
     render(<ConflictIndicator {...defaultProps} />);
-    
+
     expect(screen.getByText(/double.booking/i)).toBeInTheDocument();
     expect(screen.getByText(/2 items affected/i)).toBeInTheDocument();
   });
 
   it('handles singular item count correctly', () => {
     render(<ConflictIndicator {...defaultProps} affectedItems={1} />);
-    
+
     expect(screen.getByText('1 item affected')).toBeInTheDocument();
   });
 
   it('shows auto-resolvable badge when applicable', () => {
     render(<ConflictIndicator {...defaultProps} autoResolvable={true} />);
-    
+
     expect(screen.getByText('Auto-resolvable')).toBeInTheDocument();
   });
 
@@ -177,20 +180,20 @@ describe('ConflictIndicator Component', () => {
   it('calls onResolve when resolve button is clicked', () => {
     const mockOnResolve = jest.fn();
     render(<ConflictIndicator {...defaultProps} onResolve={mockOnResolve} />);
-    
+
     const resolveButton = screen.getByRole('button', { name: /resolve/i });
     fireEvent.click(resolveButton);
-    
+
     expect(mockOnResolve).toHaveBeenCalledTimes(1);
   });
 
   it('calls onView when view button is clicked', () => {
     const mockOnView = jest.fn();
     render(<ConflictIndicator {...defaultProps} onView={mockOnView} />);
-    
+
     const viewButton = screen.getByRole('button');
     fireEvent.click(viewButton);
-    
+
     expect(mockOnView).toHaveBeenCalledTimes(1);
   });
 
@@ -200,9 +203,7 @@ describe('ConflictIndicator Component', () => {
     );
     expect(screen.getByText('Resolve')).toBeInTheDocument();
 
-    rerender(
-      <ConflictIndicator {...defaultProps} autoResolvable={true} onResolve={jest.fn()} />
-    );
+    rerender(<ConflictIndicator {...defaultProps} autoResolvable={true} onResolve={jest.fn()} />);
     expect(screen.getByText('Auto Resolve')).toBeInTheDocument();
   });
 });
@@ -214,55 +215,57 @@ describe('SyncProgress Component', () => {
     currentStep: 'Processing Booking.com reservations',
     totalSteps: 5,
     currentStepIndex: 2,
-    estimatedTimeRemaining: 120
+    estimatedTimeRemaining: 120,
   };
 
   it('renders progress information correctly', () => {
     render(<SyncProgress {...defaultProps} />);
-    
+
     expect(screen.getByText('Syncing reservations')).toBeInTheDocument();
-    expect(screen.getByText('Step 3 of 5: Processing Booking.com reservations')).toBeInTheDocument();
+    expect(
+      screen.getByText('Step 3 of 5: Processing Booking.com reservations')
+    ).toBeInTheDocument();
     expect(screen.getByText('45%')).toBeInTheDocument();
   });
 
   it('renders progress bar with correct width', () => {
     render(<SyncProgress {...defaultProps} />);
-    
+
     const progressBar = document.querySelector('.bg-blue-600');
     expect(progressBar).toHaveStyle({ width: '45%' });
   });
 
   it('formats time remaining correctly', () => {
     render(<SyncProgress {...defaultProps} estimatedTimeRemaining={125} />);
-    
+
     expect(screen.getByText('~2m 5s remaining')).toBeInTheDocument();
   });
 
   it('formats seconds-only time remaining correctly', () => {
     render(<SyncProgress {...defaultProps} estimatedTimeRemaining={45} />);
-    
+
     expect(screen.getByText('~45s remaining')).toBeInTheDocument();
   });
 
   it('calls onCancel when cancel button is clicked', () => {
     const mockOnCancel = jest.fn();
     render(<SyncProgress {...defaultProps} onCancel={mockOnCancel} />);
-    
+
     const cancelButton = screen.getByRole('button', { name: /cancel/i });
     fireEvent.click(cancelButton);
-    
+
     expect(mockOnCancel).toHaveBeenCalledTimes(1);
   });
 
   it('does not show cancel button when onCancel is not provided', () => {
     render(<SyncProgress {...defaultProps} />);
-    
+
     expect(screen.queryByRole('button', { name: /cancel/i })).not.toBeInTheDocument();
   });
 
   it('handles missing optional props gracefully', () => {
     render(<SyncProgress operation="Simple sync" progress={75} />);
-    
+
     expect(screen.getByText('Simple sync')).toBeInTheDocument();
     expect(screen.getByText('75%')).toBeInTheDocument();
   });
@@ -274,12 +277,12 @@ describe('PerformanceMetrics Component', () => {
     averageResponseTime: 1250,
     operationsPerMinute: 12,
     errorRate: 4.5,
-    trend: 'stable' as const
+    trend: 'stable' as const,
   };
 
   it('renders performance metrics correctly', () => {
     render(<PerformanceMetrics {...defaultProps} />);
-    
+
     expect(screen.getByText('95.5%')).toBeInTheDocument();
     expect(screen.getByText('Success Rate')).toBeInTheDocument();
     expect(screen.getByText('1250ms')).toBeInTheDocument();
@@ -356,14 +359,14 @@ describe('ErrorDetails Component', () => {
       attempt: 2,
       timestamp: new Date(),
       hotel_id: 'test_hotel',
-      channel: 'booking.com' as OTAChannel
+      channel: 'booking.com' as OTAChannel,
     },
-    originalError: new Error('Network timeout')
+    originalError: new Error('Network timeout'),
   };
 
   it('renders error information correctly', () => {
     render(<ErrorDetails error={mockError} />);
-    
+
     expect(screen.getByText('Connection timeout')).toBeInTheDocument();
     expect(screen.getByText(/timeout error/i)).toBeInTheDocument();
     expect(screen.getByText('(HTTP 408)')).toBeInTheDocument();
@@ -374,10 +377,10 @@ describe('ErrorDetails Component', () => {
   it('shows retry button for retryable errors', () => {
     const mockOnRetry = jest.fn();
     render(<ErrorDetails error={mockError} onRetry={mockOnRetry} />);
-    
+
     const retryButton = screen.getByRole('button', { name: /retry/i });
     expect(retryButton).toBeInTheDocument();
-    
+
     fireEvent.click(retryButton);
     expect(mockOnRetry).toHaveBeenCalledTimes(1);
   });
@@ -385,44 +388,49 @@ describe('ErrorDetails Component', () => {
   it('does not show retry button for non-retryable errors', () => {
     const nonRetryableError = { ...mockError, retryable: false };
     render(<ErrorDetails error={nonRetryableError} onRetry={jest.fn()} />);
-    
+
     expect(screen.queryByRole('button', { name: /retry/i })).not.toBeInTheDocument();
   });
 
   it('calls onDismiss when dismiss button is clicked', () => {
     const mockOnDismiss = jest.fn();
     render(<ErrorDetails error={mockError} onDismiss={mockOnDismiss} />);
-    
+
     const dismissButton = screen.getByRole('button', { name: /dismiss/i });
     fireEvent.click(dismissButton);
-    
+
     expect(mockOnDismiss).toHaveBeenCalledTimes(1);
   });
 
   it('toggles error details visibility', async () => {
     render(<ErrorDetails error={mockError} />);
-    
+
     // Find the toggle button (not the dismiss/retry buttons)
     const toggleButtons = screen.getAllByRole('button');
-    const toggleButton = toggleButtons.find(btn => btn.getAttribute('aria-label') === 'Toggle error details') || toggleButtons[0];
-    
-    // Details should be hidden initially  
+    const toggleButton =
+      toggleButtons.find((btn) => btn.getAttribute('aria-label') === 'Toggle error details') ||
+      toggleButtons[0];
+
+    // Details should be hidden initially
     expect(screen.queryByText(/network timeout/i)).not.toBeInTheDocument();
-    
+
     // Click to show details
     fireEvent.click(toggleButton);
-    
+
     // Check if details are now visible
     const detailsVisible = screen.queryByText(/network timeout/i);
     if (detailsVisible) {
       expect(detailsVisible).toBeInTheDocument();
-      
+
       // Click to hide details
       fireEvent.click(toggleButton);
-      
-      await waitFor(() => {
-        expect(screen.queryByText(/network timeout/i)).not.toBeInTheDocument();
-      }, { timeout: 100 });
+
+      await waitFor(
+        () => {
+          expect(screen.queryByText(/network timeout/i)).not.toBeInTheDocument();
+        },
+        { timeout: 100 }
+      );
     }
   });
 

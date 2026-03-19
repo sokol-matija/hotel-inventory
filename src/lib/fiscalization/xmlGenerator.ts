@@ -7,7 +7,7 @@ import { format } from 'date-fns';
 
 export class FiscalXMLGenerator {
   private static instance: FiscalXMLGenerator;
-  
+
   public static getInstance(): FiscalXMLGenerator {
     if (!FiscalXMLGenerator.instance) {
       FiscalXMLGenerator.instance = new FiscalXMLGenerator();
@@ -21,16 +21,19 @@ export class FiscalXMLGenerator {
    * Signature will be added by FiscalXMLSigner
    * SUPPORTS STORNO: Handles negative amounts for cancellation invoices
    */
-  public generateFiscalXML(invoiceData: FiscalInvoiceData, zki: string): { soapEnvelope: string; signXmlId: string } {
+  public generateFiscalXML(
+    invoiceData: FiscalInvoiceData,
+    zki: string
+  ): { soapEnvelope: string; signXmlId: string } {
     const environment = getCurrentEnvironment();
     const dateTime = this.formatCroatianDateTime(invoiceData.dateTime);
     const messageId = this.generateUUID();
     const signXmlId = `signXmlId${Date.now()}`;
 
     // For storno invoices, use negative amount
-    const amount = invoiceData.isStorno ?
-      (-Math.abs(invoiceData.totalAmount)).toFixed(2) :
-      invoiceData.totalAmount.toFixed(2);
+    const amount = invoiceData.isStorno
+      ? (-Math.abs(invoiceData.totalAmount)).toFixed(2)
+      : invoiceData.totalAmount.toFixed(2);
 
     // Calculate VAT breakdown (25% Croatian standard rate)
     const baseAmount = Math.abs(invoiceData.totalAmount) / 1.25;
@@ -67,9 +70,17 @@ export class FiscalXMLGenerator {
                 <tns:NacinPlac>G</tns:NacinPlac>
                 <tns:OibOper>${environment.oib}</tns:OibOper>
                 <tns:ZastKod>${zki}</tns:ZastKod>
-                <tns:NakDost>false</tns:NakDost>${invoiceData.isStorno && invoiceData.originalJir ? `
-                <tns:StornoRacun>${invoiceData.originalJir}</tns:StornoRacun>` : ''}${invoiceData.isStorno && invoiceData.stornoReason ? `
-                <tns:StornoRazlog>${invoiceData.stornoReason}</tns:StornoRazlog>` : ''}
+                <tns:NakDost>false</tns:NakDost>${
+                  invoiceData.isStorno && invoiceData.originalJir
+                    ? `
+                <tns:StornoRacun>${invoiceData.originalJir}</tns:StornoRacun>`
+                    : ''
+                }${
+                  invoiceData.isStorno && invoiceData.stornoReason
+                    ? `
+                <tns:StornoRazlog>${invoiceData.stornoReason}</tns:StornoRazlog>`
+                    : ''
+                }
             </tns:Racun>
         </tns:RacunZahtjev>
     </soap:Body>
@@ -82,14 +93,19 @@ export class FiscalXMLGenerator {
    * Create storno (cancellation) invoice data from StornoRequest
    * Returns FiscalInvoiceData configured for Croatian Tax Authority storno
    */
-  public createStornoInvoiceData(stornoRequest: StornoRequest, originalInvoice: FiscalInvoiceData): FiscalInvoiceData {
-    const stornoAmount = stornoRequest.stornoType === 'PARTIAL' && stornoRequest.partialAmount 
-      ? stornoRequest.partialAmount 
-      : originalInvoice.totalAmount;
-    
-    const stornoVatAmount = stornoRequest.stornoType === 'PARTIAL' && stornoRequest.partialAmount
-      ? (stornoRequest.partialAmount * (originalInvoice.vatAmount / originalInvoice.totalAmount))
-      : originalInvoice.vatAmount;
+  public createStornoInvoiceData(
+    stornoRequest: StornoRequest,
+    originalInvoice: FiscalInvoiceData
+  ): FiscalInvoiceData {
+    const stornoAmount =
+      stornoRequest.stornoType === 'PARTIAL' && stornoRequest.partialAmount
+        ? stornoRequest.partialAmount
+        : originalInvoice.totalAmount;
+
+    const stornoVatAmount =
+      stornoRequest.stornoType === 'PARTIAL' && stornoRequest.partialAmount
+        ? stornoRequest.partialAmount * (originalInvoice.vatAmount / originalInvoice.totalAmount)
+        : originalInvoice.vatAmount;
 
     return {
       invoiceNumber: stornoRequest.stornoInvoiceNumber,
@@ -97,18 +113,21 @@ export class FiscalXMLGenerator {
       totalAmount: stornoAmount, // Will be made negative in XML generation
       vatAmount: stornoVatAmount,
       paymentMethod: originalInvoice.paymentMethod,
-      items: stornoRequest.stornoType === 'FULL' 
-        ? originalInvoice.items.map(item => ({
-            ...item,
-            quantity: -item.quantity, // Negative quantities for storno
-          }))
-        : [{
-            name: `Storno - ${stornoRequest.reason}`,
-            quantity: 1,
-            unitPrice: stornoAmount,
-            vatRate: 25,
-            totalAmount: stornoAmount,
-          }],
+      items:
+        stornoRequest.stornoType === 'FULL'
+          ? originalInvoice.items.map((item) => ({
+              ...item,
+              quantity: -item.quantity, // Negative quantities for storno
+            }))
+          : [
+              {
+                name: `Storno - ${stornoRequest.reason}`,
+                quantity: 1,
+                unitPrice: stornoAmount,
+                vatRate: 25,
+                totalAmount: stornoAmount,
+              },
+            ],
       isStorno: true,
       originalJir: stornoRequest.originalJir,
       stornoReason: stornoRequest.reason,
@@ -119,9 +138,9 @@ export class FiscalXMLGenerator {
    * Generate UUID for message ID
    */
   private generateUUID(): string {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-      const r = Math.random() * 16 | 0;
-      const v = c === 'x' ? r : ((r & 0x3) | 0x8);
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+      const r = (Math.random() * 16) | 0;
+      const v = c === 'x' ? r : (r & 0x3) | 0x8;
       return v.toString(16);
     });
   }
@@ -133,7 +152,7 @@ export class FiscalXMLGenerator {
   private generateLegacyXML(invoiceData: FiscalInvoiceData, zki: string): string {
     const environment = getCurrentEnvironment();
     const dateTime = this.formatCroatianDateTime(invoiceData.dateTime);
-    
+
     const racunZahtjev: RacunZahtjev = {
       Oib: environment.oib, // Use environment-specific OIB (test vs production)
       USustavuPDV: true,
@@ -168,7 +187,7 @@ export class FiscalXMLGenerator {
    */
   public generateZKIDataString(data: ZKIData): string {
     const dateTime = this.formatZKIDateTime(new Date(data.dateTime));
-    
+
     return [
       data.oib,
       dateTime,
@@ -190,14 +209,14 @@ export class FiscalXMLGenerator {
   /**
    * Format date/time for ZKI generation
    * CRITICAL: Validated against real Hotel Porec fiscal data
-   * 
+   *
    * BREAKTHROUGH: This format was discovered by analyzing real Hotel Porec
    * fiscal receipts from their DOS system. The space separator (not T) is
    * essential for generating the correct ZKI that matches real fiscal data.
-   * 
+   *
    * Real validation example:
    * - Input: 2025-08-02T21:48:29
-   * - Output: "02.08.2025 21:48:29"  
+   * - Output: "02.08.2025 21:48:29"
    * - Produces ZKI: 16ac248e21a738625b98d17e51149e87 (verified match)
    */
   private formatZKIDateTime(date: Date): string {
@@ -211,12 +230,12 @@ export class FiscalXMLGenerator {
    */
   private mapPaymentMethod(method: string): string {
     const paymentMethods: Record<string, string> = {
-      'CASH': 'G', // Gotovina
-      'CARD': 'K', // Kartice
-      'TRANSFER': 'T', // Transakcijski račun
-      'OTHER': 'O', // Ostalo
+      CASH: 'G', // Gotovina
+      CARD: 'K', // Kartice
+      TRANSFER: 'T', // Transakcijski račun
+      OTHER: 'O', // Ostalo
     };
-    
+
     return paymentMethods[method] || 'G';
   }
 

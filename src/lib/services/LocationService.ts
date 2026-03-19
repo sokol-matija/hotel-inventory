@@ -53,9 +53,9 @@ export interface DragOperation {
 
 export class LocationService {
   private static instance: LocationService;
-  
+
   private constructor() {}
-  
+
   public static getInstance(): LocationService {
     if (!LocationService.instance) {
       LocationService.instance = new LocationService();
@@ -83,7 +83,8 @@ export class LocationService {
       // Fetch inventory for this location ordered by display_order
       const { data: inventoryData, error: inventoryError } = await supabase
         .from('inventory')
-        .select(`
+        .select(
+          `
           *,
           item:items(
             id,
@@ -93,7 +94,8 @@ export class LocationService {
             minimum_stock,
             category:categories(id, name, requires_expiration)
           )
-        `)
+        `
+        )
         .eq('location_id', locationId)
         .order('display_order', { ascending: true, nullsFirst: false });
 
@@ -104,7 +106,7 @@ export class LocationService {
 
       return {
         location: locationData,
-        inventory: sortedInventory
+        inventory: sortedInventory,
       };
     } catch (error) {
       console.error('Error fetching location data:', error);
@@ -115,19 +117,17 @@ export class LocationService {
   /**
    * Filter and sort inventory based on search and category filters
    */
-  filterInventory(
-    inventory: InventoryItem[], 
-    filters: InventoryFilters
-  ): InventoryItem[] {
-    let filtered = inventory.filter(item =>
-      item.item.name.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
-      item.item.category.name.toLowerCase().includes(filters.searchTerm.toLowerCase())
+  filterInventory(inventory: InventoryItem[], filters: InventoryFilters): InventoryItem[] {
+    let filtered = inventory.filter(
+      (item) =>
+        item.item.name.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
+        item.item.category.name.toLowerCase().includes(filters.searchTerm.toLowerCase())
     );
-    
+
     if (filters.selectedCategory !== 'all') {
-      filtered = filtered.filter(item => item.item.category.name === filters.selectedCategory);
+      filtered = filtered.filter((item) => item.item.category.name === filters.selectedCategory);
     }
-    
+
     // Preserve the display_order sorting after filtering
     return this.sortInventoryByDisplayOrder(filtered);
   }
@@ -138,8 +138,11 @@ export class LocationService {
   private sortInventoryByDisplayOrder(inventory: InventoryItem[]): InventoryItem[] {
     return inventory.sort((a, b) => {
       // Handle null/undefined display_order values by putting them at the end
-      if ((a.display_order === null || a.display_order === undefined) && 
-          (b.display_order === null || b.display_order === undefined)) return 0;
+      if (
+        (a.display_order === null || a.display_order === undefined) &&
+        (b.display_order === null || b.display_order === undefined)
+      )
+        return 0;
       if (a.display_order === null || a.display_order === undefined) return 1;
       if (b.display_order === null || b.display_order === undefined) return -1;
       return a.display_order - b.display_order;
@@ -151,24 +154,20 @@ export class LocationService {
    */
   getUniqueCategories(inventory: InventoryItem[]): Category[] {
     const categoryMap = new Map<number, Category>();
-    
-    inventory.forEach(item => {
+
+    inventory.forEach((item) => {
       if (!categoryMap.has(item.item.category.id)) {
         categoryMap.set(item.item.category.id, item.item.category);
       }
     });
-    
+
     return Array.from(categoryMap.values()).sort((a, b) => a.name.localeCompare(b.name));
   }
 
   /**
    * Update inventory item quantity
    */
-  async updateQuantity(
-    inventoryId: number,
-    newQuantity: number,
-    _userId: string
-  ): Promise<void> {
+  async updateQuantity(inventoryId: number, newQuantity: number, _userId: string): Promise<void> {
     try {
       const { error } = await supabase
         .from('inventory')
@@ -194,10 +193,7 @@ export class LocationService {
    */
   async deleteInventoryItem(inventoryId: number, _userId: string): Promise<void> {
     try {
-      const { error } = await supabase
-        .from('inventory')
-        .delete()
-        .eq('id', inventoryId);
+      const { error } = await supabase.from('inventory').delete().eq('id', inventoryId);
 
       if (error) throw error;
 
@@ -230,7 +226,7 @@ export class LocationService {
       // Update display_order in database for all affected items
       const updates = reorderedItems.map((item, index) => ({
         id: item.id,
-        display_order: index + 1
+        display_order: index + 1,
       }));
 
       // Batch update all items
@@ -246,8 +242,8 @@ export class LocationService {
       // Log the reorder action (simplified)
       try {
         await auditLog.inventoryUpdated(
-          dragOperation.itemId, 
-          { display_order: dragOperation.fromIndex + 1 }, 
+          dragOperation.itemId,
+          { display_order: dragOperation.fromIndex + 1 },
           { display_order: dragOperation.toIndex + 1 },
           'Item',
           'Location'
@@ -301,20 +297,20 @@ export class LocationService {
   translateCategory(categoryName: string): string {
     const directMapping: Record<string, string> = {
       'Food & Beverage': 'Hrana i piće',
-      'Food&Beverage': 'Hrana i piće', 
-      'foodbeverage': 'Hrana i piće',
-      'Cleaning': 'Čišćenje',
-      'Supplies': 'Potrepštine',
-      'Toiletries': 'Toaletni artikli',
-      'Equipment': 'Oprema',
-      'Office': 'Ured'
+      'Food&Beverage': 'Hrana i piće',
+      foodbeverage: 'Hrana i piće',
+      Cleaning: 'Čišćenje',
+      Supplies: 'Potrepštine',
+      Toiletries: 'Toaletni artikli',
+      Equipment: 'Oprema',
+      Office: 'Ured',
     };
-    
+
     // Use direct mapping first to avoid i18next calls
     if (directMapping[categoryName]) {
       return directMapping[categoryName];
     }
-    
+
     // For unknown categories, just return the original name
     return categoryName;
   }
@@ -334,7 +330,7 @@ export class LocationService {
     let expiringItems = 0;
     const totalValue = 0;
 
-    inventory.forEach(item => {
+    inventory.forEach((item) => {
       if (this.isLowStock(item)) {
         lowStockItems++;
       }
@@ -355,7 +351,7 @@ export class LocationService {
       lowStockItems,
       expiredItems,
       expiringItems,
-      totalValue // Would need pricing data
+      totalValue, // Would need pricing data
     };
   }
 }

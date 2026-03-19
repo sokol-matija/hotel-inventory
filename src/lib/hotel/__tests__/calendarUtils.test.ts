@@ -1,11 +1,11 @@
-import { 
+import {
   reservationToCalendarEvent,
   reservationsToCalendarEvents,
   isRoomAvailable,
   getRoomOccupancyForDate,
   formatRoomNumber,
   getRoomTypeDisplay,
-  RESERVATION_STATUS_COLORS
+  RESERVATION_STATUS_COLORS,
 } from '../calendarUtils';
 import { Reservation, CalendarEvent } from '../types';
 
@@ -27,23 +27,23 @@ describe('Calendar Utils', () => {
     numberOfNights: 2,
     subtotal: 140,
     childrenDiscounts: 0,
-    tourismTax: 4.40,
+    tourismTax: 4.4,
     vatAmount: 35,
     petFee: 0,
     parkingFee: 0,
     shortStaySuplement: 0,
     additionalCharges: 0,
     roomServiceItems: [],
-    totalAmount: 179.40,
+    totalAmount: 179.4,
     bookingDate: new Date('2025-01-15'),
     lastModified: new Date('2025-01-15'),
-    notes: ''
+    notes: '',
   };
 
   describe('reservationToCalendarEvent', () => {
     it('converts reservation to calendar event format', () => {
       const event = reservationToCalendarEvent(mockReservation);
-      
+
       expect(event.id).toBe('event-res-1');
       expect(event.reservationId).toBe('res-1');
       expect(event.roomId).toBe('room-101');
@@ -57,9 +57,9 @@ describe('Calendar Utils', () => {
       const maintenanceReservation = {
         ...mockReservation,
         status: 'room-closure' as const,
-        guestId: 'system-maintenance'
+        guestId: 'system-maintenance',
       };
-      
+
       const event = reservationToCalendarEvent(maintenanceReservation);
       expect(event.title).toBe('🔧 Maintenance');
     });
@@ -67,9 +67,9 @@ describe('Calendar Utils', () => {
     it('shows guest count in title for multiple guests', () => {
       const multiGuestReservation = {
         ...mockReservation,
-        numberOfGuests: 4
+        numberOfGuests: 4,
       };
-      
+
       const event = reservationToCalendarEvent(multiGuestReservation);
       expect(event.title).toContain('(+3)'); // +3 additional guests beyond first
     });
@@ -79,7 +79,7 @@ describe('Calendar Utils', () => {
     it('converts multiple reservations to events', () => {
       const reservations = [mockReservation];
       const events = reservationsToCalendarEvents(reservations);
-      
+
       expect(events).toHaveLength(1);
       expect(events[0].reservationId).toBe('res-1');
     });
@@ -89,7 +89,7 @@ describe('Calendar Utils', () => {
     it('returns true for available room', () => {
       const checkIn = new Date('2025-02-10');
       const checkOut = new Date('2025-02-12');
-      
+
       const available = isRoomAvailable([mockReservation], 'room-102', checkIn, checkOut);
       expect(available).toBe(true);
     });
@@ -97,7 +97,7 @@ describe('Calendar Utils', () => {
     it('returns false for occupied room with date overlap', () => {
       const checkIn = new Date('2025-02-01');
       const checkOut = new Date('2025-02-02');
-      
+
       const available = isRoomAvailable([mockReservation], 'room-101', checkIn, checkOut);
       expect(available).toBe(false);
     });
@@ -105,12 +105,12 @@ describe('Calendar Utils', () => {
     it('ignores checked-out reservations', () => {
       const checkedOutReservation = {
         ...mockReservation,
-        status: 'checked-out' as const
+        status: 'checked-out' as const,
       };
-      
+
       const checkIn = new Date('2025-02-01');
       const checkOut = new Date('2025-02-02');
-      
+
       const available = isRoomAvailable([checkedOutReservation], 'room-101', checkIn, checkOut);
       expect(available).toBe(true);
     });
@@ -120,7 +120,7 @@ describe('Calendar Utils', () => {
     it('returns occupancy data for active reservations', () => {
       const date = new Date('2025-02-01');
       const occupancy = getRoomOccupancyForDate([mockReservation], date);
-      
+
       expect(occupancy['room-101']).toBeDefined();
       expect(occupancy['room-101'].reservation.id).toBe('res-1');
       expect(occupancy['room-101'].status).toBe('confirmed');
@@ -129,7 +129,7 @@ describe('Calendar Utils', () => {
     it('returns empty object for date with no reservations', () => {
       const date = new Date('2025-03-01');
       const occupancy = getRoomOccupancyForDate([mockReservation], date);
-      
+
       expect(Object.keys(occupancy)).toHaveLength(0);
     });
   });
@@ -151,9 +151,9 @@ describe('Calendar Utils', () => {
       const room = {
         type: 'double',
         nameCroatian: 'Dvokrevetna soba',
-        nameEnglish: 'Double Room'
+        nameEnglish: 'Double Room',
       };
-      
+
       expect(getRoomTypeDisplay(room)).toBe('Double Room');
     });
   });
@@ -171,7 +171,7 @@ describe('Calendar Utils', () => {
     });
 
     it('has proper color structure for each status', () => {
-      Object.values(RESERVATION_STATUS_COLORS).forEach(color => {
+      Object.values(RESERVATION_STATUS_COLORS).forEach((color) => {
         expect(color).toHaveProperty('backgroundColor');
         expect(color).toHaveProperty('borderColor');
         expect(color).toHaveProperty('textColor');

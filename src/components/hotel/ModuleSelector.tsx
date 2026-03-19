@@ -2,13 +2,7 @@ import React from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
-import { 
-  BarChart3, 
-  Hotel, 
-  CreditCard, 
-  Package,
-  ArrowRight
-} from 'lucide-react';
+import { BarChart3, Hotel, CreditCard, Package, ArrowRight } from 'lucide-react';
 
 interface ModuleCardProps {
   title: string;
@@ -21,31 +15,33 @@ interface ModuleCardProps {
 
 function ModuleCard({ title, description, icon, onClick, available, priority }: ModuleCardProps) {
   return (
-    <Card 
-      className={`relative transition-all duration-300 cursor-pointer ${
-        available 
-          ? 'hover:shadow-lg hover:-translate-y-1 border-blue-200 hover:border-blue-300' 
-          : 'opacity-60 cursor-not-allowed border-gray-200'
+    <Card
+      className={`relative cursor-pointer transition-all duration-300 ${
+        available
+          ? 'border-blue-200 hover:-translate-y-1 hover:border-blue-300 hover:shadow-lg'
+          : 'cursor-not-allowed border-gray-200 opacity-60'
       }`}
       onClick={available ? onClick : undefined}
     >
       {priority && (
-        <div className="absolute top-3 right-3 bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
+        <div className="absolute top-3 right-3 rounded-full bg-blue-600 px-2 py-1 text-xs text-white">
           {priority}
         </div>
       )}
       <CardHeader className="pb-4">
         <div className="flex items-center space-x-3">
-          <div className={`p-3 rounded-lg ${
-            available ? 'bg-blue-50 text-blue-600' : 'bg-gray-50 text-gray-400'
-          }`}>
+          <div
+            className={`rounded-lg p-3 ${
+              available ? 'bg-blue-50 text-blue-600' : 'bg-gray-50 text-gray-400'
+            }`}
+          >
             {icon}
           </div>
           <CardTitle className="text-lg">{title}</CardTitle>
         </div>
       </CardHeader>
       <CardContent>
-        <p className="text-gray-600 mb-4">{description}</p>
+        <p className="mb-4 text-gray-600">{description}</p>
         <div className="flex justify-end">
           {available ? (
             <Button variant="outline" size="sm" className="group">
@@ -71,7 +67,7 @@ export default function ModuleSelector() {
       description: 'Manage bookings from multiple platforms in one place',
       icon: <BarChart3 className="h-6 w-6" />,
       available: true,
-      onClick: () => navigate({ to: '/hotel/front-desk/channel-manager' })
+      onClick: () => navigate({ to: '/hotel/front-desk/channel-manager' }),
     },
     {
       key: 'frontDesk',
@@ -80,7 +76,7 @@ export default function ModuleSelector() {
       icon: <Hotel className="h-6 w-6" />,
       available: true,
       priority: 'Priority 1',
-      onClick: () => navigate({ to: '/hotel/front-desk' })
+      onClick: () => navigate({ to: '/hotel/front-desk' }),
     },
     {
       key: 'finance',
@@ -88,7 +84,7 @@ export default function ModuleSelector() {
       description: 'Croatian fiscal e-računi and financial management',
       icon: <CreditCard className="h-6 w-6" />,
       available: true,
-      onClick: () => navigate({ to: '/hotel/finance' })
+      onClick: () => navigate({ to: '/hotel/finance' }),
     },
     {
       key: 'inventory',
@@ -96,44 +92,40 @@ export default function ModuleSelector() {
       description: 'Current inventory management system',
       icon: <Package className="h-6 w-6" />,
       available: true,
-      onClick: () => navigate({ to: '/dashboard' })
-    }
+      onClick: () => navigate({ to: '/dashboard' }),
+    },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 relative overflow-hidden">
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Background image - same as login screen */}
-      <div 
+      <div
         className="absolute inset-0 opacity-20"
         style={{
           backgroundImage: 'url(/zemlja_gp_copy.png)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat'
+          backgroundRepeat: 'no-repeat',
         }}
       />
-      
+
       {/* Content */}
-      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-6">
+      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center p-6">
         {/* Hotel Logo and Welcome */}
-        <div className="text-center mb-12">
+        <div className="mb-12 text-center">
           <div className="mb-6">
-            <img 
-              src="/LOGO1-hires.png" 
-              alt="Hotel Porec Logo" 
-              className="w-32 h-20 mx-auto object-contain"
+            <img
+              src="/LOGO1-hires.png"
+              alt="Hotel Porec Logo"
+              className="mx-auto h-20 w-32 object-contain"
             />
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            Welcome to Hotel Porec!
-          </h1>
-          <p className="text-xl text-gray-600">
-            Select a module to continue
-          </p>
+          <h1 className="mb-2 text-4xl font-bold text-gray-900">Welcome to Hotel Porec!</h1>
+          <p className="text-xl text-gray-600">Select a module to continue</p>
         </div>
 
         {/* Module Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl w-full">
+        <div className="grid w-full max-w-4xl grid-cols-1 gap-6 md:grid-cols-2">
           {modules.map((module) => (
             <ModuleCard
               key={module.key}
@@ -148,7 +140,7 @@ export default function ModuleSelector() {
         </div>
 
         {/* Hotel Info Footer */}
-        <div className="mt-12 text-center text-gray-500 text-sm">
+        <div className="mt-12 text-center text-sm text-gray-500">
           <p>Hotel Porec • 52440 Poreč, Croatia • +385(0)52/451 611</p>
           <p>hotelporec@pu.t-com.hr • www.hotelporec.com</p>
         </div>

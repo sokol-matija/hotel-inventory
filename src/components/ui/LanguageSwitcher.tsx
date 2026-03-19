@@ -1,28 +1,22 @@
-import React from 'react'
-import { useTranslation } from 'react-i18next'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from './select'
-import { Globe } from 'lucide-react'
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select';
+import { Globe } from 'lucide-react';
 
 const languages = [
   { code: 'en', name: 'English', flag: '🇺🇸' },
   { code: 'hr', name: 'Hrvatski', flag: '🇭🇷' },
-  { code: 'de', name: 'Deutsch', flag: '🇩🇪' }
-]
+  { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
+];
 
 export default function LanguageSwitcher() {
-  const { i18n } = useTranslation()
+  const { i18n } = useTranslation();
 
   const handleLanguageChange = (languageCode: string) => {
-    i18n.changeLanguage(languageCode)
-  }
+    i18n.changeLanguage(languageCode);
+  };
 
-  const currentLanguage = languages.find(lang => lang.code === i18n.language) || languages[0]
+  const currentLanguage = languages.find((lang) => lang.code === i18n.language) || languages[0];
 
   return (
     <Select value={i18n.language} onValueChange={handleLanguageChange}>
@@ -48,5 +42,5 @@ export default function LanguageSwitcher() {
         ))}
       </SelectContent>
     </Select>
-  )
+  );
 }

@@ -6,22 +6,22 @@
 
 // Mapping from display names to ISO 3166-1 alpha-3 codes
 export const COUNTRY_CODES: Record<string, string> = {
-  'Croatia': 'HRV',
-  'Slovenia': 'SVN',
-  'Italy': 'ITA',
-  'Austria': 'AUT',
-  'Germany': 'DEU',
-  'Other': 'OTH'
+  Croatia: 'HRV',
+  Slovenia: 'SVN',
+  Italy: 'ITA',
+  Austria: 'AUT',
+  Germany: 'DEU',
+  Other: 'OTH',
 } as const;
 
 // Reverse mapping from ISO codes to display names
 export const COUNTRY_DISPLAY_NAMES: Record<string, string> = {
-  'HRV': 'Croatia',
-  'SVN': 'Slovenia',
-  'ITA': 'Italy',
-  'AUT': 'Austria',
-  'DEU': 'Germany',
-  'OTH': 'Other'
+  HRV: 'Croatia',
+  SVN: 'Slovenia',
+  ITA: 'Italy',
+  AUT: 'Austria',
+  DEU: 'Germany',
+  OTH: 'Other',
 } as const;
 
 /**

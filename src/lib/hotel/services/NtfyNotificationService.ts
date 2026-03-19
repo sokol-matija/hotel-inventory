@@ -74,13 +74,13 @@ export class NtfyNotificationService {
     const checkInDate = new Date(reservation.checkIn).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
-      year: 'numeric'
+      year: 'numeric',
     });
 
     const checkOutDate = new Date(reservation.checkOut).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
-      year: 'numeric'
+      year: 'numeric',
     });
 
     const guestName = `${guest.firstName} ${guest.lastName}`;

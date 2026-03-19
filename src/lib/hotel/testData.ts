@@ -33,13 +33,15 @@ export function testHotelData(): {
     }
 
     // Test 3: Verify premium rooftop apartment
-    const rooftopApartment = HOTEL_POREC_ROOMS.find(room => room.number === '401');
-    results.rooftopApartment = rooftopApartment ? {
-      exists: true,
-      isPremium: rooftopApartment.isPremium,
-      type: rooftopApartment.type,
-      maxOccupancy: rooftopApartment.maxOccupancy
-    } : { exists: false };
+    const rooftopApartment = HOTEL_POREC_ROOMS.find((room) => room.number === '401');
+    results.rooftopApartment = rooftopApartment
+      ? {
+          exists: true,
+          isPremium: rooftopApartment.isPremium,
+          type: rooftopApartment.type,
+          maxOccupancy: rooftopApartment.maxOccupancy,
+        }
+      : { exists: false };
 
     if (!rooftopApartment || !rooftopApartment.isPremium) {
       errors.push('Room 401 should be premium rooftop apartment');
@@ -49,13 +51,13 @@ export function testHotelData(): {
     // const testDate = new Date('2025-07-20'); // Peak summer (Period D)
     // const testRoomId = 'room-201'; // Standard double room
     // const testPricing = calculatePricing(testRoomId, testDate, new Date('2025-07-23'), 2, []);
-    
+
     results.pricingTest = {
       seasonalPeriod: 'D', // Peak summer
       baseRate: 85, // Sample rate for Period D
       total: 255, // 3 nights * 85
       vatAmount: 20, // Sample VAT
-      tourismTax: 6 // Sample tourism tax
+      tourismTax: 6, // Sample tourism tax
     };
 
     // Seasonal period test temporarily disabled
@@ -67,7 +69,7 @@ export function testHotelData(): {
     results.hotelInfo = {
       name: HOTEL_POREC.name,
       taxId: HOTEL_POREC.taxId,
-      address: HOTEL_POREC.address
+      address: HOTEL_POREC.address,
     };
 
     // Test 6: Sample data generation
@@ -75,7 +77,7 @@ export function testHotelData(): {
       totalGuests: SAMPLE_GUESTS.length,
       totalReservations: SAMPLE_RESERVATIONS.length,
       vipGuests: SAMPLE_DATA_STATS.vipGuests,
-      nationalityBreakdown: SAMPLE_DATA_STATS.nationalityBreakdown
+      nationalityBreakdown: SAMPLE_DATA_STATS.nationalityBreakdown,
     };
 
     if (SAMPLE_GUESTS.length === 0) {
@@ -85,9 +87,8 @@ export function testHotelData(): {
     return {
       success: errors.length === 0,
       results,
-      errors
+      errors,
     };
-
   } catch (error) {
     errors.push(`Test execution failed: ${error}`);
     return { success: false, results, errors };

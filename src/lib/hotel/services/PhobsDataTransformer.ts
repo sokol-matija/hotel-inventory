@@ -1,12 +1,7 @@
 // PhobsDataTransformer - Transforms data between internal and OTA formats
 // Handles type conversions, date formatting, and code mappings
 
-import {
-  PhobsReservation,
-  OTAChannel,
-  PhobsReservationStatus,
-  PhobsRoomId,
-} from './phobsTypes';
+import { PhobsReservation, OTAChannel, PhobsReservationStatus, PhobsRoomId } from './phobsTypes';
 import { Reservation, ReservationStatus, GuestChild } from '../types';
 
 /**
@@ -170,7 +165,7 @@ export class PhobsDataTransformer {
       children.push({
         name: `Child ${i + 1}`,
         dateOfBirth,
-        age: childAge
+        age: childAge,
       });
     }
 
@@ -361,13 +356,10 @@ export class PhobsDataTransformer {
       'last minute': 'LMD',
       'weekly rate': 'WKL',
       'monthly rate': 'MTH',
-      'corporate': 'CRP',
+      corporate: 'CRP',
     };
 
-    return (
-      mapping[ratePlanName.toLowerCase()] ||
-      ratePlanName.toUpperCase().substring(0, 3)
-    );
+    return mapping[ratePlanName.toLowerCase()] || ratePlanName.toUpperCase().substring(0, 3);
   }
 
   /**
@@ -389,7 +381,10 @@ export class PhobsDataTransformer {
   /**
    * Validate date range
    */
-  static validateDateRange(startDate: Date, endDate: Date): {
+  static validateDateRange(
+    startDate: Date,
+    endDate: Date
+  ): {
     valid: boolean;
     error?: string;
   } {

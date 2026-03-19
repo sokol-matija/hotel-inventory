@@ -16,7 +16,7 @@ import {
   CheckCircle,
   Clock,
   XCircle,
-  DollarSign
+  DollarSign,
 } from 'lucide-react';
 import { Reservation } from '../../../../lib/hotel/types';
 import { SortState } from '../../../../hooks/useReservationsList';
@@ -47,21 +47,24 @@ export default function ReservationsTable({
   onViewDetails,
   onEdit,
   onDelete,
-  isLoading = false
+  isLoading = false,
 }: ReservationsTableProps) {
   const { t } = useTranslation();
 
   // Status badge color mapping
   const getStatusBadge = (status: string) => {
-    const statusMap: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: React.ReactNode }> = {
-      'confirmed': { variant: 'default', icon: <CheckCircle className="w-3 h-3" /> },
-      'checked-in': { variant: 'default', icon: <CheckCircle className="w-3 h-3" /> },
-      'checked-out': { variant: 'secondary', icon: <CheckCircle className="w-3 h-3" /> },
-      'cancelled': { variant: 'destructive', icon: <XCircle className="w-3 h-3" /> },
-      'no-show': { variant: 'destructive', icon: <XCircle className="w-3 h-3" /> },
-      'room-closure': { variant: 'outline', icon: <Clock className="w-3 h-3" /> },
-      'unallocated': { variant: 'outline', icon: <Clock className="w-3 h-3" /> },
-      'incomplete-payment': { variant: 'outline', icon: <DollarSign className="w-3 h-3" /> }
+    const statusMap: Record<
+      string,
+      { variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: React.ReactNode }
+    > = {
+      confirmed: { variant: 'default', icon: <CheckCircle className="h-3 w-3" /> },
+      'checked-in': { variant: 'default', icon: <CheckCircle className="h-3 w-3" /> },
+      'checked-out': { variant: 'secondary', icon: <CheckCircle className="h-3 w-3" /> },
+      cancelled: { variant: 'destructive', icon: <XCircle className="h-3 w-3" /> },
+      'no-show': { variant: 'destructive', icon: <XCircle className="h-3 w-3" /> },
+      'room-closure': { variant: 'outline', icon: <Clock className="h-3 w-3" /> },
+      unallocated: { variant: 'outline', icon: <Clock className="h-3 w-3" /> },
+      'incomplete-payment': { variant: 'outline', icon: <DollarSign className="h-3 w-3" /> },
     };
 
     const config = statusMap[status] || statusMap['confirmed'];
@@ -79,11 +82,11 @@ export default function ReservationsTable({
     if (!status) return null;
 
     const statusMap: Record<string, 'default' | 'secondary' | 'destructive'> = {
-      'paid': 'default',
-      'partial': 'secondary',
-      'pending': 'secondary',
-      'refunded': 'destructive',
-      'cancelled': 'destructive'
+      paid: 'default',
+      partial: 'secondary',
+      pending: 'secondary',
+      refunded: 'destructive',
+      cancelled: 'destructive',
     };
 
     return (
@@ -97,7 +100,7 @@ export default function ReservationsTable({
   const SortableHeader = ({
     column,
     label,
-    className = ''
+    className = '',
   }: {
     column: SortState['sortBy'];
     label: string;
@@ -110,13 +113,17 @@ export default function ReservationsTable({
       <th className={`px-4 py-3 text-left ${className}`}>
         <button
           onClick={() => onSort(column)}
-          className="flex items-center gap-2 font-semibold text-sm text-gray-700 hover:text-gray-900 transition-colors group"
+          className="group flex items-center gap-2 text-sm font-semibold text-gray-700 transition-colors hover:text-gray-900"
         >
           <span>{label}</span>
           {isSorted ? (
-            isAsc ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
+            isAsc ? (
+              <ArrowUp className="h-4 w-4" />
+            ) : (
+              <ArrowDown className="h-4 w-4" />
+            )
           ) : (
-            <ArrowUpDown className="w-4 h-4 opacity-0 group-hover:opacity-50 transition-opacity" />
+            <ArrowUpDown className="h-4 w-4 opacity-0 transition-opacity group-hover:opacity-50" />
           )}
         </button>
       </th>
@@ -136,20 +143,20 @@ export default function ReservationsTable({
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('hr-HR', {
       style: 'currency',
-      currency: 'EUR'
+      currency: 'EUR',
     }).format(amount);
   };
 
   // Mobile card view for responsive design
   const MobileCard = ({ reservation }: { reservation: Reservation }) => (
-    <Card className="p-4 mb-3">
-      <div className="flex items-start justify-between mb-3">
+    <Card className="mb-3 p-4">
+      <div className="mb-3 flex items-start justify-between">
         <div className="flex items-center gap-3">
           <input
             type="checkbox"
             checked={selectedIds.has(reservation.id)}
             onChange={() => onToggleSelection(reservation.id)}
-            className="w-4 h-4 rounded border-gray-300"
+            className="h-4 w-4 rounded border-gray-300"
           />
           <div>
             <h3 className="font-semibold text-gray-900">
@@ -163,7 +170,7 @@ export default function ReservationsTable({
         {getStatusBadge(reservation.status)}
       </div>
 
-      <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+      <div className="mb-3 grid grid-cols-2 gap-2 text-sm">
         <div>
           <span className="text-gray-600">{t('reservationsList.columns.checkIn')}:</span>
           <p className="font-medium">{formatDate(reservation.checkIn)}</p>
@@ -183,13 +190,18 @@ export default function ReservationsTable({
       </div>
 
       <div className="flex gap-2">
-        <Button size="sm" variant="outline" className="flex-1" onClick={() => onViewDetails(reservation)}>
-          <Eye className="w-4 h-4 mr-1" />
+        <Button
+          size="sm"
+          variant="outline"
+          className="flex-1"
+          onClick={() => onViewDetails(reservation)}
+        >
+          <Eye className="mr-1 h-4 w-4" />
           {t('reservationsList.actions.view')}
         </Button>
         {onEdit && (
           <Button size="sm" variant="outline" onClick={() => onEdit(reservation)}>
-            <Edit2 className="w-4 h-4" />
+            <Edit2 className="h-4 w-4" />
           </Button>
         )}
       </div>
@@ -202,7 +214,7 @@ export default function ReservationsTable({
       <div className="space-y-3">
         {[1, 2, 3, 4, 5].map((i) => (
           <div key={i} className="animate-pulse">
-            <div className="h-16 bg-gray-200 rounded"></div>
+            <div className="h-16 rounded bg-gray-200"></div>
           </div>
         ))}
       </div>
@@ -212,16 +224,14 @@ export default function ReservationsTable({
   // Empty state
   if (reservations.length === 0) {
     return (
-      <div className="text-center py-12">
-        <div className="text-gray-400 mb-4">
-          <Receipt className="w-16 h-16 mx-auto" />
+      <div className="py-12 text-center">
+        <div className="mb-4 text-gray-400">
+          <Receipt className="mx-auto h-16 w-16" />
         </div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+        <h3 className="mb-2 text-lg font-semibold text-gray-900">
           {t('reservationsList.noReservationsFound')}
         </h3>
-        <p className="text-gray-600">
-          {t('reservationsList.noReservationsYet')}
-        </p>
+        <p className="text-gray-600">{t('reservationsList.noReservationsYet')}</p>
       </div>
     );
   }
@@ -236,55 +246,64 @@ export default function ReservationsTable({
       </div>
 
       {/* Desktop Table View */}
-      <div className="hidden lg:block overflow-x-auto">
+      <div className="hidden overflow-x-auto lg:block">
         <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
+          <thead className="border-b border-gray-200 bg-gray-50">
             <tr>
-              <th className="px-4 py-3 text-left w-12">
+              <th className="w-12 px-4 py-3 text-left">
                 <input
                   type="checkbox"
                   checked={selectedIds.size === reservations.length && reservations.length > 0}
                   onChange={onToggleSelectAll}
-                  className="w-4 h-4 rounded border-gray-300"
+                  className="h-4 w-4 rounded border-gray-300"
                 />
               </th>
               <SortableHeader column="guest_name" label={t('reservationsList.columns.guest')} />
-              <th className="px-4 py-3 text-left font-semibold text-sm text-gray-700">
+              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
                 {t('reservationsList.columns.room')}
               </th>
-              <SortableHeader column="check_in_date" label={t('reservationsList.columns.checkIn')} />
-              <SortableHeader column="check_out_date" label={t('reservationsList.columns.checkOut')} />
-              <th className="px-4 py-3 text-left font-semibold text-sm text-gray-700">
+              <SortableHeader
+                column="check_in_date"
+                label={t('reservationsList.columns.checkIn')}
+              />
+              <SortableHeader
+                column="check_out_date"
+                label={t('reservationsList.columns.checkOut')}
+              />
+              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
                 {t('reservationsList.columns.status')}
               </th>
-              <th className="px-4 py-3 text-left font-semibold text-sm text-gray-700">
+              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
                 {t('reservationsList.columns.bookingSource')}
               </th>
-              <SortableHeader column="total_amount" label={t('reservationsList.columns.totalAmount')} />
-              <th className="px-4 py-3 text-left font-semibold text-sm text-gray-700">
+              <SortableHeader
+                column="total_amount"
+                label={t('reservationsList.columns.totalAmount')}
+              />
+              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
                 {t('reservationsList.columns.paymentStatus')}
               </th>
-              <th className="px-4 py-3 text-left font-semibold text-sm text-gray-700">
+              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
                 {t('reservationsList.columns.guests')}
               </th>
-              <SortableHeader column="booking_date" label={t('reservationsList.columns.bookingDate')} />
-              <th className="px-4 py-3 text-right font-semibold text-sm text-gray-700">
+              <SortableHeader
+                column="booking_date"
+                label={t('reservationsList.columns.bookingDate')}
+              />
+              <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">
                 {t('common.actions')}
               </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
             {reservations.map((reservation) => (
-              <tr
-                key={reservation.id}
-                className="hover:bg-gray-50 transition-colors"
-              >
+              <tr key={reservation.id} className="transition-colors hover:bg-gray-50">
                 <td className="px-4 py-4">
                   <input
                     type="checkbox"
                     checked={selectedIds.has(reservation.id)}
                     onChange={() => onToggleSelection(reservation.id)}
-                    className="w-4 h-4 rounded border-gray-300"
+                    className="h-4 w-4 rounded border-gray-300"
                   />
                 </td>
                 <td className="px-4 py-4">
@@ -295,31 +314,20 @@ export default function ReservationsTable({
                     <div className="text-sm text-gray-600">{reservation.guest.email}</div>
                   )}
                 </td>
-                <td className="px-4 py-4 text-gray-900">
-                  Room {reservation.roomId}
-                </td>
-                <td className="px-4 py-4 text-gray-900">
-                  {formatDate(reservation.checkIn)}
-                </td>
-                <td className="px-4 py-4 text-gray-900">
-                  {formatDate(reservation.checkOut)}
-                </td>
-                <td className="px-4 py-4">
-                  {getStatusBadge(reservation.status)}
-                </td>
-                <td className="px-4 py-4 text-gray-900">
-                  {reservation.bookingSource}
-                </td>
+                <td className="px-4 py-4 text-gray-900">Room {reservation.roomId}</td>
+                <td className="px-4 py-4 text-gray-900">{formatDate(reservation.checkIn)}</td>
+                <td className="px-4 py-4 text-gray-900">{formatDate(reservation.checkOut)}</td>
+                <td className="px-4 py-4">{getStatusBadge(reservation.status)}</td>
+                <td className="px-4 py-4 text-gray-900">{reservation.bookingSource}</td>
                 <td className="px-4 py-4 font-semibold text-gray-900">
                   {formatCurrency(reservation.totalAmount)}
                 </td>
-                <td className="px-4 py-4">
-                  {getPaymentBadge(reservation.paymentStatus)}
-                </td>
+                <td className="px-4 py-4">{getPaymentBadge(reservation.paymentStatus)}</td>
                 <td className="px-4 py-4 text-gray-900">
-                  {reservation.numberOfGuests || reservation.adults} {t('reservationsList.columns.guests')}
+                  {reservation.numberOfGuests || reservation.adults}{' '}
+                  {t('reservationsList.columns.guests')}
                 </td>
-                <td className="px-4 py-4 text-gray-600 text-sm">
+                <td className="px-4 py-4 text-sm text-gray-600">
                   {formatDate(reservation.bookingDate)}
                 </td>
                 <td className="px-4 py-4">
@@ -330,7 +338,7 @@ export default function ReservationsTable({
                       onClick={() => onViewDetails(reservation)}
                       title={t('reservationsList.actions.view')}
                     >
-                      <Eye className="w-4 h-4" />
+                      <Eye className="h-4 w-4" />
                     </Button>
                     {onEdit && (
                       <Button
@@ -339,7 +347,7 @@ export default function ReservationsTable({
                         onClick={() => onEdit(reservation)}
                         title={t('reservationsList.actions.edit')}
                       >
-                        <Edit2 className="w-4 h-4" />
+                        <Edit2 className="h-4 w-4" />
                       </Button>
                     )}
                     {onDelete && (
@@ -348,17 +356,13 @@ export default function ReservationsTable({
                         variant="ghost"
                         onClick={() => onDelete(reservation)}
                         title={t('reservationsList.actions.delete')}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        className="text-red-600 hover:bg-red-50 hover:text-red-700"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     )}
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      title={t('common.actions')}
-                    >
-                      <MoreHorizontal className="w-4 h-4" />
+                    <Button size="sm" variant="ghost" title={t('common.actions')}>
+                      <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </div>
                 </td>
