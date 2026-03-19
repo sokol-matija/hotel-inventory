@@ -18,7 +18,7 @@ export default function FinanceLayout() {
         {/* Background decorative image */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <img
-            src="/mozaik_gp1.png"
+            src="/mozaik_gp1.webp"
             alt="Decorative background"
             className="absolute right-0 bottom-0 h-64 w-full object-cover opacity-10"
           />

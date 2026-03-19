@@ -130,7 +130,7 @@ export default function MobileNav({ isOpen, onClose }: MobileNavProps) {
             {/* Decorative image - flex-1 to push user profile to bottom */}
             <div className="flex flex-1 justify-center px-2">
               <img
-                src="/zemlja_gp_crop.png"
+                src="/zemlja_gp_crop.webp"
                 alt="Decorative landscape"
                 className="h-full w-full object-contain opacity-30"
               />

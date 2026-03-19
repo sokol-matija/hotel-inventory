@@ -40,7 +40,8 @@ export const NFCCleanRoomPage = () => {
 
     // Call the edge function
     callCleanRoomFunction(roomId);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // intentionally runs once on mount — NFC tap triggers a single action
 
   async function callCleanRoomFunction(roomId: string) {
     try {

@@ -62,7 +62,7 @@ export function useLocationState() {
   });
 
   const location = data?.location ?? null;
-  const inventory = data?.inventory ?? [];
+  const inventory = useMemo(() => data?.inventory ?? [], [data]);
 
   // Computed values
   const filters: InventoryFilters = useMemo(

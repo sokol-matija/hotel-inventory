@@ -48,7 +48,7 @@ const ROLE_COLORS = {
 } as const;
 
 const BACKGROUND_STYLE = {
-  backgroundImage: 'url(/zemlja_gp_copy.png)',
+  backgroundImage: 'url(/zemlja_gp_copy.webp)',
   backgroundSize: 'cover',
   backgroundPosition: 'center',
   backgroundRepeat: 'no-repeat',

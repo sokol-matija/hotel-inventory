@@ -183,7 +183,7 @@ class AuditTrailService {
 
   public logPaymentProcessed(
     paymentId: string,
-    paymentData: any,
+    paymentData: Record<string, unknown>,
     result: 'success' | 'failure' = 'success',
     errorMessage?: string
   ): void {

@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
-import { BarChart3, Hotel, CreditCard, Package, ArrowRight } from 'lucide-react';
+import { Hotel, CreditCard, Package, ArrowRight } from 'lucide-react';
 
 interface ModuleCardProps {
   title: string;
@@ -62,14 +62,6 @@ export default function ModuleSelector() {
 
   const modules = [
     {
-      key: 'channelManager',
-      title: 'Channel Manager',
-      description: 'Manage bookings from multiple platforms in one place',
-      icon: <BarChart3 className="h-6 w-6" />,
-      available: true,
-      onClick: () => navigate({ to: '/hotel/front-desk/channel-manager' }),
-    },
-    {
       key: 'frontDesk',
       title: 'Front Desk',
       description: 'Interactive calendar, reservations, and guest management',
@@ -102,7 +94,7 @@ export default function ModuleSelector() {
       <div
         className="absolute inset-0 opacity-20"
         style={{
-          backgroundImage: 'url(/zemlja_gp_copy.png)',
+          backgroundImage: 'url(/zemlja_gp_copy.webp)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',

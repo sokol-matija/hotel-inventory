@@ -470,7 +470,7 @@ Z Roba 25%PDV               0.00
 
 ${order.items
   .map(
-    (item: any, index: number) =>
+    (item: { itemName: string; quantity: number; totalPrice: number }, index: number) =>
       `${index + 9}${item.itemName.toUpperCase().padEnd(20)} ${item.quantity}.000${item.totalPrice.toFixed(2).padStart(6)}`
   )
   .join('\n')}

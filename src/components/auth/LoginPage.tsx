@@ -115,7 +115,7 @@ export default function LoginPage() {
       {/* Full-screen background image */}
       <div className="pointer-events-none absolute inset-0">
         <img
-          src="/mozaik_gp1.png"
+          src="/mozaik_gp1.webp"
           alt="Hotel Porec Background"
           className="absolute inset-0 h-full w-full object-cover opacity-40"
         />

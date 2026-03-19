@@ -31,10 +31,10 @@ export const HOTEL_FISCAL_CONFIG: FiscalConfiguration = {
   },
   workingHours: '0-24',
   certificate: {
-    file: import.meta.env.VITE_FISCAL_CERT_FILE || '87246357068.49208351934.A.1.p12', // New FINA certificate
-    password: import.meta.env.VITE_FISCAL_CERT_PASSWORD || 'Marvel247@$&', // New certificate password
-    passwordBackup: import.meta.env.VITE_FISCAL_CERT_PASSWORD_BACKUP || 'Marvel2479@$&(', // Backup password
-    path: import.meta.env.VITE_FISCAL_CERT_PATH || '.certificates/87246357068.49208351934.A.1.p12',
+    file: import.meta.env.VITE_FISCAL_CERT_FILE,
+    password: import.meta.env.VITE_FISCAL_CERT_PASSWORD,
+    passwordBackup: import.meta.env.VITE_FISCAL_CERT_PASSWORD_BACKUP,
+    path: import.meta.env.VITE_FISCAL_CERT_PATH,
   },
 };
 
