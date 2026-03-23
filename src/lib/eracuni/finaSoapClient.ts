@@ -6,6 +6,7 @@ import { EracuniInvoice, EracuniResponse, HOTEL_POREC_CONFIG } from './types';
 export class FinaSoapClient {
   private config = HOTEL_POREC_CONFIG;
   private certificateLoaded = false;
+  private certificateData: string | null = null;
 
   async submitInvoice(invoice: EracuniInvoice, xmlContent: string): Promise<EracuniResponse> {
     try {
@@ -208,9 +209,13 @@ export class FinaSoapClient {
       return 'DEMO_CERTIFICATE_DATA';
     }
 
-    // In production, this would load the actual FINA certificate
-    // For now, return placeholder
-    return 'PRODUCTION_CERTIFICATE_PLACEHOLDER';
+    if (!this.certificateData) {
+      throw new Error(
+        'FINA certificate not loaded. Call setCertificate() before submitting invoices.'
+      );
+    }
+
+    return this.certificateData;
   }
 
   private generateMockJIR(): string {
@@ -233,10 +238,9 @@ export class FinaSoapClient {
     return result;
   }
 
-  setCertificate(_certificateData: string): void {
-    // In production, this would handle certificate installation
+  setCertificate(data: string): void {
+    this.certificateData = data;
     this.certificateLoaded = true;
-    console.log('Certificate loaded for FINA communication');
   }
 
   getConnectionStatus(): { connected: boolean; environment: string; certificateLoaded: boolean } {

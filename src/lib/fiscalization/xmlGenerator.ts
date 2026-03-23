@@ -67,7 +67,7 @@ export class FiscalXMLGenerator {
                     </tns:Porez>
                 </tns:Pdv>
                 <tns:IznosUkupno>${amount}</tns:IznosUkupno>
-                <tns:NacinPlac>G</tns:NacinPlac>
+                <tns:NacinPlac>${this.mapPaymentMethod(invoiceData.paymentMethod)}</tns:NacinPlac>
                 <tns:OibOper>${environment.oib}</tns:OibOper>
                 <tns:ZastKod>${zki}</tns:ZastKod>
                 <tns:NakDost>false</tns:NakDost>${
@@ -267,7 +267,7 @@ export class FiscalXMLGenerator {
         <tns:Ulica>${racunZahtjev.Racun.Adresa?.Ulica}</tns:Ulica>
         <tns:KucniBroj>${racunZahtjev.Racun.Adresa?.KucniBroj}</tns:KucniBroj>
         <tns:Posta>${racunZahtjev.Racun.Adresa?.Posta}</tns:Posta>
-        <tns:Naselje>${racunZahtjev.Racun.Adresa?.Naselje}</tns:Település>
+        <tns:Naselje>${racunZahtjev.Racun.Adresa?.Naselje}</tns:Naselje>
       </tns:Adresa>
       <tns:IznosUkupno>${racunZahtjev.Racun.IznosUkupno}</tns:IznosUkupno>
       <tns:NacinPlac>${racunZahtjev.Racun.NacinPlac}</tns:NacinPlac>
@@ -293,19 +293,33 @@ export class FiscalXMLGenerator {
    */
   public validateFiscalData(invoiceData: FiscalInvoiceData): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
+    const isStorno = invoiceData.totalAmount < 0;
 
-    // Validate invoice number format
-    if (!/^HP-\d{4}-\d{6}$/.test(invoiceData.invoiceNumber)) {
-      errors.push('Invalid invoice number format. Expected: HP-YYYY-XXXXXX');
+    // Validate invoice number format — storno numbers include an 'S' prefix (e.g. HP-2025-S123456)
+    const invoiceNumberPattern = isStorno ? /^HP-\d{4}-S\d+$/ : /^HP-\d{4}-\d{6}$/;
+    if (!invoiceNumberPattern.test(invoiceData.invoiceNumber)) {
+      errors.push(
+        isStorno
+          ? 'Invalid storno invoice number format. Expected: HP-YYYY-SXXXXXX'
+          : 'Invalid invoice number format. Expected: HP-YYYY-XXXXXX'
+      );
     }
 
-    // Validate amount
-    if (invoiceData.totalAmount <= 0 || invoiceData.totalAmount > 999999.99) {
-      errors.push('Total amount must be between 0.01 and 999999.99');
+    // Validate amount — storno invoices have negative totals
+    if (isStorno) {
+      if (invoiceData.totalAmount < -999999.99) {
+        errors.push('Storno total amount must be greater than -999999.99');
+      }
+    } else {
+      if (invoiceData.totalAmount <= 0 || invoiceData.totalAmount > 999999.99) {
+        errors.push('Total amount must be between 0.01 and 999999.99');
+      }
     }
 
     // Validate VAT amount
-    if (invoiceData.vatAmount < 0 || invoiceData.vatAmount > invoiceData.totalAmount) {
+    const absTotal = Math.abs(invoiceData.totalAmount);
+    const absVat = Math.abs(invoiceData.vatAmount);
+    if (absVat > absTotal) {
       errors.push('Invalid VAT amount');
     }
 

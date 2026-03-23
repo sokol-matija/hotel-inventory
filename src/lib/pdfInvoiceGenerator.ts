@@ -176,8 +176,8 @@ export async function generatePDFInvoice(data: InvoiceData): Promise<void> {
   }
 
   // Tourism tax
-  const tourismTaxRate =
-    reservation.tourismTax / (reservation.numberOfGuests * reservation.numberOfNights);
+  const guestNights = reservation.numberOfGuests * reservation.numberOfNights;
+  const tourismTaxRate = guestNights > 0 ? reservation.tourismTax / guestNights : 0;
   lineItems.push([
     'Tourism Tax',
     `€${tourismTaxRate.toFixed(2)} per person per night (Croatian Law)`,
@@ -477,8 +477,8 @@ export async function generateThermalReceipt(
     );
   }
 
-  const tourismTaxRate =
-    reservation.tourismTax / (reservation.numberOfGuests * reservation.numberOfNights);
+  const guestNights = reservation.numberOfGuests * reservation.numberOfNights;
+  const tourismTaxRate = guestNights > 0 ? reservation.tourismTax / guestNights : 0;
   addItem(
     'Tourism Tax (Croatian Law)',
     reservation.numberOfGuests * reservation.numberOfNights,

@@ -171,8 +171,8 @@ export class HotelEracuniXMLGenerator {
     currency: string,
     vatRate: number
   ): string {
-    const vatAmount = lineTotal * vatRate;
-    const netAmount = lineTotal - vatAmount;
+    // lineTotal is VAT-inclusive (gross); extract net amount correctly
+    const netAmount = vatRate > 0 ? lineTotal / (1 + vatRate) : lineTotal;
 
     return `
   <cac:InvoiceLine>

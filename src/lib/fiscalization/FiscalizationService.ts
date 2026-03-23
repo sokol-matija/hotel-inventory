@@ -167,6 +167,11 @@ export class FiscalizationService {
         body: JSON.stringify(fiscalRequest),
       });
 
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`Fiscalization Edge Function returned ${response.status}: ${text}`);
+      }
+
       const result = await response.json();
 
       if (result.success && result.jir && result.zki) {

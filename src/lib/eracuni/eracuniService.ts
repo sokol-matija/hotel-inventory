@@ -10,6 +10,7 @@ import {
 } from './types';
 import { HotelEracuniXMLGenerator } from './xmlGenerator';
 import { FinaSoapClient } from './finaSoapClient';
+import { getTourismTaxRate } from '../hotel/pricingCalculator';
 
 export class HotelEracuniService {
   private xmlGenerator = new HotelEracuniXMLGenerator();
@@ -191,7 +192,8 @@ export class HotelEracuniService {
   private calculateTourismTax(invoice: Invoice): number {
     const nights = this.calculateNights(invoice);
     const guests = this.extractGuestCount(invoice);
-    return nights * guests * CROATIAN_TAX_RATES.TOURISM_TAX_PER_NIGHT;
+    const ratePerNight = getTourismTaxRate(invoice.issueDate);
+    return nights * guests * ratePerNight;
   }
 
   private extractAdditionalServices(
@@ -225,10 +227,15 @@ export class HotelEracuniService {
   }
 
   private calculateNights(invoice: Invoice): number {
-    // Calculate from check-in/check-out dates
-    // For now, estimate from invoice amount (assuming €50-150 per night)
-    const estimatedNightlyRate = 100;
-    return Math.max(1, Math.round(invoice.subtotal / estimatedNightlyRate));
+    if (invoice.reservation?.numberOfNights && invoice.reservation.numberOfNights > 0) {
+      return invoice.reservation.numberOfNights;
+    }
+    if (invoice.reservation?.checkIn && invoice.reservation?.checkOut) {
+      const ms = invoice.reservation.checkOut.getTime() - invoice.reservation.checkIn.getTime();
+      return Math.max(1, Math.round(ms / (1000 * 60 * 60 * 24)));
+    }
+    // Fallback: derive from tourism tax if available (tourismTax = nights × guests × rate)
+    return 1;
   }
 
   private extractGuestCount(invoice: Invoice): number {
