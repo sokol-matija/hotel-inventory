@@ -46,7 +46,7 @@ import { EnhancedDailyViewModal } from './modals/EnhancedDailyViewModal';
 import DragCreateOverlay from './DragCreateOverlay';
 import { virtualRoomService } from '../../../lib/hotel/services/VirtualRoomService';
 import { OptimisticUpdateService } from '../../../lib/hotel/services/OptimisticUpdateService';
-import { calculatePricing } from '../../../lib/hotel/pricingCalculator';
+import { unifiedPricingService } from '../../../lib/hotel/services/UnifiedPricingService';
 import { Button } from '../../ui/button';
 
 import { TimelineHeader } from './Timeline/TimelineHeader';
@@ -523,19 +523,16 @@ export default function HotelTimeline({
     if (!reservation || !targetRoom || !currentRoom) return;
 
     try {
-      const newPricing = calculatePricing(
-        targetRoom.id,
-        reservation.checkIn,
-        reservation.checkOut,
-        reservation.adults,
-        reservation.children,
-        {
-          hasPets: reservation.petFee > 0,
-          needsParking: reservation.parkingFee > 0,
-          additionalCharges: reservation.additionalCharges,
-        },
-        rooms
-      );
+      const newPricing = await unifiedPricingService.calculateTotal({
+        roomId: targetRoom.id,
+        checkIn: reservation.checkIn,
+        checkOut: reservation.checkOut,
+        adults: reservation.adults,
+        children: reservation.children,
+        hasPets: reservation.petFee > 0,
+        needsParking: reservation.parkingFee > 0,
+        additionalCharges: reservation.additionalCharges,
+      });
       const updatedReservationData = {
         roomId: targetRoom.id,
         checkIn: reservation.checkIn,
@@ -667,19 +664,16 @@ export default function HotelTimeline({
         return;
       }
 
-      const newPricing = calculatePricing(
-        reservation.roomId,
-        newCheckIn,
-        newCheckOut,
-        reservation.adults,
-        reservation.children,
-        {
-          hasPets: reservation.petFee > 0,
-          needsParking: reservation.parkingFee > 0,
-          additionalCharges: reservation.additionalCharges,
-        },
-        rooms
-      );
+      const newPricing = await unifiedPricingService.calculateTotal({
+        roomId: reservation.roomId,
+        checkIn: newCheckIn,
+        checkOut: newCheckOut,
+        adults: reservation.adults,
+        children: reservation.children,
+        hasPets: reservation.petFee > 0,
+        needsParking: reservation.parkingFee > 0,
+        additionalCharges: reservation.additionalCharges,
+      });
       const updatedData = {
         checkIn: newCheckIn,
         checkOut: newCheckOut,

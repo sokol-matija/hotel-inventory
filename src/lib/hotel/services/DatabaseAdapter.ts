@@ -12,10 +12,10 @@ interface CurrentDBRoom {
   room_types: { code: string } | null;
   max_occupancy: number;
   is_premium: boolean;
-  seasonal_rate_a: number;
-  seasonal_rate_b: number;
-  seasonal_rate_c: number;
-  seasonal_rate_d: number;
+  room_pricing: Array<{
+    base_rate: number;
+    pricing_seasons: { code: string; year_pattern: number } | null;
+  }> | null;
   amenities: string[];
   is_active: boolean;
   is_clean: boolean;
@@ -149,7 +149,9 @@ export class DatabaseAdapter {
     try {
       const { data: roomsData, error } = await supabase
         .from('rooms')
-        .select('*, room_types!room_type_id(code)')
+        .select(
+          '*, room_types!room_type_id(code), room_pricing(base_rate, pricing_seasons(code, year_pattern))'
+        )
         .eq('is_active', true)
         .order('room_number');
 
@@ -169,7 +171,9 @@ export class DatabaseAdapter {
     try {
       const { data, error } = await supabase
         .from('rooms')
-        .select('*, room_types!room_type_id(code)')
+        .select(
+          '*, room_types!room_type_id(code), room_pricing(base_rate, pricing_seasons(code, year_pattern))'
+        )
         .eq('id', parseInt(roomId))
         .eq('is_active', true)
         .single();
@@ -206,7 +210,9 @@ export class DatabaseAdapter {
         .from('rooms')
         .update(updateData)
         .eq('id', parseInt(roomId))
-        .select('*, room_types!room_type_id(code)')
+        .select(
+          '*, room_types!room_type_id(code), room_pricing(base_rate, pricing_seasons(code, year_pattern))'
+        )
         .single();
 
       if (error) throw error;
@@ -227,11 +233,6 @@ export class DatabaseAdapter {
     endDate: Date
   ): Promise<Reservation[]> {
     try {
-      console.log('🏨 DATABASE: getReservationsByRoomAndDateRange called with:', {
-        roomId,
-        startDate,
-        endDate,
-      });
       // Get reservations for the specific room and date range
       // Overlap predicate: reservation overlaps [startDate, endDate] when
       // check_in_date < endDate AND check_out_date > startDate
@@ -241,10 +242,6 @@ export class DatabaseAdapter {
         .eq('room_id', parseInt(roomId))
         .lt('check_in_date', endDate.toISOString().split('T')[0])
         .gt('check_out_date', startDate.toISOString().split('T')[0]);
-      console.log('✅ DATABASE: Got reservations query result:', {
-        count: reservationsData?.length,
-        error: reservationsError,
-      });
 
       if (reservationsError) throw reservationsError;
 
@@ -256,7 +253,9 @@ export class DatabaseAdapter {
       // Get rooms separately
       const { data: roomsData, error: roomsError } = await supabase
         .from('rooms')
-        .select('*, room_types!room_type_id(code)');
+        .select(
+          '*, room_types!room_type_id(code), room_pricing(base_rate, pricing_seasons(code, year_pattern))'
+        );
 
       if (roomsError) throw roomsError;
 
@@ -323,7 +322,9 @@ export class DatabaseAdapter {
       // Get rooms separately
       const { data: roomsData, error: roomsError } = await supabase
         .from('rooms')
-        .select('*, room_types!room_type_id(code)');
+        .select(
+          '*, room_types!room_type_id(code), room_pricing(base_rate, pricing_seasons(code, year_pattern))'
+        );
 
       if (roomsError) throw roomsError;
 
@@ -521,10 +522,10 @@ export class DatabaseAdapter {
       nameCroatian: this.getRoomTypeCroatianName(roomType),
       nameEnglish: this.getRoomTypeEnglishName(roomType),
       seasonalRates: {
-        A: room.seasonal_rate_a || 50,
-        B: room.seasonal_rate_b || 60,
-        C: room.seasonal_rate_c || 80,
-        D: room.seasonal_rate_d || 100,
+        A: room.room_pricing?.find((rp) => rp.pricing_seasons?.code === 'A')?.base_rate ?? 50,
+        B: room.room_pricing?.find((rp) => rp.pricing_seasons?.code === 'B')?.base_rate ?? 60,
+        C: room.room_pricing?.find((rp) => rp.pricing_seasons?.code === 'C')?.base_rate ?? 80,
+        D: room.room_pricing?.find((rp) => rp.pricing_seasons?.code === 'D')?.base_rate ?? 100,
       },
       maxOccupancy: room.max_occupancy || 2,
       isPremium: room.is_premium || false,

@@ -142,11 +142,6 @@ export function useBookingForm(room?: Room, initialData?: Partial<BookingFormSta
     bookingDataRef.current = bookingData;
   });
 
-  // Pricing calculation
-  const pricing = useMemo(() => {
-    return bookingService.calculatePricing(bookingData);
-  }, [bookingService, bookingData]);
-
   // Validation
   const validate = useCallback(
     (existingReservations: Reservation[] = []) => {
@@ -213,7 +208,6 @@ export function useBookingForm(room?: Room, initialData?: Partial<BookingFormSta
     // State
     formState,
     bookingData,
-    pricing,
 
     // Computed
     isValid,

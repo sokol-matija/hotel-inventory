@@ -18,7 +18,7 @@ import {
   Building2,
   Tag,
 } from 'lucide-react';
-import { Room, Guest, GuestChild, RoomType } from '../../../lib/hotel/types';
+import { Room, Guest, GuestChild } from '../../../lib/hotel/types';
 import hotelNotification from '../../../lib/notifications';
 import { supabase } from '../../../lib/supabase';
 import { useRooms } from '../../../lib/queries/hooks/useRooms';
@@ -27,8 +27,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../../../lib/queries/queryKeys';
 import LabelAutocomplete from '../shared/LabelAutocomplete';
 import GuestAutocomplete from './Guests/GuestAutocomplete';
-import { getSeasonalPeriod } from '../../../lib/hotel/pricingCalculator';
-import { HotelPricingEngine } from '../../../lib/hotel/pricingEngine';
+import { unifiedPricingService } from '../../../lib/hotel/services/UnifiedPricingService';
 import { ntfyService, BookingNotificationData } from '../../../lib/ntfyService';
 import { virtualRoomService } from '../../../lib/hotel/services/VirtualRoomService';
 
@@ -60,19 +59,8 @@ export default function ModernCreateBookingModal({
     queryClient.invalidateQueries({ queryKey: queryKeys.guests.all() });
   };
 
-  // Get hotel ID (for single-hotel setup)
-  const [hotelId, setHotelId] = useState<string>('');
-
-  useEffect(() => {
-    const fetchHotelId = async () => {
-      // Since there's only one hotel, just fetch the first hotel's ID
-      const { data } = await supabase.from('hotels').select('id').limit(1).single();
-      if (data?.id) {
-        setHotelId(data.id.toString());
-      }
-    };
-    fetchHotelId();
-  }, []);
+  // Hotel Porec UUID — matches the hotels table PK
+  const hotelId = '550e8400-e29b-41d4-a716-446655440000';
 
   // Room selection state for unallocated mode
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(room);
@@ -178,13 +166,13 @@ export default function ModernCreateBookingModal({
     updatedAt: new Date(),
   });
 
-  // Calculate pricing whenever dependencies change using HotelPricingEngine
+  // Calculate pricing whenever dependencies change
   useEffect(() => {
-    // Skip pricing if unallocated or no room selected
+    const nights = Math.ceil(
+      (checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
+
     if (isUnallocated || !selectedRoom) {
-      const nights = Math.ceil(
-        (checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)
-      );
       setPricing({
         nights,
         baseRate: 0,
@@ -200,21 +188,13 @@ export default function ModernCreateBookingModal({
       return;
     }
 
-    const pricingEngine = HotelPricingEngine.getInstance();
-
-    // Prepare guest children data for the pricing engine
     const children: GuestChild[] = bookingGuests
       .filter((g) => g.type === 'child' && g.age !== undefined)
       .map((g) => {
-        // Calculate approximate DOB from age if not provided
-        let dob: Date;
-        if (g.dateOfBirth) {
-          dob = new Date(g.dateOfBirth);
-        } else {
-          const today = new Date();
-          dob = new Date(today.getFullYear() - g.age!, today.getMonth(), today.getDate());
-        }
-
+        const today = new Date();
+        const dob = g.dateOfBirth
+          ? new Date(g.dateOfBirth)
+          : new Date(today.getFullYear() - g.age!, today.getMonth(), today.getDate());
         return {
           name: `${g.firstName} ${g.lastName}`.trim() || 'Child',
           age: g.age!,
@@ -222,35 +202,41 @@ export default function ModernCreateBookingModal({
         };
       });
 
-    const adults = bookingGuests.filter((g) => g.type === 'adult').length;
+    const adults = Math.max(1, bookingGuests.filter((g) => g.type === 'adult').length);
 
-    // Calculate detailed pricing using the engine
-    const calculation = pricingEngine.calculatePricing({
-      roomType: selectedRoom.type as RoomType,
-      roomId: selectedRoom.id,
-      checkIn: checkInDate,
-      checkOut: checkOutDate,
-      adults: Math.max(1, adults), // At least 1 adult
-      children,
-      hasPets: bookingServices.hasPets,
-      needsParking: bookingServices.needsParking,
-      pricingTierId: '2026-standard', // Use default 2026 pricing
-      isRoom401: selectedRoom.number === '401',
-    });
+    let cancelled = false;
+    unifiedPricingService
+      .calculateTotal({
+        roomId: selectedRoom.id,
+        checkIn: checkInDate,
+        checkOut: checkOutDate,
+        adults,
+        children,
+        hasPets: bookingServices.hasPets,
+        needsParking: bookingServices.needsParking,
+      })
+      .then((c) => {
+        if (cancelled) return;
+        setPricing({
+          nights: c.numberOfNights,
+          baseRate: c.baseRate,
+          roomTotal: c.subtotal,
+          childrenDiscount: c.totalDiscounts,
+          shortStaySupplement: c.fees.shortStay,
+          petFee: c.fees.pets,
+          parkingFee: c.fees.parking,
+          tourismTax: c.fees.tourism,
+          vatAmount: c.fees.vat,
+          total: c.total,
+        });
+      })
+      .catch(() => {
+        /* keep previous pricing on error */
+      });
 
-    // Map the detailed calculation to the simpler pricing state format for the UI
-    setPricing({
-      nights: calculation.nights,
-      baseRate: calculation.baseRoomRate,
-      roomTotal: calculation.accommodationSubtotal,
-      childrenDiscount: calculation.discounts.totalDiscounts,
-      shortStaySupplement: calculation.shortStaySupplement,
-      petFee: calculation.services.pets.total,
-      parkingFee: calculation.services.parking.total,
-      tourismTax: calculation.services.tourism.total,
-      vatAmount: calculation.vat.totalVAT,
-      total: calculation.grandTotal,
-    });
+    return () => {
+      cancelled = true;
+    };
   }, [checkInDate, checkOutDate, bookingGuests, bookingServices, selectedRoom, isUnallocated]);
 
   // Guest management functions
@@ -489,23 +475,34 @@ export default function ModernCreateBookingModal({
       }
 
       // Create reservation
-      const seasonalPeriod = getSeasonalPeriod(checkInDate);
+      const seasonalPeriod = unifiedPricingService.getSeasonalPeriod(checkInDate);
 
-      // Prepare reservation data for debugging
+      // Look up status_id and booking_source_id (FK columns, not varchar)
+      const { data: statusRow } = await supabase
+        .from('reservation_statuses')
+        .select('id')
+        .eq('code', 'confirmed')
+        .single();
+      const { data: sourceRow } = await supabase
+        .from('booking_sources')
+        .select('id')
+        .eq('code', 'direct')
+        .single();
+
       const adultsCount = bookingGuests.filter((g) => g.type === 'adult').length;
       const childrenCount = bookingGuests.filter((g) => g.type === 'child').length;
       const reservationData = {
         guest_id: primaryGuestId,
-        room_id: selectedRoom!.id,
+        room_id: parseInt(selectedRoom!.id),
         check_in_date: checkInDate.toISOString().split('T')[0],
         check_out_date: checkOutDate.toISOString().split('T')[0],
         adults: adultsCount,
         children_count: childrenCount,
         number_of_guests: adultsCount + childrenCount,
-        status: 'confirmed',
+        status_id: statusRow?.id,
+        booking_source_id: sourceRow?.id,
         seasonal_period: seasonalPeriod,
         base_room_rate: pricing.baseRate,
-        number_of_nights: pricing.nights,
         subtotal:
           pricing.roomTotal -
           pricing.childrenDiscount +
@@ -527,15 +524,6 @@ export default function ModernCreateBookingModal({
         label_id: selectedLabelId, // Label/Group for tracking related reservations
       };
 
-      // console.log('📊 BOOKING MODAL DEBUG - Reservation Data:', {
-      //   reservationData,
-      //   bookingGuests,
-      //   pricing,
-      //   bookingServices,
-      //   seasonalPeriod,
-      //   primaryGuestId
-      // });
-
       const { data: reservation, error: reservationError } = await supabase
         .from('reservations')
         .insert(reservationData)
@@ -549,8 +537,6 @@ export default function ModernCreateBookingModal({
         });
         throw reservationError;
       }
-
-      // console.log('✅ BOOKING MODAL SUCCESS - Reservation created:', reservation);
 
       // Create guest relationships and additional guests
       for (let i = 0; i < bookingGuests.length; i++) {

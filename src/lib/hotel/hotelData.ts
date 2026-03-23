@@ -1,5 +1,5 @@
 // Hotel Porec - Real Business Information and Room Configuration
-import { Hotel, Room, RoomType, SeasonalPeriodDefinition } from './types';
+import { Hotel, Room, RoomType } from './types';
 
 // Hotel Porec Official Information
 export const HOTEL_POREC: Hotel = {
@@ -12,44 +12,6 @@ export const HOTEL_POREC: Hotel = {
   website: 'www.hotelporec.com',
   taxId: '87246357068', // Croatian OIB
 };
-
-// 2025 Seasonal Periods (Real Hotel Porec Pricing)
-export const SEASONAL_PERIODS: SeasonalPeriodDefinition[] = [
-  {
-    period: 'A',
-    name: 'Winter/Early Spring',
-    startDate: '2025-01-02',
-    endDate: '2025-04-16',
-    tourismTaxRate: 1.1,
-  },
-  {
-    period: 'B',
-    name: 'Spring/Late Fall',
-    startDate: '2025-04-17',
-    periods: [
-      { startDate: '2025-04-17', endDate: '2025-05-25' }, // ends before C starts (05-26)
-      { startDate: '2025-09-26', endDate: '2025-10-25' },
-    ],
-    tourismTaxRate: 1.5,
-  },
-  {
-    period: 'C',
-    name: 'Early Summer/Early Fall',
-    startDate: '2025-05-26',
-    periods: [
-      { startDate: '2025-05-26', endDate: '2025-07-30' }, // ends before D starts (07-31)
-      { startDate: '2025-08-31', endDate: '2025-09-25' }, // starts after D ends (08-30)
-    ],
-    tourismTaxRate: 1.5,
-  },
-  {
-    period: 'D',
-    name: 'Peak Summer',
-    startDate: '2025-07-31',
-    endDate: '2025-08-30',
-    tourismTaxRate: 1.5,
-  },
-];
 
 // Room type definitions with Croatian names
 export const ROOM_TYPES = {

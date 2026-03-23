@@ -10,7 +10,7 @@ import {
 } from './types';
 import { HotelEracuniXMLGenerator } from './xmlGenerator';
 import { FinaSoapClient } from './finaSoapClient';
-import { getTourismTaxRate } from '../hotel/pricingCalculator';
+import { unifiedPricingService } from '../hotel/services/UnifiedPricingService';
 
 export class HotelEracuniService {
   private xmlGenerator = new HotelEracuniXMLGenerator();
@@ -192,7 +192,7 @@ export class HotelEracuniService {
   private calculateTourismTax(invoice: Invoice): number {
     const nights = this.calculateNights(invoice);
     const guests = this.extractGuestCount(invoice);
-    const ratePerNight = getTourismTaxRate(invoice.issueDate);
+    const ratePerNight = unifiedPricingService.getTourismTaxRate(invoice.issueDate);
     return nights * guests * ratePerNight;
   }
 

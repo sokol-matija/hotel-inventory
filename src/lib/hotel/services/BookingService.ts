@@ -36,12 +36,6 @@ export interface BookingValidationError {
   field?: string;
 }
 
-export interface BookingPricing {
-  basePrice: number;
-  totalNights: number;
-  totalAmount: number;
-}
-
 export class BookingService {
   private static instance: BookingService;
 
@@ -50,21 +44,6 @@ export class BookingService {
       BookingService.instance = new BookingService();
     }
     return BookingService.instance;
-  }
-
-  calculatePricing(bookingData: Partial<BookingData>): BookingPricing {
-    const checkIn = bookingData.checkIn || new Date();
-    const checkOut = bookingData.checkOut || new Date();
-    const nights = Math.max(
-      1,
-      Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24))
-    );
-    const basePrice = 0;
-    return {
-      basePrice,
-      totalNights: nights,
-      totalAmount: basePrice * nights,
-    };
   }
 
   validateBooking(

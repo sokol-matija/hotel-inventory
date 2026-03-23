@@ -5,13 +5,13 @@
  * across all features including day-by-day breakdown.
  *
  * Croatian Tax Compliance:
- * - Room rates already include 25% VAT (Croatian law)
+ * - Room rates already include 13% VAT (Croatian accommodation law since 2018)
  * - Tourism tax separate (€1.10-€1.50 per person per night)
  * - Service fees separate (parking, pets, towels)
  */
 
 import { supabase } from '../../supabase';
-import { SeasonalPeriod, GuestChild } from '../types';
+import { SeasonalPeriod, GuestChild, PricingCalculation } from '../types';
 
 // Configuration for Croatian hotel pricing
 export interface PricingConfig {
@@ -22,7 +22,7 @@ export interface PricingConfig {
     low: number; // €1.10 Oct-Mar
   };
   serviceFees: {
-    petFeePerStay: number; // €20.00 per stay
+    petFeePerNight: number; // €20.00 per night
     parkingFeePerNight: number; // €7.00 per night
     towelRentalPerDay: number; // €5.00 per towel per day
     shortStaySupplementRate: number; // 0.20 (20% for < 3 nights)
@@ -39,7 +39,7 @@ const DEFAULT_CONFIG: PricingConfig = {
   vatIncludedInRates: true,
   tourismTaxRates: { high: 1.5, low: 1.1 },
   serviceFees: {
-    petFeePerStay: 20.0,
+    petFeePerNight: 20.0,
     parkingFeePerNight: 7.0,
     towelRentalPerDay: 5.0,
     shortStaySupplementRate: 0.2,
@@ -186,12 +186,7 @@ export class UnifiedPricingService {
       // Get room and pricing data
       const { data: room, error: roomError } = await supabase
         .from('rooms')
-        .select(
-          `
-          *,
-          room_types (*)
-        `
-        )
+        .select('*, room_types (*)')
         .eq('id', params.roomId)
         .single();
 
@@ -210,7 +205,7 @@ export class UnifiedPricingService {
       const seasonalPeriod = this.getSeasonalPeriod(params.checkInDate);
       const baseRate = await this.getRoomSeasonalRate(
         params.roomId,
-        seasonalPeriod,
+        params.checkInDate,
         params.pricingTierId
       );
 
@@ -267,6 +262,59 @@ export class UnifiedPricingService {
       console.error('Error calculating reservation pricing:', error);
       throw error;
     }
+  }
+
+  /**
+   * Calculate total pricing for a reservation — drop-in replacement for the old pricingCalculator
+   * and pricingEngine. Returns PricingCalculation so existing callers need minimal changes.
+   */
+  async calculateTotal(params: {
+    roomId: string;
+    checkIn: Date;
+    checkOut: Date;
+    adults: number;
+    children: GuestChild[];
+    hasPets?: boolean;
+    needsParking?: boolean;
+    additionalCharges?: number;
+    pricingTierId?: string;
+  }): Promise<PricingCalculation> {
+    const result = await this.calculateReservationPricing({
+      roomId: params.roomId,
+      checkInDate: params.checkIn,
+      checkOutDate: params.checkOut,
+      adults: params.adults,
+      children: params.children,
+      pricingTierId: params.pricingTierId,
+      services: {
+        hasPets: params.hasPets,
+        parkingSpots: params.needsParking ? 1 : 0,
+      },
+    });
+
+    return {
+      baseRate: result.accommodation.baseRate,
+      numberOfNights: result.breakdown.numberOfNights,
+      seasonalPeriod: result.breakdown.seasonalPeriod,
+      subtotal: result.accommodation.subtotal,
+      discounts: {
+        children0to3: 0,
+        children3to7: 0,
+        children7to14: 0,
+        longStay: 0,
+      },
+      totalDiscounts: result.accommodation.childDiscounts,
+      fees: {
+        tourism: result.services.tourismTax,
+        vat: result.accommodation.vatIncluded,
+        pets: result.services.petFees,
+        parking: result.services.parkingFees,
+        shortStay: result.services.shortStaySuplement,
+        additional: params.additionalCharges || 0,
+      },
+      totalFees: result.services.total,
+      total: result.totals.grandTotal + (params.additionalCharges || 0),
+    };
   }
 
   /**
@@ -462,8 +510,8 @@ export class UnifiedPricingService {
       }
     }
 
-    // Pet fees
-    const petFees = services.hasPets ? this.config.serviceFees.petFeePerStay : 0;
+    // Pet fees (per night)
+    const petFees = services.hasPets ? this.config.serviceFees.petFeePerNight * numberOfNights : 0;
 
     // Towel rentals
     const towelRentals =
@@ -481,7 +529,7 @@ export class UnifiedPricingService {
   /**
    * Get seasonal period for a date
    */
-  private getSeasonalPeriod(date: Date): SeasonalPeriod {
+  public getSeasonalPeriod(date: Date): SeasonalPeriod {
     const month = date.getMonth() + 1;
 
     // Simplified Croatian seasonal logic
@@ -496,7 +544,7 @@ export class UnifiedPricingService {
   /**
    * Get tourism tax rate for a date
    */
-  private getTourismTaxRate(date: Date): number {
+  public getTourismTaxRate(date: Date): number {
     const month = date.getMonth() + 1;
 
     // April-September: €1.50
@@ -513,26 +561,22 @@ export class UnifiedPricingService {
    */
   private async getRoomSeasonalRate(
     roomId: string,
-    seasonalPeriod: SeasonalPeriod,
+    stayDate: Date,
     pricingTierId?: string
   ): Promise<number> {
     try {
-      // Get base seasonal rate
-      const { data: rateData, error: rateError } = await supabase
-        .from('room_seasonal_rates')
-        .select('rate')
-        .eq('room_id', roomId)
-        .eq('seasonal_period', seasonalPeriod)
-        .single();
+      // Use the DB function which correctly matches by date range, is_active, and priority
+      const { data, error } = await supabase.rpc('get_room_price', {
+        p_room_id: parseInt(roomId),
+        p_date: stayDate.toISOString().split('T')[0],
+      });
 
-      if (rateError) {
-        console.warn(
-          `No seasonal rate found for room ${roomId} period ${seasonalPeriod}, using fallback`
-        );
-        return 100.0; // Fallback rate
+      if (error || !data || data.length === 0) {
+        console.warn(`No seasonal rate found for room ${roomId} on ${stayDate}, using fallback`);
+        return 100.0;
       }
 
-      let finalRate = rateData.rate;
+      let finalRate: number = data[0].base_rate;
 
       // Apply pricing tier discount if applicable
       if (pricingTierId) {
@@ -543,7 +587,8 @@ export class UnifiedPricingService {
           .single();
 
         if (!tierError && tierData) {
-          const discountKey = `seasonal_rate_${seasonalPeriod.toLowerCase()}`;
+          const seasonCode = data[0].season_code?.toLowerCase();
+          const discountKey = `seasonal_rate_${seasonCode}`;
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const discountValue = (tierData as any)[discountKey];
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -556,7 +601,7 @@ export class UnifiedPricingService {
       return finalRate;
     } catch (error) {
       console.error('Error getting room seasonal rate:', error);
-      return 100.0; // Fallback rate
+      return 100.0;
     }
   }
 
@@ -652,10 +697,11 @@ export class UnifiedPricingService {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async calculateSingleDayPricing(reservation: any, dailyDetail: any): Promise<any> {
     try {
-      const seasonalPeriod = this.getSeasonalPeriod(new Date(dailyDetail.stay_date));
+      const stayDate = new Date(dailyDetail.stay_date);
+      const seasonalPeriod = this.getSeasonalPeriod(stayDate);
       const baseRate = await this.getRoomSeasonalRate(
         reservation.room_id,
-        seasonalPeriod,
+        stayDate,
         reservation.pricing_tier_id
       );
 
@@ -704,7 +750,8 @@ export class UnifiedPricingService {
         dailyDetail.parking_spots_needed || 0,
         dailyDetail.pets_present || false,
         dailyDetail.towel_rentals || 0,
-        isApartment
+        isApartment,
+        stayDate
       );
 
       return {
@@ -740,10 +787,11 @@ export class UnifiedPricingService {
     parkingSpots: number,
     hasPets: boolean,
     towelRentals: number,
-    isApartment: boolean
+    isApartment: boolean,
+    stayDate: Date
   ) {
     // Tourism tax
-    const tourismTaxRate = 1.5; // Summer rate - can be refined based on date
+    const tourismTaxRate = this.getTourismTaxRate(stayDate);
     let tourism = adults * tourismTaxRate;
     tourism += children.filter((child) => child.age >= 12).length * tourismTaxRate;
 
@@ -758,8 +806,8 @@ export class UnifiedPricingService {
       }
     }
 
-    // Pets
-    const pets = hasPets ? this.config.serviceFees.petFeePerStay : 0;
+    // Pets (per night — called once per day so no further multiplication)
+    const pets = hasPets ? this.config.serviceFees.petFeePerNight : 0;
 
     // Towels
     const towels = towelRentals * this.config.serviceFees.towelRentalPerDay;
@@ -833,13 +881,10 @@ export class UnifiedPricingService {
       const { error: updateError } = await supabase
         .from('reservation_daily_details')
         .update({
-          base_accommodation_cost: pricingBreakdown.pricing.baseAccommodation,
-          child_discounts: pricingBreakdown.pricing.childDiscounts,
-          service_fees: pricingBreakdown.pricing.serviceFees,
+          daily_base_accommodation: pricingBreakdown.pricing.baseAccommodation,
+          daily_child_discounts: pricingBreakdown.pricing.childDiscounts,
+          daily_service_fees: pricingBreakdown.pricing.serviceFees,
           daily_total: pricingBreakdown.pricing.dailyTotal,
-          vat_included_in_rates: this.calculateVATCompliantPricing(
-            pricingBreakdown.pricing.netAccommodation
-          ).vatAmount,
         })
         .eq('id', dailyDetail.id);
 

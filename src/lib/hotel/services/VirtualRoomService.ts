@@ -3,7 +3,7 @@
 
 import { supabase } from '../../supabase';
 import { Room, Guest } from '../types';
-import { calculatePricing } from '../pricingCalculator';
+import { unifiedPricingService } from './UnifiedPricingService';
 
 export interface VirtualRoomConfig {
   VIRTUAL_FLOOR: number;
@@ -106,6 +106,7 @@ export class VirtualRoomService {
           `
           *,
           room_types!room_type_id(code),
+          room_pricing(base_rate, pricing_seasons(code, year_pattern)),
           reservations!inner(*)
         `
         )
@@ -282,7 +283,9 @@ export class VirtualRoomService {
       // Get target room for pricing calculation
       const { data: targetRoom, error: roomError } = await supabase
         .from('rooms')
-        .select('*')
+        .select(
+          '*, room_types!room_type_id(code), room_pricing(base_rate, pricing_seasons(code, year_pattern))'
+        )
         .eq('id', parseInt(targetRoomId))
         .single();
 
@@ -299,28 +302,21 @@ export class VirtualRoomService {
       const checkInDate = new Date(existingReservation.check_in_date);
       const checkOutDate = new Date(existingReservation.check_out_date);
 
-      // Transform target room to Room type for pricing calculation
-      const transformedRoom = this.transformDatabaseRoomToRoom(targetRoom);
-
-      const pricing = calculatePricing(
-        targetRoomId,
-        checkInDate,
-        checkOutDate,
-        existingReservation.adults || 1,
-        [], // children - will use children_count from reservation
-        {
-          hasPets: existingReservation.has_pets || false,
-          needsParking: existingReservation.parking_required || false,
-          additionalCharges: existingReservation.additional_charges || 0,
-        },
-        [transformedRoom] // Pass the target room so pricing calculator can find it
-      );
+      const pricing = await unifiedPricingService.calculateTotal({
+        roomId: targetRoomId,
+        checkIn: checkInDate,
+        checkOut: checkOutDate,
+        adults: existingReservation.adults || 1,
+        children: [],
+        hasPets: existingReservation.has_pets || false,
+        needsParking: existingReservation.parking_required || false,
+        additionalCharges: existingReservation.additional_charges || 0,
+      });
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const updates: any = {
         room_id: parseInt(targetRoomId),
         status: 'confirmed',
-        // Update all pricing fields
         base_room_rate: pricing.baseRate,
         subtotal: pricing.subtotal,
         children_discounts: pricing.totalDiscounts,
@@ -399,10 +395,22 @@ export class VirtualRoomService {
       nameCroatian: `Soba ${dbRoom.room_number}`,
       nameEnglish: `Room ${dbRoom.room_number}`,
       seasonalRates: {
-        A: parseFloat(dbRoom.seasonal_rate_a || 0),
-        B: parseFloat(dbRoom.seasonal_rate_b || 0),
-        C: parseFloat(dbRoom.seasonal_rate_c || 0),
-        D: parseFloat(dbRoom.seasonal_rate_d || 0),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        A:
+          (dbRoom.room_pricing as any[])?.find((rp: any) => rp.pricing_seasons?.code === 'A')
+            ?.base_rate ?? 0,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        B:
+          (dbRoom.room_pricing as any[])?.find((rp: any) => rp.pricing_seasons?.code === 'B')
+            ?.base_rate ?? 0,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        C:
+          (dbRoom.room_pricing as any[])?.find((rp: any) => rp.pricing_seasons?.code === 'C')
+            ?.base_rate ?? 0,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        D:
+          (dbRoom.room_pricing as any[])?.find((rp: any) => rp.pricing_seasons?.code === 'D')
+            ?.base_rate ?? 0,
       },
       maxOccupancy: dbRoom.max_occupancy || 2,
       isPremium: dbRoom.is_premium || false,
