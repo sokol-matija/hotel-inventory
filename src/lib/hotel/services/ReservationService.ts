@@ -173,13 +173,11 @@ export class ReservationService {
 
       // Fetch company data if this is an R1 reservation
       let company: Company | undefined;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if ((reservation as any).is_r1 && (reservation as any).company_id) {
+      if (reservation.isR1Bill && reservation.companyId) {
         const { data: companyData, error: companyError } = await supabase
           .from('companies')
           .select('*')
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .eq('id', (reservation as any).company_id)
+          .eq('id', reservation.companyId)
           .single();
 
         if (companyData && !companyError) {

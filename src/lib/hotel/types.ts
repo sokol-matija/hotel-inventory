@@ -109,6 +109,7 @@ export interface Reservation {
   specialRequests: string;
 
   // Corporate booking
+  isR1Bill?: boolean;
   companyId?: string;
   pricingTierId?: string; // Added this property
 

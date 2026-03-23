@@ -1,7 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../queryKeys';
 import { hotelDataService } from '../../hotel/services/HotelDataService';
-import { Reservation, ReservationStatus } from '../../hotel/types';
+import { Reservation, ReservationStatus, Guest } from '../../hotel/types';
+
+/** Input shape for creating a new reservation via useCreateReservation */
+export type NewReservationInput = Omit<Reservation, 'id' | 'bookingDate' | 'lastModified'> & {
+  /** When true, a new guest will be created from the `guest` field before booking */
+  isNewGuest?: boolean;
+  /** Guest data used when isNewGuest is true */
+  guest?: Partial<Guest>;
+};
 
 // ─── Query ────────────────────────────────────────────────────────────────────
 
@@ -81,8 +89,7 @@ export function useUpdateReservationNotes() {
 export function useCreateReservation() {
   const queryClient = useQueryClient();
   return useMutation({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mutationFn: async (reservationData: any): Promise<Reservation> => {
+    mutationFn: async (reservationData: NewReservationInput): Promise<Reservation> => {
       let guestId = reservationData.guestId;
 
       // Inline guest creation when booking a new guest

@@ -27,17 +27,38 @@ import hotelNotification from '../../../lib/notifications';
 import { supabase } from '../../../lib/supabase';
 
 export default function InvoiceHistoryPage() {
-  const { data: invoices = [] } = useInvoices();
-  const { data: guests = [] } = useGuests();
-  const { data: rooms = [] } = useRooms();
-  const { data: reservations = [] } = useReservations();
-  const getInvoicesByDateRange = (start: Date, end: Date) =>
-    invoices.filter((inv) => inv.issueDate >= start && inv.issueDate <= end);
-  const getUnpaidInvoices = () => invoices.filter((inv) => inv.status !== 'paid');
+  const { data: invoices = [], isLoading: invoicesLoading, isError: invoicesError } = useInvoices();
+  const { data: guests = [], isLoading: guestsLoading, isError: guestsError } = useGuests();
+  const { data: rooms = [], isLoading: roomsLoading, isError: roomsError } = useRooms();
+  const {
+    data: reservations = [],
+    isLoading: reservationsLoading,
+    isError: reservationsError,
+  } = useReservations();
+
+  const isLoading = invoicesLoading || guestsLoading || roomsLoading || reservationsLoading;
+  const isError = invoicesError || guestsError || roomsError || reservationsError;
+
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [showInvoiceDetails, setShowInvoiceDetails] = useState(false);
+
+  const getInvoicesByDateRange = (start: Date, end: Date) =>
+    invoices.filter((inv) => inv.issueDate >= start && inv.issueDate <= end);
+  const getUnpaidInvoices = () => invoices.filter((inv) => inv.status !== 'paid');
+
+  if (isLoading) {
+    return <div className="flex items-center justify-center p-8 text-gray-500">Loading...</div>;
+  }
+
+  if (isError) {
+    return (
+      <div className="flex items-center justify-center p-8 text-red-500">
+        Failed to load invoice data. Please try again.
+      </div>
+    );
+  }
 
   // Filter invoices based on search and status
   const filteredInvoices = invoices.filter((invoice) => {
@@ -103,13 +124,11 @@ export default function InvoiceHistoryPage() {
 
       // Fetch company data if this is an R1 reservation
       let company: Company | undefined;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if ((reservation as any).is_r1 && (reservation as any).company_id) {
+      if (reservation.isR1Bill && reservation.companyId) {
         const { data: companyData, error: companyError } = await supabase
           .from('companies')
           .select('*')
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .eq('id', (reservation as any).company_id)
+          .eq('id', reservation.companyId)
           .single();
 
         if (companyData && !companyError) {
