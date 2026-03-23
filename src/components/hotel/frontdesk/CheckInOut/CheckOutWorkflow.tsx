@@ -56,9 +56,6 @@ export default function CheckOutWorkflow({ isOpen, onClose, reservation }: Check
   const updateReservationStatusMutation = useUpdateReservationStatus();
   const isUpdating =
     updateReservationMutation.isPending || updateReservationStatusMutation.isPending;
-  const updateReservation = async (id: string, updates: Partial<Reservation>) => {
-    await updateReservationMutation.mutateAsync({ id, updates });
-  };
   const updateReservationStatus = async (id: string, status: string) => {
     await updateReservationStatusMutation.mutateAsync({
       id,
@@ -68,7 +65,7 @@ export default function CheckOutWorkflow({ isOpen, onClose, reservation }: Check
   const [checkOutSteps, setCheckOutSteps] = useState<CheckOutStep[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [checkOutNotes, setCheckOutNotes] = useState('');
-  const [roomKeyReturned] = useState(false);
+  const [roomKeyReturned, setRoomKeyReturned] = useState(false);
   const [additionalCharges, setAdditionalCharges] = useState(0);
   const [guestSatisfaction, setGuestSatisfaction] = useState<number>(5);
   const [generateInvoice, setGenerateInvoice] = useState(false);
@@ -148,9 +145,16 @@ export default function CheckOutWorkflow({ isOpen, onClose, reservation }: Check
   }, [reservation, guest, roomKeyReturned, additionalCharges]);
 
   const handleStepToggle = (stepId: string) => {
-    setCheckOutSteps((prev) =>
-      prev.map((step) => (step.id === stepId ? { ...step, completed: !step.completed } : step))
-    );
+    setCheckOutSteps((prev) => {
+      const updated = prev.map((step) =>
+        step.id === stepId ? { ...step, completed: !step.completed } : step
+      );
+      if (stepId === 'key-return') {
+        const keyStep = updated.find((s) => s.id === 'key-return');
+        setRoomKeyReturned(keyStep?.completed ?? false);
+      }
+      return updated;
+    });
   };
 
   const handleMarkAsPaid = async () => {
@@ -160,8 +164,8 @@ export default function CheckOutWorkflow({ isOpen, onClose, reservation }: Check
       setIsProcessing(true);
 
       // Update reservation payment status
-      await updateReservation(reservation.id, { status: 'checked-in' }); // Mark payment as complete
-      setPaymentStatus('checked-in'); // Update local state
+      await updateReservationStatus(reservation.id, 'checked-out');
+      setPaymentStatus('paid');
 
       // Automatically generate invoice when payment is marked as paid
       try {

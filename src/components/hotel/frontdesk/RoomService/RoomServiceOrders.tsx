@@ -34,12 +34,14 @@ import {
   useFoodAndBeverageItems,
   useProcessRoomServiceOrder,
 } from '../../../../lib/queries/hooks/useRoomService';
+import { useReservations } from '../../../../lib/queries/hooks/useReservations';
 import { printReceipt as printBixolonReceipt } from '../../../../lib/printers/bixolonPrinter';
 import { HOTEL_POREC } from '../../../../lib/hotel/hotelData';
 
 export default function RoomServiceOrders() {
   const { data: rooms = [] } = useRooms();
   const { data: guests = [] } = useGuests();
+  const { data: reservations = [] } = useReservations();
   const { data: availableItems = [], isLoading: itemsLoading } = useFoodAndBeverageItems();
   const processOrderMutation = useProcessRoomServiceOrder();
   const isLoading = itemsLoading || processOrderMutation.isPending;
@@ -115,7 +117,13 @@ export default function RoomServiceOrders() {
   const processOrder = () => {
     if (!selectedRoom || orderItems.length === 0 || !validationResult?.isValid) return;
 
-    const guestName = guests.find((g) => g.id === selectedRoom.id)?.fullName || 'Unknown Guest';
+    const activeReservation = reservations.find(
+      (r) => r.roomId === selectedRoom.id && r.status === 'checked-in'
+    );
+    const guestName =
+      activeReservation?.guest?.fullName ||
+      guests.find((g) => g.id === activeReservation?.guestId)?.fullName ||
+      'Unknown Guest';
     const totals = calculateOrderTotal(orderItems);
 
     const orderData: Omit<RoomServiceOrder, 'id' | 'orderNumber' | 'orderedAt'> = {

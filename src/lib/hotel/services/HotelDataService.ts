@@ -317,18 +317,18 @@ export class HotelDataService {
    */
   async checkRoomAvailability(roomId: string, checkIn: Date, checkOut: Date): Promise<boolean> {
     try {
+      // Find overlapping reservations: check_in < checkOut AND check_out > checkIn
       const { data, error } = await supabase
         .from('reservations')
         .select('id')
         .eq('room_id', roomId)
         .not('status', 'eq', 'cancelled')
-        .or(
-          `check_out_date.lte.${checkIn.toISOString().split('T')[0]},check_in_date.gte.${checkOut.toISOString().split('T')[0]}`
-        );
+        .lt('check_in_date', checkOut.toISOString().split('T')[0])
+        .gt('check_out_date', checkIn.toISOString().split('T')[0]);
 
       if (error) throw error;
 
-      // Room is available if no conflicting reservations found
+      // Room is available if no overlapping reservations found
       return !data || data.length === 0;
     } catch (error) {
       console.error('Error checking room availability:', error);

@@ -94,7 +94,8 @@ interface CurrentDBGuest {
 
 export class DatabaseAdapter {
   private static instance: DatabaseAdapter;
-  private hotelId = 1; // Current hotel ID in database
+  // Hotel Porec UUID — must match the hotels table PK (UUID type, per DB schema)
+  private hotelId = '550e8400-e29b-41d4-a716-446655440000';
 
   private constructor() {}
 
@@ -235,12 +236,15 @@ export class DatabaseAdapter {
         endDate,
       });
       // Get reservations for the specific room and date range
+      // Overlap predicate: reservation overlaps [startDate, endDate] when
+      // check_in_date < endDate AND check_out_date > startDate
       const { data: reservationsData, error: reservationsError } = await supabase
         .from('reservations')
         .select('*')
         .eq('room_id', parseInt(roomId))
-        .gte('check_in_date', startDate.toISOString().split('T')[0])
-        .lte('check_out_date', endDate.toISOString().split('T')[0]);
+        .not('status', 'eq', 'cancelled')
+        .lt('check_in_date', endDate.toISOString().split('T')[0])
+        .gt('check_out_date', startDate.toISOString().split('T')[0]);
       console.log('✅ DATABASE: Got reservations query result:', {
         count: reservationsData?.length,
         error: reservationsError,
@@ -496,15 +500,18 @@ export class DatabaseAdapter {
       phone: guest.phone || '',
       dateOfBirth: guest.date_of_birth ? new Date(guest.date_of_birth) : undefined,
       nationality: guest.nationality || '',
+      passportNumber: guest.passport_number || undefined,
+      idCardNumber: guest.id_card_number || undefined,
       preferredLanguage: guest.preferred_language || 'en',
       dietaryRestrictions: guest.dietary_restrictions || [],
+      specialNeeds: guest.special_needs || undefined,
       hasPets: guest.has_pets || false,
       isVip: guest.is_vip || false,
       vipLevel: guest.vip_level || 0,
       children: [], // TODO: Load from guest_children table if needed
       totalStays: guest.total_stays || 0,
-      emergencyContactName: '',
-      emergencyContactPhone: '',
+      emergencyContactName: undefined,
+      emergencyContactPhone: undefined,
       createdAt: new Date(guest.created_at),
       updatedAt: new Date(guest.updated_at),
     };

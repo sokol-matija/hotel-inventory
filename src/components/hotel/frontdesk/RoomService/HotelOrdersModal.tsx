@@ -243,6 +243,7 @@ export default function HotelOrdersModal({
           quantity: item.quantity,
           unit_price: item.price,
           total_price: item.totalPrice,
+          notes: orderNotes || null,
         }));
         await supabase.from('room_service_orders').insert(rows);
       }

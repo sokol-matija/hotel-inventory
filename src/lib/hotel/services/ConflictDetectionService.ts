@@ -88,26 +88,17 @@ export class ConflictDetectionService {
     guestId: string,
     excludeReservationId?: string
   ): Promise<ConflictResult> {
-    console.log('🔍 CONFLICT SERVICE: Starting checkNewReservation with:', {
-      roomId,
-      checkIn,
-      checkOut,
-      guestId,
-      excludeReservationId,
-    });
     const conflicts: BookingConflict[] = [];
     const warnings: BookingWarning[] = [];
     const suggestions: BookingSuggestion[] = [];
 
     try {
-      console.log('📞 CONFLICT SERVICE: Calling getReservationsByRoomAndDateRange...');
       // Get all reservations for the room in the date range
       const existingReservations = await this.databaseAdapter.getReservationsByRoomAndDateRange(
         roomId,
         startOfDay(checkIn),
         endOfDay(checkOut)
       );
-      console.log('✅ CONFLICT SERVICE: Got existing reservations:', existingReservations.length);
 
       // Filter out the reservation being edited if provided
       const relevantReservations = excludeReservationId
@@ -195,21 +186,41 @@ export class ConflictDetectionService {
 
     for (let i = 0; i < operations.length; i++) {
       const op = operations[i];
+      let result: ConflictResult;
+
       if (op.type === 'create') {
-        results[i] = await this.checkNewReservation(
+        result = await this.checkNewReservation(
           op.roomId,
           op.checkIn,
           op.checkOut,
           op.guestId || ''
         );
-      } else if (op.type === 'move' || op.type === 'extend') {
-        results[i] = await this.checkReservationMove(
+      } else {
+        result = await this.checkReservationMove(
           op.reservationId!,
           op.roomId,
           op.checkIn,
           op.checkOut
         );
       }
+
+      // Also check against earlier operations in this batch for the same room
+      for (let j = 0; j < i; j++) {
+        const prev = operations[j];
+        if (prev.roomId === op.roomId) {
+          const overlaps = prev.checkIn < op.checkOut && prev.checkOut > op.checkIn;
+          if (overlaps) {
+            result.conflicts.push({
+              type: 'overlapping_reservation',
+              severity: 'error',
+              message: `Conflicts with operation #${j + 1} in this batch (same room, overlapping dates)`,
+            });
+            result.hasConflict = true;
+          }
+        }
+      }
+
+      results[i] = result;
     }
 
     return results;
@@ -322,11 +333,13 @@ export class ConflictDetectionService {
     }
 
     // Room upgrade suggestions
+    // NOTE: We query rooms directly here instead of calling findAlternativeRooms()
+    // to avoid infinite recursion: findAlternativeRooms → checkNewReservation → validateBusinessRules → findAlternativeRooms
     try {
       const room = await this.databaseAdapter.getRoomById(roomId);
       if (room && !room.isPremium) {
-        const premiumRooms = await this.findAlternativeRooms(roomId, checkIn, checkOut);
-        const premiumAlternatives = premiumRooms.filter((r) => r.isPremium);
+        const allRooms = await this.databaseAdapter.getRooms();
+        const premiumAlternatives = allRooms.filter((r) => r.isPremium && r.id !== roomId);
 
         if (premiumAlternatives.length > 0) {
           suggestions.push({

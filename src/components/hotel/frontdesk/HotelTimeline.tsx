@@ -202,6 +202,8 @@ export default function HotelTimeline({
 
   // Keyboard shortcuts
   useEffect(() => {
+    let removeListener: (() => void) | undefined;
+
     const initKeyboardShortcuts = async () => {
       const { KeyboardShortcutService } =
         await import('../../../lib/hotel/services/KeyboardShortcutService');
@@ -260,11 +262,12 @@ export default function HotelTimeline({
       };
 
       document.addEventListener('hotel-timeline-shortcut', handleShortcut as EventListener);
-      return () =>
+      removeListener = () =>
         document.removeEventListener('hotel-timeline-shortcut', handleShortcut as EventListener);
     };
 
     initKeyboardShortcuts();
+    return () => removeListener?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     dragCreate.state.isEnabled,

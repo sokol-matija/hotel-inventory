@@ -422,6 +422,20 @@ export class OrdersService {
       // Deduct inventory using FIFO method
       await this.deductInventoryFIFO(orderItems);
 
+      // Persist order to DB (reservation_id is null for staff/bar orders)
+      const rows = orderItems.map((item) => ({
+        reservation_id: null,
+        item_name: item.itemName,
+        category: item.category,
+        quantity: item.quantity,
+        unit_price: item.price,
+        total_price: item.totalPrice,
+      }));
+      const { error: insertError } = await supabase.from('room_service_orders').insert(rows);
+      if (insertError) {
+        console.error('Failed to persist order to DB:', insertError);
+      }
+
       // Print receipt
       const printSuccess = await printWindowsReceipt(orderData);
 

@@ -20,7 +20,7 @@ function HotelOverviewStats({ reservations }: { reservations: Reservation[] }) {
 
   const occupiedRooms = todayOccupancy.length;
   const totalRooms = rooms.length; // Use dynamic room count instead of static HOTEL_POREC_ROOMS.length
-  const occupancyRate = (occupiedRooms / totalRooms) * 100;
+  const occupancyRate = totalRooms > 0 ? (occupiedRooms / totalRooms) * 100 : 0;
 
   // Calculate total guests in hotel today
   const totalGuests = todayOccupancy.reduce(
