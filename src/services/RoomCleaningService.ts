@@ -32,7 +32,6 @@ export class RoomCleaningService {
         return { success: false, error: error.message };
       }
 
-      console.log(`✅ Room ${roomId} marked as clean`);
       return { success: true };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -57,7 +56,6 @@ export class RoomCleaningService {
         return { success: false, error: error.message };
       }
 
-      console.log(`❌ Room ${roomId} marked as dirty`);
       return { success: true };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -176,7 +174,6 @@ export class RoomCleaningService {
         return { success: false, error: error.message };
       }
 
-      console.log(`Updated ${roomIds.length} rooms to ${isClean ? 'clean' : 'dirty'}`);
       return { success: true };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';

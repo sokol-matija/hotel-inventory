@@ -8,32 +8,19 @@ import { getCurrentEnvironment } from './config';
  * is handled by the fiscalize-invoice Edge Function, not in the browser.
  */
 export function testFINACertificate(): void {
-  console.log('🏛️ Testing FINA Certificate with existing fiscalization service');
-  console.log('='.repeat(60));
-
   const fiscalService = FiscalizationService.getInstance();
 
   // Check current environment
-  console.log('\n🌍 Current fiscalization environment:');
-  const environment = getCurrentEnvironment();
-  console.log(`Mode: ${environment.mode}`);
-  console.log(`URL: ${environment.url}`);
-  console.log(`OIB: ${environment.oib}`);
+  getCurrentEnvironment();
 
   // Check service status
-  console.log('\n📊 Fiscalization service status:');
   const serviceStatus = fiscalService.getServiceStatus();
-  console.log(`Environment: ${serviceStatus.environment}`);
-  console.log(`OIB: ${serviceStatus.oib}`);
-  console.log(`Certificate configured: ${serviceStatus.certificateConfigured ? '✅' : '❌'}`);
 
   if (serviceStatus.validationErrors.length > 0) {
-    console.log('\n❌ Validation errors:');
-    serviceStatus.validationErrors.forEach((error) => console.log(`  - ${error}`));
+    serviceStatus.validationErrors.forEach((_error) => {});
   }
 
   // Test invoice generation with sample data
-  console.log('\n🧾 Testing sample invoice fiscalization...');
 
   const sampleInvoice = {
     invoiceNumber: 'HP-2025-000001',
@@ -55,19 +42,7 @@ export function testFINACertificate(): void {
   fiscalService
     .fiscalizeInvoice(sampleInvoice)
     .then((result) => {
-      console.log('\n📋 Fiscalization test result:');
-      console.log(`Success: ${result.success ? '✅' : '❌'}`);
-
-      if (result.success && result.jir) {
-        console.log(`JIR: ${result.jir}`);
-        console.log(`Receipt URL: ${result.fiscalReceiptUrl}`);
-        console.log(`QR Code: ${result.qrCodeData}`);
-      } else {
-        console.log(`Error: ${result.error}`);
-      }
-
-      console.log('\n' + '='.repeat(60));
-      console.log('🎉 FINA certificate test completed!');
+      void result;
     })
     .catch((error) => {
       console.error('\n❌ Fiscalization test failed:', error);
@@ -79,5 +54,4 @@ if (typeof window !== 'undefined') {
   // Browser environment - can call this from console
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (window as any).testFINACertificate = testFINACertificate;
-  console.log('💡 FINA certificate test loaded! Run testFINACertificate() in console to test.');
 }

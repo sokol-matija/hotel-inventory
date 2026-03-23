@@ -381,12 +381,10 @@ function generateThermalReceiptHTML(data: FiscalPrintData): string {
         if (window.print) {
           // Add print event listeners
           window.addEventListener('beforeprint', function() {
-            console.log('Printing thermal receipt...');
             document.title = 'Thermal Receipt - ${order.orderNumber}';
           });
           
           window.addEventListener('afterprint', function() {
-            console.log('Print dialog closed');
             // Close window after printing
             setTimeout(() => {
               window.close();
@@ -665,15 +663,6 @@ function generateSimpleTestHTML(): string {
  */
 function printHTMLContent(htmlContent: string): Promise<boolean> {
   return new Promise((resolve) => {
-    console.log('🖨️ Opening thermal receipt for printing...');
-    console.log('📋 Thermal Printer Setup Instructions:');
-    console.log('1. ✅ Make sure Bixolon SRP-350II is your default printer');
-    console.log('2. ✅ When print dialog opens, select your thermal printer');
-    console.log('3. ✅ Set paper size to "Receipt", "80mm", or "Custom"');
-    console.log('4. ✅ Set all margins to 0 or "Minimum"');
-    console.log('5. ✅ DISABLE "Fit to page" or "Scale to fit"');
-    console.log('6. ✅ Ensure "Actual size" or "100%" is selected');
-
     // Try window method first (better for printer settings)
     try {
       const printWindow = window.open(
@@ -688,12 +677,7 @@ function printHTMLContent(htmlContent: string): Promise<boolean> {
         printWindow.focus();
 
         // Auto-print is handled by the script in the HTML
-        setTimeout(() => {
-          console.log('✅ Receipt window opened - check your print dialog!');
-          console.log(
-            '🔧 If still printing A4: In print dialog → More settings → Paper size → Receipt/80mm'
-          );
-        }, 700);
+        setTimeout(() => {}, 700);
 
         resolve(true);
         return;
@@ -730,9 +714,6 @@ function printHTMLContent(htmlContent: string): Promise<boolean> {
         if (printFrame.contentWindow) {
           printFrame.contentWindow.focus();
           printFrame.contentWindow.print();
-          console.log(
-            '✅ Print dialog should appear - select thermal printer and check paper size!'
-          );
           resolve(true);
         } else {
           console.error('❌ No print window available');
@@ -801,7 +782,6 @@ export async function printWindowsReceipt(data: PrintReceiptData): Promise<boole
     );
 
     if (!userConfirmed) {
-      console.log('🚫 User cancelled printing to check printer setup');
       return false;
     }
 
@@ -823,7 +803,6 @@ export async function printWindowsReceipt(data: PrintReceiptData): Promise<boole
     const success = await printHTMLContent(htmlContent);
 
     if (success) {
-      console.log('✅ Print initiated successfully');
       // Show post-print instructions
       setTimeout(() => {
         alert(

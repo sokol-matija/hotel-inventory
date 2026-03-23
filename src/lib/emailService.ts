@@ -697,12 +697,6 @@ ${this.getEmailStyles()}
         console.warn('⚠️ Supabase not configured, falling back to simulation');
         // Fallback to simulation if no Supabase config
         await new Promise((resolve) => setTimeout(resolve, 1500));
-        console.log('📧 Email simulated (no Supabase config):', {
-          to,
-          subject: template.subject,
-          bodyLength: template.body.length,
-          timestamp: new Date().toISOString(),
-        });
         return {
           success: true,
           message: `Email simulated successfully to ${to} (no Supabase configured)`,
@@ -728,13 +722,6 @@ ${this.getEmailStyles()}
       const result = await response.json();
 
       if (response.ok && result.success) {
-        console.log('📧 Email sent successfully via Supabase:', {
-          to,
-          subject: template.subject,
-          emailId: result.emailId,
-          timestamp: new Date().toISOString(),
-        });
-
         return {
           success: true,
           message: `Welcome email sent successfully to ${to}`,

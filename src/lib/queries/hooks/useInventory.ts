@@ -116,9 +116,7 @@ export function useUpdateInventoryQuantity() {
           error.message.includes('network') ||
           error.message.includes('timeout'))
       ) {
-        console.log(
-          '🔌 NETWORK ERROR DETECTED - CONNECTION MAY BE REFRESHING, TRY AGAIN IN A MOMENT'
-        );
+        // transient network error — TanStack Query will retry automatically
       }
     },
   });

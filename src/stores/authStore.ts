@@ -26,10 +26,7 @@ interface AuthState {
 let profileCheckInProgress = false;
 
 const checkUserProfile = async (userId: string, set: (partial: Partial<AuthState>) => void) => {
-  console.log('checkUserProfile: Starting for user:', userId);
-
   if (profileCheckInProgress) {
-    console.log('checkUserProfile: Already checking profile, skipping duplicate call');
     return;
   }
 
@@ -37,8 +34,6 @@ const checkUserProfile = async (userId: string, set: (partial: Partial<AuthState
   set({ profileLoading: true });
 
   try {
-    console.log('checkUserProfile: Making database query...');
-
     const timeoutPromise = new Promise((_, reject) =>
       setTimeout(() => reject(new Error('Profile query timeout after 15 seconds')), 15000)
     );
@@ -52,8 +47,6 @@ const checkUserProfile = async (userId: string, set: (partial: Partial<AuthState
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = (await Promise.race([queryPromise, timeoutPromise])) as any;
 
-    console.log('checkUserProfile: Query returned', { data, error, errorCode: error?.code });
-
     if (error) {
       console.error('checkUserProfile: Error details:', {
         message: error.message,
@@ -63,14 +56,12 @@ const checkUserProfile = async (userId: string, set: (partial: Partial<AuthState
       });
 
       if (error.code === 'PGRST116') {
-        console.log('checkUserProfile: No profile found (user needs to select role)');
         set({ userProfile: null, hasProfile: false });
       } else {
         console.error('checkUserProfile: Database error:', error);
         set({ userProfile: null, hasProfile: false });
       }
     } else {
-      console.log('checkUserProfile: Success! Profile data:', data);
       set({ userProfile: data, hasProfile: !!data });
     }
   } catch (error) {
@@ -79,7 +70,6 @@ const checkUserProfile = async (userId: string, set: (partial: Partial<AuthState
   } finally {
     profileCheckInProgress = false;
     set({ profileLoading: false });
-    console.log('checkUserProfile: Finished');
   }
 };
 

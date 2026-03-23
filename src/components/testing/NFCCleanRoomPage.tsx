@@ -50,8 +50,6 @@ export const NFCCleanRoomPage = () => {
 
       const endpoint = `https://gkbpthurkucotikjefra.supabase.co/functions/v1/nfc-clean-room?roomId=${roomId}`;
 
-      console.log(`[NFC CLEAN] Calling: ${endpoint}`);
-
       const response = await fetch(endpoint, {
         method: 'GET',
         headers: {
@@ -61,8 +59,6 @@ export const NFCCleanRoomPage = () => {
       });
 
       const data = await response.json();
-
-      console.log('[NFC CLEAN] Response:', data);
 
       setResult({
         success: data.success,

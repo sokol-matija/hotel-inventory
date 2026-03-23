@@ -159,7 +159,7 @@ export class FiscalizationService {
         throw new Error('Supabase configuration missing');
       }
 
-      const supabaseKey = this.sanitizeToken(supabaseAnonKey);
+      this.sanitizeToken(supabaseAnonKey);
 
       // Extract numeric part of invoice number (HP-2025-747258 → 747258)
       // Croatian Tax Authority expects just the number, not the full format
@@ -178,13 +178,6 @@ export class FiscalizationService {
         paymentMethod: this.mapPaymentMethod(invoiceData.paymentMethod),
       };
 
-      console.log('🚀 Calling Supabase Edge Function: fiscalize-invoice');
-      console.log(`📋 OIB being sent: ${fiscalRequest.oib}`);
-      console.log(`📋 Invoice number: ${invoiceData.invoiceNumber} → ${numericInvoiceNumber}`);
-      console.log(`🔍 Debug - supabaseUrl: ${supabaseUrl}`);
-      console.log(`🔍 Debug - supabaseKey length: ${supabaseKey?.length || 'undefined'}`);
-      console.log(`🔍 Debug - Full URL: ${supabaseUrl}/functions/v1/fiscalize-invoice`);
-
       // Call Edge Function through Supabase SDK.
       // This avoids manual JWT header construction issues.
       const { data: result, error } = await supabase.functions.invoke('fiscalize-invoice', {
@@ -197,10 +190,6 @@ export class FiscalizationService {
       }
 
       if (result.success && result.jir && result.zki) {
-        console.log('✅ Fiscalization successful via Edge Function');
-        console.log(`📋 JIR: ${result.jir}`);
-        console.log(`🔒 ZKI: ${result.zki}`);
-
         return {
           success: true,
           jir: result.jir,
@@ -252,15 +241,8 @@ export class FiscalizationService {
     }
 
     try {
-      console.log(`🏛️ FISCAL ${environment.mode}: Sending SOAP request to Croatian Tax Authority`);
-
       // Use appropriate endpoint based on environment
-      const endpoint =
-        environment.mode === 'TEST'
-          ? { hostname: 'cistest.apis-it.hr', port: 8449, path: '/FiskalizacijaServiceTest' }
-          : { hostname: 'cis.porezna-uprava.hr', port: 443, path: '/FiskalizacijaService' };
-
-      console.log(`📍 Endpoint: https://${endpoint.hostname}:${endpoint.port}${endpoint.path}`);
+      // endpoint hostname varies by environment mode (TEST vs PROD)
 
       // NOTE: This method is deprecated - use Edge Function instead
       // Direct SOAP calls should only be made server-side via Edge Functions
@@ -293,10 +275,6 @@ export class FiscalizationService {
         const errorCode = errorMatch[1];
         const errorMessage = messageMatch ? messageMatch[1] : 'Unknown error';
 
-        console.log('⚠️ Croatian Tax Authority Error:');
-        console.log(`📟 Error Code: ${errorCode}`);
-        console.log(`📝 Error Message: ${errorMessage}`);
-
         return {
           success: false,
           error: `${errorCode}: ${errorMessage}`,
@@ -310,8 +288,6 @@ export class FiscalizationService {
 
       if (jirMatch) {
         const jir = jirMatch[1];
-        console.log('🎉 SUCCESS! Croatian Tax Authority Response:');
-        console.log(`📋 JIR (Unique Invoice ID): ${jir}`);
 
         return {
           success: true,
@@ -321,7 +297,6 @@ export class FiscalizationService {
       }
 
       // No JIR or error found
-      console.log('⚠️ Unexpected response format');
       return {
         success: false,
         error: 'Response received but no JIR or error found',
@@ -344,10 +319,6 @@ export class FiscalizationService {
   private async simulateFiscalRequest(_fiscalXML: string): Promise<FiscalResponse> {
     const environment = getCurrentEnvironment();
 
-    console.log('📋 Simulating Croatian Tax Authority SOAP request...');
-    console.log(`🎯 Target: https://cistest.apis-it.hr:8449/FiskalizacijaServiceTest`);
-    console.log('✅ Using CORRECTED XML structure (s004 error resolved)');
-
     // Simulate realistic network delay
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
@@ -357,7 +328,6 @@ export class FiscalizationService {
 
       if (random < 0.1) {
         // s002 error (certificate environment mismatch - 10% of time)
-        console.log('⚠️ Simulated s002 error (certificate environment mismatch)');
 
         return {
           success: false,
@@ -368,10 +338,6 @@ export class FiscalizationService {
       } else if (random < 0.85) {
         // Success case (75% of the time for demo)
         const testJIR = this.generateTestJIR();
-
-        console.log('✅ Simulated SUCCESS response from Croatian Tax Authority');
-        console.log(`📋 Generated JIR: ${testJIR}`);
-        console.log('🎉 s004 error has been RESOLVED with corrected XML structure!');
 
         const receiptUrl = this.generateFiscalReceiptUrl(testJIR);
         const qrData = this.generateFiscalQRData(testJIR, 75.5); // Demo amount
@@ -391,8 +357,6 @@ export class FiscalizationService {
           's006: System error',
         ];
         const randomError = errors[Math.floor(Math.random() * errors.length)];
-
-        console.log(`⚠️ Simulated validation error: ${randomError}`);
 
         return {
           success: false,

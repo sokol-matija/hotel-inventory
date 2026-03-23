@@ -137,7 +137,6 @@ export const EnhancedDailyViewModal: React.FC<EnhancedDailyViewModalProps> = ({
       if (childrenError) {
         console.warn('⚠️ Could not load children:', childrenError);
       } else if (childrenData && childrenData.length > 0) {
-        console.log('✅ Children found:', childrenData);
         childrenData.forEach((child: Record<string, unknown>) => {
           guests.push({
             id: String(child.id),
@@ -146,23 +145,14 @@ export const EnhancedDailyViewModal: React.FC<EnhancedDailyViewModalProps> = ({
             age: child.age as number | undefined,
           });
         });
-      } else {
-        console.log('ℹ️  No children found');
       }
 
-      console.log('👥 Final guests list:', guests);
       setAllGuests(guests);
 
       // Initialize day states
       const checkIn = new Date(reservationData.check_in_date);
       const checkOut = new Date(reservationData.check_out_date);
       const days: DayState[] = [];
-
-      console.log('📅 Initializing day states:', {
-        checkIn: checkIn.toLocaleDateString(),
-        checkOut: checkOut.toLocaleDateString(),
-        guestsCount: guests.length,
-      });
 
       // Load existing daily details if any
       const { data: existingDetails, error: detailsError } = await supabase
@@ -173,8 +163,6 @@ export const EnhancedDailyViewModal: React.FC<EnhancedDailyViewModalProps> = ({
 
       if (detailsError) {
         console.warn('⚠️  Could not load existing daily details:', detailsError);
-      } else {
-        console.log('📊 Loaded existing daily details:', existingDetails);
       }
 
       const existingDetailsMap = new Map(
@@ -223,16 +211,9 @@ export const EnhancedDailyViewModal: React.FC<EnhancedDailyViewModalProps> = ({
           hasChanges: false,
         };
 
-        console.log('📖 Creating day state for:', {
-          date: date.toLocaleDateString(),
-          guestPresences: dayState.guestPresences,
-          hasExistingDetail: !!existingDetail,
-        });
-
         days.push(dayState);
       }
 
-      console.log('🗓️  Final day states:', days);
       setDayStates(days);
 
       // Calculate initial pricing

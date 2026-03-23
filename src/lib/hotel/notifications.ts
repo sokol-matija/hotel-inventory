@@ -11,8 +11,7 @@ interface NotificationOptions {
 class HotelNotificationService {
   show(options: NotificationOptions) {
     // For now, just console log - can be enhanced with toast notifications later
-    const { title, message, type = 'info' } = options;
-    console.log(`[${type.toUpperCase()}] ${title}: ${message}`);
+    void options; // placeholder — wire up toast library when needed
 
     // Could integrate with a toast library like react-hot-toast here
     // toast[type](message);

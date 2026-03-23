@@ -112,10 +112,6 @@ const FiscalizationTestPage: React.FC = () => {
         paymentMethod: 'CASH' as const,
       };
 
-      console.log(
-        `🏛️ FISCAL TEST: Fiscalizing invoice ${invoice.invoiceNumber} with Croatian Tax Authority TEST endpoint`
-      );
-
       const result = await fiscalizationService.fiscalizeInvoice(fiscalData);
 
       setSubmissionResults((prev) => [

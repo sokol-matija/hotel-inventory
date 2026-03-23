@@ -68,9 +68,6 @@ export class FiscalXMLSigner {
       // Convert to PEM format for xml-crypto
       this.certPem = forge.pki.certificateToPem(this.certificate);
       this.privateKeyPem = forge.pki.privateKeyToPem(this.privateKey);
-
-      console.log('✅ XML Signer initialized successfully');
-      console.log(`📄 Certificate: ${this.certificate.subject.getField('CN')?.value}`);
     } catch (error) {
       throw new Error(
         `Failed to load certificate: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -87,8 +84,6 @@ export class FiscalXMLSigner {
    */
   signSOAPEnvelope(xml: string, refId: string): SigningResult {
     try {
-      console.log('🔐 Signing SOAP envelope with XML-DSIG...');
-
       // Create SignedXml instance
       const sig = new SignedXml({
         privateKey: this.privateKeyPem,
@@ -116,9 +111,6 @@ export class FiscalXMLSigner {
       });
 
       const signedXml = sig.getSignedXml();
-
-      console.log('✅ SOAP envelope signed successfully');
-      console.log(`📏 Signed XML length: ${signedXml.length} characters`);
 
       return {
         success: true,

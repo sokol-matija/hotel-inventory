@@ -166,7 +166,6 @@ export default function PaymentDetailsModal({
 
       // Automatically generate invoice when payment is marked as paid
       try {
-        console.log('Auto-generating invoice for paid guest...');
         const invoice = await createInvoice(reservation.id);
 
         // Process payment for the full amount
@@ -209,7 +208,6 @@ export default function PaymentDetailsModal({
   };
 
   const handleSendEmail = () => {
-    console.log('Sending reminder email to:', guest.email);
     // TODO: Implement email sending
     alert(`Reminder email would be sent to ${guest.email}`);
   };

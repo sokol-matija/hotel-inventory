@@ -249,7 +249,6 @@ export class ReservationService {
             reservation.totalAmount,
             typeof guest.id === 'string' ? parseInt(guest.id) : guest.id // Add guest_id to satisfy database constraint
           );
-          console.log('✅ Fiscal data saved to database');
         } catch (dbError) {
           console.error('❌ Failed to save fiscal data to database:', dbError);
           throw dbError; // Don't silently fail - we need to know about this!
@@ -481,7 +480,6 @@ export class ReservationService {
 
     if (existingInvoice) {
       invoiceId = existingInvoice.id;
-      console.log(`📋 Using existing invoice ID: ${invoiceId}`);
     } else {
       // Create new invoice
       const { data: newInvoice, error: invoiceError } = await supabase
@@ -501,7 +499,6 @@ export class ReservationService {
 
       if (invoiceError) throw invoiceError;
       invoiceId = newInvoice.id;
-      console.log(`✅ Created new invoice ID: ${invoiceId}`);
     }
 
     // Step 2: Create fiscal_record
@@ -519,7 +516,5 @@ export class ReservationService {
     });
 
     if (fiscalError) throw fiscalError;
-
-    console.log(`✅ Fiscal data saved: JIR=${jir}, ZKI=${zki}`);
   }
 }

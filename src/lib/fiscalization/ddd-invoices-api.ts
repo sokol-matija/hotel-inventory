@@ -248,10 +248,6 @@ export class DDDInvoicesAPI {
         },
       };
 
-      console.log('📤 Sending invoice to DDD Invoices API...');
-      console.log(`📋 Type: ${request.invoiceType.toUpperCase()}`);
-      console.log(`📝 Steps: ${steps.join(', ')}`);
-
       // Make API call
       const response = await fetch(`${this.apiUrl}/EUeInvoices.DDDI_Save`, {
         method: 'POST',
@@ -292,9 +288,6 @@ export class DDDInvoicesAPI {
       // Extract response data
       const invoiceId = result.Result?.Result?.Id;
       const returnDoc = result.Result?.ReturnDoc || {};
-
-      console.log('✅ Invoice created successfully!');
-      console.log(`📋 Invoice ID: ${invoiceId}`);
 
       return {
         success: true,

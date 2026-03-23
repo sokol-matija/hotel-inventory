@@ -71,8 +71,6 @@ export class RealtimeService {
           filter: roomId ? `room_id=eq.${roomId}` : undefined,
         },
         (payload) => {
-          console.log('Reservation change:', payload);
-
           const realtimePayload: ReservationRealtimePayload = {
             eventType: payload.eventType as RealtimeEventType,
             new: payload.new as Reservation | null,
@@ -83,9 +81,7 @@ export class RealtimeService {
           onReservationChange(realtimePayload);
         }
       )
-      .subscribe((status) => {
-        console.log(`Reservation subscription ${channelName}:`, status);
-      });
+      .subscribe((_status) => {});
 
     this.channels.set(channelName, channel);
 
@@ -113,8 +109,6 @@ export class RealtimeService {
           filter: floor ? `floor_number=eq.${floor}` : undefined,
         },
         (payload) => {
-          console.log('Room change:', payload);
-
           const realtimePayload: RoomRealtimePayload = {
             eventType: payload.eventType as RealtimeEventType,
             new: payload.new as Room | null,
@@ -125,9 +119,7 @@ export class RealtimeService {
           onRoomChange(realtimePayload);
         }
       )
-      .subscribe((status) => {
-        console.log(`Room subscription ${channelName}:`, status);
-      });
+      .subscribe((_status) => {});
 
     this.channels.set(channelName, channel);
 
@@ -154,8 +146,6 @@ export class RealtimeService {
           table: 'guests',
         },
         (payload) => {
-          console.log('Guest change:', payload);
-
           const realtimePayload: GuestRealtimePayload = {
             eventType: payload.eventType as RealtimeEventType,
             new: payload.new as Guest | null,
@@ -166,9 +156,7 @@ export class RealtimeService {
           onGuestChange(realtimePayload);
         }
       )
-      .subscribe((status) => {
-        console.log(`Guest subscription ${channelName}:`, status);
-      });
+      .subscribe((_status) => {});
 
     this.channels.set(channelName, channel);
 
@@ -231,8 +219,6 @@ export class RealtimeService {
           filter: `id=eq.${reservationId}`,
         },
         (payload) => {
-          console.log('Single reservation change:', payload);
-
           const realtimePayload: ReservationRealtimePayload = {
             eventType: payload.eventType as RealtimeEventType,
             new: payload.new as Reservation | null,
@@ -243,9 +229,7 @@ export class RealtimeService {
           onReservationChange(realtimePayload);
         }
       )
-      .subscribe((status) => {
-        console.log(`Single reservation subscription ${channelName}:`, status);
-      });
+      .subscribe((_status) => {});
 
     this.channels.set(channelName, channel);
 
@@ -261,7 +245,6 @@ export class RealtimeService {
     if (existingChannel) {
       supabase.removeChannel(existingChannel);
       this.channels.delete(channelName);
-      console.log(`Unsubscribed from ${channelName}`);
     }
   }
 
@@ -269,9 +252,8 @@ export class RealtimeService {
    * Unsubscribe from all channels
    */
   unsubscribeAll(): void {
-    this.channels.forEach((channel, channelName) => {
+    this.channels.forEach((channel, _channelName) => {
       supabase.removeChannel(channel);
-      console.log(`Unsubscribed from ${channelName}`);
     });
     this.channels.clear();
   }

@@ -66,7 +66,6 @@ class NtfyService {
         return false;
       }
 
-      console.log('Ntfy notification sent successfully');
       return true;
     } catch (error) {
       console.error('Error sending ntfy notification:', error);

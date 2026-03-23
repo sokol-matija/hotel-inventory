@@ -146,7 +146,7 @@ export async function printViaNetwork(
         return true;
       }
     } catch {
-      console.log('HTTP interface not available, trying raw TCP...');
+      // Fetch failed — fallback path below
     }
 
     // Fallback: Raw TCP socket (requires server-side proxy in production)

@@ -87,13 +87,10 @@ export default function FiscalizationTestPage() {
     setTestResult(null);
 
     try {
-      console.log('🧪 Starting fiscalization test...');
       const result = await fiscalizationService.fiscalizeInvoice(TEST_INVOICE);
       setTestResult(result);
 
-      if (result.success) {
-        console.log('✅ Fiscalization test successful:', result);
-      } else {
+      if (!result.success) {
         console.error('❌ Fiscalization test failed:', result.error);
       }
     } catch (error) {

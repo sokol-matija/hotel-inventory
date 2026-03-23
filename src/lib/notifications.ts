@@ -301,7 +301,6 @@ class HotelNotification {
 
     // If the same notification was shown recently, skip it
     if (now - lastTime < this.debounceDelay) {
-      console.log(`Notification debounced: ${title}`);
       return null;
     }
 

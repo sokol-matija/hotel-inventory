@@ -371,8 +371,7 @@ export default function GuestManagementPage({ onGuestSelect }: GuestManagementPa
         onClose={() => setShowGuestModal(false)}
         guest={selectedGuest}
         mode={modalMode}
-        onSave={(guest) => {
-          console.log('Guest saved:', guest);
+        onSave={(_guest) => {
           setShowGuestModal(false);
         }}
       />

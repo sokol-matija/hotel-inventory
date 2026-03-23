@@ -19,8 +19,6 @@ export const safeSupabaseCall = async <T>(
       errorMessage.includes('jwt expired') ||
       (error?.status === 401 && errorMessage.includes('expired'))
     ) {
-      console.log('Specific session error detected during API call:', error.message);
-
       // Sign out and redirect to login
       await supabase.auth.signOut();
 

@@ -131,7 +131,7 @@ export const NFCTestPage = () => {
       .from('rooms')
       .update({ is_cleaned: false })
       .eq('id', roomId)
-      .then(() => console.log(`Room ${roomId} marked as dirty for next test`));
+      .then(() => {});
   }
 
   return (

@@ -282,16 +282,6 @@ export default function Dashboard() {
                         size="sm"
                         variant="outline"
                         onClick={() => {
-                          console.log('➖ DASHBOARD DECREMENT BUTTON CLICKED:', {
-                            itemId: item.id,
-                            currentQuantity: item.quantity,
-                            newQuantity: item.quantity - 1,
-                            timestamp: new Date().toISOString(),
-                            itemName: item.item?.name,
-                            locationName: item.location?.name,
-                            documentHidden: document.hidden,
-                            windowFocused: document.hasFocus(),
-                          });
                           updateQuantity(item.id, item.quantity - 1);
                         }}
                         disabled={item.quantity <= 0 || updateQuantityMutation.isPending}
@@ -302,16 +292,6 @@ export default function Dashboard() {
                         size="sm"
                         variant="outline"
                         onClick={() => {
-                          console.log('➕ DASHBOARD INCREMENT BUTTON CLICKED:', {
-                            itemId: item.id,
-                            currentQuantity: item.quantity,
-                            newQuantity: item.quantity + 1,
-                            timestamp: new Date().toISOString(),
-                            itemName: item.item?.name,
-                            locationName: item.location?.name,
-                            documentHidden: document.hidden,
-                            windowFocused: document.hasFocus(),
-                          });
                           updateQuantity(item.id, item.quantity + 1);
                         }}
                         disabled={updateQuantityMutation.isPending}

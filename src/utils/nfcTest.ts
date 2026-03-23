@@ -26,9 +26,6 @@ export async function simulateNFCTap(config: NFCTestConfig): Promise<NFCTestResu
   const endpoint = `${supabaseUrl}/functions/v1/nfc-clean-room`;
   const url = `${endpoint}?roomId=${roomId}&hotelId=${hotelId}`;
 
-  console.log(`[NFC TEST] Simulating tap for room: ${roomId}`);
-  console.log(`[NFC TEST] URL: ${url}`);
-
   try {
     const response = await fetch(url, {
       method: 'GET',
@@ -47,7 +44,6 @@ export async function simulateNFCTap(config: NFCTestConfig): Promise<NFCTestResu
       error: data.error,
     };
 
-    console.log('[NFC TEST RESULT]', result);
     return result;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -104,8 +100,6 @@ export const TEST_ROOMS = [
  * Useful for testing the NFC system with multiple rooms
  */
 export async function batchTestNFCTaps(roomIds: string[]): Promise<NFCTestResult[]> {
-  console.log(`[NFC BATCH TEST] Testing ${roomIds.length} rooms`);
-
   const results = await Promise.allSettled(roomIds.map((roomId) => simulateNFCTap({ roomId })));
 
   return results.map((result) => {

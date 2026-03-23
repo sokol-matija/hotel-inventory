@@ -165,7 +165,6 @@ export default function CheckInWorkflow({ isOpen, onClose, reservation }: CheckI
       await updateReservationStatus(reservation.id, 'checked-in');
 
       // Send welcome email
-      console.log(`📧 Sending welcome email to ${guest?.email}...`);
       const emailResult = await HotelEmailService.sendWelcomeEmail(
         reservation,
         guest ?? undefined,
@@ -173,14 +172,11 @@ export default function CheckInWorkflow({ isOpen, onClose, reservation }: CheckI
       );
       setEmailSendResult(emailResult);
 
-      if (emailResult.success) {
-        console.log(`✅ Welcome email sent successfully to ${guest?.email}`);
-      } else {
+      if (!emailResult.success) {
         console.warn(`⚠️ Failed to send welcome email: ${emailResult.message}`);
       }
 
       // Log check-in completion
-      console.log(`Check-in completed for ${guest?.fullName} in Room ${room?.number}`);
 
       // Close workflow after showing feedback
       setTimeout(

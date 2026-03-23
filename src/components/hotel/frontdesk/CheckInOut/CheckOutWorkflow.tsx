@@ -169,9 +169,7 @@ export default function CheckOutWorkflow({ isOpen, onClose, reservation }: Check
 
       // Automatically generate invoice when payment is marked as paid
       try {
-        console.log('Auto-generating invoice for paid guest...');
         const invoice = await createInvoice(reservation.id);
-        console.log('Invoice generated successfully:', invoice.invoiceNumber);
 
         // Process payment for the full amount
         await addPayment({
@@ -186,8 +184,6 @@ export default function CheckOutWorkflow({ isOpen, onClose, reservation }: Check
           notes: `Payment processed during stay - ${guest?.fullName}`,
           referenceNumber: `PAYMENT-${Date.now()}`,
         });
-
-        console.log('Payment processed and invoice created:', invoice.invoiceNumber);
 
         hotelNotification.success(
           'Payment Processed & Invoice Created',
@@ -237,14 +233,11 @@ export default function CheckOutWorkflow({ isOpen, onClose, reservation }: Check
       await updateReservationStatus(reservation.id, 'checked-out');
 
       // Log check-out completion
-      console.log(`Check-out completed for ${guest?.fullName} from Room ${room?.number}`);
 
       // Generate invoice if requested
       if (generateInvoice) {
         try {
-          console.log('Generating invoice for guest...');
           const invoice = await createInvoice(reservation.id);
-          console.log('Invoice generated successfully:', invoice.invoiceNumber);
 
           // Show success notification - invoice created but payment still pending
           hotelNotification.success(

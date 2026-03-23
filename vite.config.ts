@@ -6,7 +6,10 @@ import { visualizer } from 'rollup-plugin-visualizer'
 import tanstackRouter from '@tanstack/router-plugin/vite'
 import path from 'path'
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
+  esbuild: {
+    drop: mode === 'production' ? ['console', 'debugger'] : [],
+  },
   plugins: [tanstackRouter({ routesDirectory: './src/routes', generatedRouteTree: './src/routeTree.gen.ts' }), react({ babel: { plugins: [locatorPlugin] } }), tailwindcss(), visualizer({ open: false, filename: 'dist/stats.html' })],
   resolve: {
     alias: {
@@ -32,4 +35,4 @@ export default defineConfig({
     setupFiles: ['./src/setupTests.ts'],
     css: true,
   },
-})
+}))

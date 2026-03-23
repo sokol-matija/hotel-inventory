@@ -57,7 +57,6 @@ export function useSimpleDragCreate() {
   }, []);
 
   const startSelection = useCallback((roomId: string, checkInDate: Date) => {
-    console.log('🟢 Starting selection:', { roomId, checkInDate });
     setState({
       isEnabled: true,
       currentSelection: {
@@ -77,7 +76,6 @@ export function useSimpleDragCreate() {
         return prevState;
       }
 
-      console.log('🔵 Completing selection:', { checkOutDate });
       completedSelection = {
         ...prevState.currentSelection,
         checkOutDate,
@@ -95,7 +93,6 @@ export function useSimpleDragCreate() {
   }, []);
 
   const cancel = useCallback(() => {
-    console.log('❌ Cancelling selection');
     setState((prev) => ({
       ...prev,
       currentSelection: null,
@@ -108,13 +105,6 @@ export function useSimpleDragCreate() {
     setState((prev) => {
       if (!prev.isSelecting || !prev.currentSelection) return prev;
       if (roomId !== prev.currentSelection.roomId) return prev;
-
-      console.log('🎯 Setting hover preview:', {
-        roomId,
-        hoverDate: hoverDate.toLocaleDateString(),
-        isAM,
-        checkIn: prev.currentSelection.checkInDate.toLocaleDateString(),
-      });
 
       return {
         ...prev,
@@ -166,10 +156,6 @@ export function useSimpleDragCreate() {
       ) {
         // For PM cells: show preview up to hover position
         if (!isAM) {
-          console.log('📦 Showing hover preview for PM cell:', {
-            roomId,
-            date: date.toLocaleDateString(),
-          });
           return 'hover-preview';
         }
 
@@ -180,10 +166,6 @@ export function useSimpleDragCreate() {
         currentDay.setHours(0, 0, 0, 0);
 
         if (currentDay.getTime() === hoverDay.getTime()) {
-          console.log('📦 Showing hover preview for checkout AM cell:', {
-            roomId,
-            date: date.toLocaleDateString(),
-          });
           return 'hover-preview';
         }
       }
