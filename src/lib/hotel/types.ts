@@ -273,19 +273,6 @@ export interface HotelContextType {
   findGuestByLastname: (lastname: string) => Guest[];
 
   // Utilities
-  calculatePricing: (
-    roomId: string,
-    checkIn: Date,
-    checkOut: Date,
-    adults: number,
-    children: GuestChild[],
-    options?: {
-      hasPets?: boolean;
-      needsParking?: boolean;
-      additionalCharges?: number;
-    }
-  ) => PricingCalculation;
-
   getSeasonalPeriod: (date: Date) => SeasonalPeriod;
   getRoomsByFloor: (floor: number) => Room[];
   getAvailableRooms: (checkIn: Date, checkOut: Date) => Room[];

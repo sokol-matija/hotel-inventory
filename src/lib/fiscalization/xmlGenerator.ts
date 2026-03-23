@@ -1,8 +1,8 @@
 // Croatian Fiscal XML Generation
 // Generates XML requests according to Croatian Tax Authority schema
 
-import { FiscalInvoiceData, RacunZahtjev, ZKIData, StornoRequest } from './types';
-import { HOTEL_FISCAL_CONFIG, getCurrentEnvironment } from './config';
+import { FiscalInvoiceData, ZKIData, StornoRequest } from './types';
+import { getCurrentEnvironment } from './config';
 import { format } from 'date-fns';
 
 export class FiscalXMLGenerator {
@@ -35,8 +35,8 @@ export class FiscalXMLGenerator {
       ? (-Math.abs(invoiceData.totalAmount)).toFixed(2)
       : invoiceData.totalAmount.toFixed(2);
 
-    // Calculate VAT breakdown (25% Croatian standard rate)
-    const baseAmount = Math.abs(invoiceData.totalAmount) / 1.25;
+    // Calculate VAT breakdown (13% Croatian accommodation rate, per law since 2018)
+    const baseAmount = Math.abs(invoiceData.totalAmount) / 1.13;
     const vatAmount = Math.abs(invoiceData.totalAmount) - baseAmount;
 
     // CORRECTED SOAP XML structure based on working production/test-fina-cert.js
@@ -61,7 +61,7 @@ export class FiscalXMLGenerator {
                 </tns:BrRac>
                 <tns:Pdv>
                     <tns:Porez>
-                        <tns:Stopa>25.00</tns:Stopa>
+                        <tns:Stopa>13.00</tns:Stopa>
                         <tns:Osnovica>${baseAmount.toFixed(2)}</tns:Osnovica>
                         <tns:Iznos>${vatAmount.toFixed(2)}</tns:Iznos>
                     </tns:Porez>
@@ -124,7 +124,7 @@ export class FiscalXMLGenerator {
                 name: `Storno - ${stornoRequest.reason}`,
                 quantity: 1,
                 unitPrice: stornoAmount,
-                vatRate: 25,
+                vatRate: 13,
                 totalAmount: stornoAmount,
               },
             ],
@@ -143,42 +143,6 @@ export class FiscalXMLGenerator {
       const v = c === 'x' ? r : (r & 0x3) | 0x8;
       return v.toString(16);
     });
-  }
-
-  /**
-   * Legacy method for backward compatibility
-   * TODO: Remove when all callers are updated
-   */
-  private generateLegacyXML(invoiceData: FiscalInvoiceData, zki: string): string {
-    const environment = getCurrentEnvironment();
-    const dateTime = this.formatCroatianDateTime(invoiceData.dateTime);
-
-    const racunZahtjev: RacunZahtjev = {
-      Oib: environment.oib, // Use environment-specific OIB (test vs production)
-      USustavuPDV: true,
-      DatVrijeme: dateTime,
-      OznakaSlijednosti: 'N', // Normal sequence
-      BrRac: {
-        BrOznRac: invoiceData.invoiceNumber,
-        OznPosPr: HOTEL_FISCAL_CONFIG.businessSpaceCode,
-        OznNapUr: HOTEL_FISCAL_CONFIG.cashRegisterCode,
-      },
-      Racun: {
-        TvrtkaNaziv: 'Hotel Porec',
-        Adresa: {
-          Ulica: HOTEL_FISCAL_CONFIG.address.street,
-          KucniBroj: HOTEL_FISCAL_CONFIG.address.houseNumber,
-          Posta: HOTEL_FISCAL_CONFIG.address.postalCode,
-          Naselje: HOTEL_FISCAL_CONFIG.address.city,
-        },
-        IznosUkupno: invoiceData.totalAmount.toFixed(2),
-        NacinPlac: this.mapPaymentMethod(invoiceData.paymentMethod),
-        ZastKod: zki,
-        NakDan: false, // Not a subsequent delivery
-      },
-    };
-
-    return this.buildXMLString(racunZahtjev);
   }
 
   /**
@@ -237,55 +201,6 @@ export class FiscalXMLGenerator {
     };
 
     return paymentMethods[method] || 'G';
-  }
-
-  /**
-   * Build XML string from RacunZahtjev object
-   */
-  private buildXMLString(racunZahtjev: RacunZahtjev): string {
-    return `<?xml version="1.0" encoding="UTF-8"?>
-<tns:RacunZahtjev xmlns:tns="http://www.apis-it.hr/fin/2012/types/f73" 
-                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-                  xsi:schemaLocation="http://www.apis-it.hr/fin/2012/types/f73 FiskalizacijaSchema.xsd">
-  <tns:Zaglavlje>
-    <tns:IdPoruke>${this.generateMessageId()}</tns:IdPoruke>
-    <tns:DatumVrijeme>${this.formatCroatianDateTime(new Date())}</tns:DatumVrijeme>
-  </tns:Zaglavlje>
-  <tns:Racun>
-    <tns:Oib>${racunZahtjev.Oib}</tns:Oib>
-    <tns:USustavuPDV>${racunZahtjev.USustavuPDV}</tns:USustavuPDV>
-    <tns:DatVrijeme>${racunZahtjev.DatVrijeme}</tns:DatVrijeme>
-    <tns:OznakaSlijednosti>${racunZahtjev.OznakaSlijednosti}</tns:OznakaSlijednosti>
-    <tns:BrRac>
-      <tns:BrOznRac>${racunZahtjev.BrRac.BrOznRac}</tns:BrOznRac>
-      <tns:OznPosPr>${racunZahtjev.BrRac.OznPosPr}</tns:OznPosPr>
-      <tns:OznNapUr>${racunZahtjev.BrRac.OznNapUr}</tns:OznNapUr>
-    </tns:BrRac>
-    <tns:Racun>
-      <tns:TvrtkaNaziv>${racunZahtjev.Racun.TvrtkaNaziv}</tns:TvrtkaNaziv>
-      <tns:Adresa>
-        <tns:Ulica>${racunZahtjev.Racun.Adresa?.Ulica}</tns:Ulica>
-        <tns:KucniBroj>${racunZahtjev.Racun.Adresa?.KucniBroj}</tns:KucniBroj>
-        <tns:Posta>${racunZahtjev.Racun.Adresa?.Posta}</tns:Posta>
-        <tns:Naselje>${racunZahtjev.Racun.Adresa?.Naselje}</tns:Naselje>
-      </tns:Adresa>
-      <tns:IznosUkupno>${racunZahtjev.Racun.IznosUkupno}</tns:IznosUkupno>
-      <tns:NacinPlac>${racunZahtjev.Racun.NacinPlac}</tns:NacinPlac>
-      ${racunZahtjev.Racun.OibOper ? `<tns:OibOper>${racunZahtjev.Racun.OibOper}</tns:OibOper>` : ''}
-      <tns:ZastKod>${racunZahtjev.Racun.ZastKod}</tns:ZastKod>
-      <tns:NakDan>${racunZahtjev.Racun.NakDan}</tns:NakDan>
-    </tns:Racun>
-  </tns:Racun>
-</tns:RacunZahtjev>`;
-  }
-
-  /**
-   * Generate unique message ID for fiscal request
-   */
-  private generateMessageId(): string {
-    const timestamp = Date.now();
-    const random = Math.random().toString(36).substr(2, 8);
-    return `HP${timestamp}${random}`.toUpperCase();
   }
 
   /**

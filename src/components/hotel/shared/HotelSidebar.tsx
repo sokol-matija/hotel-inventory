@@ -17,7 +17,6 @@ import {
   TrendingUp,
   DollarSign,
   Shield,
-  Wifi,
   Building2,
   Coffee,
   Printer,
@@ -109,16 +108,10 @@ const financeSidebarItems = [
     label: 'Fiscal Compliance',
   },
   {
-    key: 'eracuniTest',
-    path: '/hotel/finance/eracuni-test',
-    icon: Wifi,
-    label: 'Croatian Fiscalization',
-  },
-  {
     key: 'fiscalizationTest',
     path: '/hotel/finance/fiscalization-test',
     icon: Shield,
-    label: 'Fiscalization Test',
+    label: 'Croatian Fiscalization',
   },
 ];
 

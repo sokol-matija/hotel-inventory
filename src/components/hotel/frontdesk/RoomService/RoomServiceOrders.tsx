@@ -37,8 +37,10 @@ import {
 import { useReservations } from '../../../../lib/queries/hooks/useReservations';
 import { printReceipt as printBixolonReceipt } from '../../../../lib/printers/bixolonPrinter';
 import { HOTEL_POREC } from '../../../../lib/hotel/hotelData';
+import { useAuth } from '../../../../stores/authStore';
 
 export default function RoomServiceOrders() {
+  const { user } = useAuth();
   const { data: rooms = [] } = useRooms();
   const { data: guests = [] } = useGuests();
   const { data: reservations = [] } = useReservations();
@@ -138,7 +140,7 @@ export default function RoomServiceOrders() {
       paymentStatus: paymentMethod === 'room_bill' ? 'pending' : 'paid',
       orderStatus: 'pending',
       notes: orderNotes,
-      orderedBy: 'Front Desk Staff', // TODO: Get actual staff member
+      orderedBy: user?.email || 'Front Desk Staff',
       printedReceipt: false,
     };
 

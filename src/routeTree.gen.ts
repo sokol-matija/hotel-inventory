@@ -40,7 +40,6 @@ import { Route as HotelFinanceRevenueAnalyticsRouteImport } from './routes/hotel
 import { Route as HotelFinanceInvoicesRouteImport } from './routes/hotel/finance/invoices';
 import { Route as HotelFinanceFiscalizationTestRouteImport } from './routes/hotel/finance/fiscalization-test';
 import { Route as HotelFinanceFiscalComplianceRouteImport } from './routes/hotel/finance/fiscal-compliance';
-import { Route as HotelFinanceEracuniTestRouteImport } from './routes/hotel/finance/eracuni-test';
 import { Route as LayoutLocationsIdRouteImport } from './routes/_layout/locations/$id';
 import { Route as LayoutAdminTestingRouteImport } from './routes/_layout/admin/testing';
 import { Route as LayoutAdminLocationsRouteImport } from './routes/_layout/admin/locations';
@@ -200,11 +199,6 @@ const HotelFinanceFiscalComplianceRoute = HotelFinanceFiscalComplianceRouteImpor
   path: '/fiscal-compliance',
   getParentRoute: () => HotelFinanceRoute,
 } as any);
-const HotelFinanceEracuniTestRoute = HotelFinanceEracuniTestRouteImport.update({
-  id: '/eracuni-test',
-  path: '/eracuni-test',
-  getParentRoute: () => HotelFinanceRoute,
-} as any);
 const LayoutLocationsIdRoute = LayoutLocationsIdRouteImport.update({
   id: '/locations/$id',
   path: '/locations/$id',
@@ -245,7 +239,6 @@ export interface FileRoutesByFullPath {
   '/admin/locations': typeof LayoutAdminLocationsRoute;
   '/admin/testing': typeof LayoutAdminTestingRoute;
   '/locations/$id': typeof LayoutLocationsIdRoute;
-  '/hotel/finance/eracuni-test': typeof HotelFinanceEracuniTestRoute;
   '/hotel/finance/fiscal-compliance': typeof HotelFinanceFiscalComplianceRoute;
   '/hotel/finance/fiscalization-test': typeof HotelFinanceFiscalizationTestRoute;
   '/hotel/finance/invoices': typeof HotelFinanceInvoicesRoute;
@@ -280,7 +273,6 @@ export interface FileRoutesByTo {
   '/admin/locations': typeof LayoutAdminLocationsRoute;
   '/admin/testing': typeof LayoutAdminTestingRoute;
   '/locations/$id': typeof LayoutLocationsIdRoute;
-  '/hotel/finance/eracuni-test': typeof HotelFinanceEracuniTestRoute;
   '/hotel/finance/fiscal-compliance': typeof HotelFinanceFiscalComplianceRoute;
   '/hotel/finance/fiscalization-test': typeof HotelFinanceFiscalizationTestRoute;
   '/hotel/finance/invoices': typeof HotelFinanceInvoicesRoute;
@@ -319,7 +311,6 @@ export interface FileRoutesById {
   '/_layout/admin/locations': typeof LayoutAdminLocationsRoute;
   '/_layout/admin/testing': typeof LayoutAdminTestingRoute;
   '/_layout/locations/$id': typeof LayoutLocationsIdRoute;
-  '/hotel/finance/eracuni-test': typeof HotelFinanceEracuniTestRoute;
   '/hotel/finance/fiscal-compliance': typeof HotelFinanceFiscalComplianceRoute;
   '/hotel/finance/fiscalization-test': typeof HotelFinanceFiscalizationTestRoute;
   '/hotel/finance/invoices': typeof HotelFinanceInvoicesRoute;
@@ -358,7 +349,6 @@ export interface FileRouteTypes {
     | '/admin/locations'
     | '/admin/testing'
     | '/locations/$id'
-    | '/hotel/finance/eracuni-test'
     | '/hotel/finance/fiscal-compliance'
     | '/hotel/finance/fiscalization-test'
     | '/hotel/finance/invoices'
@@ -393,7 +383,6 @@ export interface FileRouteTypes {
     | '/admin/locations'
     | '/admin/testing'
     | '/locations/$id'
-    | '/hotel/finance/eracuni-test'
     | '/hotel/finance/fiscal-compliance'
     | '/hotel/finance/fiscalization-test'
     | '/hotel/finance/invoices'
@@ -431,7 +420,6 @@ export interface FileRouteTypes {
     | '/_layout/admin/locations'
     | '/_layout/admin/testing'
     | '/_layout/locations/$id'
-    | '/hotel/finance/eracuni-test'
     | '/hotel/finance/fiscal-compliance'
     | '/hotel/finance/fiscalization-test'
     | '/hotel/finance/invoices'
@@ -682,13 +670,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HotelFinanceFiscalComplianceRouteImport;
       parentRoute: typeof HotelFinanceRoute;
     };
-    '/hotel/finance/eracuni-test': {
-      id: '/hotel/finance/eracuni-test';
-      path: '/eracuni-test';
-      fullPath: '/hotel/finance/eracuni-test';
-      preLoaderRoute: typeof HotelFinanceEracuniTestRouteImport;
-      parentRoute: typeof HotelFinanceRoute;
-    };
     '/_layout/locations/$id': {
       id: '/_layout/locations/$id';
       path: '/locations/$id';
@@ -749,7 +730,6 @@ const LayoutRouteChildren: LayoutRouteChildren = {
 const LayoutRouteWithChildren = LayoutRoute._addFileChildren(LayoutRouteChildren);
 
 interface HotelFinanceRouteChildren {
-  HotelFinanceEracuniTestRoute: typeof HotelFinanceEracuniTestRoute;
   HotelFinanceFiscalComplianceRoute: typeof HotelFinanceFiscalComplianceRoute;
   HotelFinanceFiscalizationTestRoute: typeof HotelFinanceFiscalizationTestRoute;
   HotelFinanceInvoicesRoute: typeof HotelFinanceInvoicesRoute;
@@ -758,7 +738,6 @@ interface HotelFinanceRouteChildren {
 }
 
 const HotelFinanceRouteChildren: HotelFinanceRouteChildren = {
-  HotelFinanceEracuniTestRoute: HotelFinanceEracuniTestRoute,
   HotelFinanceFiscalComplianceRoute: HotelFinanceFiscalComplianceRoute,
   HotelFinanceFiscalizationTestRoute: HotelFinanceFiscalizationTestRoute,
   HotelFinanceInvoicesRoute: HotelFinanceInvoicesRoute,
