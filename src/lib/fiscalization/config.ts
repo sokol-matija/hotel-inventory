@@ -32,8 +32,7 @@ export const HOTEL_FISCAL_CONFIG: FiscalConfiguration = {
   workingHours: '0-24',
   certificate: {
     file: import.meta.env.VITE_FISCAL_CERT_FILE,
-    password: import.meta.env.VITE_FISCAL_CERT_PASSWORD,
-    passwordBackup: import.meta.env.VITE_FISCAL_CERT_PASSWORD_BACKUP,
+    // Passwords are handled server-side via Supabase Edge Function secrets only
     path: import.meta.env.VITE_FISCAL_CERT_PATH,
   },
 };

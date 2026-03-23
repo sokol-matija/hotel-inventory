@@ -128,9 +128,13 @@ function generateSOAPEnvelope(
   const xmlDateTime = formatXMLDateTime(new Date(fiscalData.dateTime));
   const messageId = generateUUID();
 
-  // Calculate VAT breakdown
-  const baseAmount = fiscalData.totalAmount / 1.25;
-  const vatAmount = fiscalData.totalAmount - baseAmount;
+  // Use the vatAmount provided by the caller (already computed with the correct rate).
+  // Derive baseAmount and rate from the sent values instead of assuming 25%.
+  // Croatian accommodation: 13% VAT (since 2018). Food & beverage: 25%.
+  const vatAmount = fiscalData.vatAmount;
+  const baseAmount = fiscalData.totalAmount - vatAmount;
+  // Stopa (rate %) — round to 2 dp; accommodations yield "13.00", F&B "25.00"
+  const stopaPercent = baseAmount > 0 ? ((vatAmount / baseAmount) * 100).toFixed(2) : '13.00';
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
@@ -152,7 +156,7 @@ function generateSOAPEnvelope(
                 </tns:BrRac>
                 <tns:Pdv>
                     <tns:Porez>
-                        <tns:Stopa>25.00</tns:Stopa>
+                        <tns:Stopa>${stopaPercent}</tns:Stopa>
                         <tns:Osnovica>${baseAmount.toFixed(2)}</tns:Osnovica>
                         <tns:Iznos>${vatAmount.toFixed(2)}</tns:Iznos>
                     </tns:Porez>

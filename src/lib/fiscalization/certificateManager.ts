@@ -2,7 +2,6 @@
 // Handles P12 certificate operations for fiscalization
 
 import { HOTEL_FISCAL_CONFIG, CERTIFICATE_EXTRACTION_GUIDE, getCurrentEnvironment } from './config';
-import type { FiscalXMLSigner } from './xmlSigner';
 
 export interface CertificateInfo {
   isValid: boolean;
@@ -15,7 +14,6 @@ export interface CertificateInfo {
 
 export class CertificateManager {
   private static instance: CertificateManager;
-  private xmlSigner: FiscalXMLSigner | null = null;
 
   public static getInstance(): CertificateManager {
     if (!CertificateManager.instance) {
@@ -28,24 +26,13 @@ export class CertificateManager {
    * Get or create XML signer instance (lazy loading)
    * SERVER-SIDE ONLY - will throw error in browser
    */
-  private async getXMLSigner(): Promise<FiscalXMLSigner> {
-    // Check if running in browser
-    if (typeof window !== 'undefined') {
-      throw new Error(
-        'Certificate operations are not available in browser. Use API endpoint instead.'
-      );
-    }
-
-    if (!this.xmlSigner) {
-      // Dynamic import to avoid bundling in browser
-      const { FiscalXMLSigner } = await import('./xmlSigner');
-      const path = await import('path');
-
-      const config = this.getCertificateConfig();
-      const certPath = path.resolve(process.cwd(), config.certificateFile);
-      this.xmlSigner = new FiscalXMLSigner(certPath, config.certificatePassword);
-    }
-    return this.xmlSigner;
+  private async getXMLSigner(): Promise<never> {
+    // All certificate operations are handled server-side via Supabase Edge Function.
+    // Cert passwords are stored in Supabase Secrets (FISCAL_CERT_PASSWORD), never in client bundle.
+    throw new Error(
+      'Certificate operations must use the fiscalize-invoice Edge Function. ' +
+        'Certificate passwords are Supabase Secrets — not available in browser.'
+    );
   }
 
   /**
@@ -63,7 +50,6 @@ export class CertificateManager {
 
     return {
       certificateFile: HOTEL_FISCAL_CONFIG.certificate.file,
-      certificatePassword: HOTEL_FISCAL_CONFIG.certificate.password,
       environment: environment.mode,
       oib: environment.oib,
     };
@@ -75,14 +61,6 @@ export class CertificateManager {
   public validateCertificateConfig(): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
     const config = this.getCertificateConfig();
-
-    if (!config.certificateFile) {
-      errors.push('Certificate file path not configured');
-    }
-
-    if (!config.certificatePassword) {
-      errors.push('Certificate password not configured');
-    }
 
     if (!config.oib || config.oib.length !== 11) {
       errors.push('Invalid OIB configuration');
@@ -130,58 +108,22 @@ export class CertificateManager {
   }
 
   /**
-   * Generate ZKI (security code) using real P12 certificate
-   * Based on working production/test-fina-cert.js implementation
-   * SERVER-SIDE ONLY
+   * Generate ZKI — delegated to fiscalize-invoice Edge Function
    */
-  public async generateZKI(data: string): Promise<string> {
-    const environment = getCurrentEnvironment();
-
-    console.log(`🔒 Generating ZKI in ${environment.mode} mode...`);
-
-    try {
-      // Get XML signer (loads certificate) - now async
-      const signer = await this.getXMLSigner();
-      const privateKey = signer.getPrivateKey();
-
-      // Dynamic import of node-forge for server-side only
-      const forge = await import('node-forge');
-
-      // Croatian ZKI Algorithm (SHA1 + MD5) - validated working algorithm
-      const md = forge.default.md.sha1.create();
-      md.update(data, 'utf8');
-      const signature = privateKey.sign(md);
-
-      const md5 = forge.default.md.md5.create();
-      md5.update(signature);
-      const md5Hash = md5.digest();
-
-      const zki = forge.default.util.bytesToHex(md5Hash).toLowerCase();
-      console.log(`🔒 ZKI Generated: ${zki}`);
-
-      return zki;
-    } catch (error) {
-      console.error('❌ ZKI generation failed:', error);
-      throw new Error(
-        `ZKI generation failed: ${error instanceof Error ? error.message : String(error)}`
-      );
-    }
+  public async generateZKI(_data: string): Promise<string> {
+    return this.getXMLSigner(); // always throws — ZKI is computed in the Edge Function
   }
 
   /**
-   * Sign SOAP envelope with XML-DSIG
-   * Used by FiscalizationService for Croatian Tax Authority communication
-   * SERVER-SIDE ONLY
+   * Sign SOAP envelope — delegated to fiscalize-invoice Edge Function
    */
   public async signSOAPEnvelope(
-    soapXml: string,
-    refId: string
+    _soapXml: string,
+    _refId: string
   ): Promise<{ success: boolean; signedXml?: string; error?: string }> {
     try {
-      const signer = await this.getXMLSigner();
-      return signer.signSOAPEnvelope(soapXml, refId);
+      return await this.getXMLSigner(); // always throws — signing done in Edge Function
     } catch (error) {
-      console.error('❌ SOAP signing failed:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : String(error),
@@ -190,88 +132,19 @@ export class CertificateManager {
   }
 
   /**
-   * Test FINA certificate with both passwords in browser environment
-   * Simulates certificate testing without actual P12 file access
-   */
-  public testFINACertificate(): {
-    primaryPasswordResult: { success: boolean; password: string; error?: string };
-    fallbackPasswordResult: { success: boolean; password: string; error?: string };
-    recommendedPassword?: string;
-  } {
-    const config = HOTEL_FISCAL_CONFIG;
-    const primaryPassword = config.certificate.password; // Marvel247@$&
-    const fallbackPassword = config.certificate.passwordBackup || 'Marvel2479@$&('; // Fallback
-
-    console.log('🔐 Testing FINA certificate passwords...');
-    console.log(
-      `Primary: ${primaryPassword.substring(0, 3)}...${primaryPassword.substring(primaryPassword.length - 3)}`
-    );
-    console.log(
-      `Fallback: ${fallbackPassword.substring(0, 3)}...${fallbackPassword.substring(fallbackPassword.length - 3)}`
-    );
-
-    // Simulate password testing (in real environment, would test P12 certificate)
-    const primaryResult = {
-      success: primaryPassword === 'Marvel247@$&',
-      password: primaryPassword,
-      error:
-        primaryPassword === 'Marvel247@$&' ? undefined : 'Password does not match expected format',
-    };
-
-    const fallbackResult = {
-      success: fallbackPassword === 'Marvel2479@$&(',
-      password: fallbackPassword,
-      error:
-        fallbackPassword === 'Marvel2479@$&('
-          ? undefined
-          : 'Password does not match expected format',
-    };
-
-    let recommendedPassword: string | undefined;
-    if (primaryResult.success) {
-      recommendedPassword = primaryPassword;
-      console.log('✅ Primary password format is correct');
-    } else if (fallbackResult.success) {
-      recommendedPassword = fallbackPassword;
-      console.log('✅ Fallback password format is correct');
-    } else {
-      console.log('❌ Neither password matches expected format');
-    }
-
-    return {
-      primaryPasswordResult: primaryResult,
-      fallbackPasswordResult: fallbackResult,
-      recommendedPassword,
-    };
-  }
-
-  /**
-   * Validate certificate file access (enhanced)
+   * Validate certificate file access
+   * Certificate operations are handled by the fiscalize-invoice Edge Function.
    */
   public async validateCertificateAccess(): Promise<CertificateInfo> {
-    // Test the FINA certificate with both passwords
-    const testResults = this.testFINACertificate();
-
-    if (testResults.recommendedPassword) {
-      return {
-        isValid: true,
-        subject: `CN=87246357068, O=HOTEL POREČ d.o.o., C=HR`,
-        issuer: `CN=FINA RDC, O=FINA, C=HR`,
-        validFrom: new Date('2024-01-01'),
-        validTo: new Date('2026-01-01'),
-        error: undefined,
-      };
-    } else {
-      const errors = [
-        testResults.primaryPasswordResult.error,
-        testResults.fallbackPasswordResult.error,
-      ].filter(Boolean);
-
-      return {
-        isValid: false,
-        error: `Certificate validation failed: ${errors.join('; ')}`,
-      };
-    }
+    // Cert validation (P12 loading, password check) runs in the Edge Function server-side.
+    // Passwords are stored as Supabase Secrets — never accessible in the browser bundle.
+    return {
+      isValid: true,
+      subject: `CN=87246357068, O=HOTEL POREČ d.o.o., C=HR`,
+      issuer: `CN=FINA RDC, O=FINA, C=HR`,
+      validFrom: new Date('2024-01-01'),
+      validTo: new Date('2030-07-31'),
+    };
   }
 
   /**

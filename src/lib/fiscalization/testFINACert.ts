@@ -1,36 +1,17 @@
 // Simple FINA Certificate Test using existing fiscalization service
-import { CertificateManager } from './certificateManager';
 import { FiscalizationService } from './FiscalizationService';
 import { getCurrentEnvironment } from './config';
 
 /**
- * Test the FINA certificate with the existing fiscalization service
+ * Test the FINA certificate with the existing fiscalization service.
+ * Note: Certificate passwords are stored as Supabase Secrets — all signing
+ * is handled by the fiscalize-invoice Edge Function, not in the browser.
  */
 export function testFINACertificate(): void {
   console.log('🏛️ Testing FINA Certificate with existing fiscalization service');
   console.log('='.repeat(60));
 
-  // Get certificate manager and fiscalization service
-  const certManager = CertificateManager.getInstance();
   const fiscalService = FiscalizationService.getInstance();
-
-  // Test certificate passwords
-  console.log('\n🔐 Testing certificate passwords...');
-  const passwordTest = certManager.testFINACertificate();
-
-  console.log(
-    `Primary password (Marvel247@$&): ${passwordTest.primaryPasswordResult.success ? '✅' : '❌'}`
-  );
-  console.log(
-    `Fallback password (Marvel2479@$&(): ${passwordTest.fallbackPasswordResult.success ? '✅' : '❌'}`
-  );
-
-  if (passwordTest.recommendedPassword) {
-    console.log(`✅ Recommended password: ${passwordTest.recommendedPassword}`);
-  } else {
-    console.log('❌ No working password found');
-    return;
-  }
 
   // Check current environment
   console.log('\n🌍 Current fiscalization environment:');

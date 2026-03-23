@@ -23,8 +23,6 @@ export interface FiscalConfiguration {
   workingHours: string; // 0-24
   certificate: {
     file: string;
-    password: string;
-    passwordBackup?: string;
     path?: string;
   };
 }
