@@ -4,7 +4,7 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import RoleSelection from '@/components/auth/RoleSelection';
 
 function OnboardingPage() {
-  const { user, hasProfile, refreshProfile } = useAuth();
+  const { hasProfile, refreshProfile } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -15,7 +15,7 @@ function OnboardingPage() {
 
   if (hasProfile) return null;
 
-  return <RoleSelection user={user!} onRoleSelected={refreshProfile} />;
+  return <RoleSelection onRoleSelected={refreshProfile} />;
 }
 
 export const Route = createFileRoute('/onboarding')({

@@ -26,7 +26,6 @@ interface Role {
 }
 
 interface RoleSelectionProps {
-  user: { id: string };
   onRoleSelected: () => void;
 }
 
@@ -54,7 +53,7 @@ const BACKGROUND_STYLE = {
   backgroundRepeat: 'no-repeat',
 } as const;
 
-export default function RoleSelection({ user, onRoleSelected }: RoleSelectionProps) {
+export default function RoleSelection({ onRoleSelected }: RoleSelectionProps) {
   useAuth();
   const { t } = useTranslation();
   const { toast } = useToast();
@@ -114,26 +113,14 @@ export default function RoleSelection({ user, onRoleSelected }: RoleSelectionPro
   const handleSubmit = useCallback(async () => {
     if (!selectedRole) return;
 
-    // Check if admin role is selected and password is required
-    if (adminRole && selectedRole === adminRole.id) {
-      if (adminPassword !== import.meta.env.VITE_ADMIN_PASSWORD) {
-        toast({
-          title: t('auth.adminPasswordRequired'),
-          description: t('auth.incorrectAdminPassword'),
-          variant: 'destructive',
-        });
-        return;
-      }
-    }
-
     setIsSubmitting(true);
     try {
-      const { error } = await supabase.from('user_profiles').insert([
-        {
-          user_id: user.id,
-          role_id: selectedRole,
-        },
-      ]);
+      const body: { role_id: number; admin_password?: string } = { role_id: selectedRole };
+      if (adminRole && selectedRole === adminRole.id && adminPassword) {
+        body.admin_password = adminPassword;
+      }
+
+      const { error } = await supabase.functions.invoke('assign-role', { body });
 
       if (error) throw error;
 
@@ -141,15 +128,19 @@ export default function RoleSelection({ user, onRoleSelected }: RoleSelectionPro
       onRoleSelected();
     } catch (error) {
       console.error('Error creating user profile:', error);
+      const message =
+        error instanceof Error && error.message.includes('Incorrect admin password')
+          ? t('auth.incorrectAdminPassword')
+          : t('auth.errorCreatingProfile');
       toast({
         title: t('auth.settingUpAccount'),
-        description: t('auth.errorCreatingProfile'),
+        description: message,
         variant: 'destructive',
       });
     } finally {
       setIsSubmitting(false);
     }
-  }, [selectedRole, adminRole, adminPassword, user.id, onRoleSelected, t, toast]);
+  }, [selectedRole, adminRole, adminPassword, onRoleSelected, t, toast]);
 
   if (isLoading) {
     return (
