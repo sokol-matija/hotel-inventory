@@ -106,36 +106,32 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   initialize: () => {
     let mounted = true;
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!mounted) return;
-
-      console.log('Initial session check:', session?.user?.email);
-      set({ session, user: session?.user ?? null });
-
-      if (session?.user) {
-        await checkUserProfile(session.user.id, set);
-      } else {
-        set({ userProfile: null, hasProfile: false });
-      }
-
-      set({ loading: false });
-    });
-
+    // Use onAuthStateChange as the single source of truth.
+    // INITIAL_SESSION fires synchronously on subscribe with the persisted session
+    // (or null), avoiding the race between getSession() and onAuthStateChange.
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return;
 
-      console.log('Auth state changed:', event, session?.user?.email);
-
-      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
+      if (event === 'INITIAL_SESSION') {
         set({ session, user: session?.user ?? null });
-
+        if (session?.user) {
+          checkUserProfile(session.user.id, set).finally(() => {
+            if (mounted) set({ loading: false });
+          });
+        } else {
+          set({ userProfile: null, hasProfile: false, loading: false });
+        }
+      } else if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
+        set({ session, user: session?.user ?? null });
         if (session?.user) {
           checkUserProfile(session.user.id, set);
         } else {
           set({ userProfile: null, hasProfile: false });
         }
+      } else if (event === 'TOKEN_REFRESHED') {
+        set({ session, user: session?.user ?? null });
       }
     });
 

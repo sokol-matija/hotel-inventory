@@ -299,7 +299,7 @@ export interface HotelContextType {
 
 // Constants
 export const HOTEL_CONSTANTS = {
-  VAT_RATE: 0.25, // 25% VAT (already included in room prices per Croatian law)
+  VAT_RATE: 0.13, // 13% VAT for accommodation (Croatian law since 2018; 25% applies to F&B)
   PET_FEE: 20.0, // €20 per stay
   PARKING_FEE: 7.0, // €7 per night
   SHORT_STAY_SUPPLEMENT: 0.2, // +20% for stays < 3 days

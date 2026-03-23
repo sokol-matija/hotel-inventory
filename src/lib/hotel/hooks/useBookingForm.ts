@@ -1,7 +1,7 @@
 // useBookingForm - Clean form state management hook
 // Separates form logic from UI components
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { Room, Guest, GuestChild, ReservationStatus, Company, Reservation } from '../types';
 import { BookingService, BookingData, BookingValidationError } from '../services/BookingService';
 
@@ -134,6 +134,14 @@ export function useBookingForm(room?: Room, initialData?: Partial<BookingFormSta
     [formState]
   );
 
+  // Keep a ref to the latest bookingData so validate() always sees fresh data
+  // without needing to include it in the dependency array (which would cause
+  // infinite re-renders since bookingData is derived from formState).
+  const bookingDataRef = useRef(bookingData);
+  useEffect(() => {
+    bookingDataRef.current = bookingData;
+  });
+
   // Pricing calculation
   const pricing = useMemo(() => {
     return bookingService.calculatePricing(bookingData);
@@ -142,7 +150,10 @@ export function useBookingForm(room?: Room, initialData?: Partial<BookingFormSta
   // Validation
   const validate = useCallback(
     (existingReservations: Reservation[] = []) => {
-      const validationErrors = bookingService.validateBooking(bookingData, existingReservations);
+      const validationErrors = bookingService.validateBooking(
+        bookingDataRef.current,
+        existingReservations
+      );
 
       setFormState((prev) => ({
         ...prev,
@@ -151,9 +162,8 @@ export function useBookingForm(room?: Room, initialData?: Partial<BookingFormSta
 
       return validationErrors.length === 0;
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [bookingService]
-  ); // bookingData intentionally excluded — including it causes infinite re-renders
+  );
 
   // Form submission
   const setSubmitting = useCallback((isSubmitting: boolean) => {

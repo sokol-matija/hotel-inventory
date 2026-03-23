@@ -83,12 +83,18 @@ class NtfyService {
     const guestCount = bookingData.adults + bookingData.children;
     const guestText = guestCount === 1 ? 'guest' : 'guests';
 
+    // Avoid full guest name on a public topic — use initials to reduce PII exposure
+    const initials = bookingData.guestName
+      .split(' ')
+      .map((n) => n[0] + '.')
+      .join(' ');
+
     const message = `🏨 New Room 401 Booking
 
 🏨 New Booking Created
 
 📍 Room: ${bookingData.roomNumber}
-👤 Guest: ${bookingData.guestName}
+👤 Guest: ${initials}
 📅 Check-in: ${bookingData.checkIn}
 📅 Check-out: ${bookingData.checkOut}
 🌙 Nights: ${bookingData.nights}

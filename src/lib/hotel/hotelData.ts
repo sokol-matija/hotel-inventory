@@ -27,7 +27,7 @@ export const SEASONAL_PERIODS: SeasonalPeriodDefinition[] = [
     name: 'Spring/Late Fall',
     startDate: '2025-04-17',
     periods: [
-      { startDate: '2025-04-17', endDate: '2025-05-28' },
+      { startDate: '2025-04-17', endDate: '2025-05-25' }, // ends before C starts (05-26)
       { startDate: '2025-09-26', endDate: '2025-10-25' },
     ],
     tourismTaxRate: 1.5,
@@ -37,16 +37,16 @@ export const SEASONAL_PERIODS: SeasonalPeriodDefinition[] = [
     name: 'Early Summer/Early Fall',
     startDate: '2025-05-26',
     periods: [
-      { startDate: '2025-05-26', endDate: '2025-07-30' },
-      { startDate: '2025-08-31', endDate: '2025-09-25' },
+      { startDate: '2025-05-26', endDate: '2025-07-30' }, // ends before D starts (07-31)
+      { startDate: '2025-08-31', endDate: '2025-09-25' }, // starts after D ends (08-30)
     ],
     tourismTaxRate: 1.5,
   },
   {
     period: 'D',
     name: 'Peak Summer',
-    startDate: '2025-07-15',
-    endDate: '2025-08-31',
+    startDate: '2025-07-31',
+    endDate: '2025-08-30',
     tourismTaxRate: 1.5,
   },
 ];

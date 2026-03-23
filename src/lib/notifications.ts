@@ -349,6 +349,7 @@ class HotelNotification {
         break;
     }
 
+    // Use textContent for user-supplied strings to prevent XSS
     notification.innerHTML = `
             <div class="hotel-notification-content">
                 <div class="hotel-notification-icon">
@@ -357,8 +358,8 @@ class HotelNotification {
                     </svg>
                 </div>
                 <div class="hotel-notification-text">
-                    <h3>${title}</h3>
-                    <p>${message}</p>
+                    <h3 class="hotel-notification-title"></h3>
+                    <p class="hotel-notification-message"></p>
                 </div>
                 <button class="hotel-notification-close" aria-label="Close notification">
                     <svg viewBox="0 0 24 24" width="16" height="16">
@@ -371,6 +372,10 @@ class HotelNotification {
                 <div class="hotel-notification-progress-bar"></div>
             </div>
         `;
+    const titleEl = notification.querySelector('.hotel-notification-title');
+    const messageEl = notification.querySelector('.hotel-notification-message');
+    if (titleEl) titleEl.textContent = title;
+    if (messageEl) messageEl.textContent = message;
 
     container.appendChild(notification);
     document.body.appendChild(container);

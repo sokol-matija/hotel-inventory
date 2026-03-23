@@ -15,7 +15,7 @@ import { SeasonalPeriod, GuestChild } from '../types';
 
 // Configuration for Croatian hotel pricing
 export interface PricingConfig {
-  vatRate: number; // 0.25 for Croatia
+  vatRate: number; // 0.13 for Croatia accommodation (Croatian VAT law since 2018)
   vatIncludedInRates: boolean; // true for Croatia
   tourismTaxRates: {
     high: number; // €1.50 Apr-Sep
@@ -30,12 +30,12 @@ export interface PricingConfig {
   childDiscounts: {
     age0to3: number; // 1.0 = 100% discount (free)
     age3to7: number; // 0.5 = 50% discount
-    age7to14: number; // 0.3 = 30% discount
+    age7to14: number; // 0.2 = 20% discount
   };
 }
 
 const DEFAULT_CONFIG: PricingConfig = {
-  vatRate: 0.25,
+  vatRate: 0.13, // Croatian accommodation VAT rate (13% per law since 2018)
   vatIncludedInRates: true,
   tourismTaxRates: { high: 1.5, low: 1.1 },
   serviceFees: {
@@ -47,7 +47,7 @@ const DEFAULT_CONFIG: PricingConfig = {
   childDiscounts: {
     age0to3: 1.0,
     age3to7: 0.5,
-    age7to14: 0.3,
+    age7to14: 0.2, // 20% discount (consistent with pricingCalculator.ts and pricingData2026.ts)
   },
 };
 

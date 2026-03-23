@@ -116,7 +116,7 @@ export default function RoleSelection({ user, onRoleSelected }: RoleSelectionPro
 
     // Check if admin role is selected and password is required
     if (adminRole && selectedRole === adminRole.id) {
-      if (adminPassword !== 'Hp247@$&') {
+      if (adminPassword !== import.meta.env.VITE_ADMIN_PASSWORD) {
         toast({
           title: t('auth.adminPasswordRequired'),
           description: t('auth.incorrectAdminPassword'),
