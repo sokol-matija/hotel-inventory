@@ -28,6 +28,7 @@ import { queryKeys } from '../../../lib/queries/queryKeys';
 import LabelAutocomplete from '../shared/LabelAutocomplete';
 import GuestAutocomplete from './Guests/GuestAutocomplete';
 import { unifiedPricingService } from '../../../lib/hotel/services/UnifiedPricingService';
+import { HOTEL_ID } from '../../../lib/hotel/constants';
 import { ntfyService, BookingNotificationData } from '../../../lib/ntfyService';
 import { virtualRoomService } from '../../../lib/hotel/services/VirtualRoomService';
 
@@ -60,7 +61,7 @@ export default function ModernCreateBookingModal({
   };
 
   // Hotel Porec UUID — matches the hotels table PK
-  const hotelId = '550e8400-e29b-41d4-a716-446655440000';
+  const hotelId = HOTEL_ID;
 
   // Room selection state for unallocated mode
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(room);

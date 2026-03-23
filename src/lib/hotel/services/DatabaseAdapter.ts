@@ -3,6 +3,7 @@
 
 import { supabase } from '../../supabase';
 import { Room, Guest, Reservation, Hotel, RoomType as AppRoomType } from '../types';
+import { HOTEL_ID } from '../constants';
 
 // Type mappings for current database structure
 interface CurrentDBRoom {
@@ -92,7 +93,7 @@ interface CurrentDBGuest {
 export class DatabaseAdapter {
   private static instance: DatabaseAdapter;
   // Hotel Porec UUID — must match the hotels table PK (UUID type, per DB schema)
-  private hotelId = '550e8400-e29b-41d4-a716-446655440000';
+  private hotelId = HOTEL_ID;
 
   private constructor() {}
 
@@ -749,10 +750,14 @@ export class DatabaseAdapter {
         sortOrder = 'desc',
       } = options;
 
-      // Build base query
+      // Build base query — join rooms with their type and pricing so we can build
+      // the roomLookup from embedded data without an extra full-table fetch.
       let query = supabase
         .from('reservations')
-        .select('*, guests(*), rooms(*)', { count: 'exact' });
+        .select(
+          '*, guests(*), rooms(*, room_types!room_type_id(code), room_pricing(base_rate, pricing_seasons(code, year_pattern)))',
+          { count: 'exact' }
+        );
 
       // Apply filters
       if (statuses && statuses.length > 0) {
@@ -792,6 +797,16 @@ export class DatabaseAdapter {
         query = query.neq('special_requests', '');
       }
 
+      // Push guest-level filters to SQL via foreign table filter syntax so they
+      // run server-side before pagination, keeping page sizes and counts accurate.
+      if (nationalities && nationalities.length > 0) {
+        query = query.in('guests.nationality', nationalities);
+      }
+
+      if (vipOnly) {
+        query = query.eq('guests.is_vip', true);
+      }
+
       // Sorting
       const orderColumn = sortBy === 'guest_name' ? 'guests(last_name)' : sortBy;
       query = query.order(orderColumn, { ascending: sortOrder === 'asc' });
@@ -806,30 +821,27 @@ export class DatabaseAdapter {
 
       if (reservationsError) throw reservationsError;
 
-      // The query uses joins, so guests and rooms are embedded in the response
-      // Build lookup maps from all data for consistent mapping
-      const { data: allGuestsData } = await supabase.from('guests').select('*');
-      const { data: allRoomsData } = await supabase.from('rooms').select('*');
-
-      const guestLookup = new Map(
-        ((allGuestsData as CurrentDBGuest[]) || []).map((g) => [g.id, g])
-      );
-      const roomLookup = new Map(((allRoomsData as CurrentDBRoom[]) || []).map((r) => [r.id, r]));
-
-      // Map reservations - the data includes joined guest/room data but we use lookup for consistency
+      // Build lookup maps from the joined guest/room data already embedded in each
+      // reservation row — no additional full-table queries needed.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let mappedReservations = ((reservationsData as any[]) || []).map(
-        (reservation: CurrentDBReservation & Record<string, unknown>) => {
-          // Use the joined guest data if available, otherwise fall back to lookup
-          const guestData = reservation.guests || guestLookup.get(reservation.guest_id);
-          const roomData = reservation.rooms || roomLookup.get(reservation.room_id);
+      const rawRows = (reservationsData as any[]) || [];
 
+      const guestLookup = new Map<number, CurrentDBGuest>(
+        rawRows
+          .filter((r) => r.guests)
+          .map((r) => [r.guest_id as number, r.guests as CurrentDBGuest])
+      );
+      const roomLookup = new Map<number, CurrentDBRoom>(
+        rawRows.filter((r) => r.rooms).map((r) => [r.room_id as number, r.rooms as CurrentDBRoom])
+      );
+
+      // Map reservations using the joined data
+      let mappedReservations = rawRows.map(
+        (reservation: CurrentDBReservation & Record<string, unknown>) => {
           return this.mapReservationFromCurrentDB(
             reservation as CurrentDBReservation,
-            guestData
-              ? new Map([[reservation.guest_id, guestData as CurrentDBGuest]])
-              : guestLookup,
-            roomData ? new Map([[reservation.room_id, roomData as CurrentDBRoom]]) : roomLookup
+            guestLookup,
+            roomLookup
           );
         }
       );
@@ -855,20 +867,6 @@ export class DatabaseAdapter {
         mappedReservations = mappedReservations.filter((res) => {
           const room = roomLookup.get(Number(res.roomId));
           return room && roomTypes.includes(room.room_types?.code || 'double');
-        });
-      }
-
-      if (nationalities && nationalities.length > 0) {
-        mappedReservations = mappedReservations.filter((res) => {
-          const guest = res.guest;
-          return guest && guest.nationality && nationalities.includes(guest.nationality);
-        });
-      }
-
-      if (vipOnly) {
-        mappedReservations = mappedReservations.filter((res) => {
-          const guest = res.guest;
-          return guest && guest.isVip;
         });
       }
 

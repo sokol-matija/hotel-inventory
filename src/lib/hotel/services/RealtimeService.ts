@@ -4,6 +4,7 @@
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { supabase } from '../../supabase';
 import { Reservation, Room, Guest } from '../types';
+import { HOTEL_ID } from '../constants';
 
 export type RealtimeEventType = 'INSERT' | 'UPDATE' | 'DELETE';
 
@@ -37,7 +38,7 @@ export type GuestChangeHandler = (payload: GuestRealtimePayload) => void;
 export class RealtimeService {
   private static instance: RealtimeService;
   private channels: Map<string, RealtimeChannel> = new Map();
-  private static readonly HOTEL_POREC_ID = '550e8400-e29b-41d4-a716-446655440000'; // Fixed UUID for Hotel Porec
+  private static readonly HOTEL_POREC_ID = HOTEL_ID; // Fixed UUID for Hotel Porec
 
   private constructor() {}
 
