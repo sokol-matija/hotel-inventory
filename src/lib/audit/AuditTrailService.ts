@@ -68,6 +68,7 @@ class AuditTrailService {
   private currentUserId?: string;
   private currentSessionId?: string;
   private readonly MAX_LOCAL_BUFFER = 1000;
+  private syncIntervalId: ReturnType<typeof setInterval> | null = null;
 
   private constructor() {
     this.initializeAuditService();
@@ -82,7 +83,7 @@ class AuditTrailService {
 
   private initializeAuditService(): void {
     // Set up periodic audit log sync to database
-    setInterval(() => {
+    this.syncIntervalId = setInterval(() => {
       this.syncAuditLogsToDatabase();
     }, 30000); // Sync every 30 seconds
 
@@ -537,7 +538,14 @@ class AuditTrailService {
       userAgent: undefined,
       result: 'success',
       errorMessage: undefined,
-      metadata: dbEvent.description ? JSON.parse(dbEvent.description) : undefined,
+      metadata: (() => {
+        if (!dbEvent.description) return undefined;
+        try {
+          return JSON.parse(dbEvent.description);
+        } catch {
+          return { raw: dbEvent.description };
+        }
+      })(),
     };
   }
 
@@ -652,7 +660,14 @@ class AuditTrailService {
   }
 
   private generateAuditId(): string {
-    return `audit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `audit_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+  }
+
+  destroy(): void {
+    if (this.syncIntervalId !== null) {
+      clearInterval(this.syncIntervalId);
+      this.syncIntervalId = null;
+    }
   }
 }
 

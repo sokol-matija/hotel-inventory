@@ -39,6 +39,7 @@ export interface KeyboardShortcut {
   shiftKey?: boolean;
   altKey?: boolean;
   description: string;
+  actionName?: string; // stable identifier used for context checks (minification-safe)
   action: () => void;
   category: 'navigation' | 'modes' | 'operations' | 'accessibility';
   enabled: boolean;
@@ -56,6 +57,7 @@ export class KeyboardShortcutService {
   private shortcuts: Map<string, KeyboardShortcut> = new Map();
   private context: ShortcutContext;
   private isEnabled: boolean = true;
+  private boundHandleKeyDown: (event: KeyboardEvent) => void;
 
   private constructor() {
     this.context = {
@@ -65,6 +67,7 @@ export class KeyboardShortcutService {
       currentDate: new Date(),
     };
 
+    this.boundHandleKeyDown = this.handleKeyDown.bind(this);
     this.setupDefaultShortcuts();
     this.bindEventListeners();
   }
@@ -151,6 +154,7 @@ export class KeyboardShortcutService {
     this.registerShortcut('Delete', {
       key: 'Delete',
       description: 'Delete selected reservations',
+      actionName: 'delete_selected',
       action: () => this.triggerAction('delete_selected'),
       category: 'operations',
       enabled: true,
@@ -196,6 +200,7 @@ export class KeyboardShortcutService {
       key: 'KeyC',
       ctrlKey: true,
       description: 'Copy selected reservations',
+      actionName: 'copy_reservations',
       action: () => this.triggerAction('copy_reservations'),
       category: 'operations',
       enabled: true,
@@ -214,6 +219,7 @@ export class KeyboardShortcutService {
     this.registerShortcut('Digit1', {
       key: 'Digit1',
       description: 'Set selected reservations to Confirmed',
+      actionName: 'status_confirmed',
       action: () => this.triggerAction('status_confirmed'),
       category: 'operations',
       enabled: true,
@@ -222,6 +228,7 @@ export class KeyboardShortcutService {
     this.registerShortcut('Digit2', {
       key: 'Digit2',
       description: 'Set selected reservations to Checked In',
+      actionName: 'status_checked_in',
       action: () => this.triggerAction('status_checked_in'),
       category: 'operations',
       enabled: true,
@@ -230,6 +237,7 @@ export class KeyboardShortcutService {
     this.registerShortcut('Digit3', {
       key: 'Digit3',
       description: 'Set selected reservations to Checked Out',
+      actionName: 'status_checked_out',
       action: () => this.triggerAction('status_checked_out'),
       category: 'operations',
       enabled: true,
@@ -345,7 +353,7 @@ export class KeyboardShortcutService {
    * Bind event listeners
    */
   private bindEventListeners(): void {
-    document.addEventListener('keydown', this.handleKeyDown.bind(this));
+    document.addEventListener('keydown', this.boundHandleKeyDown);
 
     // Prevent shortcuts when typing in input fields
     document.addEventListener('focusin', (e) => {
@@ -419,15 +427,14 @@ export class KeyboardShortcutService {
    */
   private isShortcutApplicable(shortcut: KeyboardShortcut): boolean {
     // Some shortcuts only work when reservations are selected
-    if (
-      [
-        'delete_selected',
-        'copy_reservations',
-        'status_confirmed',
-        'status_checked_in',
-        'status_checked_out',
-      ].some((action) => shortcut.action.toString().includes(action))
-    ) {
+    const requiresSelection = [
+      'delete_selected',
+      'copy_reservations',
+      'status_confirmed',
+      'status_checked_in',
+      'status_checked_out',
+    ];
+    if (shortcut.actionName && requiresSelection.includes(shortcut.actionName)) {
       return this.context.selectedReservations.length > 0;
     }
 
@@ -460,6 +467,6 @@ export class KeyboardShortcutService {
    * Cleanup event listeners
    */
   destroy(): void {
-    document.removeEventListener('keydown', this.handleKeyDown.bind(this));
+    document.removeEventListener('keydown', this.boundHandleKeyDown);
   }
 }

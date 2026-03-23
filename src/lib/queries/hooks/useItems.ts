@@ -16,6 +16,7 @@ async function fetchItemsWithCounts() {
 
   if (categoriesResult.error) throw categoriesResult.error;
   if (itemsResult.error) throw itemsResult.error;
+  if (inventoryResult.error) throw inventoryResult.error;
 
   const itemsWithCounts = (itemsResult.data ?? []).map((item) => {
     const itemInventory = inventoryResult.data?.filter((inv) => inv.item_id === item.id) ?? [];
@@ -79,14 +80,18 @@ export function useDeleteItem() {
     mutationFn: async (item: DeleteItemParams) => {
       const { error } = await supabase.from('items').update({ is_active: false }).eq('id', item.id);
       if (error) throw error;
-      await auditLog.itemDeleted(item.id, {
-        name: item.name,
-        description: item.description,
-        category: item.category.name,
-        unit: item.unit,
-        price: item.price,
-        minimum_stock: item.minimum_stock,
-      });
+      try {
+        await auditLog.itemDeleted(item.id, {
+          name: item.name,
+          description: item.description,
+          category: item.category.name,
+          unit: item.unit,
+          price: item.price,
+          minimum_stock: item.minimum_stock,
+        });
+      } catch (auditError) {
+        console.error('Audit log failed for item delete:', auditError);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.items.withCounts() });

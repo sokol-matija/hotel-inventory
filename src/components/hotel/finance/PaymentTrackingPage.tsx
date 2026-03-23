@@ -120,7 +120,8 @@ export default function PaymentTrackingPage() {
               </thead>
               <tbody>
                 {payments.slice(0, 10).map((payment) => {
-                  const methodInfo = paymentMethods[payment.method];
+                  const methodInfo = paymentMethods[payment.method as keyof typeof paymentMethods];
+                  if (!methodInfo) return null;
                   const Icon = methodInfo.icon;
 
                   return (

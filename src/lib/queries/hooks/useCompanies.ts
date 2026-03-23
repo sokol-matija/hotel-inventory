@@ -70,17 +70,17 @@ async function createCompanyInDB(
 async function updateCompanyInDB(id: string, updates: Partial<Company>): Promise<Company> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateData: any = {};
-  if (updates.name) updateData.name = updates.name;
-  if (updates.oib) updateData.oib = updates.oib;
-  if (updates.address) {
+  if (updates.name !== undefined) updateData.name = updates.name;
+  if (updates.oib !== undefined) updateData.oib = updates.oib;
+  if (updates.address !== undefined) {
     updateData.address = updates.address.street;
     updateData.city = updates.address.city;
     updateData.postal_code = updates.address.postalCode;
     updateData.country = updates.address.country;
   }
-  if (updates.contactPerson) updateData.contact_person = updates.contactPerson;
-  if (updates.email) updateData.email = updates.email;
-  if (updates.phone) updateData.phone = updates.phone;
+  if (updates.contactPerson !== undefined) updateData.contact_person = updates.contactPerson;
+  if (updates.email !== undefined) updateData.email = updates.email;
+  if (updates.phone !== undefined) updateData.phone = updates.phone;
   if (updates.fax !== undefined) updateData.fax = updates.fax;
   updateData.updated_at = new Date().toISOString();
 

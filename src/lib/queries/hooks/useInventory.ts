@@ -74,31 +74,16 @@ export function useUpdateInventoryQuantity() {
       oldQuantity: number;
       itemName: string;
     }) => {
-      console.log('🔢 QUANTITY UPDATE ATTEMPT:', {
-        inventoryId,
-        newQuantity,
-        timestamp: new Date().toISOString(),
-        documentHidden: document.hidden,
-      });
-
-      console.log('🔢 STARTING DATABASE UPDATE (NO SESSION CHECK)...');
+      if (newQuantity < 0) {
+        throw new Error('Quantity cannot be negative');
+      }
 
       const { error } = await supabase
         .from('inventory')
         .update({ quantity: newQuantity })
         .eq('id', inventoryId);
 
-      if (error) {
-        console.error('🔢 QUANTITY UPDATE ERROR:', {
-          error: error.message,
-          code: error.code,
-          details: error.details,
-          hint: error.hint,
-        });
-        throw error;
-      }
-
-      console.log('🔢 QUANTITY UPDATE SUCCESS:', { inventoryId, newQuantity });
+      if (error) throw error;
 
       try {
         await auditLog.quantityUpdated(

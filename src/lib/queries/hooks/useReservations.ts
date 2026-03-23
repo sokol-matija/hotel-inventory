@@ -62,6 +62,7 @@ export function useUpdateReservation() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.reservations.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.rooms.all() });
     },
   });
 }

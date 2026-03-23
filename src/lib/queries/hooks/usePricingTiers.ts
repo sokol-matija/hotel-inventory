@@ -14,7 +14,7 @@ function mapPricingTierFromDB(
     description: row.description || '',
     discountPercentage: (row.seasonal_rate_a || 0) * 100,
     isDefault: row.is_default || false,
-    isActive: row.is_active || true,
+    isActive: row.is_active ?? true,
     seasonalRates: {
       A: row.seasonal_rate_a || 0,
       B: row.seasonal_rate_b || 0,
@@ -144,7 +144,7 @@ export function useDeletePricingTier() {
       await queryClient.cancelQueries({ queryKey: queryKeys.pricingTiers.all() });
       const previous = queryClient.getQueryData<PricingTier[]>(queryKeys.pricingTiers.all());
       queryClient.setQueryData<PricingTier[]>(queryKeys.pricingTiers.all(), (old = []) =>
-        old.map((t) => (t.id === id ? { ...t, isActive: false } : t))
+        old.filter((t) => t.id !== id)
       );
       return { previous };
     },

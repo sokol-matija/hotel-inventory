@@ -22,7 +22,7 @@ import {
 import { format } from 'date-fns';
 import { Invoice, Company } from '../../../lib/hotel/types';
 import { generatePDFInvoice } from '../../../lib/pdfInvoiceGenerator';
-import { SAMPLE_RESERVATIONS } from '../../../lib/hotel/sampleData';
+import { useReservations } from '../../../lib/queries/hooks/useReservations';
 import hotelNotification from '../../../lib/notifications';
 import { supabase } from '../../../lib/supabase';
 
@@ -30,6 +30,7 @@ export default function InvoiceHistoryPage() {
   const { data: invoices = [] } = useInvoices();
   const { data: guests = [] } = useGuests();
   const { data: rooms = [] } = useRooms();
+  const { data: reservations = [] } = useReservations();
   const getInvoicesByDateRange = (start: Date, end: Date) =>
     invoices.filter((inv) => inv.issueDate >= start && inv.issueDate <= end);
   const getUnpaidInvoices = () => invoices.filter((inv) => inv.status !== 'paid');
@@ -42,7 +43,7 @@ export default function InvoiceHistoryPage() {
   const filteredInvoices = invoices.filter((invoice) => {
     const guest = guests.find((g) => g.id === invoice.guestId);
     // Get room through reservation since invoice no longer has direct roomId
-    const reservation = SAMPLE_RESERVATIONS.find((r) => r.id === invoice.reservationId);
+    const reservation = reservations.find((r) => r.id === invoice.reservationId);
     const room = reservation ? rooms.find((r) => r.id === reservation.roomId) : undefined;
 
     const matchesSearch =
@@ -74,7 +75,7 @@ export default function InvoiceHistoryPage() {
   };
 
   const getRoomNumber = (invoice: Invoice) => {
-    const reservation = SAMPLE_RESERVATIONS.find((r) => r.id === invoice.reservationId);
+    const reservation = reservations.find((r) => r.id === invoice.reservationId);
     if (!reservation) return 'Unknown Room';
     return rooms.find((r) => r.id === reservation.roomId)?.number || 'Unknown Room';
   };
@@ -87,7 +88,7 @@ export default function InvoiceHistoryPage() {
   const handleDownloadPDF = async (invoice: Invoice) => {
     try {
       // Find related reservation
-      const reservation = SAMPLE_RESERVATIONS.find((r) => r.id === invoice.reservationId);
+      const reservation = reservations.find((r) => r.id === invoice.reservationId);
       const guest = guests.find((g) => g.id === invoice.guestId);
       const room = reservation ? rooms.find((r) => r.id === reservation.roomId) : undefined;
 
@@ -164,7 +165,7 @@ export default function InvoiceHistoryPage() {
   };
 
   const getReservationDetails = (invoice: Invoice) => {
-    return SAMPLE_RESERVATIONS.find((r) => r.id === invoice.reservationId);
+    return reservations.find((r) => r.id === invoice.reservationId);
   };
 
   return (
