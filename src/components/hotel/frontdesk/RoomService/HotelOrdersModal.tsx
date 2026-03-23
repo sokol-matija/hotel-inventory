@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
 import { Button } from '../../../ui/button';
@@ -6,44 +6,14 @@ import { Input } from '../../../ui/input';
 import { Label } from '../../../ui/label';
 import { Badge } from '../../../ui/badge';
 import { ShoppingCart, Plus, Minus, Search, DollarSign } from 'lucide-react';
-import { supabase } from '../../../../lib/supabase';
 import { Reservation } from '../../../../lib/hotel/types';
 import { formatRoomNumber } from '../../../../lib/hotel/calendarUtils';
 import { useRooms } from '../../../../lib/queries/hooks/useRooms';
-
-interface OrderItem {
-  id: string;
-  itemId: number;
-  itemName: string;
-  category: string;
-  price: number;
-  quantity: number;
-  totalPrice: number;
-  unit: string;
-  availableStock: number;
-}
-
-interface InventoryItem {
-  id: number;
-  name: string;
-  description?: string;
-  category: {
-    id: number;
-    name: string;
-    requires_expiration: boolean;
-  };
-  unit: string;
-  price: number;
-  minimum_stock: number;
-  is_active: boolean;
-  totalStock: number;
-  locations: Array<{
-    locationId: number;
-    locationName: string;
-    quantity: number;
-    expiration_date?: string;
-  }>;
-}
+import {
+  useFoodAndBeverageItems,
+  useProcessRoomServiceOrder,
+} from '../../../../lib/queries/hooks/useRoomService';
+import { OrderItem } from '../../../../lib/hotel/orderTypes';
 
 interface HotelOrdersModalProps {
   reservation: Reservation;
@@ -59,92 +29,18 @@ export default function HotelOrdersModal({
   onOrderComplete,
 }: HotelOrdersModalProps) {
   const { data: rooms = [] } = useRooms();
-  // State - reusing the same structure as OrdersPage
-  const [availableItems, setAvailableItems] = useState<InventoryItem[]>([]);
+  const {
+    data: availableItems = [],
+    isLoading: isLoadingItems,
+    isError: isItemsError,
+  } = useFoodAndBeverageItems();
+  const processOrder = useProcessRoomServiceOrder();
+
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [orderNotes, setOrderNotes] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
 
-  // Load items when modal opens - using the exact same logic as OrdersPage
-  useEffect(() => {
-    if (isOpen) {
-      loadAvailableItems();
-    }
-  }, [isOpen]);
-
-  const loadAvailableItems = async () => {
-    try {
-      setIsLoading(true);
-
-      // Fetch items with inventory - reusing existing database structure from OrdersPage
-      const { data: items, error } = await supabase
-        .from('items')
-        .select(
-          `
-          id,
-          name,
-          description,
-          unit,
-          price,
-          minimum_stock,
-          is_active,
-          category:categories(id, name, requires_expiration),
-          inventory(
-            location_id,
-            quantity,
-            expiration_date,
-            location:locations(id, name)
-          )
-        `
-        )
-        .eq('is_active', true);
-
-      if (error) throw error;
-
-      // Transform data - exact same logic as OrdersPage
-      const inventoryItems: InventoryItem[] =
-        items?.map((item) => {
-          const totalStock =
-            item.inventory?.reduce((sum, inv) => sum + (inv.quantity || 0), 0) || 0;
-
-          return {
-            id: item.id,
-            name: item.name,
-            description: item.description,
-            category: {
-              id: (item.category as unknown as Record<string, unknown>).id as number,
-              name: (item.category as unknown as Record<string, unknown>).name as string,
-              requires_expiration: (item.category as unknown as Record<string, unknown>)
-                .requires_expiration as boolean,
-            },
-            unit: item.unit,
-            price: item.price || 0,
-            minimum_stock: item.minimum_stock,
-            is_active: item.is_active,
-            totalStock,
-            locations:
-              item.inventory?.map((inv) => ({
-                locationId: inv.location_id,
-                locationName:
-                  ((inv.location as unknown as Record<string, unknown>)?.name as string) ||
-                  'Unknown',
-                quantity: inv.quantity || 0,
-                expiration_date: inv.expiration_date,
-              })) || [],
-          };
-        }) || [];
-
-      setAvailableItems(inventoryItems.filter((item) => item.totalStock > 0));
-    } catch (error) {
-      console.error('Error loading items:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Order management functions - reusing exact same logic as OrdersPage
-  const addToOrder = (item: InventoryItem) => {
+  const addToOrder = (item: (typeof availableItems)[number]) => {
     if (item.price === 0) {
       alert('Please set a price for this item first in the Items section.');
       return;
@@ -195,77 +91,44 @@ export default function HotelOrdersModal({
     return { subtotal, tax, total };
   };
 
-  const handleAddToRoomBill = async () => {
+  const handleAddToRoomBill = () => {
     if (orderItems.length === 0) return;
 
-    try {
-      setIsLoading(true);
+    const room = rooms.find((r) => r.id === reservation.roomId);
+    const totals = calculateOrderTotal();
 
-      // Deduct inventory (FIFO - oldest expiration first) - same logic as OrdersPage
-      for (const orderItem of orderItems) {
-        let remainingQuantity = orderItem.quantity;
-
-        // Get inventory for this item, sorted by expiration date (FIFO)
-        const { data: inventoryRecords } = await supabase
-          .from('inventory')
-          .select('*')
-          .eq('item_id', orderItem.itemId)
-          .gt('quantity', 0)
-          .order('expiration_date', { ascending: true, nullsFirst: false });
-
-        if (inventoryRecords) {
-          for (const record of inventoryRecords) {
-            if (remainingQuantity <= 0) break;
-
-            const deductQuantity = Math.min(remainingQuantity, record.quantity);
-            const newQuantity = record.quantity - deductQuantity;
-
-            await supabase
-              .from('inventory')
-              .update({
-                quantity: newQuantity,
-                updated_at: new Date().toISOString(),
-              })
-              .eq('id', record.id);
-
-            remainingQuantity -= deductQuantity;
-          }
-        }
+    processOrder.mutate(
+      {
+        roomId: reservation.roomId,
+        roomNumber: room ? formatRoomNumber(room) : reservation.roomId,
+        guestName: reservation.guest?.fullName || 'Unknown Guest',
+        reservationId: reservation.id,
+        items: orderItems,
+        subtotal: totals.subtotal,
+        tax: totals.tax,
+        totalAmount: totals.total,
+        paymentMethod: 'room_bill',
+        paymentStatus: 'pending',
+        orderStatus: 'pending',
+        notes: orderNotes,
+        orderedBy: 'Front Desk',
+      },
+      {
+        onSuccess: () => {
+          onOrderComplete(orderItems, totals.total);
+          setOrderItems([]);
+          setSearchTerm('');
+          setOrderNotes('');
+          onClose();
+        },
+        onError: (error) => {
+          console.error('Error processing room service order:', error);
+        },
       }
-
-      // Persist to room_service_orders (one row per line item)
-      const reservationId = parseInt(reservation.id);
-      if (!isNaN(reservationId)) {
-        const rows = orderItems.map((item) => ({
-          reservation_id: reservationId,
-          item_name: item.itemName,
-          category: item.category,
-          quantity: item.quantity,
-          unit_price: item.price,
-          total_price: item.totalPrice,
-          notes: orderNotes || null,
-        }));
-        await supabase.from('room_service_orders').insert(rows);
-      }
-
-      const totals = calculateOrderTotal();
-      onOrderComplete(orderItems, totals.total);
-
-      // Reset and close
-      setOrderItems([]);
-      setSearchTerm('');
-      setOrderNotes('');
-      onClose();
-    } catch (error) {
-      console.error('Error processing room service order:', error);
-      alert('Error processing order. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
+    );
   };
 
   const handleClose = () => {
-    // Reset everything when closing
     setOrderItems([]);
     setSearchTerm('');
     setOrderNotes('');
@@ -279,6 +142,7 @@ export default function HotelOrdersModal({
   );
 
   const totals = calculateOrderTotal();
+  const isSubmitting = processOrder.isPending;
 
   if (!isOpen) return null;
 
@@ -308,11 +172,11 @@ export default function HotelOrdersModal({
         </div>
 
         <div className="flex h-full max-h-[calc(90vh-80px)]">
-          {/* Left Column - Items Catalog - Same layout as OrdersPage */}
+          {/* Left Column - Items Catalog */}
           <div className="flex-1 overflow-y-auto border-r p-6">
             <Card>
               <CardHeader>
-                <CardTitle>Food & Beverage Menu</CardTitle>
+                <CardTitle>Food &amp; Beverage Menu</CardTitle>
                 <div className="flex items-center space-x-2">
                   <Search className="h-4 w-4 text-gray-500" />
                   <Input
@@ -324,8 +188,16 @@ export default function HotelOrdersModal({
                 </div>
               </CardHeader>
               <CardContent>
-                {isLoading ? (
+                {isItemsError ? (
+                  <div className="py-8 text-center text-red-600">
+                    Failed to load menu items. Please close and try again.
+                  </div>
+                ) : isLoadingItems ? (
                   <div className="py-8 text-center">Loading items...</div>
+                ) : filteredItems.length === 0 ? (
+                  <div className="py-8 text-center text-gray-500">
+                    {searchTerm ? 'No items match your search.' : 'No items currently in stock.'}
+                  </div>
                 ) : (
                   <div className="grid max-h-96 grid-cols-1 gap-4 overflow-y-auto md:grid-cols-2">
                     {filteredItems.map((item) => (
@@ -364,7 +236,7 @@ export default function HotelOrdersModal({
             </Card>
           </div>
 
-          {/* Right Column - Order Summary - Same layout as OrdersPage */}
+          {/* Right Column - Order Summary */}
           <div className="w-80 bg-gray-50 p-6">
             <Card>
               <CardHeader>
@@ -374,6 +246,12 @@ export default function HotelOrdersModal({
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {processOrder.isError && (
+                  <div className="rounded border border-red-200 bg-red-50 p-2 text-sm text-red-700">
+                    Error processing order. Please try again.
+                  </div>
+                )}
+
                 {orderItems.length === 0 ? (
                   <div className="py-8 text-center text-gray-500">No items in order</div>
                 ) : (
@@ -459,12 +337,14 @@ export default function HotelOrdersModal({
                     {/* Add to Bill Button */}
                     <Button
                       onClick={handleAddToRoomBill}
-                      disabled={orderItems.length === 0 || isLoading}
+                      disabled={orderItems.length === 0 || isSubmitting}
                       className="w-full bg-blue-500 text-white hover:bg-blue-600"
                       size="lg"
                     >
                       <DollarSign className="mr-2 h-4 w-4" />
-                      Add to Room Bill (€{totals.total.toFixed(2)})
+                      {isSubmitting
+                        ? 'Processing...'
+                        : `Add to Room Bill (€${totals.total.toFixed(2)})`}
                     </Button>
                   </>
                 )}
