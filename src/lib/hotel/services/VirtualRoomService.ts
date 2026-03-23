@@ -94,19 +94,30 @@ export class VirtualRoomService {
    */
   public async getVirtualRoomsWithReservations(date: Date): Promise<Room[]> {
     try {
-      const { data: rooms, error } = await supabase
+      const { data: excludedStatuses } = await supabase
+        .from('reservation_statuses')
+        .select('id')
+        .in('code', ['cancelled', 'checked-out']);
+      const excludedIds = (excludedStatuses || []).map((s) => s.id);
+
+      let roomQuery = supabase
         .from('rooms')
         .select(
           `
           *,
+          room_types!room_type_id(code),
           reservations!inner(*)
         `
         )
         .eq('floor_number', this.config.VIRTUAL_FLOOR)
         .lte('reservations.check_in_date', date.toISOString().split('T')[0])
-        .gte('reservations.check_out_date', date.toISOString().split('T')[0])
-        .neq('reservations.status', 'cancelled')
-        .neq('reservations.status', 'checked-out');
+        .gte('reservations.check_out_date', date.toISOString().split('T')[0]);
+
+      if (excludedIds.length > 0) {
+        roomQuery = roomQuery.not('reservations.status_id', 'in', `(${excludedIds.join(',')})`);
+      }
+
+      const { data: rooms, error } = await roomQuery;
 
       if (error) {
         console.error('Error fetching virtual rooms with reservations:', error);
@@ -384,7 +395,7 @@ export class VirtualRoomService {
       id: dbRoom.id.toString(),
       number: dbRoom.room_number,
       floor: dbRoom.floor_number,
-      type: dbRoom.room_type,
+      type: dbRoom.room_types?.code || 'double',
       nameCroatian: `Soba ${dbRoom.room_number}`,
       nameEnglish: `Room ${dbRoom.room_number}`,
       seasonalRates: {

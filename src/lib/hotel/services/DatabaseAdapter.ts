@@ -9,7 +9,7 @@ interface CurrentDBRoom {
   id: number;
   room_number: string;
   floor_number: number;
-  room_type: string;
+  room_types: { code: string } | null;
   max_occupancy: number;
   is_premium: boolean;
   seasonal_rate_a: number;
@@ -33,8 +33,8 @@ interface CurrentDBReservation {
   number_of_guests: number;
   adults: number;
   children_count: number;
-  status: string;
-  booking_source: string;
+  status_id: number;
+  booking_source_id: number;
   special_requests: string;
   internal_notes: string;
   seasonal_period: string;
@@ -83,10 +83,7 @@ interface CurrentDBGuest {
   is_vip: boolean | null;
   vip_level: number | null;
   marketing_consent: boolean | null;
-  total_stays: number | null;
-  total_spent: number | null;
   average_rating: number | null;
-  last_stay_date: string | null;
   notes: string | null;
   country_code: string | null;
   full_name: string | null;
@@ -152,7 +149,7 @@ export class DatabaseAdapter {
     try {
       const { data: roomsData, error } = await supabase
         .from('rooms')
-        .select('*')
+        .select('*, room_types!room_type_id(code)')
         .eq('is_active', true)
         .order('room_number');
 
@@ -172,7 +169,7 @@ export class DatabaseAdapter {
     try {
       const { data, error } = await supabase
         .from('rooms')
-        .select('*')
+        .select('*, room_types!room_type_id(code)')
         .eq('id', parseInt(roomId))
         .eq('is_active', true)
         .single();
@@ -209,7 +206,7 @@ export class DatabaseAdapter {
         .from('rooms')
         .update(updateData)
         .eq('id', parseInt(roomId))
-        .select()
+        .select('*, room_types!room_type_id(code)')
         .single();
 
       if (error) throw error;
@@ -242,7 +239,6 @@ export class DatabaseAdapter {
         .from('reservations')
         .select('*')
         .eq('room_id', parseInt(roomId))
-        .not('status', 'eq', 'cancelled')
         .lt('check_in_date', endDate.toISOString().split('T')[0])
         .gt('check_out_date', startDate.toISOString().split('T')[0]);
       console.log('✅ DATABASE: Got reservations query result:', {
@@ -258,16 +254,31 @@ export class DatabaseAdapter {
       if (guestsError) throw guestsError;
 
       // Get rooms separately
-      const { data: roomsData, error: roomsError } = await supabase.from('rooms').select('*');
+      const { data: roomsData, error: roomsError } = await supabase
+        .from('rooms')
+        .select('*, room_types!room_type_id(code)');
 
       if (roomsError) throw roomsError;
+
+      // Get status and booking source lookups
+      const { data: statusesData } = await supabase.from('reservation_statuses').select('id, code');
+      const { data: sourcesData } = await supabase.from('booking_sources').select('id, code');
+      const statusLookup = new Map((statusesData || []).map((s) => [s.id, s.code as string]));
+      const sourceLookup = new Map((sourcesData || []).map((s) => [s.id, s.code as string]));
 
       // Create lookup maps
       const guestLookup = new Map((guestsData as CurrentDBGuest[]).map((g) => [g.id, g]));
       const roomLookup = new Map((roomsData as CurrentDBRoom[]).map((r) => [r.id, r]));
 
       return (reservationsData as CurrentDBReservation[]).map((reservation) =>
-        this.mapReservationFromCurrentDB(reservation, guestLookup, roomLookup)
+        this.mapReservationFromCurrentDB(
+          reservation,
+          guestLookup,
+          roomLookup,
+          undefined,
+          statusLookup,
+          sourceLookup
+        )
       );
     } catch (error) {
       console.error('Error fetching reservations by room and date range:', error);
@@ -310,7 +321,9 @@ export class DatabaseAdapter {
       if (guestsError) throw guestsError;
 
       // Get rooms separately
-      const { data: roomsData, error: roomsError } = await supabase.from('rooms').select('*');
+      const { data: roomsData, error: roomsError } = await supabase
+        .from('rooms')
+        .select('*, room_types!room_type_id(code)');
 
       if (roomsError) throw roomsError;
 
@@ -319,6 +332,12 @@ export class DatabaseAdapter {
 
       if (labelsError) throw labelsError;
 
+      // Get status and booking source lookups
+      const { data: statusesData } = await supabase.from('reservation_statuses').select('id, code');
+      const { data: sourcesData } = await supabase.from('booking_sources').select('id, code');
+      const statusLookup = new Map((statusesData || []).map((s) => [s.id, s.code as string]));
+      const sourceLookup = new Map((sourcesData || []).map((s) => [s.id, s.code as string]));
+
       // Create lookup maps
       const guestLookup = new Map((guestsData as CurrentDBGuest[]).map((g) => [g.id, g]));
       const roomLookup = new Map((roomsData as CurrentDBRoom[]).map((r) => [r.id, r]));
@@ -326,7 +345,14 @@ export class DatabaseAdapter {
       const labelLookup = new Map((labelsData as any[]).map((l: any) => [l.id, l]));
 
       return (reservationsData as CurrentDBReservation[]).map((reservation) =>
-        this.mapReservationFromCurrentDB(reservation, guestLookup, roomLookup, labelLookup)
+        this.mapReservationFromCurrentDB(
+          reservation,
+          guestLookup,
+          roomLookup,
+          labelLookup,
+          statusLookup,
+          sourceLookup
+        )
       );
     } catch (error) {
       console.error('Error fetching reservations:', error);
@@ -341,6 +367,17 @@ export class DatabaseAdapter {
     reservationData: Omit<Reservation, 'id' | 'bookingDate' | 'lastModified'>
   ): Promise<Reservation> {
     try {
+      const { data: statusRow } = await supabase
+        .from('reservation_statuses')
+        .select('id')
+        .eq('code', reservationData.status || 'confirmed')
+        .single();
+      const { data: sourceRow } = await supabase
+        .from('booking_sources')
+        .select('id')
+        .eq('code', reservationData.bookingSource || 'direct')
+        .single();
+
       const { data, error } = await supabase
         .from('reservations')
         .insert({
@@ -351,8 +388,8 @@ export class DatabaseAdapter {
           number_of_guests: reservationData.numberOfGuests,
           adults: reservationData.adults,
           children_count: reservationData.children?.length || 0,
-          status: reservationData.status || 'confirmed',
-          booking_source: reservationData.bookingSource || 'direct',
+          status_id: statusRow?.id,
+          booking_source_id: sourceRow?.id,
           special_requests: reservationData.specialRequests || '',
           seasonal_period: reservationData.seasonalPeriod,
           base_room_rate: reservationData.baseRoomRate,
@@ -404,7 +441,14 @@ export class DatabaseAdapter {
         updateData.check_out_date = updates.checkOut.toISOString().split('T')[0];
       if (updates.roomId) updateData.room_id = parseInt(updates.roomId);
       if (updates.adults !== undefined) updateData.adults = updates.adults;
-      if (updates.status) updateData.status = updates.status;
+      if (updates.status) {
+        const { data: statusRow } = await supabase
+          .from('reservation_statuses')
+          .select('id')
+          .eq('code', updates.status)
+          .single();
+        if (statusRow) updateData.status_id = statusRow.id;
+      }
       if (updates.specialRequests !== undefined)
         updateData.special_requests = updates.specialRequests;
       if (updates.totalAmount !== undefined) updateData.total_amount = updates.totalAmount;
@@ -451,7 +495,6 @@ export class DatabaseAdapter {
           has_pets: guestData.hasPets || false,
           date_of_birth: guestData.dateOfBirth?.toISOString().split('T')[0] || null,
           is_vip: false,
-          total_stays: 0,
         })
         .select()
         .single();
@@ -467,8 +510,8 @@ export class DatabaseAdapter {
 
   // Private mapping methods
   public mapRoomFromCurrentDB(room: CurrentDBRoom): Room {
-    // Handle missing room_type gracefully (can happen with partial real-time updates)
-    const roomType = room.room_type || 'D'; // Default to 'D' (double) if missing
+    // Handle missing room_types gracefully (can happen with partial real-time updates)
+    const roomType = room.room_types?.code || 'double';
 
     return {
       id: room.id.toString(),
@@ -509,7 +552,7 @@ export class DatabaseAdapter {
       isVip: guest.is_vip || false,
       vipLevel: guest.vip_level || 0,
       children: [], // TODO: Load from guest_children table if needed
-      totalStays: guest.total_stays || 0,
+      totalStays: 0,
       emergencyContactName: undefined,
       emergencyContactPhone: undefined,
       createdAt: new Date(guest.created_at),
@@ -522,7 +565,9 @@ export class DatabaseAdapter {
     guestLookup: Map<number, CurrentDBGuest>,
     _roomLookup: Map<number, CurrentDBRoom>,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    labelLookup?: Map<string, any>
+    labelLookup?: Map<string, any>,
+    statusLookup?: Map<number, string>,
+    sourceLookup?: Map<number, string>
   ): Reservation {
     const guestData = guestLookup.get(reservation.guest_id);
     const labelData =
@@ -539,9 +584,9 @@ export class DatabaseAdapter {
       adults: reservation.adults,
       children: [], // TODO: Load children if needed
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      status: reservation.status as any,
+      status: (statusLookup?.get(reservation.status_id) || 'confirmed') as any,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      bookingSource: reservation.booking_source as any,
+      bookingSource: (sourceLookup?.get(reservation.booking_source_id) || 'direct') as any,
       specialRequests: reservation.special_requests || '',
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       seasonalPeriod: reservation.seasonal_period as any,
@@ -808,7 +853,7 @@ export class DatabaseAdapter {
       if (roomTypes && roomTypes.length > 0) {
         mappedReservations = mappedReservations.filter((res) => {
           const room = roomLookup.get(Number(res.roomId));
-          return room && roomTypes.includes(room.room_type);
+          return room && roomTypes.includes(room.room_types?.code || 'double');
         });
       }
 

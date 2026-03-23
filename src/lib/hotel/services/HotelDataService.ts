@@ -235,7 +235,7 @@ export class HotelDataService {
       isVip: Boolean(guestRow.is_vip),
       vipLevel: 0,
       children: [],
-      totalStays: Number(guestRow.total_stays || 0),
+      totalStays: 0,
       createdAt: guestRow.created_at ? new Date(String(guestRow.created_at)) : new Date(),
       updatedAt: guestRow.updated_at ? new Date(String(guestRow.updated_at)) : new Date(),
     };
