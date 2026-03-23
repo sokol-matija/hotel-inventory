@@ -99,7 +99,8 @@ export class HotelDataService {
         numberOfGuests: r.adults + (r.children_count || 0),
         adults: r.adults,
         children: [],
-        status: r.status || 'confirmed',
+        // reservations uses status_id (FK), not a status string — default to 'confirmed'
+        status: 'confirmed',
         totalAmount: parseFloat(r.total_amount || '0'),
         numberOfNights: r.number_of_nights,
         baseRoomRate: parseFloat(r.base_room_rate || '0'),
@@ -151,7 +152,7 @@ export class HotelDataService {
           pet_fee,
           parking_fee,
           additional_charges,
-          status,
+          status_id,
           seasonal_period,
           base_room_rate
         )

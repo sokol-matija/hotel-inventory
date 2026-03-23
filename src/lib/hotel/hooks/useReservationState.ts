@@ -2,6 +2,7 @@
 // Manages all reservation-related state and operations
 
 import { useState, useCallback, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { CalendarEvent } from '../types';
 import {
   useReservations,
@@ -9,6 +10,7 @@ import {
   useUpdateReservationNotes,
 } from '../../../lib/queries/hooks/useReservations';
 import { ReservationService, ReservationData, FiscalData } from '../services/ReservationService';
+import { queryKeys } from '../../queries/queryKeys';
 
 export interface ReservationState {
   // UI state
@@ -46,6 +48,7 @@ export function useReservationState(
   onClose: () => void,
   onStatusChange?: (reservationId: string, newStatus: string) => void
 ) {
+  const queryClient = useQueryClient();
   const { data: reservations = [] } = useReservations();
   const updateReservationStatusMutation = useUpdateReservationStatus();
   const updateReservationNotesMutation = useUpdateReservationNotes();
@@ -199,13 +202,16 @@ export function useReservationState(
 
       if (result.success && result.fiscalData) {
         updateState({ fiscalData: result.fiscalData });
+
+        // Invalidate invoices cache so the finance page shows the new invoice immediately
+        await queryClient.invalidateQueries({ queryKey: queryKeys.invoices.all() });
       }
     } catch (error) {
       console.error('Error generating fiscal invoice:', error);
     } finally {
       updateState({ isFiscalizing: false });
     }
-  }, [reservationData, reservationService, updateState]);
+  }, [reservationData, reservationService, queryClient, updateState]);
 
   const handleEmailFiscalReceipt = useCallback(async () => {
     if (!reservationData || !state.fiscalData) return;
