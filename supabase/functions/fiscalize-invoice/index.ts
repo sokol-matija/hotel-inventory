@@ -38,6 +38,8 @@ const CONFIG = {
   TEST_PATH: '/FiskalizacijaServiceTest',
 };
 
+const ALLOWED_VAT_RATES = [25, 13, 5, 0] as const;
+
 /**
  * Generate ZKI (Croatian security code) using P12 certificate
  */
@@ -128,13 +130,25 @@ function generateSOAPEnvelope(
   const xmlDateTime = formatXMLDateTime(new Date(fiscalData.dateTime));
   const messageId = generateUUID();
 
-  // Use the vatAmount provided by the caller (already computed with the correct rate).
-  // Derive baseAmount and rate from the sent values instead of assuming 25%.
-  // Croatian accommodation: 13% VAT (since 2018). Food & beverage: 25%.
-  const vatAmount = fiscalData.vatAmount;
-  const baseAmount = fiscalData.totalAmount - vatAmount;
-  // Stopa (rate %) — round to 2 dp; accommodations yield "13.00", F&B "25.00"
-  const stopaPercent = baseAmount > 0 ? ((vatAmount / baseAmount) * 100).toFixed(2) : '13.00';
+  // Croatian fiscalization accepts predefined VAT rates.
+  // If incoming values imply a non-standard rate (e.g. mixed totals), fallback to 13%.
+  const incomingVatAmount = fiscalData.vatAmount;
+  const incomingBaseAmount = fiscalData.totalAmount - incomingVatAmount;
+  const inferredRate = incomingBaseAmount > 0 ? (incomingVatAmount / incomingBaseAmount) * 100 : 13;
+  const roundedInferredRate = Number(inferredRate.toFixed(2));
+
+  const hasAllowedRate = ALLOWED_VAT_RATES.some((rate) => Math.abs(rate - roundedInferredRate) < 0.01);
+  const normalizedRate = hasAllowedRate ? roundedInferredRate : 13;
+
+  const baseAmount = normalizedRate > 0 ? fiscalData.totalAmount / (1 + normalizedRate / 100) : fiscalData.totalAmount;
+  const vatAmount = fiscalData.totalAmount - baseAmount;
+  const stopaPercent = normalizedRate.toFixed(2);
+
+  if (!hasAllowedRate) {
+    console.warn(
+      `⚠️ Invalid inferred VAT rate (${roundedInferredRate}%). Falling back to ${normalizedRate}% for fiscal XML.`
+    );
+  }
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">

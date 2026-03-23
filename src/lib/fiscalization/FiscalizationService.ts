@@ -4,7 +4,7 @@
 import { FiscalInvoiceData, FiscalResponse, FiscalStatus, StornoRequest } from './types';
 import { getCurrentEnvironment } from './config';
 import { FiscalXMLGenerator } from './xmlGenerator';
-import { supabaseUrl, supabaseAnonKey } from '../supabase';
+import { supabase, supabaseUrl, supabaseAnonKey } from '../supabase';
 
 export class FiscalizationService {
   private static instance: FiscalizationService;
@@ -12,6 +12,34 @@ export class FiscalizationService {
 
   private constructor() {
     this.xmlGenerator = FiscalXMLGenerator.getInstance();
+  }
+
+  /**
+   * Remove accidental wrapping quotes/newlines from env tokens.
+   * This prevents malformed Authorization/apikey header values.
+   */
+  private sanitizeToken(token: string): string {
+    return token.trim().replace(/^['"]|['"]$/g, '');
+  }
+
+  /**
+   * Supabase invoke errors often hide the real API payload.
+   * Extract status/body so operators can see the real failure reason.
+   */
+  private async getInvokeErrorDetails(error: unknown): Promise<string> {
+    const defaultMessage = error instanceof Error ? error.message : 'Unknown invoke error';
+    if (!error || typeof error !== 'object') {
+      return defaultMessage;
+    }
+
+    const maybeContext = (error as { context?: unknown }).context;
+    if (!(maybeContext instanceof Response)) {
+      return defaultMessage;
+    }
+
+    const status = maybeContext.status;
+    const bodyText = await maybeContext.text();
+    return `status ${status}: ${bodyText || defaultMessage}`;
   }
 
   public static getInstance(): FiscalizationService {
@@ -131,7 +159,7 @@ export class FiscalizationService {
         throw new Error('Supabase configuration missing');
       }
 
-      const supabaseKey = supabaseAnonKey;
+      const supabaseKey = this.sanitizeToken(supabaseAnonKey);
 
       // Extract numeric part of invoice number (HP-2025-747258 → 747258)
       // Croatian Tax Authority expects just the number, not the full format
@@ -157,22 +185,16 @@ export class FiscalizationService {
       console.log(`🔍 Debug - supabaseKey length: ${supabaseKey?.length || 'undefined'}`);
       console.log(`🔍 Debug - Full URL: ${supabaseUrl}/functions/v1/fiscalize-invoice`);
 
-      // Call Edge Function
-      const response = await fetch(`${supabaseUrl}/functions/v1/fiscalize-invoice`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${supabaseKey}`,
-        },
-        body: JSON.stringify(fiscalRequest),
+      // Call Edge Function through Supabase SDK.
+      // This avoids manual JWT header construction issues.
+      const { data: result, error } = await supabase.functions.invoke('fiscalize-invoice', {
+        body: fiscalRequest,
       });
 
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`Fiscalization Edge Function returned ${response.status}: ${text}`);
+      if (error) {
+        const invokeDetails = await this.getInvokeErrorDetails(error);
+        throw new Error(`Fiscalization Edge Function failed: ${invokeDetails}`);
       }
-
-      const result = await response.json();
 
       if (result.success && result.jir && result.zki) {
         console.log('✅ Fiscalization successful via Edge Function');
