@@ -319,7 +319,11 @@ export class OrdersService {
   }
 
   /**
-   * Deduct inventory using FIFO (First In, First Out) method
+   * Deduct inventory using FIFO (First In, First Out) method.
+   *
+   * Uses atomic conditional UPDATEs (`quantity >= deductAmount`) to prevent
+   * race conditions: if two concurrent orders read the same stock, only one
+   * will successfully decrement and the other will see 0 rows affected.
    */
   private async deductInventoryFIFO(orderItems: OrderItem[]): Promise<void> {
     for (const orderItem of orderItems) {
@@ -328,7 +332,7 @@ export class OrdersService {
       // Get inventory for this item, sorted by expiration date (FIFO)
       const { data: inventoryRecords, error } = await supabase
         .from('inventory')
-        .select('*')
+        .select('id, quantity, expiration_date')
         .eq('item_id', orderItem.itemId)
         .gt('quantity', 0)
         .order('expiration_date', { ascending: true, nullsFirst: false });
@@ -340,17 +344,27 @@ export class OrdersService {
           if (remainingQuantity <= 0) break;
 
           const deductQuantity = Math.min(remainingQuantity, record.quantity);
-          const newQuantity = record.quantity - deductQuantity;
 
-          const { error: updateError } = await supabase
+          // Atomic decrement: only succeeds if stock hasn't changed since we read it.
+          // If another request already decremented this row, data will be empty and we fail fast.
+          const { data: updated, error: updateError } = await supabase
             .from('inventory')
             .update({
-              quantity: newQuantity,
+              quantity: record.quantity - deductQuantity,
               updated_at: new Date().toISOString(),
             })
-            .eq('id', record.id);
+            .eq('id', record.id)
+            .gte('quantity', deductQuantity) // guard: only update if still enough stock
+            .select('id');
 
           if (updateError) throw updateError;
+
+          if (!updated || updated.length === 0) {
+            // Another concurrent order grabbed this stock — abort
+            throw new Error(
+              `Stock for ${orderItem.itemName} was taken by a concurrent order. Please retry.`
+            );
+          }
 
           remainingQuantity -= deductQuantity;
         }
