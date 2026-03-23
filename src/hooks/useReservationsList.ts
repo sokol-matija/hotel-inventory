@@ -1,9 +1,12 @@
 // useReservationsList - Custom hook for managing reservations list state
-// Handles filtering, search, pagination, and sorting with debouncing
+// Handles filtering, search, pagination, and sorting with debouncing.
+// Data fetching is managed by TanStack Query for caching and consistency.
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Reservation } from '../lib/hotel/types';
 import { databaseAdapter } from '../lib/hotel/services/DatabaseAdapter';
+import { queryKeys } from '../lib/queries/queryKeys';
 
 export interface ReservationsFilters {
   // Search
@@ -91,152 +94,107 @@ const initialFilters: ReservationsFilters = {
   hasSpecialRequests: false,
 };
 
-const initialPagination: PaginationState = {
-  page: 1,
-  pageSize: 25,
-  totalCount: 0,
-  totalPages: 0,
-};
-
 const initialSort: SortState = {
   sortBy: 'check_in_date',
   sortOrder: 'desc',
 };
 
 export function useReservationsList(): UseReservationsListReturn {
-  // State
-  const [reservations, setReservations] = useState<Reservation[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
   const [filters, setFilters] = useState<ReservationsFilters>(initialFilters);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
-
-  const [pagination, setPagination] = useState<PaginationState>(initialPagination);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSizeState] = useState(25);
   const [sort, setSort] = useState<SortState>(initialSort);
-
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // Debounce search query
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchQuery(searchQuery);
-    }, 300); // 300ms debounce
-
+    const timer = setTimeout(() => setDebouncedSearchQuery(searchQuery), 300);
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Fetch reservations when filters/pagination/sort change
-  const fetchReservations = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
+  // Build query params — stable reference so TQ key is consistent
+  const queryParams = useMemo(
+    () => ({
+      searchQuery: debouncedSearchQuery || undefined,
+      statuses: filters.statuses.length > 0 ? filters.statuses : undefined,
+      bookingSources: filters.bookingSources.length > 0 ? filters.bookingSources : undefined,
+      paymentStatuses: filters.paymentStatuses.length > 0 ? filters.paymentStatuses : undefined,
+      roomTypes: filters.roomTypes.length > 0 ? filters.roomTypes : undefined,
+      nationalities: filters.nationalities.length > 0 ? filters.nationalities : undefined,
+      vipOnly: filters.vipOnly || undefined,
+      hasSpecialRequests: filters.hasSpecialRequests || undefined,
+      checkInFrom: filters.checkInFrom,
+      checkInTo: filters.checkInTo,
+      checkOutFrom: filters.checkOutFrom,
+      checkOutTo: filters.checkOutTo,
+      bookingDateFrom: filters.bookingDateFrom,
+      bookingDateTo: filters.bookingDateTo,
+      page,
+      pageSize,
+      sortBy: sort.sortBy,
+      sortOrder: sort.sortOrder,
+    }),
+    [debouncedSearchQuery, filters, page, pageSize, sort]
+  );
 
-    try {
-      const result = await databaseAdapter.getReservationsWithFilters({
-        searchQuery: debouncedSearchQuery,
-        statuses: filters.statuses.length > 0 ? filters.statuses : undefined,
-        bookingSources: filters.bookingSources.length > 0 ? filters.bookingSources : undefined,
-        paymentStatuses: filters.paymentStatuses.length > 0 ? filters.paymentStatuses : undefined,
-        roomTypes: filters.roomTypes.length > 0 ? filters.roomTypes : undefined,
-        nationalities: filters.nationalities.length > 0 ? filters.nationalities : undefined,
-        vipOnly: filters.vipOnly,
-        hasSpecialRequests: filters.hasSpecialRequests,
-        checkInFrom: filters.checkInFrom,
-        checkInTo: filters.checkInTo,
-        checkOutFrom: filters.checkOutFrom,
-        checkOutTo: filters.checkOutTo,
-        bookingDateFrom: filters.bookingDateFrom,
-        bookingDateTo: filters.bookingDateTo,
-        page: pagination.page,
-        pageSize: pagination.pageSize,
-        sortBy: sort.sortBy,
-        sortOrder: sort.sortOrder,
-      });
+  const {
+    data,
+    isFetching,
+    error: queryError,
+    refetch,
+  } = useQuery({
+    queryKey: queryKeys.reservations.list(queryParams),
+    queryFn: () => databaseAdapter.getReservationsWithFilters(queryParams),
+    placeholderData: (prev) => prev, // keep previous data while fetching next page
+  });
 
-      setReservations(result.reservations);
-      setPagination((prev) => ({
-        ...prev,
-        totalCount: result.totalCount,
-        totalPages: result.totalPages,
-      }));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch reservations');
-      setReservations([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [debouncedSearchQuery, filters, pagination.page, pagination.pageSize, sort]);
+  const reservations = data?.reservations ?? [];
+  const totalCount = data?.totalCount ?? 0;
+  const totalPages = data?.totalPages ?? 0;
 
-  // Auto-fetch when dependencies change
-  useEffect(() => {
-    fetchReservations();
-  }, [fetchReservations]);
+  const pagination: PaginationState = { page, pageSize, totalCount, totalPages };
 
   // Filter management
   const updateFilters = useCallback((updates: Partial<ReservationsFilters>) => {
     setFilters((prev) => ({ ...prev, ...updates }));
-    setPagination((prev) => ({ ...prev, page: 1 })); // Reset to first page
+    setPage(1);
   }, []);
 
   const clearFilters = useCallback(() => {
     setFilters(initialFilters);
     setSearchQuery('');
-    setPagination((prev) => ({ ...prev, page: 1 }));
+    setPage(1);
   }, []);
 
   // Pagination management
-  const goToPage = useCallback((page: number) => {
-    setPagination((prev) => ({ ...prev, page }));
-  }, []);
+  const goToPage = useCallback((p: number) => setPage(p), []);
 
   const setPageSize = useCallback((size: number) => {
-    setPagination((prev) => ({ ...prev, pageSize: size, page: 1 }));
+    setPageSizeState(size);
+    setPage(1);
   }, []);
 
   const nextPage = useCallback(() => {
-    setPagination((prev) => {
-      if (prev.page < prev.totalPages) {
-        return { ...prev, page: prev.page + 1 };
-      }
-      return prev;
-    });
-  }, []);
+    setPage((p) => (p < totalPages ? p + 1 : p));
+  }, [totalPages]);
 
   const previousPage = useCallback(() => {
-    setPagination((prev) => {
-      if (prev.page > 1) {
-        return { ...prev, page: prev.page - 1 };
-      }
-      return prev;
-    });
+    setPage((p) => (p > 1 ? p - 1 : p));
   }, []);
 
-  const goToFirstPage = useCallback(() => {
-    setPagination((prev) => ({ ...prev, page: 1 }));
-  }, []);
+  const goToFirstPage = useCallback(() => setPage(1), []);
 
-  const goToLastPage = useCallback(() => {
-    setPagination((prev) => ({ ...prev, page: prev.totalPages }));
-  }, []);
+  const goToLastPage = useCallback(() => setPage(totalPages), [totalPages]);
 
   // Sorting management
   const updateSort = useCallback((sortBy: SortState['sortBy']) => {
-    setSort((prev) => {
-      // Toggle order if same column
-      if (prev.sortBy === sortBy) {
-        return {
-          sortBy,
-          sortOrder: prev.sortOrder === 'asc' ? 'desc' : 'asc',
-        };
-      }
-      // Default to desc for new column
-      return {
-        sortBy,
-        sortOrder: 'desc',
-      };
-    });
-    setPagination((prev) => ({ ...prev, page: 1 })); // Reset to first page
+    setSort((prev) => ({
+      sortBy,
+      sortOrder: prev.sortBy === sortBy && prev.sortOrder === 'asc' ? 'desc' : 'desc',
+    }));
+    setPage(1);
   }, []);
 
   // Selection management
@@ -253,36 +211,32 @@ export function useReservationsList(): UseReservationsListReturn {
   }, []);
 
   const toggleSelectAll = useCallback(() => {
-    if (selectedIds.size === reservations.length && reservations.length > 0) {
-      // Deselect all
-      setSelectedIds(new Set());
-    } else {
-      // Select all current page
-      setSelectedIds(new Set(reservations.map((r) => r.id)));
-    }
-  }, [reservations, selectedIds.size]);
+    setSelectedIds((prev) =>
+      prev.size === reservations.length && reservations.length > 0
+        ? new Set()
+        : new Set(reservations.map((r) => r.id))
+    );
+  }, [reservations]);
 
-  const clearSelection = useCallback(() => {
-    setSelectedIds(new Set());
-  }, []);
+  const clearSelection = useCallback(() => setSelectedIds(new Set()), []);
 
   return {
-    // Data
     reservations,
-    isLoading,
-    error,
+    isLoading: isFetching,
+    error: queryError
+      ? queryError instanceof Error
+        ? queryError.message
+        : 'Failed to fetch reservations'
+      : null,
 
-    // Filters
     filters,
     updateFilters,
     clearFilters,
 
-    // Search
     searchQuery,
     setSearchQuery,
     debouncedSearchQuery,
 
-    // Pagination
     pagination,
     goToPage,
     setPageSize,
@@ -291,14 +245,11 @@ export function useReservationsList(): UseReservationsListReturn {
     goToFirstPage,
     goToLastPage,
 
-    // Sorting
     sort,
     updateSort,
 
-    // Actions
-    refetch: fetchReservations,
+    refetch,
 
-    // Selection
     selectedIds,
     toggleSelection,
     toggleSelectAll,
