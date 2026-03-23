@@ -32,7 +32,6 @@ import {
 } from '../../../../lib/hotel/services/UnifiedPricingService';
 import { format } from 'date-fns';
 import { supabase } from '../../../../lib/supabase';
-import { reservationAdapter } from '../../../../services/ReservationAdapter';
 
 interface EnhancedDailyViewModalProps {
   isOpen: boolean;
@@ -101,30 +100,39 @@ export const EnhancedDailyViewModal: React.FC<EnhancedDailyViewModalProps> = ({
       setLoading(true);
       setError(null);
 
-      // Enable new schema in the adapter
-      await reservationAdapter.enableNewSchema();
+      // Load reservation directly from DB
+      const { data: reservationData, error: reservationError } = await supabase
+        .from('reservations')
+        .select('*')
+        .eq('id', parseInt(reservationId))
+        .single();
 
-      // Use compatibility layer to get normalized data
-      const normalizedData = await reservationAdapter.getReservationWithGuests(reservationId);
+      if (reservationError) throw reservationError;
 
-      console.log('✅ Normalized reservation data loaded:', normalizedData);
-      setReservation(normalizedData.reservation);
+      setReservation(reservationData);
 
-      // Convert to Guest format expected by this component
-      const guests: Guest[] = normalizedData.allGuests.map((guest) => ({
+      // Load guests for this reservation via reservation_guests join
+      const { data: rgData, error: rgError } = await supabase
+        .from('reservation_guests')
+        .select('guests(id, first_name, last_name)')
+        .eq('reservation_id', parseInt(reservationId));
+
+      if (rgError) console.warn('⚠️ Could not load reservation guests:', rgError);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const guestRows: any[] = (rgData || []).flatMap((rg: any) => (rg.guests ? [rg.guests] : []));
+
+      const guests: Guest[] = guestRows.map((guest) => ({
         id: guest.id.toString(),
         name: `${guest.first_name} ${guest.last_name}`,
-        type: guest.guest_type,
+        type: 'adult' as const,
       }));
 
       // Load children from the guest_children table
       const { data: childrenData, error: childrenError } = await supabase
         .from('guest_children')
         .select('*')
-        .in(
-          'guest_id',
-          normalizedData.allGuests.map((g) => g.id)
-        );
+        .eq('reservation_id', parseInt(reservationId));
 
       if (childrenError) {
         console.warn('⚠️ Could not load children:', childrenError);
@@ -146,8 +154,8 @@ export const EnhancedDailyViewModal: React.FC<EnhancedDailyViewModalProps> = ({
       setAllGuests(guests);
 
       // Initialize day states
-      const checkIn = new Date(normalizedData.reservation.check_in_date);
-      const checkOut = new Date(normalizedData.reservation.check_out_date);
+      const checkIn = new Date(reservationData.check_in_date);
+      const checkOut = new Date(reservationData.check_out_date);
       const days: DayState[] = [];
 
       console.log('📅 Initializing day states:', {
@@ -205,10 +213,9 @@ export const EnhancedDailyViewModal: React.FC<EnhancedDailyViewModalProps> = ({
           }),
           services: {
             parkingSpots:
-              existingDetail?.parking_spots_needed ||
-              (normalizedData.reservation.parking_required ? 1 : 0),
-            hasPets: existingDetail?.pets_present || normalizedData.reservation.has_pets || false,
-            petCount: normalizedData.reservation.pet_count || 0,
+              existingDetail?.parking_spots_needed || (reservationData.parking_required ? 1 : 0),
+            hasPets: existingDetail?.pets_present || reservationData.has_pets || false,
+            petCount: reservationData.pet_count || 0,
             towelRentals: existingDetail?.towel_rentals || 0,
           },
           notes: existingDetail?.notes || '',
