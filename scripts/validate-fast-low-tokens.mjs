@@ -1,15 +1,11 @@
 import { execSync } from 'child_process';
 
 const steps = [
-  { name: 'Gitleaks',       cmd: 'gitleaks detect -i .gitleaksignore' },
-  { name: 'NPM Audit',      cmd: 'npm audit --audit-level=moderate' },
-  { name: 'NPM Signatures', cmd: 'npm audit signatures' },
-  { name: 'Semgrep',        cmd: 'semgrep scan --error --config p/security-audit --config p/typescript --config p/react --config p/owasp-top-ten' },
-  { name: 'Typecheck',      cmd: 'npm run typecheck' },
-  { name: 'Lint',           cmd: 'npm run lint' },
-  { name: 'React Doctor',   cmd: 'npx -y react-doctor@latest . --project hotel-inventory --fail-on error --offline --score' },
-  { name: 'Unit Tests',     cmd: 'npm run test:unit' },
-  { name: 'Build',          cmd: 'npm run build' },
+  { name: 'Typecheck',    cmd: 'npm run typecheck' },
+  { name: 'Lint',         cmd: 'npm run lint' },
+  { name: 'React Doctor', cmd: 'npx -y react-doctor@latest . --project hotel-inventory --fail-on error --offline --score' },
+  { name: 'Unit Tests',   cmd: 'npx vitest run' },
+  { name: 'Build',        cmd: 'npm run build' },
 ];
 
 const PAD = Math.max(...steps.map(s => s.name.length));
@@ -29,7 +25,7 @@ function fmt(ms) {
   return `${Math.floor(ms / 60000)}m${((ms % 60000) / 1000).toFixed(0)}s`;
 }
 
-console.log('\nValidation Pipeline\n' + '─'.repeat(40));
+console.log('\nValidation Pipeline (fast)\n' + '─'.repeat(40));
 
 const results = [];
 let allPassed = true;
