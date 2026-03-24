@@ -320,8 +320,9 @@ export function getCalendarStatistics(
 
   const occupancyRate = totalRoomNights > 0 ? (occupiedRoomNights / totalRoomNights) * 100 : 0;
 
+  // TODO: Phase 9 — derive from reservation_charges once all consumers migrated
   const revenueProjection = reservationsInRange.reduce((acc, reservation) => {
-    return acc + reservation.totalAmount;
+    return acc + (reservation.totalAmount ?? 0);
   }, 0);
 
   return {

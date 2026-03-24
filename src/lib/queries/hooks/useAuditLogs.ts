@@ -4,14 +4,14 @@ import { queryKeys } from '../queryKeys';
 
 export interface AuditLogEntry {
   id: number;
-  user_id: string;
+  user_id: string | null;
   action: 'CREATE' | 'UPDATE' | 'DELETE' | 'QUANTITY_UPDATE';
   table_name: string;
   record_id: number | null;
   old_values: Record<string, unknown> | null;
   new_values: Record<string, unknown> | null;
   description: string | null;
-  created_at: string;
+  created_at: string | null;
   user_profile?: {
     role: {
       name: string;
@@ -34,7 +34,8 @@ async function fetchAuditLogs(): Promise<AuditLogEntry[]> {
     .limit(500);
 
   if (error) throw error;
-  return data ?? [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data ?? []) as any as AuditLogEntry[];
 }
 
 export function useAuditLogs() {

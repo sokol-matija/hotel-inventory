@@ -188,7 +188,7 @@ export default function ItemsPage() {
                       <span className="text-sm text-gray-600">{t('items.minStock')}:</span>
                       <div className="flex items-center space-x-1">
                         <span className="text-sm font-medium">{item.minimum_stock}</span>
-                        {item.total_quantity <= item.minimum_stock && (
+                        {item.total_quantity <= (item.minimum_stock ?? 0) && (
                           <AlertTriangle className="h-4 w-4 text-orange-500" />
                         )}
                       </div>
@@ -210,7 +210,7 @@ export default function ItemsPage() {
                         {t('items.expires')}
                       </span>
                     )}
-                    {item.total_quantity <= item.minimum_stock && (
+                    {item.total_quantity <= (item.minimum_stock ?? 0) && (
                       <span className="rounded-full bg-orange-100 px-2 py-1 text-xs text-orange-800">
                         {t('items.lowStock')}
                       </span>

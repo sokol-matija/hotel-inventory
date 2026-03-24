@@ -10,7 +10,7 @@ import { CheckCircle2, Loader2, Copy, Smartphone } from 'lucide-react';
 interface RoomStatus {
   id: string;
   number: string;
-  is_cleaned: boolean;
+  is_clean: boolean;
   last_updated: Date | null;
 }
 
@@ -42,7 +42,7 @@ export const NFCTestPage = () => {
           setRooms((prev) =>
             prev.map((room) =>
               room.id === payload.new.id
-                ? { ...room, is_cleaned: payload.new.is_cleaned, last_updated: new Date() }
+                ? { ...room, is_clean: payload.new.is_clean, last_updated: new Date() }
                 : room
             )
           );
@@ -59,16 +59,16 @@ export const NFCTestPage = () => {
     try {
       const { data, error } = await supabase
         .from('rooms')
-        .select('id, number, is_cleaned')
+        .select('id, room_number, is_clean')
         .limit(10);
 
       if (error) throw error;
 
       setRooms(
         (data || []).map((room) => ({
-          id: room.id,
-          number: room.number,
-          is_cleaned: room.is_cleaned || false,
+          id: String(room.id),
+          number: room.room_number,
+          is_clean: room.is_clean || false,
           last_updated: null,
         }))
       );
@@ -129,8 +129,8 @@ export const NFCTestPage = () => {
     // Mark as dirty for testing
     supabase
       .from('rooms')
-      .update({ is_cleaned: false })
-      .eq('id', roomId)
+      .update({ is_clean: false })
+      .eq('id', Number(roomId))
       .then(() => {});
   }
 
@@ -226,8 +226,8 @@ export const NFCTestPage = () => {
                     <div className="flex-1">
                       <div className="flex items-center gap-3">
                         <span className="font-semibold">Room {room.number}</span>
-                        <Badge variant={room.is_cleaned ? 'default' : 'destructive'}>
-                          {room.is_cleaned ? '✅ Clean' : '❌ Dirty'}
+                        <Badge variant={room.is_clean ? 'default' : 'destructive'}>
+                          {room.is_clean ? '✅ Clean' : '❌ Dirty'}
                         </Badge>
                         {result && (
                           <Badge variant={result.success ? 'default' : 'destructive'}>

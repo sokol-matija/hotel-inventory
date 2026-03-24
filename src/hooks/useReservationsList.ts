@@ -40,7 +40,7 @@ export interface PaginationState {
 }
 
 export interface SortState {
-  sortBy: 'check_in_date' | 'check_out_date' | 'booking_date' | 'total_amount' | 'guest_name';
+  sortBy: 'check_in_date' | 'check_out_date' | 'booking_date' | 'guest_name';
   sortOrder: 'asc' | 'desc';
 }
 

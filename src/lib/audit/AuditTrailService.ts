@@ -460,7 +460,8 @@ class AuditTrailService {
         created_at: event.timestamp.toISOString(),
       }));
 
-      const { error } = await supabase.from('audit_logs').insert(dbLogs);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await supabase.from('audit_logs').insert(dbLogs as any);
 
       if (error) {
         // Restore logs to buffer if sync failed

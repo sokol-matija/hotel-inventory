@@ -38,21 +38,6 @@ interface CurrentDBReservation {
   booking_source_id: number;
   special_requests: string;
   internal_notes: string;
-  seasonal_period: string;
-  base_room_rate: number;
-  subtotal: number;
-  children_discounts: number;
-  tourism_tax: number;
-  vat_amount: number;
-  pet_fee: number;
-  parking_fee: number;
-  short_stay_supplement: number;
-  additional_charges: number;
-  total_amount: number;
-  payment_status: string;
-  payment_method: string;
-  deposit_amount: number;
-  balance_due: number;
   booking_date: string;
   confirmation_number: string;
   created_at: string;
@@ -63,6 +48,9 @@ interface CurrentDBReservation {
   parking_required: boolean;
   last_modified: string;
   label_id: string | null;
+  is_r1: boolean | null;
+  checked_in_at: string | null;
+  checked_out_at: string | null;
 }
 
 interface CurrentDBGuest {
@@ -112,19 +100,24 @@ export class DatabaseAdapter {
       const { data, error } = await supabase
         .from('hotels')
         .select('*')
-        .eq('id', this.hotelId)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .eq('id', this.hotelId as any)
         .single();
 
       if (error) throw error;
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const addr = data.address as any;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const contact = data.contact_info as any;
       return {
-        id: data.id.toString(), // Convert to string as expected by app
+        id: data.id.toString(),
         name: data.name || 'Hotel Porec',
-        address: data.address?.street || 'R Konoba 1, Poreč',
-        phone: data.contact_info?.phone || '+385(0)52/451 611',
-        fax: data.contact_info?.fax || '+385(0)52/433 462',
-        email: data.contact_info?.email || 'hotelporec@pu.t-com.hr',
-        website: data.contact_info?.website || 'www.hotelporec.com',
+        address: addr?.street || 'R Konoba 1, Poreč',
+        phone: contact?.phone || '+385(0)52/451 611',
+        fax: contact?.fax || '+385(0)52/433 462',
+        email: contact?.email || 'hotelporec@pu.t-com.hr',
+        website: contact?.website || 'www.hotelporec.com',
         taxId: data.oib || '87246357068',
       };
     } catch (error) {
@@ -393,19 +386,13 @@ export class DatabaseAdapter {
           status_id: statusRow?.id,
           booking_source_id: sourceRow?.id,
           special_requests: reservationData.specialRequests || '',
-          seasonal_period: reservationData.seasonalPeriod,
-          base_room_rate: reservationData.baseRoomRate,
-          subtotal: reservationData.subtotal,
-          children_discounts: reservationData.childrenDiscounts || 0,
-          tourism_tax: reservationData.tourismTax || 0,
-          vat_amount: reservationData.vatAmount,
-          pet_fee: reservationData.petFee || 0,
-          parking_fee: reservationData.parkingFee || 0,
-          short_stay_supplement: reservationData.shortStaySuplement || 0,
-          additional_charges: reservationData.additionalCharges || 0,
-          total_amount: reservationData.totalAmount,
-          payment_status: 'pending',
-          has_pets: (reservationData.petFee || 0) > 0,
+          has_pets: reservationData.hasPets || false,
+          parking_required: false,
+          company_id: reservationData.companyId ? parseInt(reservationData.companyId) : null,
+          pricing_tier_id: reservationData.pricingTierId
+            ? parseInt(reservationData.pricingTierId)
+            : null,
+          is_r1: reservationData.isR1Bill || false,
           confirmation_number: this.generateConfirmationNumber(),
           label_id: reservationData.labelId || null,
         })
@@ -453,8 +440,12 @@ export class DatabaseAdapter {
       }
       if (updates.specialRequests !== undefined)
         updateData.special_requests = updates.specialRequests;
-      if (updates.totalAmount !== undefined) updateData.total_amount = updates.totalAmount;
       if (updates.labelId !== undefined) updateData.label_id = updates.labelId || null;
+      if (updates.isR1Bill !== undefined) updateData.is_r1 = updates.isR1Bill;
+      if (updates.companyId !== undefined)
+        updateData.company_id = updates.companyId ? parseInt(updates.companyId) : null;
+      if (updates.pricingTierId !== undefined)
+        updateData.pricing_tier_id = updates.pricingTierId ? parseInt(updates.pricingTierId) : null;
 
       updateData.updated_at = new Date().toISOString();
 
@@ -590,25 +581,29 @@ export class DatabaseAdapter {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       bookingSource: (sourceLookup?.get(reservation.booking_source_id) || 'direct') as any,
       specialRequests: reservation.special_requests || '',
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      seasonalPeriod: reservation.seasonal_period as any,
-      baseRoomRate: reservation.base_room_rate,
       numberOfNights: reservation.number_of_nights || 1,
-      subtotal: reservation.subtotal,
-      childrenDiscounts: reservation.children_discounts || 0,
-      tourismTax: reservation.tourism_tax || 0,
-      vatAmount: reservation.vat_amount,
-      petFee: reservation.pet_fee || 0,
-      parkingFee: reservation.parking_fee || 0,
-      shortStaySuplement: reservation.short_stay_supplement || 0,
-      additionalCharges: reservation.additional_charges || 0,
-      roomServiceItems: [],
-      totalAmount: reservation.total_amount,
-      paymentStatus: reservation.payment_status,
       hasPets: reservation.has_pets || false,
+      isR1Bill: reservation.is_r1 || false,
+      companyId: reservation.company_id?.toString(),
+      pricingTierId: reservation.pricing_tier_id?.toString(),
+      checkedInAt: reservation.checked_in_at ? new Date(reservation.checked_in_at) : undefined,
+      checkedOutAt: reservation.checked_out_at ? new Date(reservation.checked_out_at) : undefined,
       bookingDate: new Date(reservation.booking_date || reservation.created_at),
       lastModified: new Date(reservation.last_modified || reservation.updated_at),
       notes: reservation.internal_notes || '',
+      // Deprecated flat pricing stubs — all zeros until consumers migrate to ReservationCharge
+      seasonalPeriod: 'A',
+      baseRoomRate: 0,
+      subtotal: 0,
+      childrenDiscounts: 0,
+      tourismTax: 0,
+      vatAmount: 0,
+      petFee: 0,
+      parkingFee: 0,
+      shortStaySuplement: 0,
+      additionalCharges: 0,
+      roomServiceItems: [],
+      totalAmount: 0,
       // Label/Group mapping
       labelId: reservation.label_id || undefined,
       label: labelData
@@ -718,7 +713,7 @@ export class DatabaseAdapter {
       pageSize?: number;
 
       // Sorting
-      sortBy?: 'check_in_date' | 'check_out_date' | 'booking_date' | 'total_amount' | 'guest_name';
+      sortBy?: 'check_in_date' | 'check_out_date' | 'booking_date' | 'guest_name';
       sortOrder?: 'asc' | 'desc';
     } = {}
   ): Promise<{
@@ -769,7 +764,8 @@ export class DatabaseAdapter {
       }
 
       if (paymentStatuses && paymentStatuses.length > 0) {
-        query = query.in('payment_status', paymentStatuses);
+        // payment_status column removed — filter is no-op until Phase 6 consumer migration
+        void paymentStatuses;
       }
 
       // Date range filters

@@ -50,7 +50,8 @@ async function fetchInventoryWithDetails(): Promise<InventoryWithDetails[]> {
     .order('item(name)');
 
   if (error) throw error;
-  return data ?? [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data ?? []) as any as InventoryWithDetails[];
 }
 
 export function useInventoryWithDetails() {

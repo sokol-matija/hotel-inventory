@@ -121,7 +121,7 @@ export class OrdersService {
           return {
             id: item.id,
             name: item.name,
-            description: item.description,
+            description: item.description ?? undefined,
             category: {
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               id: (item.category as any).id,
@@ -130,10 +130,10 @@ export class OrdersService {
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               requires_expiration: (item.category as any).requires_expiration,
             },
-            unit: item.unit,
+            unit: item.unit ?? '',
             price: item.price || 0,
-            minimum_stock: item.minimum_stock,
-            is_active: item.is_active,
+            minimum_stock: item.minimum_stock ?? 0,
+            is_active: item.is_active ?? false,
             totalStock,
             locations:
               item.inventory?.map((inv) => ({
@@ -141,7 +141,7 @@ export class OrdersService {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 locationName: (inv.location as any)?.name || 'Unknown',
                 quantity: inv.quantity || 0,
-                expiration_date: inv.expiration_date,
+                expiration_date: inv.expiration_date ?? undefined,
               })) || [],
           };
         }) || [];
@@ -435,20 +435,6 @@ export class OrdersService {
 
       // Deduct inventory using FIFO method
       await this.deductInventoryFIFO(orderItems);
-
-      // Persist order to DB (reservation_id is null for staff/bar orders)
-      const rows = orderItems.map((item) => ({
-        reservation_id: null,
-        item_name: item.itemName,
-        category: item.category,
-        quantity: item.quantity,
-        unit_price: item.price,
-        total_price: item.totalPrice,
-      }));
-      const { error: insertError } = await supabase.from('room_service_orders').insert(rows);
-      if (insertError) {
-        console.error('Failed to persist order to DB:', insertError);
-      }
 
       // Print receipt
       const printSuccess = await printWindowsReceipt(orderData);

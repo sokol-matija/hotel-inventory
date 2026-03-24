@@ -24,11 +24,12 @@ export async function logAuditEvent(entry: AuditLogEntry): Promise<void> {
       user_id: user.id,
       action: entry.action,
       table_name: entry.tableName,
-      record_id: entry.recordId,
-      old_values: entry.oldValues,
-      new_values: entry.newValues,
+      record_id: entry.recordId?.toString(),
+      old_values: entry.oldValues as import('./supabase').Json,
+      new_values: entry.newValues as import('./supabase').Json,
       description: entry.description,
-    });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
 
     if (error) {
       console.error('Failed to log audit event:', error);

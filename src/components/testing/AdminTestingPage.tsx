@@ -46,7 +46,8 @@ export const AdminTestingPage = () => {
         .limit(10);
 
       if (error) throw error;
-      setRecentLogs(data || []);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setRecentLogs((data || []) as any);
     } catch (error) {
       console.error('Failed to load logs:', error);
     } finally {

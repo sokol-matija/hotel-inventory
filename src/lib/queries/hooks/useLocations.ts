@@ -47,7 +47,8 @@ async function fetchLocationsWithStats(): Promise<LocationWithStats[]> {
     }).length;
 
     return {
-      ...location,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ...(location as any),
       inventory_count: inventoryCount,
       low_stock_count: lowStockCount,
       expiring_count: expiringCount,

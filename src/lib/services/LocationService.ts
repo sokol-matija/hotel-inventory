@@ -75,7 +75,7 @@ export class LocationService {
       const { data: locationData, error: locationError } = await supabase
         .from('locations')
         .select('*')
-        .eq('id', locationId)
+        .eq('id', parseInt(locationId))
         .single();
 
       if (locationError) throw locationError;
@@ -96,18 +96,21 @@ export class LocationService {
           )
         `
         )
-        .eq('location_id', locationId)
+        .eq('location_id', parseInt(locationId))
         .order('display_order', { ascending: true, nullsFirst: false });
 
       if (inventoryError) throw inventoryError;
 
       // Sort the inventory data by display_order to ensure correct ordering
-      const sortedInventory = this.sortInventoryByDisplayOrder(inventoryData || []);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sortedInventory = this.sortInventoryByDisplayOrder((inventoryData || []) as any);
 
       return {
-        location: locationData,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        location: locationData as any,
         inventory: sortedInventory,
-      };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any;
     } catch (error) {
       console.error('Error fetching location data:', error);
       throw new Error('Failed to load location data');

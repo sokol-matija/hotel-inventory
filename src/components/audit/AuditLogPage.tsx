@@ -117,7 +117,7 @@ export default function AuditLogPage() {
 
       let matchesDate = true;
       if (selectedDateRange !== 'all') {
-        const logDate = new Date(log.created_at);
+        const logDate = new Date(log.created_at ?? 0);
         const now = new Date();
         switch (selectedDateRange) {
           case 'today':
@@ -250,7 +250,7 @@ export default function AuditLogPage() {
             {filteredLogs.map((log: AuditLogEntry) => {
               const ActionIcon = actionIcons[log.action] || History;
               const actionColor = actionColors[log.action] || 'text-gray-600 bg-gray-50';
-              const { date, time } = formatDateTimeForDisplay(log.created_at);
+              const { date, time } = formatDateTimeForDisplay(log.created_at ?? '');
 
               return (
                 <div key={log.id} className="rounded-lg border bg-gray-50 p-4">

@@ -69,9 +69,9 @@ interface DeleteItemParams {
   name: string;
   description: string | null;
   category: { name: string };
-  unit: string;
+  unit: string | null;
   price: number | null;
-  minimum_stock: number;
+  minimum_stock: number | null;
 }
 
 export function useDeleteItem() {

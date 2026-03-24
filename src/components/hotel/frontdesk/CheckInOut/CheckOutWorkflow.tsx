@@ -149,7 +149,7 @@ export default function CheckOutWorkflow({ isOpen, onClose, reservation }: Check
     ];
 
     setCheckOutSteps(steps);
-    // eslint_disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reservation, guest, roomKeyReturned, additionalCharges]);
 
   const handleStepToggle = (stepId: string) => {

@@ -14,14 +14,14 @@ interface Item {
   id: number;
   name: string;
   description: string | null;
-  unit: string;
+  unit: string | null;
   price: number | null;
-  minimum_stock: number;
+  minimum_stock: number | null;
   category_id: number;
   category: {
     id: number;
     name: string;
-    requires_expiration: boolean;
+    requires_expiration: boolean | null;
   };
 }
 
@@ -63,9 +63,9 @@ export default function EditItemDialog({
       setFormData({
         name: item.name,
         description: item.description || '',
-        unit: item.unit,
+        unit: item.unit ?? '',
         price: item.price?.toString() || '',
-        minimum_stock: item.minimum_stock.toString(),
+        minimum_stock: (item.minimum_stock ?? 0).toString(),
         category_id: item.category_id.toString(),
       });
     }
@@ -77,7 +77,8 @@ export default function EditItemDialog({
       const { data, error } = await supabase.from('categories').select('*').order('name');
 
       if (error) throw error;
-      setCategories(data || []);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setCategories((data || []) as any);
     } catch (error) {
       console.error('Error fetching categories:', error);
     } finally {

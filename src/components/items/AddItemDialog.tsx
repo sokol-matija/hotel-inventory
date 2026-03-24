@@ -45,7 +45,8 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
       const { data, error } = await supabase.from('categories').select('*').order('name');
 
       if (error) throw error;
-      setCategories(data || []);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setCategories((data || []) as any);
     } catch (error) {
       console.error('Error fetching categories:', error);
     }

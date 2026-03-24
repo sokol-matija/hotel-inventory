@@ -310,7 +310,7 @@ export class VirtualRoomService {
         children: [],
         hasPets: existingReservation.has_pets || false,
         needsParking: existingReservation.parking_required || false,
-        additionalCharges: existingReservation.additional_charges || 0,
+        additionalCharges: 0, // additional_charges column removed — charges now in reservation_charges
       });
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

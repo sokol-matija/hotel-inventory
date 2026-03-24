@@ -26,7 +26,7 @@ export class RoomCleaningService {
           is_clean: true,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', roomId);
+        .eq('id', Number(roomId));
 
       if (error) {
         return { success: false, error: error.message };
@@ -50,7 +50,7 @@ export class RoomCleaningService {
           is_clean: false,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', roomId);
+        .eq('id', Number(roomId));
 
       if (error) {
         return { success: false, error: error.message };
@@ -74,7 +74,7 @@ export class RoomCleaningService {
       const { data, error } = await supabase
         .from('rooms')
         .select('is_clean, updated_at')
-        .eq('id', roomId)
+        .eq('id', Number(roomId))
         .single();
 
       if (error || !data) {
@@ -136,7 +136,7 @@ export class RoomCleaningService {
     }>
   > {
     try {
-      const { data, error } = await supabase.from('rooms').select('id, number, is_clean');
+      const { data, error } = await supabase.from('rooms').select('id, room_number, is_clean');
 
       if (error) {
         console.error('Failed to fetch rooms:', error);
@@ -144,8 +144,8 @@ export class RoomCleaningService {
       }
 
       return (data || []).map((room) => ({
-        id: room.id,
-        number: room.number,
+        id: String(room.id),
+        number: room.room_number,
         isClean: room.is_clean || false,
       }));
     } catch (error) {
@@ -168,7 +168,7 @@ export class RoomCleaningService {
           is_clean: isClean,
           updated_at: new Date().toISOString(),
         })
-        .in('id', roomIds);
+        .in('id', roomIds.map(Number));
 
       if (error) {
         return { success: false, error: error.message };

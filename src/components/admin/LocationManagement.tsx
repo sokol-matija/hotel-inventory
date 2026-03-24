@@ -40,7 +40,8 @@ export default function LocationManagement() {
         .order('name', { ascending: true });
 
       if (error) throw error;
-      setLocations(data || []);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setLocations((data || []) as any);
     } catch (error) {
       console.error('Error fetching locations:', error);
     } finally {

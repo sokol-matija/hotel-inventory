@@ -109,7 +109,7 @@ export default function ModernCreateBookingModal({
     if (bookingGuests.length === 0) {
       setBookingGuests([createEmptyGuest('adult')]);
     }
-    // eslint_disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Simple booking-level services

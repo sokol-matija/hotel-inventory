@@ -268,7 +268,7 @@ export default function HotelTimeline({
 
     initKeyboardShortcuts();
     return () => removeListener?.();
-    // eslint_disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     dragCreate.state.isEnabled,
     isExpansionMode,

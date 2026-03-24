@@ -66,7 +66,8 @@ export class LabelService {
       const { data, error } = await supabase
         .from('labels')
         .select('*')
-        .eq('hotel_id', hotelId)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .eq('hotel_id', hotelId as any)
         .ilike('name', `%${normalizedQuery}%`)
         .order('name', { ascending: true })
         .limit(10);
@@ -114,13 +115,19 @@ export class LabelService {
       const randomColor = this.getRandomColor();
 
       const insertData = {
-        hotel_id: labelData.hotelId,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        hotel_id: labelData.hotelId as any,
         name: normalizedName,
         color: labelData.color || randomColor.text,
         bg_color: labelData.bgColor || randomColor.bg,
       };
 
-      const { data, error } = await supabase.from('labels').insert(insertData).select().single();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await supabase
+        .from('labels')
+        .insert(insertData as any)
+        .select()
+        .single();
 
       if (error) {
         // Check for unique constraint violation
@@ -177,7 +184,8 @@ export class LabelService {
       const { data, error } = await supabase
         .from('labels')
         .select('*')
-        .eq('hotel_id', hotelId)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .eq('hotel_id', hotelId as any)
         .order('name', { ascending: true });
 
       if (error) {

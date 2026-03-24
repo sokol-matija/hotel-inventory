@@ -9,7 +9,7 @@ function mapCompanyFromDB(row: Database['public']['Tables']['companies']['Row'])
   return {
     id: row.id.toString(),
     name: row.name,
-    oib: row.oib,
+    oib: row.oib ?? '',
     address: {
       street: row.address,
       city: row.city,

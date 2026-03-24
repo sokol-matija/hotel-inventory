@@ -58,7 +58,7 @@ export class HotelDataService {
     const { data, error } = await supabase
       .from('guests')
       .update(updateData)
-      .eq('id', id)
+      .eq('id', parseInt(id))
       .select()
       .single();
 
@@ -82,7 +82,7 @@ export class HotelDataService {
   }
 
   async deleteReservation(id: string): Promise<void> {
-    const { error } = await supabase.from('reservations').delete().eq('id', id);
+    const { error } = await supabase.from('reservations').delete().eq('id', parseInt(id));
     if (error) throw error;
   }
 

@@ -160,7 +160,7 @@ const FiscalizationTestPage: React.FC = () => {
     // Load service status on component mount
     const status = fiscalizationService.getServiceStatus();
     setServiceStatus(status);
-    // eslint_disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

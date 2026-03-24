@@ -22,7 +22,7 @@ import { useToast } from '@/hooks/use-toast';
 interface Role {
   id: number;
   name: string;
-  description: string;
+  description: string | null;
 }
 
 interface RoleSelectionProps {

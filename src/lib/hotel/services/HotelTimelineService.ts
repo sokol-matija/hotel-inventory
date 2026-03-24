@@ -144,7 +144,7 @@ export class HotelTimelineService {
             guestName: reservation.guest?.fullName ?? 'Unknown Guest',
             roomNumber: room ? room.number : 'Unknown Room',
             numberOfGuests: reservation.adults + reservation.children.length,
-            hasPets: reservation.petFee > 0,
+            hasPets: reservation.hasPets ?? false,
           },
         };
       });
