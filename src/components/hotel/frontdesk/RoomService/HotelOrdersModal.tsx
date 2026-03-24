@@ -112,6 +112,7 @@ export default function HotelOrdersModal({
         orderStatus: 'pending',
         notes: orderNotes,
         orderedBy: 'Front Desk',
+        printedReceipt: false,
       },
       {
         onSuccess: () => {

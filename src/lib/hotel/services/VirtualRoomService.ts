@@ -395,22 +395,22 @@ export class VirtualRoomService {
       nameCroatian: `Soba ${dbRoom.room_number}`,
       nameEnglish: `Room ${dbRoom.room_number}`,
       seasonalRates: {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         A:
-          (dbRoom.room_pricing as any[])?.find((rp: any) => rp.pricing_seasons?.code === 'A')
-            ?.base_rate ?? 0,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (
+            dbRoom.room_pricing as { base_rate: number; pricing_seasons?: { code: string } }[]
+          )?.find((rp) => rp.pricing_seasons?.code === 'A')?.base_rate ?? 0,
         B:
-          (dbRoom.room_pricing as any[])?.find((rp: any) => rp.pricing_seasons?.code === 'B')
-            ?.base_rate ?? 0,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (
+            dbRoom.room_pricing as { base_rate: number; pricing_seasons?: { code: string } }[]
+          )?.find((rp) => rp.pricing_seasons?.code === 'B')?.base_rate ?? 0,
         C:
-          (dbRoom.room_pricing as any[])?.find((rp: any) => rp.pricing_seasons?.code === 'C')
-            ?.base_rate ?? 0,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (
+            dbRoom.room_pricing as { base_rate: number; pricing_seasons?: { code: string } }[]
+          )?.find((rp) => rp.pricing_seasons?.code === 'C')?.base_rate ?? 0,
         D:
-          (dbRoom.room_pricing as any[])?.find((rp: any) => rp.pricing_seasons?.code === 'D')
-            ?.base_rate ?? 0,
+          (
+            dbRoom.room_pricing as { base_rate: number; pricing_seasons?: { code: string } }[]
+          )?.find((rp) => rp.pricing_seasons?.code === 'D')?.base_rate ?? 0,
       },
       maxOccupancy: dbRoom.max_occupancy || 2,
       isPremium: dbRoom.is_premium || false,

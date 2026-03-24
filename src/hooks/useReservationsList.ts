@@ -150,7 +150,7 @@ export function useReservationsList(): UseReservationsListReturn {
     placeholderData: (prev) => prev, // keep previous data while fetching next page
   });
 
-  const reservations = data?.reservations ?? [];
+  const reservations = useMemo(() => data?.reservations ?? [], [data?.reservations]);
   const totalCount = data?.totalCount ?? 0;
   const totalPages = data?.totalPages ?? 0;
 
