@@ -17,8 +17,9 @@ import {
   Home,
   Building2,
   Tag,
+  Loader2,
 } from 'lucide-react';
-import { Room, Guest, GuestChild } from '../../../lib/hotel/types';
+import { Room, Guest, GuestChild, ReservationCharge, ChargeType } from '../../../lib/hotel/types';
 import hotelNotification from '../../../lib/notifications';
 import { supabase } from '../../../lib/supabase';
 import { useRooms } from '../../../lib/queries/hooks/useRooms';
@@ -108,7 +109,7 @@ export default function ModernCreateBookingModal({
     if (bookingGuests.length === 0) {
       setBookingGuests([createEmptyGuest('adult')]);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint_disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Simple booking-level services
@@ -127,19 +128,9 @@ export default function ModernCreateBookingModal({
   // Label/Group state
   const [selectedLabelId, setSelectedLabelId] = useState<string | null>(null);
 
-  // Pricing calculation
-  const [pricing, setPricing] = useState({
-    nights: 1,
-    baseRate: 120,
-    roomTotal: 120,
-    childrenDiscount: 0,
-    shortStaySupplement: 0,
-    petFee: 0,
-    parkingFee: 0,
-    tourismTax: 0,
-    vatAmount: 0,
-    total: 120,
-  });
+  // Charge preview (replaces flat pricing state)
+  const [previewCharges, setPreviewCharges] = useState<ReservationCharge[]>([]);
+  const [chargesLoading, setChargesLoading] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -167,78 +158,79 @@ export default function ModernCreateBookingModal({
     updatedAt: new Date(),
   });
 
-  // Calculate pricing whenever dependencies change
+  // Generate charge line items whenever pricing dependencies change
   useEffect(() => {
-    const nights = Math.ceil(
-      (checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)
-    );
-
     if (isUnallocated || !selectedRoom) {
-      setPricing({
-        nights,
-        baseRate: 0,
-        roomTotal: 0,
-        childrenDiscount: 0,
-        shortStaySupplement: 0,
-        petFee: 0,
-        parkingFee: 0,
-        tourismTax: 0,
-        vatAmount: 0,
-        total: 0,
-      });
+      setPreviewCharges([]);
       return;
     }
 
-    const children: GuestChild[] = bookingGuests
-      .filter((g) => g.type === 'child' && g.age !== undefined)
-      .map((g) => {
-        const today = new Date();
-        const dob = g.dateOfBirth
-          ? new Date(g.dateOfBirth)
-          : new Date(today.getFullYear() - g.age!, today.getMonth(), today.getDate());
-        return {
-          name: `${g.firstName} ${g.lastName}`.trim() || 'Child',
-          age: g.age!,
-          dateOfBirth: dob,
-        };
-      });
+    // Need at least one guest with a name
+    const hasGuest = bookingGuests.some((g) => g.firstName.trim() || g.lastName.trim());
+    if (!hasGuest) {
+      setPreviewCharges([]);
+      return;
+    }
 
-    const adults = Math.max(1, bookingGuests.filter((g) => g.type === 'adult').length);
+    const guests = bookingGuests.map((g) => ({
+      name: `${g.firstName} ${g.lastName}`.trim() || (g.type === 'child' ? 'Child' : 'Guest'),
+      type: g.type as 'adult' | 'child',
+      age: g.age,
+    }));
+
+    // Determine primary guest id for returning-customer discount
+    const primaryGuest = bookingGuests[0];
+    const guestId =
+      primaryGuest?.isExisting && primaryGuest?.existingGuestId
+        ? String(primaryGuest.existingGuestId)
+        : undefined;
+
+    // Find pricing tier from company if applicable
+    const selectedCompany =
+      isCompanyBilling && selectedCompanyId
+        ? companies.find((c) => c.id === selectedCompanyId)
+        : undefined;
+    const pricingTierId = selectedCompany?.pricingTierId ?? undefined;
 
     let cancelled = false;
+    setChargesLoading(true);
+
     unifiedPricingService
-      .calculateTotal({
+      .generateCharges({
         roomId: selectedRoom.id,
         checkIn: checkInDate,
         checkOut: checkOutDate,
-        adults,
-        children,
+        guests,
         hasPets: bookingServices.hasPets,
-        needsParking: bookingServices.needsParking,
+        parkingRequired: bookingServices.needsParking,
+        pricingTierId,
+        guestId,
       })
-      .then((c) => {
+      .then((charges) => {
         if (cancelled) return;
-        setPricing({
-          nights: c.numberOfNights,
-          baseRate: c.baseRate,
-          roomTotal: c.subtotal,
-          childrenDiscount: c.totalDiscounts,
-          shortStaySupplement: c.fees.shortStay,
-          petFee: c.fees.pets,
-          parkingFee: c.fees.parking,
-          tourismTax: c.fees.tourism,
-          vatAmount: c.fees.vat,
-          total: c.total,
-        });
+        setPreviewCharges(charges);
       })
       .catch(() => {
-        /* keep previous pricing on error */
+        /* keep previous charges on error */
+      })
+      .finally(() => {
+        if (!cancelled) setChargesLoading(false);
       });
 
     return () => {
       cancelled = true;
     };
-  }, [checkInDate, checkOutDate, bookingGuests, bookingServices, selectedRoom, isUnallocated]);
+  }, [
+    checkInDate,
+    checkOutDate,
+    bookingGuests,
+    bookingServices,
+    selectedRoom,
+    isUnallocated,
+    isCompanyBilling,
+    selectedCompanyId,
+    companies,
+  ]);
 
   // Guest management functions
   const addAdult = () => {
@@ -475,9 +467,6 @@ export default function ModernCreateBookingModal({
         primaryGuestId = createdGuest.id;
       }
 
-      // Create reservation
-      const seasonalPeriod = unifiedPricingService.getSeasonalPeriod(checkInDate);
-
       // Look up status_id and booking_source_id (FK columns, not varchar)
       const { data: statusRow } = await supabase
         .from('reservation_statuses')
@@ -502,27 +491,12 @@ export default function ModernCreateBookingModal({
         number_of_guests: adultsCount + childrenCount,
         status_id: statusRow?.id,
         booking_source_id: sourceRow?.id,
-        seasonal_period: seasonalPeriod,
-        base_room_rate: pricing.baseRate,
-        subtotal:
-          pricing.roomTotal -
-          pricing.childrenDiscount +
-          pricing.shortStaySupplement +
-          pricing.petFee +
-          pricing.parkingFee,
-        children_discounts: pricing.childrenDiscount,
-        short_stay_supplement: pricing.shortStaySupplement,
-        tourism_tax: pricing.tourismTax,
-        vat_amount: pricing.vatAmount,
-        pet_fee: pricing.petFee,
-        parking_fee: pricing.parkingFee,
-        total_amount: pricing.total,
         special_requests: bookingServices.specialRequests || null,
         has_pets: bookingServices.hasPets,
         parking_required: bookingServices.needsParking,
-        is_r1: isCompanyBilling, // Company billing flag
-        company_id: isCompanyBilling ? selectedCompanyId : null, // Company ID for R1 billing
-        label_id: selectedLabelId, // Label/Group for tracking related reservations
+        is_r1: isCompanyBilling,
+        company_id: isCompanyBilling && selectedCompanyId ? parseInt(selectedCompanyId) : null,
+        label_id: selectedLabelId,
       };
 
       const { data: reservation, error: reservationError } = await supabase
@@ -532,11 +506,32 @@ export default function ModernCreateBookingModal({
         .single();
 
       if (reservationError) {
-        console.error('❌ BOOKING MODAL ERROR - Reservation creation failed:', {
+        console.error('Reservation creation failed:', {
           error: reservationError,
           sentData: reservationData,
         });
         throw reservationError;
+      }
+
+      // Batch-insert charge line items into reservation_charges
+      if (previewCharges.length > 0) {
+        const { error: chargesError } = await supabase.from('reservation_charges').insert(
+          previewCharges.map((c) => ({
+            reservation_id: reservation.id,
+            charge_type: c.chargeType,
+            description: c.description,
+            quantity: c.quantity,
+            unit_price: c.unitPrice,
+            total: c.total,
+            vat_rate: c.vatRate,
+            sort_order: c.sortOrder,
+          }))
+        );
+
+        if (chargesError) {
+          console.error('Failed to insert reservation charges:', chargesError);
+          // Non-fatal: reservation exists, charges can be regenerated
+        }
       }
 
       // Create guest relationships and additional guests
@@ -638,11 +633,11 @@ export default function ModernCreateBookingModal({
               day: 'numeric',
               year: 'numeric',
             }),
-            nights: pricing.nights,
+            nights: numberOfNights,
             adults: adults,
             children: children,
             bookingSource: 'Front Desk - Modern Modal',
-            totalAmount: pricing.total,
+            totalAmount: chargeTotal,
           };
 
           const notificationSent =
@@ -676,6 +671,50 @@ export default function ModernCreateBookingModal({
       setIsSubmitting(false);
     }
   };
+
+  // ── Derived pricing from previewCharges ──────────────────────────────────
+  const chargeTotal = previewCharges.reduce((sum, c) => sum + c.total, 0);
+  const numberOfNights = Math.max(
+    1,
+    Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24))
+  );
+
+  // Group charges by type for the summary table
+  const chargesByType = previewCharges.reduce<Record<string, ReservationCharge[]>>((acc, c) => {
+    const key = c.chargeType;
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(c);
+    return acc;
+  }, {});
+
+  // Section labels for charge types
+  const chargeSectionLabels: Partial<Record<ChargeType, string>> = {
+    accommodation: 'Accommodation',
+    tourism_tax: 'Taxes',
+    parking: 'Supplements',
+    pet_fee: 'Supplements',
+    short_stay_supplement: 'Supplements',
+    towel_rental: 'Supplements',
+    discount: 'Discounts',
+    room_service: 'Room Service',
+    additional: 'Additional',
+  };
+
+  // Ordered section keys for rendering
+  const sectionOrder: ChargeType[] = [
+    'accommodation',
+    'tourism_tax',
+    'parking',
+    'pet_fee',
+    'short_stay_supplement',
+    'towel_rental',
+    'discount',
+    'room_service',
+    'additional',
+  ];
+
+  // Build ordered sections (unique section labels)
+  const renderedSections = new Set<string>();
 
   if (!isOpen) return null;
 
@@ -815,7 +854,7 @@ export default function ModernCreateBookingModal({
                   </div>
                 </div>
                 <div className="mt-2 text-sm text-gray-600">
-                  {pricing.nights} night{pricing.nights !== 1 ? 's' : ''}
+                  {numberOfNights} night{numberOfNights !== 1 ? 's' : ''}
                 </div>
               </CardContent>
             </Card>
@@ -1216,106 +1255,88 @@ export default function ModernCreateBookingModal({
               </CardContent>
             </Card>
 
-            {/* Pricing Summary */}
+            {/* Pricing Summary — Charge Line Items */}
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center text-lg">
                   <Receipt className="mr-2 h-4 w-4" />
                   Pricing Summary
+                  {chargesLoading && (
+                    <Loader2 className="ml-2 h-4 w-4 animate-spin text-gray-400" />
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  {/* Base Accommodation */}
-                  <div className="flex justify-between">
-                    <span>
-                      Base Accommodation ({adultsCount + childrenCount} guest
-                      {adultsCount + childrenCount !== 1 ? 's' : ''} × {pricing.nights} night
-                      {pricing.nights !== 1 ? 's' : ''})
-                    </span>
-                    <span>€{pricing.roomTotal.toFixed(2)}</span>
+                {previewCharges.length === 0 && !chargesLoading ? (
+                  <p className="text-sm text-gray-500 italic">
+                    {isUnallocated || !selectedRoom
+                      ? 'Select a room to see pricing.'
+                      : 'Enter guest details to generate pricing.'}
+                  </p>
+                ) : (
+                  <div className="space-y-1">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b text-left text-xs text-gray-500">
+                          <th className="pb-1 font-medium">Description</th>
+                          <th className="pb-1 text-right font-medium">Qty</th>
+                          <th className="pb-1 text-right font-medium">Unit Price</th>
+                          <th className="pb-1 text-right font-medium">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sectionOrder.map((chargeType) => {
+                          const charges = chargesByType[chargeType];
+                          if (!charges || charges.length === 0) return null;
+
+                          const sectionLabel = chargeSectionLabels[chargeType] || chargeType;
+                          const showHeader = !renderedSections.has(sectionLabel);
+                          if (showHeader) renderedSections.add(sectionLabel);
+
+                          return (
+                            <React.Fragment key={chargeType}>
+                              {showHeader && (
+                                <tr>
+                                  <td
+                                    colSpan={4}
+                                    className="pt-2 pb-1 text-xs font-semibold tracking-wide text-gray-600 uppercase"
+                                  >
+                                    {sectionLabel}
+                                  </td>
+                                </tr>
+                              )}
+                              {charges.map((charge, idx) => (
+                                <tr
+                                  key={`${chargeType}-${idx}`}
+                                  className={charge.total < 0 ? 'text-green-700' : ''}
+                                >
+                                  <td className="py-0.5 pr-2">{charge.description}</td>
+                                  <td className="py-0.5 text-right">{charge.quantity}</td>
+                                  <td className="py-0.5 text-right">
+                                    {charge.unitPrice < 0 ? '-' : ''}€
+                                    {Math.abs(charge.unitPrice).toFixed(2)}
+                                  </td>
+                                  <td className="py-0.5 text-right">
+                                    {charge.total < 0 ? '-' : ''}€
+                                    {Math.abs(charge.total).toFixed(2)}
+                                  </td>
+                                </tr>
+                              ))}
+                            </React.Fragment>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot>
+                        <tr className="border-t-2 text-lg font-bold">
+                          <td colSpan={3} className="pt-2">
+                            Total
+                          </td>
+                          <td className="pt-2 text-right">€{chargeTotal.toFixed(2)}</td>
+                        </tr>
+                      </tfoot>
+                    </table>
                   </div>
-
-                  {/* Children Discounts */}
-                  {pricing.childrenDiscount > 0 && (
-                    <div className="flex justify-between text-green-600">
-                      <span>
-                        Children Discount ({childrenCount} child{childrenCount !== 1 ? 'ren' : ''})
-                      </span>
-                      <span>-€{pricing.childrenDiscount.toFixed(2)}</span>
-                    </div>
-                  )}
-
-                  {/* Accommodation Subtotal */}
-                  <div className="flex justify-between border-t pt-1 text-sm">
-                    <span className="font-medium">Accommodation Subtotal</span>
-                    <span className="font-medium">
-                      €{(pricing.roomTotal - pricing.childrenDiscount).toFixed(2)}
-                    </span>
-                  </div>
-
-                  {/* Short Stay Supplement */}
-                  {pricing.shortStaySupplement > 0 && (
-                    <div className="flex justify-between text-orange-600">
-                      <span>Short Stay Supplement (+20% for &lt;3 nights)</span>
-                      <span>+€{pricing.shortStaySupplement.toFixed(2)}</span>
-                    </div>
-                  )}
-
-                  {/* Accommodation Total */}
-                  <div className="flex justify-between border-t pt-1 text-sm">
-                    <span className="font-medium">Accommodation Total (incl. VAT)</span>
-                    <span className="font-medium">
-                      €
-                      {(
-                        pricing.roomTotal -
-                        pricing.childrenDiscount +
-                        pricing.shortStaySupplement
-                      ).toFixed(2)}
-                    </span>
-                  </div>
-
-                  {/* Additional Services */}
-                  {pricing.petFee > 0 && (
-                    <div className="flex justify-between">
-                      <span>Pet Fee (incl. VAT)</span>
-                      <span>€{pricing.petFee.toFixed(2)}</span>
-                    </div>
-                  )}
-                  {pricing.parkingFee > 0 && (
-                    <div className="flex justify-between">
-                      <span>Parking Fee (incl. VAT)</span>
-                      <span>€{pricing.parkingFee.toFixed(2)}</span>
-                    </div>
-                  )}
-
-                  {/* Tourism Tax */}
-                  <div className="flex justify-between">
-                    <span>
-                      Tourism Tax ({adultsCount} adult{adultsCount !== 1 ? 's' : ''}
-                      {childrenCount > 0
-                        ? ` + ${childrenCount} child` + (childrenCount !== 1 ? 'ren' : '')
-                        : ''}
-                      )
-                    </span>
-                    <span>€{pricing.tourismTax.toFixed(2)}</span>
-                  </div>
-
-                  {/* VAT Breakdown (for info only) */}
-                  <div className="flex justify-between border-t pt-1 text-xs text-gray-500 italic">
-                    <span>
-                      VAT breakdown (13% accommodation, 25% services - already included in prices
-                      above)
-                    </span>
-                    <span>€{pricing.vatAmount.toFixed(2)}</span>
-                  </div>
-
-                  {/* Grand Total */}
-                  <div className="flex justify-between border-t-2 pt-2 text-lg font-bold">
-                    <span>Total Amount</span>
-                    <span>€{pricing.total.toFixed(2)}</span>
-                  </div>
-                </div>
+                )}
               </CardContent>
             </Card>
 

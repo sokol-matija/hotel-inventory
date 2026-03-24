@@ -18,6 +18,9 @@ export const queryKeys = {
     byDateRange: (start: string, end: string) => ['reservations', 'range', start, end] as const,
     list: (params: object) => ['reservations', 'list', params] as const,
   },
+  reservationCharges: {
+    byReservation: (id: number) => ['reservationCharges', id] as const,
+  },
   invoices: {
     all: () => ['invoices'] as const,
     detail: (id: string) => ['invoices', id] as const,

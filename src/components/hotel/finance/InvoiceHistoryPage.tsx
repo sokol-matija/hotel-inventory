@@ -128,31 +128,32 @@ export default function InvoiceHistoryPage() {
         const { data: companyData, error: companyError } = await supabase
           .from('companies')
           .select('*')
-          .eq('id', reservation.companyId)
+          .eq('id', Number(reservation.companyId))
           .single();
 
         if (companyData && !companyError) {
           // Transform database format to Company type
           company = {
-            id: companyData.id,
+            id: String(companyData.id),
             name: companyData.name,
-            oib: companyData.oib,
+            oib: companyData.oib ?? '',
             address: {
-              street: companyData.address,
-              city: companyData.city,
-              postalCode: companyData.postal_code,
-              country: companyData.country,
+              street: companyData.address ?? '',
+              city: companyData.city ?? '',
+              postalCode: companyData.postal_code ?? '',
+              country: companyData.country ?? '',
             },
-            contactPerson: companyData.contact_person,
-            email: companyData.email,
-            phone: companyData.phone,
-            fax: companyData.fax,
-            pricingTierId: companyData.pricing_tier_id,
-            roomAllocationGuarantee: companyData.room_allocation_guarantee,
-            isActive: companyData.is_active,
-            notes: companyData.notes,
-            createdAt: companyData.created_at,
-            updatedAt: companyData.updated_at,
+            contactPerson: companyData.contact_person ?? '',
+            email: companyData.email ?? '',
+            phone: companyData.phone ?? '',
+            fax: companyData.fax ?? undefined,
+            pricingTierId:
+              companyData.pricing_tier_id != null ? String(companyData.pricing_tier_id) : undefined,
+            roomAllocationGuarantee: companyData.room_allocation_guarantee ?? undefined,
+            isActive: companyData.is_active ?? false,
+            notes: companyData.notes ?? '',
+            createdAt: new Date(companyData.created_at ?? Date.now()),
+            updatedAt: new Date(companyData.updated_at ?? Date.now()),
           };
         }
       }
@@ -478,31 +479,7 @@ export default function InvoiceHistoryPage() {
                       <span>Tourism Tax:</span>
                       <span>€{selectedInvoice.tourismTax.toFixed(2)}</span>
                     </div>
-                    {(() => {
-                      const reservation = getReservationDetails(selectedInvoice);
-                      return reservation ? (
-                        <>
-                          {reservation.petFee > 0 && (
-                            <div className="flex justify-between">
-                              <span>Pet Fee:</span>
-                              <span>€{reservation.petFee.toFixed(2)}</span>
-                            </div>
-                          )}
-                          {reservation.parkingFee > 0 && (
-                            <div className="flex justify-between">
-                              <span>Parking Fee:</span>
-                              <span>€{reservation.parkingFee.toFixed(2)}</span>
-                            </div>
-                          )}
-                          {reservation.additionalCharges > 0 && (
-                            <div className="flex justify-between">
-                              <span>Additional Charges:</span>
-                              <span>€{reservation.additionalCharges.toFixed(2)}</span>
-                            </div>
-                          )}
-                        </>
-                      ) : null;
-                    })()}
+                    {/* Per-charge breakdown is available in EditChargesPanel via reservation_charges */}
                     <hr className="my-3" />
                     <div className="flex justify-between text-lg font-bold">
                       <span>Total Amount:</span>

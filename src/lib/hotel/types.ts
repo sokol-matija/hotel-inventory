@@ -84,6 +84,46 @@ export interface Guest {
   updatedAt: Date;
 }
 
+// ─── Charge model ──────────────────────────────────────────────────────────────
+
+export type ChargeType =
+  | 'accommodation'
+  | 'tourism_tax'
+  | 'parking'
+  | 'pet_fee'
+  | 'short_stay_supplement'
+  | 'room_service'
+  | 'towel_rental'
+  | 'additional'
+  | 'discount';
+
+export interface ReservationCharge {
+  id: number;
+  reservationId: number;
+  chargeType: ChargeType;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+  vatRate: number;
+  stayDate?: string | null;
+  sortOrder: number;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+
+export interface InvoiceLine {
+  id: number;
+  invoiceId: number;
+  chargeType: ChargeType;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+  vatRate: number;
+  sortOrder: number;
+}
+
 export interface RoomServiceItem {
   id: string;
   itemName: string;
@@ -111,9 +151,18 @@ export interface Reservation {
   // Corporate booking
   isR1Bill?: boolean;
   companyId?: string;
-  pricingTierId?: string; // Added this property
+  pricingTierId?: string;
 
-  // Pricing breakdown - using pricing object for consistency with services
+  // Number of nights (still in DB)
+  numberOfNights: number;
+
+  // ── Deprecated flat pricing fields ─────────────────────────────────────────
+  // These columns were dropped from the DB in Phase 1 migration.
+  // The fields stay here as required stubs (populated with 0 / defaults by
+  // DatabaseAdapter) so that existing consumer code compiles while those
+  // consumers are migrated to ReservationCharge in Phases 3-8.
+  // DO NOT populate these in new code — use reservation_charges instead.
+  /** @deprecated Use ReservationCharge rows instead */
   pricing?: {
     subtotal: number;
     tourismTax: number;
@@ -125,23 +174,31 @@ export interface Reservation {
     additionalCharges: number;
     total: number;
   };
-
-  // Flat pricing properties for backward compatibility
+  /** @deprecated Use ReservationCharge rows instead */
   seasonalPeriod: SeasonalPeriod;
+  /** @deprecated Use ReservationCharge rows instead */
   baseRoomRate: number;
-  numberOfNights: number;
+  /** @deprecated Use ReservationCharge rows instead */
   subtotal: number;
+  /** @deprecated Use ReservationCharge rows instead */
   childrenDiscounts: number;
+  /** @deprecated Use ReservationCharge rows instead */
   tourismTax: number;
-  vatAmount: number; // 25%
+  /** @deprecated Use ReservationCharge rows instead */
+  vatAmount: number;
+  /** @deprecated Use ReservationCharge rows instead */
   petFee: number;
+  /** @deprecated Use ReservationCharge rows instead */
   parkingFee: number;
+  /** @deprecated Use ReservationCharge rows instead */
   shortStaySuplement: number;
+  /** @deprecated Use ReservationCharge rows instead */
   additionalCharges: number;
+  /** @deprecated Use ReservationCharge rows instead */
   roomServiceItems: RoomServiceItem[];
+  /** @deprecated Use ReservationCharge rows instead */
   totalAmount: number;
-
-  // Payment status
+  /** @deprecated Use ReservationCharge rows instead */
   paymentStatus?: string;
 
   // Guest preferences
@@ -180,34 +237,31 @@ export type LabelCreate = Omit<Label, 'id' | 'createdAt' | 'updatedAt' | 'color'
 };
 export type LabelUpdate = Partial<Pick<Label, 'name' | 'color' | 'bgColor'>>;
 
+/**
+ * @deprecated Will be removed once all pricing consumers migrate to ReservationCharge.
+ * Kept temporarily so UnifiedPricingService and PDF generator compile during the phased migration.
+ */
 export interface PricingCalculation {
-  // Base pricing
   baseRate: number;
   numberOfNights: number;
   seasonalPeriod: SeasonalPeriod;
   subtotal: number;
-
-  // Discounts
   discounts: {
-    children0to3: number; // Free
-    children3to7: number; // 50% discount
-    children7to14: number; // 20% discount
-    longStay: number; // Future: 7+ nights discount
+    children0to3: number;
+    children3to7: number;
+    children7to14: number;
+    longStay: number;
   };
   totalDiscounts: number;
-
-  // Fees and taxes
   fees: {
-    tourism: number; // €1.10 or €1.50 per person per night
-    vat: number; // 25% Croatian VAT
-    pets: number; // €20.00 per stay
-    parking: number; // €7.00 per night
-    shortStay: number; // +20% for stays < 3 days
-    additional: number; // Room service, extras
+    tourism: number;
+    vat: number;
+    pets: number;
+    parking: number;
+    shortStay: number;
+    additional: number;
   };
   totalFees: number;
-
-  // Final calculation
   total: number;
 }
 
@@ -291,8 +345,8 @@ export const HOTEL_CONSTANTS = {
   PET_FEE: 20.0, // €20 per stay
   PARKING_FEE: 7.0, // €7 per night
   SHORT_STAY_SUPPLEMENT: 0.2, // +20% for stays < 3 days
-  TOURISM_TAX_LOW: 1.1, // €1.10 periods I,II,III,X,XI,XII
-  TOURISM_TAX_HIGH: 1.5, // €1.50 periods IV,V,VI,VII,VIII,IX
+  TOURISM_TAX_LOW: 1.1, // €1.10 (Jan–Mar, Oct–Dec)
+  TOURISM_TAX_HIGH: 1.6, // €1.60 (Apr–Sep)
   CHILDREN_FREE_AGE: 3,
   CHILDREN_HALF_PRICE_AGE: 7,
   CHILDREN_DISCOUNT_AGE: 14,
@@ -592,37 +646,12 @@ export interface PricingTier {
   id: string;
   name: string;
   description: string;
-
-  // Pricing configuration
-  discountPercentage: number;
+  discountPercentage: number; // e.g. 10 = 10% off all accommodation charges
   isDefault: boolean;
   isActive: boolean;
-
-  // Seasonal rates
-  seasonalRates: {
-    A: number; // Winter/Early Spring
-    B: number; // Spring/Late Fall
-    C: number; // Early Summer/Early Fall
-    D: number; // Peak Summer
-  };
-
-  // Room type multipliers
-  roomTypeMultipliers: Record<string, number>;
-
-  // Business rules
   minimumStayRequirement?: number;
-  advanceBookingDiscount?: number;
-  lastMinuteDiscount?: number;
-
-  // Validity period
   validFrom?: Date;
   validTo?: Date;
-
-  // Services this tier applies to
-  applicableServices: string[];
-
-  // Metadata
   createdAt: Date;
   updatedAt: Date;
-  notes?: string;
 }

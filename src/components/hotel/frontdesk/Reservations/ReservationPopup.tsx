@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { CalendarEvent, Company } from '../../../../lib/hotel/types';
 import { useReservationState } from '../../../../lib/hotel/hooks/useReservationState';
+import { useReservationCharges } from '../../../../lib/queries/hooks/useReservationCharges';
 import PaymentDetailsModal from './PaymentDetailsModal';
 import CheckInWorkflow from '../CheckInOut/CheckInWorkflow';
 import CheckOutWorkflow from '../CheckInOut/CheckOutWorkflow';
@@ -112,6 +113,15 @@ export default function ReservationPopup({
     updateState,
   } = useReservationState(event, onClose, onStatusChange);
 
+  // Fetch charges to derive total from reservation_charges
+  const numericReservationId = reservationData?.reservation
+    ? typeof reservationData.reservation.id === 'string'
+      ? parseInt(reservationData.reservation.id, 10)
+      : reservationData.reservation.id
+    : undefined;
+  const { data: charges = [] } = useReservationCharges(numericReservationId as number | undefined);
+  const chargesTotalAmount = charges.reduce((sum, c) => sum + c.total, 0);
+
   // State for company data (R1 billing)
   const [company, setCompany] = useState<Company | null>(null);
   const [, setLoadingCompany] = useState(false);
@@ -128,7 +138,7 @@ export default function ReservationPopup({
           const { data: companyData, error } = await supabase
             .from('companies')
             .select('*')
-            .eq('id', res.company_id)
+            .eq('id', Number(res.company_id))
             .single();
 
           if (error) {
@@ -136,25 +146,28 @@ export default function ReservationPopup({
           } else if (companyData) {
             // Transform to Company type
             setCompany({
-              id: companyData.id,
+              id: String(companyData.id),
               name: companyData.name,
-              oib: companyData.oib,
+              oib: companyData.oib ?? '',
               address: {
-                street: companyData.address,
-                city: companyData.city,
-                postalCode: companyData.postal_code,
-                country: companyData.country,
+                street: companyData.address ?? '',
+                city: companyData.city ?? '',
+                postalCode: companyData.postal_code ?? '',
+                country: companyData.country ?? '',
               },
-              contactPerson: companyData.contact_person,
-              email: companyData.email,
-              phone: companyData.phone,
-              fax: companyData.fax,
-              pricingTierId: companyData.pricing_tier_id,
-              roomAllocationGuarantee: companyData.room_allocation_guarantee,
-              isActive: companyData.is_active,
-              notes: companyData.notes,
-              createdAt: companyData.created_at,
-              updatedAt: companyData.updated_at,
+              contactPerson: companyData.contact_person ?? '',
+              email: companyData.email ?? '',
+              phone: companyData.phone ?? '',
+              fax: companyData.fax ?? undefined,
+              pricingTierId:
+                companyData.pricing_tier_id != null
+                  ? String(companyData.pricing_tier_id)
+                  : undefined,
+              roomAllocationGuarantee: companyData.room_allocation_guarantee ?? undefined,
+              isActive: companyData.is_active ?? false,
+              notes: companyData.notes ?? '',
+              createdAt: new Date(companyData.created_at ?? Date.now()),
+              updatedAt: new Date(companyData.updated_at ?? Date.now()),
             });
           }
         } catch (error) {
@@ -595,7 +608,7 @@ export default function ReservationPopup({
               <CardContent>
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-lg font-bold">€{reservation.totalAmount.toFixed(2)}</div>
+                    <div className="text-lg font-bold">€{chargesTotalAmount.toFixed(2)}</div>
                     <div className="text-sm text-gray-500">
                       Total Amount • {reservation.numberOfNights} nights
                     </div>

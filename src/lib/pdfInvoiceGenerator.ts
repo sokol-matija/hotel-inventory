@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { Reservation, Guest, Room, Company } from './hotel/types';
+import { Reservation, Guest, Room, Company, ReservationCharge } from './hotel/types';
 import { format } from 'date-fns';
 import * as QRCode from 'qrcode';
 import { convertToDisplayName } from './hotel/countryCodeUtils';
@@ -23,9 +23,10 @@ interface InvoiceData {
   invoiceNumber: string;
   invoiceDate: Date;
   company?: Company; // Company for R1 billing (optional)
+  charges?: ReservationCharge[]; // Line-item charges from reservation_charges table
   // Croatian Fiscal Receipt data
-  jir?: string; // Jedinstveni identifikator računa (unique invoice identifier)
-  zki?: string; // Zaštitni kod izdavatelja (security code of issuer)
+  jir?: string; // Jedinstveni identifikator racuna (unique invoice identifier)
+  zki?: string; // Zastitni kod izdavatelja (security code of issuer)
   qrCodeData?: string; // QR code data string for verification
 }
 
@@ -39,7 +40,8 @@ interface CroatianFiscalData {
 }
 
 export async function generatePDFInvoice(data: InvoiceData): Promise<void> {
-  const { reservation, guest, room, invoiceNumber, invoiceDate, jir, zki, qrCodeData } = data;
+  const { reservation, guest, room, invoiceNumber, invoiceDate, jir, zki, qrCodeData, charges } =
+    data;
 
   // Create new PDF document
   const doc = new jsPDF();
@@ -141,109 +143,27 @@ export async function generatePDFInvoice(data: InvoiceData): Promise<void> {
   doc.setDrawColor(41, 98, 146);
   doc.line(20, 140, 190, 140);
 
-  // Prepare invoice line items
-  const lineItems = [];
+  // Prepare invoice line items from charges
+  const lineItems: string[][] = [];
 
-  // Room charges
-  lineItems.push([
-    'Room Accommodation',
-    `${room.nameEnglish} - Season ${reservation.seasonalPeriod}`,
-    `${reservation.numberOfNights}`,
-    `€${reservation.baseRoomRate.toFixed(2)}`,
-    `€${reservation.subtotal.toFixed(2)}`,
-  ]);
-
-  // Children discounts
-  if (reservation.childrenDiscounts > 0) {
-    lineItems.push([
-      'Children Discounts',
-      'Age-based pricing (0-3: Free, 3-7: -50%, 7-14: -20%)',
-      '1',
-      `-€${reservation.childrenDiscounts.toFixed(2)}`,
-      `-€${reservation.childrenDiscounts.toFixed(2)}`,
-    ]);
-  }
-
-  // Short stay supplement
-  if (reservation.shortStaySuplement > 0) {
-    lineItems.push([
-      'Short Stay Supplement',
-      '+20% for stays under 3 nights',
-      '1',
-      `€${reservation.shortStaySuplement.toFixed(2)}`,
-      `€${reservation.shortStaySuplement.toFixed(2)}`,
-    ]);
-  }
-
-  // Tourism tax
-  const guestNights = reservation.numberOfGuests * reservation.numberOfNights;
-  const tourismTaxRate = guestNights > 0 ? reservation.tourismTax / guestNights : 0;
-  lineItems.push([
-    'Tourism Tax',
-    `€${tourismTaxRate.toFixed(2)} per person per night (Croatian Law)`,
-    `${reservation.numberOfGuests * reservation.numberOfNights}`,
-    `€${tourismTaxRate.toFixed(2)}`,
-    `€${reservation.tourismTax.toFixed(2)}`,
-  ]);
-
-  // Pet fee
-  if (reservation.petFee > 0) {
-    lineItems.push([
-      'Pet Fee',
-      'Pet accommodation fee per stay',
-      '1',
-      `€${reservation.petFee.toFixed(2)}`,
-      `€${reservation.petFee.toFixed(2)}`,
-    ]);
-  }
-
-  // Parking fee
-  if (reservation.parkingFee > 0) {
-    lineItems.push([
-      'Parking Fee',
-      `€7.00 per night`,
-      `${reservation.numberOfNights}`,
-      '€7.00',
-      `€${reservation.parkingFee.toFixed(2)}`,
-    ]);
-  }
-
-  // Additional charges (miscellaneous)
-  if (reservation.additionalCharges > 0) {
-    lineItems.push([
-      'Additional Services',
-      'Miscellaneous charges',
-      '1',
-      `€${reservation.additionalCharges.toFixed(2)}`,
-      `€${reservation.additionalCharges.toFixed(2)}`,
-    ]);
-  }
-
-  // Room service items
-  if (reservation.roomServiceItems && reservation.roomServiceItems.length > 0) {
-    reservation.roomServiceItems.forEach((item) => {
+  if (charges && charges.length > 0) {
+    // Use reservation_charges as the source of truth
+    for (const charge of charges) {
       lineItems.push([
-        'Room Service',
-        `${item.itemName} (${format(item.orderedAt, 'dd.MM.yyyy')})`,
-        `${item.quantity}`,
-        `€${item.unitPrice.toFixed(2)}`,
-        `€${item.totalPrice.toFixed(2)}`,
+        charge.description,
+        '',
+        `${charge.quantity}`,
+        `€${charge.unitPrice.toFixed(2)}`,
+        `€${charge.total.toFixed(2)}`,
       ]);
-    });
+    }
   }
 
-  // Subtotal before VAT
-  const subtotalBeforeVAT = reservation.totalAmount - reservation.vatAmount;
-  lineItems.push(['', '', '', 'Subtotal:', `€${subtotalBeforeVAT.toFixed(2)}`]);
-
-  // VAT
-  lineItems.push([
-    'VAT (25%)',
-    'Croatian Value Added Tax',
-    '1',
-    `€${reservation.vatAmount.toFixed(2)}`,
-    `€${reservation.vatAmount.toFixed(2)}`,
-  ]);
+  // Compute grand total from charges
+  const grandTotal =
+    charges && charges.length > 0
+      ? charges.reduce((sum, c) => sum + c.total, 0)
+      : reservation.totalAmount;
 
   // Generate the table
   autoTable(doc, {
@@ -262,8 +182,8 @@ export async function generatePDFInvoice(data: InvoiceData): Promise<void> {
       textColor: 50,
     },
     columnStyles: {
-      0: { cellWidth: 35 },
-      1: { cellWidth: 70 },
+      0: { cellWidth: 70 },
+      1: { cellWidth: 35 },
       2: { cellWidth: 15, halign: 'center' },
       3: { cellWidth: 25, halign: 'right' },
       4: { cellWidth: 25, halign: 'right' },
@@ -276,7 +196,7 @@ export async function generatePDFInvoice(data: InvoiceData): Promise<void> {
           styles: { fontStyle: 'bold', fontSize: 12, fillColor: [240, 248, 255] },
         },
         {
-          content: `€${reservation.totalAmount.toFixed(2)}`,
+          content: `€${grandTotal.toFixed(2)}`,
           styles: { fontStyle: 'bold', fontSize: 12, fillColor: [240, 248, 255] },
         },
       ],
@@ -333,7 +253,7 @@ export async function generatePDFInvoice(data: InvoiceData): Promise<void> {
           dark: '#000000',
           light: '#FFFFFF',
         },
-        width: 150, // Minimum 2x2cm at 300dpi ≈ 236x236px, we use 150 for PDF
+        width: 150, // Minimum 2x2cm at 300dpi ~= 236x236px, we use 150 for PDF
       });
 
       // Add QR code to PDF (Right side, 2x2cm minimum size)
@@ -361,7 +281,7 @@ export async function generatePDFInvoice(data: InvoiceData): Promise<void> {
 
   doc.text('This invoice is issued in accordance with Croatian tax regulations.', 20, footerY);
   doc.text(
-    'VAT is included at the standard rate of 25%. Tourism tax collected per Croatian Law on Tourism.',
+    'VAT is included at 13% for accommodation. Tourism tax collected per Croatian Law on Tourism.',
     20,
     footerY + 6
   );
@@ -370,7 +290,7 @@ export async function generatePDFInvoice(data: InvoiceData): Promise<void> {
   if (jir && zki) {
     doc.setTextColor(41, 98, 146);
     doc.text(
-      '✓ FISCALIZED - This receipt is registered with Croatian Tax Authority',
+      'FISCALIZED - This receipt is registered with Croatian Tax Authority',
       20,
       footerY + 12
     );
@@ -382,7 +302,7 @@ export async function generatePDFInvoice(data: InvoiceData): Promise<void> {
     );
   } else {
     doc.setTextColor(220, 38, 127);
-    doc.text('⚠ NOT FISCALIZED - This is a pro forma invoice only', 20, footerY + 12);
+    doc.text('NOT FISCALIZED - This is a pro forma invoice only', 20, footerY + 12);
   }
 
   doc.setTextColor(100, 100, 100);
@@ -407,7 +327,7 @@ export async function generateThermalReceipt(
   data: InvoiceData,
   fiscalData?: CroatianFiscalData
 ): Promise<string> {
-  const { reservation, guest, room, invoiceNumber, invoiceDate } = data;
+  const { reservation, guest, room, invoiceNumber, invoiceDate, charges } = data;
 
   // Thermal receipt width: 48 characters (standard 80mm thermal paper)
   const width = 48;
@@ -444,75 +364,28 @@ export async function generateThermalReceipt(
   receipt += `Guests: ${reservation.numberOfGuests}\n`;
   receipt += halfLine + '\n';
 
-  // Items
+  // Items from charges
   const addItem = (name: string, qty: number, rate: number, amount: number) => {
     receipt += `${name}\n`;
     receipt += `  ${qty} x €${rate.toFixed(2)} = €${amount.toFixed(2)}\n`;
   };
 
-  // Room charges
-  addItem(
-    'Room Accommodation',
-    reservation.numberOfNights,
-    reservation.baseRoomRate,
-    reservation.subtotal
-  );
-
-  // Additional charges
-  if (reservation.childrenDiscounts > 0) {
-    addItem(
-      'Children Discounts',
-      1,
-      -reservation.childrenDiscounts,
-      -reservation.childrenDiscounts
-    );
-  }
-
-  if (reservation.shortStaySuplement > 0) {
-    addItem(
-      'Short Stay Supplement',
-      1,
-      reservation.shortStaySuplement,
-      reservation.shortStaySuplement
-    );
-  }
-
-  const guestNights = reservation.numberOfGuests * reservation.numberOfNights;
-  const tourismTaxRate = guestNights > 0 ? reservation.tourismTax / guestNights : 0;
-  addItem(
-    'Tourism Tax (Croatian Law)',
-    reservation.numberOfGuests * reservation.numberOfNights,
-    tourismTaxRate,
-    reservation.tourismTax
-  );
-
-  if (reservation.petFee > 0) {
-    addItem('Pet Fee', 1, reservation.petFee, reservation.petFee);
-  }
-
-  if (reservation.parkingFee > 0) {
-    addItem('Parking Fee', reservation.numberOfNights, 7.0, reservation.parkingFee);
-  }
-
-  if (reservation.additionalCharges > 0) {
-    addItem('Additional Services', 1, reservation.additionalCharges, reservation.additionalCharges);
-  }
-
-  // Room service items
-  if (reservation.roomServiceItems && reservation.roomServiceItems.length > 0) {
-    reservation.roomServiceItems.forEach((item) => {
-      addItem(`Room Service - ${item.itemName}`, item.quantity, item.unitPrice, item.totalPrice);
-    });
+  if (charges && charges.length > 0) {
+    for (const charge of charges) {
+      addItem(charge.description, charge.quantity, charge.unitPrice, charge.total);
+    }
   }
 
   receipt += halfLine + '\n';
 
-  // Totals
-  const subtotalBeforeVAT = reservation.totalAmount - reservation.vatAmount;
-  receipt += `Subtotal:        €${subtotalBeforeVAT.toFixed(2)}\n`;
-  receipt += `VAT (25%):       €${reservation.vatAmount.toFixed(2)}\n`;
+  // Grand total from charges
+  const grandTotal =
+    charges && charges.length > 0
+      ? charges.reduce((sum, c) => sum + c.total, 0)
+      : reservation.totalAmount;
+
   receipt += line + '\n';
-  receipt += `TOTAL:           €${reservation.totalAmount.toFixed(2)}\n`;
+  receipt += `TOTAL:           €${grandTotal.toFixed(2)}\n`;
   receipt += line + '\n';
 
   // Payment status
@@ -537,10 +410,10 @@ export async function generateThermalReceipt(
     receipt += centerText('to verify receipt authenticity', width) + '\n';
     receipt += halfLine + '\n';
 
-    receipt += centerText('✓ FISCALIZED', width) + '\n';
+    receipt += centerText('FISCALIZED', width) + '\n';
     receipt += centerText('Croatian Tax Authority', width) + '\n';
   } else {
-    receipt += centerText('⚠ NOT FISCALIZED', width) + '\n';
+    receipt += centerText('NOT FISCALIZED', width) + '\n';
     receipt += centerText('Pro forma invoice only', width) + '\n';
   }
 

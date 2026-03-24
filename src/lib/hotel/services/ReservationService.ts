@@ -177,31 +177,32 @@ export class ReservationService {
         const { data: companyData, error: companyError } = await supabase
           .from('companies')
           .select('*')
-          .eq('id', reservation.companyId)
+          .eq('id', Number(reservation.companyId))
           .single();
 
         if (companyData && !companyError) {
           // Transform database format to Company type
           company = {
-            id: companyData.id,
+            id: String(companyData.id),
             name: companyData.name,
-            oib: companyData.oib,
+            oib: companyData.oib ?? '',
             address: {
-              street: companyData.address,
-              city: companyData.city,
-              postalCode: companyData.postal_code,
-              country: companyData.country,
+              street: companyData.address ?? '',
+              city: companyData.city ?? '',
+              postalCode: companyData.postal_code ?? '',
+              country: companyData.country ?? '',
             },
-            contactPerson: companyData.contact_person,
-            email: companyData.email,
-            phone: companyData.phone,
-            fax: companyData.fax,
-            pricingTierId: companyData.pricing_tier_id,
-            roomAllocationGuarantee: companyData.room_allocation_guarantee,
-            isActive: companyData.is_active,
-            notes: companyData.notes,
-            createdAt: companyData.created_at,
-            updatedAt: companyData.updated_at,
+            contactPerson: companyData.contact_person ?? '',
+            email: companyData.email ?? '',
+            phone: companyData.phone ?? '',
+            fax: companyData.fax ?? undefined,
+            pricingTierId:
+              companyData.pricing_tier_id != null ? String(companyData.pricing_tier_id) : undefined,
+            roomAllocationGuarantee: companyData.room_allocation_guarantee ?? undefined,
+            isActive: companyData.is_active ?? false,
+            notes: companyData.notes ?? '',
+            createdAt: new Date(companyData.created_at ?? Date.now()),
+            updatedAt: new Date(companyData.updated_at ?? Date.now()),
           };
         }
       }
@@ -217,7 +218,7 @@ export class ReservationService {
             name: `Room ${room.number} - ${room.nameEnglish}`,
             quantity: reservation.numberOfNights,
             unitPrice: reservation.baseRoomRate,
-            vatRate: 25,
+            vatRate: 13, // Croatian accommodation VAT rate (since 2018)
             totalAmount: reservation.totalAmount,
           },
         ],
@@ -487,8 +488,7 @@ export class ReservationService {
           reservation_id: reservationIdNum,
           guest_id: guestId, // FIX: Add guest_id to satisfy billing_target constraint
           issue_date: new Date().toISOString().split('T')[0],
-          subtotal: totalAmount / 1.25, // Remove VAT
-          vat_amount: totalAmount - totalAmount / 1.25,
+          subtotal: totalAmount / 1.13, // Remove 13% VAT (Croatian accommodation rate)
           total_amount: totalAmount,
           status: 'sent',
         })

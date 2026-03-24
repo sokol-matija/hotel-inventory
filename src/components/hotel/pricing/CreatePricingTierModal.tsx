@@ -5,8 +5,8 @@ import { Label } from '../../ui/label';
 import { Textarea } from '../../ui/textarea';
 import { Switch } from '../../ui/switch';
 import { useCreatePricingTier } from '../../../lib/queries/hooks/usePricingTiers';
-import { PricingTier, RoomType } from '../../../lib/hotel/types';
-import { X, Plus, Minus } from 'lucide-react';
+import { PricingTier } from '../../../lib/hotel/types';
+import { X } from 'lucide-react';
 
 interface CreatePricingTierModalProps {
   isOpen: boolean;
@@ -17,39 +17,13 @@ interface CreatePricingTierModalProps {
 interface FormData {
   name: string;
   description: string;
-  seasonalRates: {
-    A: number;
-    B: number;
-    C: number;
-    D: number;
-  };
-  feeModifiers: {
-    tourismTax: number;
-    pets: number;
-    parking: number;
-    shortStay: number;
-    additional: number;
-  };
-  roomTypes: RoomType[];
+  discountPercentage: number;
   minimumStay: number;
-  maximumStay: number;
   validFrom: string;
   validTo: string;
   isActive: boolean;
   isDefault: boolean;
-  notes: string;
 }
-
-const ROOM_TYPE_OPTIONS: RoomType[] = [
-  'big-double',
-  'big-single',
-  'double',
-  'triple',
-  'single',
-  'family',
-  'apartment',
-  'rooftop-apartment',
-];
 
 export default function CreatePricingTierModal({
   isOpen,
@@ -61,62 +35,18 @@ export default function CreatePricingTierModal({
   const [formData, setFormData] = useState<FormData>({
     name: '',
     description: '',
-    seasonalRates: {
-      A: 0, // Winter/Early Spring
-      B: 0, // Spring/Late Fall
-      C: 0, // Early Summer/Early Fall
-      D: 0, // Peak Summer
-    },
-    feeModifiers: {
-      tourismTax: 0,
-      pets: 0,
-      parking: 0,
-      shortStay: 0,
-      additional: 0,
-    },
-    roomTypes: [],
+    discountPercentage: 0,
     minimumStay: 1,
-    maximumStay: 30,
     validFrom: new Date().toISOString().split('T')[0],
     validTo: new Date(new Date().getFullYear() + 1, 11, 31).toISOString().split('T')[0],
     isActive: true,
     isDefault: false,
-    notes: '',
   });
 
   const handleInputChange = (field: keyof FormData, value: unknown) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
-    }));
-  };
-
-  const handleRateModifierChange = (period: keyof FormData['seasonalRates'], value: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      seasonalRates: {
-        ...prev.seasonalRates,
-        [period]: value,
-      },
-    }));
-  };
-
-  const handleFeeModifierChange = (fee: keyof FormData['feeModifiers'], value: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      feeModifiers: {
-        ...prev.feeModifiers,
-        [fee]: value,
-      },
-    }));
-  };
-
-  const handleRoomTypeToggle = (roomType: RoomType) => {
-    setFormData((prev) => ({
-      ...prev,
-      roomTypes: prev.roomTypes.includes(roomType)
-        ? prev.roomTypes.filter((type) => type !== roomType)
-        : [...prev.roomTypes, roomType],
     }));
   };
 
@@ -128,32 +58,16 @@ export default function CreatePricingTierModal({
       alert('Please enter a pricing tier name.');
       return;
     }
-    if (!formData.description.trim()) {
-      alert('Please enter a description.');
-      return;
-    }
-    if (formData.roomTypes.length === 0) {
-      alert('Please select at least one room type.');
-      return;
-    }
-    if (new Date(formData.validFrom) >= new Date(formData.validTo)) {
-      alert('Valid to date must be after valid from date.');
-      return;
-    }
 
     const pricingTierData: Omit<PricingTier, 'id' | 'createdAt' | 'updatedAt'> = {
       name: formData.name.trim(),
       description: formData.description.trim(),
-      discountPercentage: 0,
+      discountPercentage: formData.discountPercentage,
       isDefault: formData.isDefault,
       isActive: formData.isActive,
-      seasonalRates: formData.seasonalRates,
-      roomTypeMultipliers: {},
       minimumStayRequirement: formData.minimumStay,
       validFrom: new Date(formData.validFrom),
       validTo: new Date(formData.validTo),
-      applicableServices: [],
-      notes: formData.notes.trim(),
     };
 
     createPricingTierMutation.mutate(pricingTierData, {
@@ -169,7 +83,7 @@ export default function CreatePricingTierModal({
 
   return (
     <div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black p-4">
-      <div className="max-h-[95vh] w-full max-w-4xl overflow-y-auto rounded-lg bg-white shadow-lg">
+      <div className="max-h-[95vh] w-full max-w-lg overflow-y-auto rounded-lg bg-white shadow-lg">
         <div className="flex items-center justify-between border-b border-gray-200 p-6">
           <h2 className="text-xl font-semibold text-gray-900">Create New Pricing Tier</h2>
           <button onClick={onClose} className="text-gray-400 transition-colors hover:text-gray-600">
@@ -179,7 +93,7 @@ export default function CreatePricingTierModal({
 
         <form onSubmit={handleSubmit} className="space-y-6 p-6">
           {/* Basic Information */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Pricing Tier Name *</Label>
               <Input
@@ -191,244 +105,54 @@ export default function CreatePricingTierModal({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="description">Description *</Label>
-              <Input
+              <Label htmlFor="description">Description</Label>
+              <Textarea
                 id="description"
-                type="text"
                 value={formData.description}
                 onChange={(e) => handleInputChange('description', e.target.value)}
                 placeholder="Brief description of this pricing tier"
+                rows={2}
               />
             </div>
           </div>
 
-          {/* Rate Modifiers */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900">Seasonal Rate Modifiers (%)</h3>
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-              <div className="space-y-2">
-                <Label>Period A (Winter/Early Spring)</Label>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleRateModifierChange('A', formData.seasonalRates.A - 5)}
-                  >
-                    <Minus className="h-4 w-4" />
-                  </Button>
-                  <Input
-                    type="number"
-                    value={formData.seasonalRates.A}
-                    onChange={(e) => handleRateModifierChange('A', parseFloat(e.target.value) || 0)}
-                    className="text-center"
-                    step="0.1"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleRateModifierChange('A', formData.seasonalRates.A + 5)}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Period B (Spring/Late Fall)</Label>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleRateModifierChange('B', formData.seasonalRates.B - 5)}
-                  >
-                    <Minus className="h-4 w-4" />
-                  </Button>
-                  <Input
-                    type="number"
-                    value={formData.seasonalRates.B}
-                    onChange={(e) => handleRateModifierChange('B', parseFloat(e.target.value) || 0)}
-                    className="text-center"
-                    step="0.1"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleRateModifierChange('B', formData.seasonalRates.B + 5)}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Period C (Early Summer/Fall)</Label>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleRateModifierChange('C', formData.seasonalRates.C - 5)}
-                  >
-                    <Minus className="h-4 w-4" />
-                  </Button>
-                  <Input
-                    type="number"
-                    value={formData.seasonalRates.C}
-                    onChange={(e) => handleRateModifierChange('C', parseFloat(e.target.value) || 0)}
-                    className="text-center"
-                    step="0.1"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleRateModifierChange('C', formData.seasonalRates.C + 5)}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Period D (Peak Summer)</Label>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleRateModifierChange('D', formData.seasonalRates.D - 5)}
-                  >
-                    <Minus className="h-4 w-4" />
-                  </Button>
-                  <Input
-                    type="number"
-                    value={formData.seasonalRates.D}
-                    onChange={(e) => handleRateModifierChange('D', parseFloat(e.target.value) || 0)}
-                    className="text-center"
-                    step="0.1"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleRateModifierChange('D', formData.seasonalRates.D + 5)}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Fee Modifiers */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900">Fee Modifiers (€)</h3>
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-              <div className="space-y-2">
-                <Label>Tourism Tax Adjustment</Label>
-                <Input
-                  type="number"
-                  value={formData.feeModifiers.tourismTax}
-                  onChange={(e) =>
-                    handleFeeModifierChange('tourismTax', parseFloat(e.target.value) || 0)
-                  }
-                  step="0.10"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Pet Fee Adjustment</Label>
-                <Input
-                  type="number"
-                  value={formData.feeModifiers.pets}
-                  onChange={(e) => handleFeeModifierChange('pets', parseFloat(e.target.value) || 0)}
-                  step="1.00"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Parking Fee Adjustment</Label>
-                <Input
-                  type="number"
-                  value={formData.feeModifiers.parking}
-                  onChange={(e) =>
-                    handleFeeModifierChange('parking', parseFloat(e.target.value) || 0)
-                  }
-                  step="1.00"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Short Stay Supplement (%)</Label>
-                <Input
-                  type="number"
-                  value={formData.feeModifiers.shortStay}
-                  onChange={(e) =>
-                    handleFeeModifierChange('shortStay', parseFloat(e.target.value) || 0)
-                  }
-                  step="0.1"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Additional Charges</Label>
-                <Input
-                  type="number"
-                  value={formData.feeModifiers.additional}
-                  onChange={(e) =>
-                    handleFeeModifierChange('additional', parseFloat(e.target.value) || 0)
-                  }
-                  step="1.00"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Room Types */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900">Applicable Room Types *</h3>
-            <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
-              {ROOM_TYPE_OPTIONS.map((roomType) => (
-                <label key={roomType} className="flex cursor-pointer items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={formData.roomTypes.includes(roomType)}
-                    onChange={() => handleRoomTypeToggle(roomType)}
-                    className="rounded"
-                  />
-                  <span className="text-sm capitalize">{roomType.replace('-', ' ')}</span>
-                </label>
-              ))}
-            </div>
+          {/* Discount Percentage */}
+          <div className="space-y-2">
+            <Label htmlFor="discountPercentage">Discount Percentage (%)</Label>
+            <Input
+              id="discountPercentage"
+              type="number"
+              value={formData.discountPercentage}
+              onChange={(e) =>
+                handleInputChange('discountPercentage', parseFloat(e.target.value) || 0)
+              }
+              min="0"
+              max="100"
+              step="1"
+              placeholder="e.g., 10 for 10% off"
+            />
+            <p className="text-xs text-gray-500">
+              Applied to all accommodation charges for reservations using this tier.
+            </p>
           </div>
 
           {/* Stay Requirements */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="minimumStay">Minimum Stay (nights)</Label>
-              <Input
-                id="minimumStay"
-                type="number"
-                value={formData.minimumStay}
-                onChange={(e) => handleInputChange('minimumStay', parseInt(e.target.value) || 1)}
-                min="1"
-                max="30"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="maximumStay">Maximum Stay (nights)</Label>
-              <Input
-                id="maximumStay"
-                type="number"
-                value={formData.maximumStay}
-                onChange={(e) => handleInputChange('maximumStay', parseInt(e.target.value) || 30)}
-                min="1"
-                max="365"
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="minimumStay">Minimum Stay (nights)</Label>
+            <Input
+              id="minimumStay"
+              type="number"
+              value={formData.minimumStay}
+              onChange={(e) => handleInputChange('minimumStay', parseInt(e.target.value) || 1)}
+              min="1"
+              max="30"
+            />
           </div>
 
           {/* Validity Period */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="validFrom">Valid From *</Label>
+              <Label htmlFor="validFrom">Valid From</Label>
               <Input
                 id="validFrom"
                 type="date"
@@ -437,7 +161,7 @@ export default function CreatePricingTierModal({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="validTo">Valid To *</Label>
+              <Label htmlFor="validTo">Valid To</Label>
               <Input
                 id="validTo"
                 type="date"
@@ -463,18 +187,6 @@ export default function CreatePricingTierModal({
               />
               <Label>Set as Default Tier</Label>
             </div>
-          </div>
-
-          {/* Notes */}
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea
-              id="notes"
-              value={formData.notes}
-              onChange={(e) => handleInputChange('notes', e.target.value)}
-              rows={3}
-              placeholder="Additional notes about this pricing tier..."
-            />
           </div>
 
           {/* Submit Buttons */}

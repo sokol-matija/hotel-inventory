@@ -42,11 +42,11 @@ import { OrderItem } from '../../../lib/hotel/orderTypes';
 import { useHotelTimelineState } from '../../../lib/hooks/useHotelTimelineState';
 import { useSimpleDragCreate, DragCreateSelection } from '../../../lib/hooks/useSimpleDragCreate';
 import SimpleDragCreateButton from './SimpleDragCreateButton';
-import { EnhancedDailyViewModal } from './modals/EnhancedDailyViewModal';
+// EnhancedDailyViewModal removed — operated on dropped reservation_daily_details table
 import DragCreateOverlay from './DragCreateOverlay';
 import { virtualRoomService } from '../../../lib/hotel/services/VirtualRoomService';
 import { OptimisticUpdateService } from '../../../lib/hotel/services/OptimisticUpdateService';
-import { unifiedPricingService } from '../../../lib/hotel/services/UnifiedPricingService';
+// unifiedPricingService removed — pricing now handled via reservation_charges
 import { Button } from '../../ui/button';
 
 import { TimelineHeader } from './Timeline/TimelineHeader';
@@ -165,8 +165,8 @@ export default function HotelTimeline({
 
   const [showHotelOrdersModal, setShowHotelOrdersModal] = useState(false);
   const [hotelOrdersReservation, setHotelOrdersReservation] = useState<Reservation | null>(null);
-  const [showExpandedDailyView, setShowExpandedDailyView] = useState(false);
-  const [expandedReservation, setExpandedReservation] = useState<Reservation | null>(null);
+  // EnhancedDailyViewModal removed — operated on dropped reservation_daily_details table
+  void 0; // showExpandedDailyView and expandedReservation state removed
   const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
   const [selectedAvailabilityDate, setSelectedAvailabilityDate] = useState<Date | null>(null);
   const [selectedAvailabilityData, setSelectedAvailabilityData] = useState<DayAvailability | null>(
@@ -183,9 +183,9 @@ export default function HotelTimeline({
   const calculateContextMenuPosition = (e: React.MouseEvent) =>
     positionContextMenu(e.clientX, e.clientY);
 
-  const handleShowExpandedDailyView = (reservation: Reservation) => {
-    setExpandedReservation(reservation);
-    setShowExpandedDailyView(true);
+  // No-op: EnhancedDailyViewModal removed (operated on dropped table)
+  const handleShowExpandedDailyView = (_reservation: Reservation) => {
+    // Intentionally empty — daily view feature removed with reservation_daily_details table
   };
 
   // Cancel drag-create on Escape
@@ -268,7 +268,7 @@ export default function HotelTimeline({
 
     initKeyboardShortcuts();
     return () => removeListener?.();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint_disable-next-line react-hooks/exhaustive-deps
   }, [
     dragCreate.state.isEnabled,
     isExpansionMode,
@@ -523,23 +523,11 @@ export default function HotelTimeline({
     if (!reservation || !targetRoom || !currentRoom) return;
 
     try {
-      const newPricing = await unifiedPricingService.calculateTotal({
-        roomId: targetRoom.id,
-        checkIn: reservation.checkIn,
-        checkOut: reservation.checkOut,
-        adults: reservation.adults,
-        children: reservation.children,
-        hasPets: reservation.petFee > 0,
-        needsParking: reservation.parkingFee > 0,
-        additionalCharges: reservation.additionalCharges,
-      });
+      // Pricing recalculation for room changes will be handled via reservation_charges (Phase 7+)
       const updatedReservationData = {
         roomId: targetRoom.id,
         checkIn: reservation.checkIn,
         checkOut: reservation.checkOut,
-        totalAmount: newPricing.total,
-        subtotal: newPricing.subtotal,
-        ...newPricing.fees,
       };
 
       const optimisticService = OptimisticUpdateService.getInstance();
@@ -586,7 +574,6 @@ export default function HotelTimeline({
         roomId: targetRoom.id,
         checkIn: reservation.checkIn,
         checkOut: reservation.checkOut,
-        totalAmount: reservation.totalAmount,
       };
       const optimisticService = OptimisticUpdateService.getInstance();
       const result = await optimisticService.optimisticUpdateReservation(
@@ -664,23 +651,11 @@ export default function HotelTimeline({
         return;
       }
 
-      const newPricing = await unifiedPricingService.calculateTotal({
-        roomId: reservation.roomId,
-        checkIn: newCheckIn,
-        checkOut: newCheckOut,
-        adults: reservation.adults,
-        children: reservation.children,
-        hasPets: reservation.petFee > 0,
-        needsParking: reservation.parkingFee > 0,
-        additionalCharges: reservation.additionalCharges,
-      });
+      // Pricing recalculation for date changes will be handled via reservation_charges (Phase 7+)
       const updatedData = {
         checkIn: newCheckIn,
         checkOut: newCheckOut,
-        numberOfNights: newPricing.numberOfNights,
-        subtotal: newPricing.subtotal,
-        totalAmount: newPricing.total,
-        ...newPricing.fees,
+        numberOfNights: daysDiff,
       };
 
       const optimisticService = OptimisticUpdateService.getInstance();
@@ -695,12 +670,9 @@ export default function HotelTimeline({
       );
 
       if (result.success) {
-        const priceDiff = newPricing.total - reservation.totalAmount;
-        const priceChange =
-          priceDiff > 0 ? `+€${priceDiff.toFixed(2)}` : `€${priceDiff.toFixed(2)}`;
         hotelNotification.success(
           'Reservation Updated!',
-          `${guest?.fullName || 'Guest'} • ${room ? formatRoomNumber(room) : 'Room'} • ${newCheckIn.toLocaleDateString()} - ${newCheckOut.toLocaleDateString()} • ${priceChange} (€${newPricing.total.toFixed(2)} total)`,
+          `${guest?.fullName || 'Guest'} • ${room ? formatRoomNumber(room) : 'Room'} • ${newCheckIn.toLocaleDateString()} - ${newCheckOut.toLocaleDateString()}`,
           6
         );
       } else {
@@ -776,33 +748,22 @@ export default function HotelTimeline({
     [dragCreate, rooms, handleRoomClick]
   );
 
-  const handleDrinksOrderComplete = async (orderItems: OrderItem[], totalAmount: number) => {
+  const handleDrinksOrderComplete = async (orderItems: OrderItem[], orderTotal: number) => {
     if (!hotelOrdersReservation) return;
     try {
       const room = rooms.find((r) => r.id === hotelOrdersReservation.roomId);
-      const roomServiceItems = orderItems.map((item) => ({
-        id: `rs-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
-        itemName: item.itemName,
-        category: item.category,
-        quantity: item.quantity,
-        unitPrice: item.price,
-        totalPrice: item.totalPrice,
-        orderedAt: new Date(),
-      }));
 
+      // Update notes on the reservation (charges are stored separately in reservation_charges)
       const updatedReservation = {
-        ...hotelOrdersReservation,
-        totalAmount: hotelOrdersReservation.totalAmount + totalAmount,
-        roomServiceItems: [...(hotelOrdersReservation.roomServiceItems || []), ...roomServiceItems],
         notes:
-          hotelOrdersReservation.notes +
-          `\nRoom Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map((item) => `${item.quantity}x ${item.itemName}`).join(', ')} - Total: €${totalAmount.toFixed(2)}`,
+          (hotelOrdersReservation.notes || '') +
+          `\nRoom Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map((item) => `${item.quantity}x ${item.itemName}`).join(', ')} - Total: €${orderTotal.toFixed(2)}`,
       };
 
       await updateReservation(hotelOrdersReservation.id, updatedReservation);
       hotelNotification.success(
         'Room Service Added to Bill',
-        `€${totalAmount.toFixed(2)} in charges added to Room ${room ? formatRoomNumber(room) : hotelOrdersReservation.roomId} bill`,
+        `€${orderTotal.toFixed(2)} in charges added to Room ${room ? formatRoomNumber(room) : hotelOrdersReservation.roomId} bill`,
         4
       );
       setShowHotelOrdersModal(false);
@@ -1187,21 +1148,7 @@ export default function HotelTimeline({
           availabilityData={selectedAvailabilityData}
         />
 
-        {showExpandedDailyView && expandedReservation && (
-          <EnhancedDailyViewModal
-            isOpen={showExpandedDailyView}
-            onClose={() => {
-              setShowExpandedDailyView(false);
-              setExpandedReservation(null);
-            }}
-            reservationId={expandedReservation.id}
-            reservationTitle={(() => {
-              const guest = guests.find((g) => g.id === expandedReservation.guestId);
-              const room = rooms.find((r) => r.id === expandedReservation.roomId);
-              return `${guest?.fullName || 'Guest'} - Room ${room ? formatRoomNumber(room) : 'Unknown'}`;
-            })()}
-          />
-        )}
+        {/* EnhancedDailyViewModal removed — operated on dropped reservation_daily_details table */}
       </div>
     </DndProvider>
   );

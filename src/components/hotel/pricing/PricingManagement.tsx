@@ -145,10 +145,10 @@ export default function PricingManagement() {
               <tr>
                 <th className="px-4 py-3 text-left font-medium text-gray-900">Name</th>
                 <th className="px-4 py-3 text-left font-medium text-gray-900">Description</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-900">Room Types</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-900">Discount</th>
                 <th className="px-4 py-3 text-left font-medium text-gray-900">Valid Period</th>
                 <th className="px-4 py-3 text-left font-medium text-gray-900">Status</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-900">Rate Modifiers</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-900">Min. Stay</th>
                 <th className="px-4 py-3 text-left font-medium text-gray-900">Actions</th>
               </tr>
             </thead>
@@ -187,17 +187,8 @@ export default function PricingManagement() {
                       <td className="px-4 py-3">
                         <p className="text-sm text-gray-900">{tier.description}</p>
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="flex flex-wrap gap-1">
-                          {Object.keys(tier.roomTypeMultipliers).map((roomType) => (
-                            <span
-                              key={roomType}
-                              className="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-800"
-                            >
-                              {roomType}
-                            </span>
-                          ))}
-                        </div>
+                      <td className="px-4 py-3 text-sm text-gray-900">
+                        {tier.discountPercentage > 0 ? `${tier.discountPercentage}%` : '—'}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-900">
                         <div>
@@ -222,21 +213,10 @@ export default function PricingManagement() {
                           </span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-sm">
-                        <div className="space-y-1">
-                          <p>
-                            <span className="text-gray-600">A:</span> €{tier.seasonalRates.A}
-                          </p>
-                          <p>
-                            <span className="text-gray-600">B:</span> €{tier.seasonalRates.B}
-                          </p>
-                          <p>
-                            <span className="text-gray-600">C:</span> €{tier.seasonalRates.C}
-                          </p>
-                          <p>
-                            <span className="text-gray-600">D:</span> €{tier.seasonalRates.D}
-                          </p>
-                        </div>
+                      <td className="px-4 py-3 text-sm text-gray-900">
+                        {tier.minimumStayRequirement
+                          ? `${tier.minimumStayRequirement} nights`
+                          : '—'}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center space-x-2">

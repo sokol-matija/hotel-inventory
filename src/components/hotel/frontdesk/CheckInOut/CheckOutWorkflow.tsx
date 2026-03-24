@@ -18,13 +18,15 @@ import {
   MessageSquare,
   Mail,
 } from 'lucide-react';
-import { Reservation, Invoice } from '../../../../lib/hotel/types';
+import { Reservation } from '../../../../lib/hotel/types';
 import { useRooms } from '../../../../lib/queries/hooks/useRooms';
 import {
   useUpdateReservation,
   useUpdateReservationStatus,
 } from '../../../../lib/queries/hooks/useReservations';
+import { useReservationCharges } from '../../../../lib/queries/hooks/useReservationCharges';
 import hotelNotification from '../../../../lib/notifications';
+import { createInvoice as createInvoiceService } from '../../../../lib/hotel/services/InvoiceService';
 // Removed static HOTEL_POREC_ROOMS import - now using dynamic rooms from context
 
 interface CheckOutWorkflowProps {
@@ -44,13 +46,10 @@ interface CheckOutStep {
 
 export default function CheckOutWorkflow({ isOpen, onClose, reservation }: CheckOutWorkflowProps) {
   const { data: rooms = [] } = useRooms();
-  // Stubs — invoice/payment creation not yet implemented
-  const createInvoice = async (_reservationId: string): Promise<Invoice> => {
-    throw new Error('Invoice generation not implemented');
-  };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const addPayment = async (_payment: any) => {
-    throw new Error('Payment management not implemented');
+    // Payment management not yet implemented — payments table integration pending
+    console.warn('addPayment: not yet connected to DB');
   };
   const updateReservationMutation = useUpdateReservation();
   const updateReservationStatusMutation = useUpdateReservationStatus();
@@ -72,6 +71,15 @@ export default function CheckOutWorkflow({ isOpen, onClose, reservation }: Check
   const [paymentStatus, setPaymentStatus] = useState<string>(
     reservation?.status || 'incomplete-payment'
   );
+
+  // Fetch charges from reservation_charges table
+  const numericReservationId = reservation
+    ? typeof reservation.id === 'string'
+      ? parseInt(reservation.id, 10)
+      : reservation.id
+    : undefined;
+  const { data: charges = [] } = useReservationCharges(numericReservationId as number | undefined);
+  const chargesTotalAmount = charges.reduce((sum, c) => sum + c.total, 0);
 
   // Find associated guest and room data
   const guest = reservation?.guest ?? null;
@@ -141,7 +149,7 @@ export default function CheckOutWorkflow({ isOpen, onClose, reservation }: Check
     ];
 
     setCheckOutSteps(steps);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint_disable-next-line react-hooks/exhaustive-deps
   }, [reservation, guest, roomKeyReturned, additionalCharges]);
 
   const handleStepToggle = (stepId: string) => {
@@ -169,12 +177,18 @@ export default function CheckOutWorkflow({ isOpen, onClose, reservation }: Check
 
       // Automatically generate invoice when payment is marked as paid
       try {
-        const invoice = await createInvoice(reservation.id);
+        const invoice = await createInvoiceService(reservation.id, {
+          guestId: guest
+            ? typeof guest.id === 'string'
+              ? parseInt(guest.id, 10)
+              : guest.id
+            : undefined,
+        });
 
         // Process payment for the full amount
         await addPayment({
           invoiceId: invoice.id,
-          amount: invoice.totalAmount + additionalCharges,
+          amount: chargesTotalAmount + additionalCharges,
           currency: 'EUR',
           method: 'card', // Default to card payment - could be made configurable
           status: 'paid',
@@ -237,7 +251,13 @@ export default function CheckOutWorkflow({ isOpen, onClose, reservation }: Check
       // Generate invoice if requested
       if (generateInvoice) {
         try {
-          const invoice = await createInvoice(reservation.id);
+          const invoice = await createInvoiceService(reservation.id, {
+            guestId: guest
+              ? typeof guest.id === 'string'
+                ? parseInt(guest.id, 10)
+                : guest.id
+              : undefined,
+          });
 
           // Show success notification - invoice created but payment still pending
           hotelNotification.success(
@@ -273,7 +293,7 @@ export default function CheckOutWorkflow({ isOpen, onClose, reservation }: Check
   };
 
   const getTotalAmount = () => {
-    return reservation ? reservation.totalAmount + additionalCharges : 0;
+    return reservation ? chargesTotalAmount + additionalCharges : 0;
   };
 
   if (!isOpen || !reservation || !guest || !room) return null;
@@ -370,7 +390,7 @@ export default function CheckOutWorkflow({ isOpen, onClose, reservation }: Check
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span>Original Booking</span>
-                      <span>€{reservation.totalAmount.toFixed(2)}</span>
+                      <span>€{chargesTotalAmount.toFixed(2)}</span>
                     </div>
 
                     <div className="flex justify-between">

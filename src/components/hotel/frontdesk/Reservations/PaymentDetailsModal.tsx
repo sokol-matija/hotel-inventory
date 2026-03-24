@@ -12,13 +12,17 @@ import {
   Users,
   Calendar,
   CheckCircle,
+  Loader2,
+  Pencil,
 } from 'lucide-react';
-import { Reservation, Guest, Room, Company, Invoice } from '../../../../lib/hotel/types';
-// Note: Legacy pricing calculator removed - using stored reservation pricing data
+import EditChargesPanel from './EditChargesPanel';
+import { Reservation, Guest, Room, Company } from '../../../../lib/hotel/types';
 import { generatePDFInvoice, generateInvoiceNumber } from '../../../../lib/pdfInvoiceGenerator';
 import { useUpdateReservation } from '../../../../lib/queries/hooks/useReservations';
+import { useReservationCharges } from '../../../../lib/queries/hooks/useReservationCharges';
 import hotelNotification from '../../../../lib/notifications';
 import { supabase } from '../../../../lib/supabase';
+import { createInvoice as createInvoiceService } from '../../../../lib/hotel/services/InvoiceService';
 
 interface PaymentDetailsModalProps {
   isOpen: boolean;
@@ -35,12 +39,9 @@ export default function PaymentDetailsModal({
   guest,
   room,
 }: PaymentDetailsModalProps) {
-  // Stubs — invoice/payment creation not yet implemented
-  const createInvoice = async (_reservationId: string): Promise<Invoice> => {
-    throw new Error('Invoice generation not implemented');
-  };
   const addPayment = async (_payment: unknown) => {
-    throw new Error('Payment management not implemented');
+    // Payment management not yet implemented — payments table integration pending
+    console.warn('addPayment: not yet connected to DB');
   };
   const updateReservationMutation = useUpdateReservation();
   const updateReservation = async (id: string, updates: Partial<Reservation>) => {
@@ -48,35 +49,17 @@ export default function PaymentDetailsModal({
   };
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState(reservation.status);
+  const [isEditMode, setIsEditMode] = useState(false);
 
-  // Use stored pricing data instead of recalculating (legacy calculatePricing removed)
-  const pricingDetails = {
-    baseRate: reservation.baseRoomRate || 70,
-    numberOfNights: reservation.numberOfNights,
-    subtotal: reservation.subtotal,
-    discounts: {
-      children0to3: 0,
-      children3to7: 0,
-      children7to14: 0,
-    },
-    totalDiscounts: reservation.childrenDiscounts || 0,
-    fees: {
-      tourism: reservation.tourismTax,
-      vat: reservation.vatAmount,
-      pets: reservation.petFee,
-      parking: reservation.parkingFee,
-      shortStay: reservation.shortStaySuplement || 0,
-      additional: reservation.additionalCharges,
-    },
-    totalFees:
-      (reservation.tourismTax || 0) +
-      (reservation.vatAmount || 0) +
-      (reservation.petFee || 0) +
-      (reservation.parkingFee || 0) +
-      (reservation.shortStaySuplement || 0) +
-      (reservation.additionalCharges || 0),
-    grandTotal: reservation.totalAmount,
-  };
+  // Fetch charges from reservation_charges table
+  const reservationId =
+    typeof reservation.id === 'string' ? parseInt(reservation.id, 10) : reservation.id;
+  const { data: charges = [], isLoading: chargesLoading } = useReservationCharges(
+    reservationId as number
+  );
+
+  // Derive grand total from charges
+  const grandTotal = charges.reduce((sum, c) => sum + c.total, 0);
 
   const handlePrintInvoice = async () => {
     try {
@@ -106,37 +89,39 @@ export default function PaymentDetailsModal({
         } else if (companyData) {
           // Transform database format to Company type
           company = {
-            id: companyData.id,
+            id: String(companyData.id),
             name: companyData.name,
-            oib: companyData.oib,
+            oib: companyData.oib ?? '',
             address: {
-              street: companyData.address,
-              city: companyData.city,
-              postalCode: companyData.postal_code,
-              country: companyData.country,
+              street: companyData.address ?? '',
+              city: companyData.city ?? '',
+              postalCode: companyData.postal_code ?? '',
+              country: companyData.country ?? '',
             },
-            contactPerson: companyData.contact_person,
-            email: companyData.email,
-            phone: companyData.phone,
-            fax: companyData.fax,
-            pricingTierId: companyData.pricing_tier_id,
-            roomAllocationGuarantee: companyData.room_allocation_guarantee,
-            isActive: companyData.is_active,
-            notes: companyData.notes,
-            createdAt: companyData.created_at,
-            updatedAt: companyData.updated_at,
+            contactPerson: companyData.contact_person ?? '',
+            email: companyData.email ?? '',
+            phone: companyData.phone ?? '',
+            fax: companyData.fax ?? undefined,
+            pricingTierId:
+              companyData.pricing_tier_id != null ? String(companyData.pricing_tier_id) : undefined,
+            roomAllocationGuarantee: companyData.room_allocation_guarantee ?? undefined,
+            isActive: companyData.is_active ?? false,
+            notes: companyData.notes ?? '',
+            createdAt: new Date(companyData.created_at ?? Date.now()),
+            updatedAt: new Date(companyData.updated_at ?? Date.now()),
           };
         }
       }
 
-      // Generate PDF invoice
+      // Generate PDF invoice with charges
       generatePDFInvoice({
         reservation,
         guest,
         room,
         invoiceNumber,
         invoiceDate,
-        company, // Pass company data for R1 billing
+        company,
+        charges,
       });
 
       // Show success notification
@@ -166,12 +151,19 @@ export default function PaymentDetailsModal({
 
       // Automatically generate invoice when payment is marked as paid
       try {
-        const invoice = await createInvoice(reservation.id);
+        const guestIdNum = typeof guest.id === 'string' ? parseInt(guest.id, 10) : guest.id;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const reservationExt = reservation as any;
+        const invoice = await createInvoiceService(reservation.id, {
+          isR1: reservationExt.is_r1 ?? false,
+          companyId: reservationExt.company_id ? Number(reservationExt.company_id) : undefined,
+          guestId: guestIdNum,
+        });
 
         // Process payment for the full amount
         await addPayment({
           invoiceId: invoice.id,
-          amount: invoice.totalAmount + (reservation.additionalCharges || 0),
+          amount: grandTotal,
           currency: 'EUR',
           method: 'card',
           status: 'paid',
@@ -262,158 +254,78 @@ export default function PaymentDetailsModal({
                 </div>
                 <div className="flex items-center space-x-1">
                   <Calendar className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm">Season {reservation.seasonalPeriod}</span>
+                  <span className="text-sm">{reservation.numberOfNights} nights</span>
                 </div>
                 {guest.hasPets && (
                   <Badge variant="outline" className="text-xs">
-                    🐕 Pet
+                    Pet
                   </Badge>
                 )}
               </div>
             </CardContent>
           </Card>
 
-          {/* Room Rate Breakdown */}
+          {/* Charges Table */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Room Charges</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg">Charges</CardTitle>
+                {!isEditMode && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 gap-1.5 text-xs text-gray-600"
+                    onClick={() => setIsEditMode(true)}
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                    Edit Bill
+                  </Button>
+                )}
+              </div>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium">Base Room Rate</div>
-                  <div className="text-sm text-gray-500">
-                    {formatCurrency(reservation.baseRoomRate)} × {reservation.numberOfNights} nights
-                  </div>
+            <CardContent>
+              {isEditMode ? (
+                <EditChargesPanel
+                  reservationId={reservationId as number}
+                  onClose={() => setIsEditMode(false)}
+                />
+              ) : chargesLoading ? (
+                <div className="flex items-center justify-center py-6">
+                  <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+                  <span className="ml-2 text-sm text-gray-500">Loading charges...</span>
                 </div>
-                <div className="font-medium">{formatCurrency(reservation.subtotal)}</div>
-              </div>
-
-              {reservation.childrenDiscounts > 0 && (
-                <div className="flex items-center justify-between text-green-600">
-                  <div>
-                    <div className="font-medium">Children Discounts</div>
-                    <div className="text-sm">Age-based pricing discounts</div>
-                  </div>
-                  <div className="font-medium">
-                    -{formatCurrency(reservation.childrenDiscounts)}
-                  </div>
-                </div>
-              )}
-
-              {reservation.shortStaySuplement > 0 && (
-                <div className="flex items-center justify-between text-orange-600">
-                  <div>
-                    <div className="font-medium">Short Stay Supplement</div>
-                    <div className="text-sm">+20% for stays under 3 nights</div>
-                  </div>
-                  <div className="font-medium">
-                    +{formatCurrency(reservation.shortStaySuplement)}
-                  </div>
-                </div>
-              )}
-
-              <hr className="my-3" />
-
-              <div className="flex items-center justify-between font-medium">
-                <div>Room Subtotal</div>
-                <div>
-                  {formatCurrency(
-                    reservation.subtotal -
-                      reservation.childrenDiscounts +
-                      reservation.shortStaySuplement
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Croatian Taxes and Fees */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Croatian Taxes & Fees</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium">Tourism Tax</div>
-                  <div className="text-sm text-gray-500">
-                    {pricingDetails.fees.tourism /
-                      (reservation.numberOfGuests * reservation.numberOfNights) ===
-                    1.1
-                      ? '€1.10'
-                      : '€1.50'}{' '}
-                    per person per night × {reservation.numberOfGuests} guests ×{' '}
-                    {reservation.numberOfNights} nights
-                  </div>
-                </div>
-                <div className="font-medium">{formatCurrency(reservation.tourismTax)}</div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium">VAT (25%)</div>
-                  <div className="text-sm text-gray-500">Croatian Value Added Tax</div>
-                </div>
-                <div className="font-medium">{formatCurrency(reservation.vatAmount)}</div>
-              </div>
-
-              {reservation.petFee > 0 && (
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">Pet Fee</div>
-                    <div className="text-sm text-gray-500">€20.00 per stay</div>
-                  </div>
-                  <div className="font-medium">{formatCurrency(reservation.petFee)}</div>
-                </div>
-              )}
-
-              {reservation.parkingFee > 0 && (
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">Parking Fee</div>
-                    <div className="text-sm text-gray-500">
-                      €7.00 per night × {reservation.numberOfNights} nights
-                    </div>
-                  </div>
-                  <div className="font-medium">{formatCurrency(reservation.parkingFee)}</div>
-                </div>
-              )}
-
-              {reservation.additionalCharges > 0 && (
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">Additional Charges</div>
-                    <div className="text-sm text-gray-500">Miscellaneous charges</div>
-                  </div>
-                  <div className="font-medium">{formatCurrency(reservation.additionalCharges)}</div>
+              ) : charges.length === 0 ? (
+                <p className="py-4 text-center text-sm text-gray-500">
+                  No charges recorded for this reservation.
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b text-left text-gray-500">
+                        <th className="pb-2 font-medium">Description</th>
+                        <th className="pb-2 text-right font-medium">Qty</th>
+                        <th className="pb-2 text-right font-medium">Unit Price</th>
+                        <th className="pb-2 text-right font-medium">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {charges.map((charge) => (
+                        <tr key={charge.id}>
+                          <td className="py-2">{charge.description}</td>
+                          <td className="py-2 text-right">{charge.quantity}</td>
+                          <td className="py-2 text-right">{formatCurrency(charge.unitPrice)}</td>
+                          <td className="py-2 text-right font-medium">
+                            {formatCurrency(charge.total)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </CardContent>
           </Card>
-
-          {/* Room Service Items */}
-          {reservation.roomServiceItems && reservation.roomServiceItems.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Room Service</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {reservation.roomServiceItems.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium">{item.itemName}</div>
-                      <div className="text-sm text-gray-500">
-                        {item.quantity}x €{item.unitPrice.toFixed(2)} •{' '}
-                        {new Date(item.orderedAt).toLocaleDateString()}
-                      </div>
-                    </div>
-                    <div className="font-medium">{formatCurrency(item.totalPrice)}</div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          )}
 
           {/* Total Amount */}
           <Card className="bg-blue-50">
@@ -423,9 +335,7 @@ export default function PaymentDetailsModal({
                   <div className="text-xl font-bold">Total Amount</div>
                   <div className="text-sm text-gray-600">All taxes and fees included</div>
                 </div>
-                <div className="text-2xl font-bold text-blue-700">
-                  {formatCurrency(reservation.totalAmount)}
-                </div>
+                <div className="text-2xl font-bold text-blue-700">{formatCurrency(grandTotal)}</div>
               </div>
             </CardContent>
           </Card>
@@ -497,10 +407,10 @@ export default function PaymentDetailsModal({
 
           {/* Croatian Legal Notice */}
           <div className="rounded-md bg-gray-50 p-3 text-xs text-gray-500">
-            <strong>Hotel Porec</strong> • OIB: 87246357068 • 52440 Poreč, Croatia, R Konoba 1<br />
+            <strong>Hotel Porec</strong> • OIB: 87246357068 • 52440 Porec, Croatia, R Konoba 1<br />
             Phone: +385(0)52/451 611 • Email: hotelporec@pu.t-com.hr
             <br />
-            VAT included at 25% rate. Tourism tax collected per Croatian Law.
+            VAT included at 13% rate for accommodation. Tourism tax collected per Croatian Law.
           </div>
         </div>
       </DialogContent>

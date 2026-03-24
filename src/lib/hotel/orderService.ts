@@ -40,7 +40,7 @@ export async function getFoodAndBeverageItems(): Promise<InventoryItem[]> {
         return {
           id: item.id,
           name: item.name,
-          description: item.description,
+          description: item.description ?? undefined,
           category: {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             id: (item.category as any).id,
@@ -49,10 +49,10 @@ export async function getFoodAndBeverageItems(): Promise<InventoryItem[]> {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             requires_expiration: (item.category as any).requires_expiration,
           },
-          unit: item.unit,
+          unit: item.unit ?? '',
           price: item.price || 0,
-          minimum_stock: item.minimum_stock,
-          is_active: item.is_active,
+          minimum_stock: item.minimum_stock ?? 0,
+          is_active: item.is_active ?? false,
           totalStock,
           locations:
             item.inventory?.map((inv) => ({
@@ -60,7 +60,7 @@ export async function getFoodAndBeverageItems(): Promise<InventoryItem[]> {
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               locationName: (inv.location as any)?.name || 'Unknown',
               quantity: inv.quantity || 0,
-              expiration_date: inv.expiration_date,
+              expiration_date: inv.expiration_date ?? undefined,
             })) || [],
         };
       }) || [];
@@ -173,18 +173,23 @@ export async function processRoomServiceOrder(
       await reduceInventoryQuantity(orderItem.itemId, orderItem.quantity);
     }
 
-    // Persist line items to room_service_orders if we have a reservation ID
+    // Persist as a reservation_charges row if the order is billed to a room
     const reservationId = order.reservationId ? parseInt(order.reservationId) : NaN;
-    if (!isNaN(reservationId)) {
-      const rows = order.items.map((item) => ({
+    if (!isNaN(reservationId) && order.paymentMethod === 'room_bill') {
+      const orderTotal = order.items.reduce((sum, item) => sum + item.totalPrice, 0);
+      const description = order.items
+        .map((item) => `${item.quantity}× ${item.itemName}`)
+        .join(', ');
+      await supabase.from('reservation_charges').insert({
         reservation_id: reservationId,
-        item_name: item.itemName,
-        category: item.category,
-        quantity: item.quantity,
-        unit_price: item.price,
-        total_price: item.totalPrice,
-      }));
-      await supabase.from('room_service_orders').insert(rows);
+        charge_type: 'room_service',
+        description,
+        quantity: 1,
+        unit_price: orderTotal,
+        total: orderTotal,
+        vat_rate: 0.13,
+        sort_order: 100,
+      });
     }
 
     return completeOrder;

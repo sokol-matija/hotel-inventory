@@ -1,30 +1,37 @@
 /**
  * Unified Pricing Service - Single Source of Truth
  *
- * Fixes VAT double-charging and provides consistent pricing calculations
- * across all features including day-by-day breakdown.
+ * Generates ReservationCharge[] line items for reservation pricing.
+ * Replaces the old flat-pricing model (reservation_daily_details dropped in Phase 1).
  *
  * Croatian Tax Compliance:
  * - Room rates already include 13% VAT (Croatian accommodation law since 2018)
- * - Tourism tax separate (€1.10-€1.50 per person per night)
- * - Service fees separate (parking, pets, towels)
+ * - Tourism tax separate (EUR 1.10-1.60 per person per night)
+ * - Service fees separate (parking, pets)
  */
 
 import { supabase } from '../../supabase';
-import { SeasonalPeriod, GuestChild, PricingCalculation } from '../types';
+import {
+  SeasonalPeriod,
+  GuestChild,
+  PricingCalculation,
+  ReservationCharge,
+  HOTEL_CONSTANTS,
+} from '../types';
 
-// Configuration for Croatian hotel pricing
+// ─── Configuration ───────────────────────────────────────────────────────────
+
 export interface PricingConfig {
-  vatRate: number; // 0.13 for Croatia accommodation (Croatian VAT law since 2018)
+  vatRate: number; // 0.13 for Croatia accommodation
   vatIncludedInRates: boolean; // true for Croatia
   tourismTaxRates: {
-    high: number; // €1.50 Apr-Sep
-    low: number; // €1.10 Oct-Mar
+    high: number; // EUR 1.60 Apr-Sep
+    low: number; // EUR 1.10 Oct-Mar
   };
   serviceFees: {
-    petFeePerNight: number; // €20.00 per night
-    parkingFeePerNight: number; // €7.00 per night
-    towelRentalPerDay: number; // €5.00 per towel per day
+    petFeePerNight: number; // EUR 20.00
+    parkingFeePerNight: number; // EUR 7.00
+    towelRentalPerDay: number; // EUR 5.00
     shortStaySupplementRate: number; // 0.20 (20% for < 3 nights)
   };
   childDiscounts: {
@@ -35,9 +42,9 @@ export interface PricingConfig {
 }
 
 const DEFAULT_CONFIG: PricingConfig = {
-  vatRate: 0.13, // Croatian accommodation VAT rate (13% per law since 2018)
+  vatRate: 0.13,
   vatIncludedInRates: true,
-  tourismTaxRates: { high: 1.5, low: 1.1 },
+  tourismTaxRates: { high: 1.6, low: 1.1 },
   serviceFees: {
     petFeePerNight: 20.0,
     parkingFeePerNight: 7.0,
@@ -47,9 +54,11 @@ const DEFAULT_CONFIG: PricingConfig = {
   childDiscounts: {
     age0to3: 1.0,
     age3to7: 0.5,
-    age7to14: 0.2, // 20% discount (consistent with pricingCalculator.ts and pricingData2026.ts)
+    age7to14: 0.2,
   },
 };
+
+// ─── Params (kept for backward compat with calculateTotal / calculateReservationPricing) ─────
 
 export interface ReservationPricingParams {
   roomId: string;
@@ -66,22 +75,10 @@ export interface ReservationPricingParams {
   };
 }
 
-export interface DayByDayPricingParams {
-  reservationId: string;
-  dailyDetails?: Array<{
-    date: Date;
-    adultsPresent: number;
-    childrenPresent: string[]; // guest_children.id's
-    parkingSpots: number;
-    hasPets: boolean;
-    towelRentals: number;
-  }>;
-}
-
 export interface VATBreakdown {
   baseAmount: number;
-  vatAmount: number; // Amount included in rates (for reporting)
-  totalAmount: number; // Same as baseAmount (no additional VAT)
+  vatAmount: number;
+  totalAmount: number;
 }
 
 export interface PricingResult {
@@ -91,7 +88,7 @@ export interface PricingResult {
     subtotal: number;
     childDiscounts: number;
     netAccommodation: number;
-    vatIncluded: number; // For reporting only
+    vatIncluded: number;
   };
   services: {
     tourismTax: number;
@@ -110,58 +107,31 @@ export interface PricingResult {
     seasonalPeriod: SeasonalPeriod;
     numberOfNights: number;
     isShortStay: boolean;
-    vatCompliant: boolean; // Always true with this service
+    vatCompliant: boolean;
   };
 }
 
-export interface DayByDayPricingResult {
-  reservationId: string;
-  dailyBreakdown: Array<{
-    date: Date;
-    occupancy: {
-      adults: number;
-      children: Array<{
-        id: string;
-        name: string;
-        age: number;
-      }>;
-    };
-    pricing: {
-      seasonalPeriod: SeasonalPeriod;
-      baseRate: number;
-      baseAccommodation: number;
-      childDiscounts: number;
-      netAccommodation: number;
-      serviceFees: {
-        parking: number;
-        pets: number;
-        towels: number;
-        tourism: number;
-        total: number;
-      };
-      dailyTotal: number;
-    };
-    editable: boolean;
-  }>;
-  summary: {
-    totalNights: number;
-    totalAccommodation: number;
-    totalServices: number;
-    grandTotal: number;
-  };
-}
+// ─── generateCharges params ──────────────────────────────────────────────────
 
-export interface GuestDayPresenceParams {
-  reservationId: string;
-  stayDate: Date;
-  adultsPresent: number;
-  childrenPresent: string[]; // guest_children.id's
-  parkingSpots: number;
+export interface GenerateChargesParams {
+  roomId: string;
+  checkIn: Date;
+  checkOut: Date;
+  guests: Array<{ name: string; type: 'adult' | 'child'; age?: number }>;
   hasPets: boolean;
-  petCount?: number;
-  towelRentals: number;
-  notes?: string;
+  parkingRequired: boolean;
+  pricingTierId?: string;
+  guestId?: string; // for returning customer discount
 }
+
+/** A season block is a range of consecutive nights with the same season. */
+interface SeasonBlock {
+  season: SeasonalPeriod;
+  startDate: Date;
+  nights: number;
+}
+
+// ─── Service ─────────────────────────────────────────────────────────────────
 
 export class UnifiedPricingService {
   private static instance: UnifiedPricingService;
@@ -178,21 +148,299 @@ export class UnifiedPricingService {
     return UnifiedPricingService.instance;
   }
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // NEW — generateCharges()
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Generate ReservationCharge[] line items for a reservation.
+   * This is the new single entry-point that replaces flat pricing fields.
+   */
+  async generateCharges(params: GenerateChargesParams): Promise<ReservationCharge[]> {
+    const charges: Omit<ReservationCharge, 'id' | 'reservationId' | 'createdAt' | 'updatedAt'>[] =
+      [];
+    let sortOrder = 0;
+
+    // ── Basics ─────────────────────────────────────────────────────────────
+    const numberOfNights = Math.ceil(
+      (params.checkOut.getTime() - params.checkIn.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    if (numberOfNights <= 0) {
+      throw new Error('Check-out date must be after check-in date');
+    }
+
+    // Detect room info
+    const { data: room, error: roomError } = await supabase
+      .from('rooms')
+      .select('*, room_types (*)')
+      .eq('id', parseInt(params.roomId))
+      .single();
+
+    if (roomError) throw roomError;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const roomTypeName: string = (room.room_types as any)?.name || '';
+    const isApartment =
+      room.room_number === '401' || roomTypeName.toLowerCase().includes('apartment');
+    const roomName = `Room ${room.room_number}`;
+
+    // ── Season blocks ──────────────────────────────────────────────────────
+    const seasonBlocks = this.buildSeasonBlocks(params.checkIn, numberOfNights);
+
+    // ── Company tier discount percentage ───────────────────────────────────
+    let tierDiscountPct = 0;
+    if (params.pricingTierId) {
+      const { data: tierData, error: tierError } = await supabase
+        .from('pricing_tiers')
+        .select('discount_percentage')
+        .eq('id', parseInt(params.pricingTierId))
+        .single();
+
+      if (!tierError && tierData) {
+        tierDiscountPct = Number(tierData.discount_percentage) || 0;
+      }
+    }
+
+    const adults = params.guests.filter((g) => g.type === 'adult');
+    const children = params.guests.filter((g) => g.type === 'child');
+
+    // ── Accommodation charges ──────────────────────────────────────────────
+    let accommodationSubtotal = 0;
+
+    for (const block of seasonBlocks) {
+      const rate = await this.getRoomSeasonalRate(
+        params.roomId,
+        block.startDate,
+        undefined // tier discount applied below as a multiplier
+      );
+      const discountMultiplier = tierDiscountPct > 0 ? 1 - tierDiscountPct / 100 : 1;
+
+      if (isApartment) {
+        // Apartment: one flat charge per season block
+        const unitPrice = this.round(rate * discountMultiplier);
+        const total = this.round(unitPrice * block.nights);
+        accommodationSubtotal += total;
+        charges.push({
+          chargeType: 'accommodation',
+          description: `${roomName} — Season ${block.season}`,
+          quantity: block.nights,
+          unitPrice,
+          total,
+          vatRate: HOTEL_CONSTANTS.VAT_RATE,
+          sortOrder: sortOrder++,
+        });
+      } else {
+        // Per-person pricing: one charge per guest per season block
+        for (const guest of adults) {
+          const unitPrice = this.round(rate * discountMultiplier);
+          const total = this.round(unitPrice * block.nights);
+          accommodationSubtotal += total;
+          charges.push({
+            chargeType: 'accommodation',
+            description: `${roomName} — ${guest.name}, Season ${block.season}`,
+            quantity: block.nights,
+            unitPrice,
+            total,
+            vatRate: HOTEL_CONSTANTS.VAT_RATE,
+            sortOrder: sortOrder++,
+          });
+        }
+
+        for (const child of children) {
+          const age = child.age ?? 0;
+          // age 0-3: free (skip)
+          if (age >= 0 && age < 3) continue;
+
+          let childRate: number;
+          if (age >= 3 && age < 7) {
+            childRate = rate * 0.5;
+          } else if (age >= 7 && age < 14) {
+            childRate = rate * 0.8;
+          } else {
+            // 14+: full rate
+            childRate = rate;
+          }
+
+          const unitPrice = this.round(childRate * discountMultiplier);
+          const total = this.round(unitPrice * block.nights);
+          accommodationSubtotal += total;
+          charges.push({
+            chargeType: 'accommodation',
+            description: `${roomName} — ${child.name} (age ${age}), Season ${block.season}`,
+            quantity: block.nights,
+            unitPrice,
+            total,
+            vatRate: HOTEL_CONSTANTS.VAT_RATE,
+            sortOrder: sortOrder++,
+          });
+        }
+      }
+    }
+
+    // ── Tourism tax ────────────────────────────────────────────────────────
+    // Group by tax period (high/low) across the stay
+    const taxPeriods = this.buildTaxPeriods(params.checkIn, numberOfNights);
+
+    // Count eligible persons
+    const adultCount = adults.length;
+    const eligibleChildCount = children.filter((c) => (c.age ?? 0) >= 12 && (c.age ?? 0) < 18);
+    // Children 18+ are counted as adults already in the guests array or should pay full tax
+    const fullRateChildren = children.filter((c) => (c.age ?? 0) >= 18);
+
+    for (const period of taxPeriods) {
+      const taxRate = period.isHigh
+        ? this.config.tourismTaxRates.high
+        : this.config.tourismTaxRates.low;
+      const periodLabel = period.isHigh ? 'Apr-Sep' : 'Jan-Mar/Oct-Dec';
+
+      // Adults: full rate
+      if (adultCount > 0) {
+        const quantity = period.nights * adultCount;
+        const total = this.round(taxRate * quantity);
+        charges.push({
+          chargeType: 'tourism_tax',
+          description: `Tourism tax (${periodLabel}) — ${adultCount} adult(s)`,
+          quantity,
+          unitPrice: taxRate,
+          total,
+          vatRate: 0,
+          sortOrder: sortOrder++,
+        });
+      }
+
+      // Children 12-17: 50% rate
+      if (eligibleChildCount.length > 0) {
+        const halfRate = this.round(taxRate * 0.5);
+        const quantity = period.nights * eligibleChildCount.length;
+        const total = this.round(halfRate * quantity);
+        charges.push({
+          chargeType: 'tourism_tax',
+          description: `Tourism tax (${periodLabel}) — ${eligibleChildCount.length} child(ren) 12-17 at 50%`,
+          quantity,
+          unitPrice: halfRate,
+          total,
+          vatRate: 0,
+          sortOrder: sortOrder++,
+        });
+      }
+
+      // Children 18+: full rate (if any ended up as 'child' type)
+      if (fullRateChildren.length > 0) {
+        const quantity = period.nights * fullRateChildren.length;
+        const total = this.round(taxRate * quantity);
+        charges.push({
+          chargeType: 'tourism_tax',
+          description: `Tourism tax (${periodLabel}) — ${fullRateChildren.length} child(ren) 18+`,
+          quantity,
+          unitPrice: taxRate,
+          total,
+          vatRate: 0,
+          sortOrder: sortOrder++,
+        });
+      }
+    }
+
+    // ── Parking ────────────────────────────────────────────────────────────
+    if (params.parkingRequired) {
+      const parkingRate = this.config.serviceFees.parkingFeePerNight;
+      const total = this.round(parkingRate * numberOfNights);
+      charges.push({
+        chargeType: 'parking',
+        description: 'Parking',
+        quantity: numberOfNights,
+        unitPrice: parkingRate,
+        total,
+        vatRate: HOTEL_CONSTANTS.VAT_RATE,
+        sortOrder: sortOrder++,
+      });
+    }
+
+    // ── Pet fee ────────────────────────────────────────────────────────────
+    if (params.hasPets) {
+      const petRate = this.config.serviceFees.petFeePerNight;
+      const total = this.round(petRate * numberOfNights);
+      charges.push({
+        chargeType: 'pet_fee',
+        description: 'Pet fee',
+        quantity: numberOfNights,
+        unitPrice: petRate,
+        total,
+        vatRate: HOTEL_CONSTANTS.VAT_RATE,
+        sortOrder: sortOrder++,
+      });
+    }
+
+    // ── Short stay supplement ──────────────────────────────────────────────
+    if (numberOfNights < HOTEL_CONSTANTS.MIN_NIGHTS_NO_SUPPLEMENT) {
+      const supplementAmount = this.round(
+        accommodationSubtotal * this.config.serviceFees.shortStaySupplementRate
+      );
+      charges.push({
+        chargeType: 'short_stay_supplement',
+        description: `Short stay supplement (${numberOfNights} night${numberOfNights === 1 ? '' : 's'}, +20%)`,
+        quantity: 1,
+        unitPrice: supplementAmount,
+        total: supplementAmount,
+        vatRate: HOTEL_CONSTANTS.VAT_RATE,
+        sortOrder: sortOrder++,
+      });
+    }
+
+    // ── Returning customer discount ────────────────────────────────────────
+    if (params.guestId) {
+      try {
+        const { data: stats, error: statsError } = await supabase
+          .from('guest_stats')
+          .select('total_reservations')
+          .eq('guest_id', parseInt(params.guestId))
+          .single();
+
+        if (!statsError && stats && Number(stats.total_reservations) >= 2) {
+          const discountAmount = this.round(accommodationSubtotal * 0.1);
+          charges.push({
+            chargeType: 'discount',
+            description: 'Returning guest discount (10%)',
+            quantity: 1,
+            unitPrice: -discountAmount,
+            total: -discountAmount,
+            vatRate: HOTEL_CONSTANTS.VAT_RATE,
+            sortOrder: sortOrder++,
+          });
+        }
+      } catch {
+        // guest_stats view may not exist yet — skip silently
+        console.warn('Could not check guest_stats for returning customer discount');
+      }
+    }
+
+    // Cast to full ReservationCharge with placeholder ids (caller will insert into DB)
+    return charges.map((c) => ({
+      ...c,
+      id: 0, // placeholder — DB assigns real id on INSERT
+      reservationId: 0, // placeholder — caller sets this
+      createdAt: null,
+      updatedAt: null,
+    })) as ReservationCharge[];
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // LEGACY — calculateReservationPricing / calculateTotal
+  // Kept for backward compat during phased migration (Phases 4-8)
+  // ═══════════════════════════════════════════════════════════════════════════
+
   /**
    * Main pricing calculation method - VAT compliant
    */
   async calculateReservationPricing(params: ReservationPricingParams): Promise<PricingResult> {
     try {
-      // Get room and pricing data
       const { data: room, error: roomError } = await supabase
         .from('rooms')
         .select('*, room_types (*)')
-        .eq('id', params.roomId)
+        .eq('id', parseInt(params.roomId))
         .single();
 
       if (roomError) throw roomError;
 
-      // Calculate number of nights
       const numberOfNights = Math.ceil(
         (params.checkOutDate.getTime() - params.checkInDate.getTime()) / (1000 * 60 * 60 * 24)
       );
@@ -201,7 +449,6 @@ export class UnifiedPricingService {
         throw new Error('Check-out date must be after check-in date');
       }
 
-      // Get seasonal period and rate
       const seasonalPeriod = this.getSeasonalPeriod(params.checkInDate);
       const baseRate = await this.getRoomSeasonalRate(
         params.roomId,
@@ -209,10 +456,8 @@ export class UnifiedPricingService {
         params.pricingTierId
       );
 
-      // Special handling for Room 401 (apartment)
-      const isApartment = room.number === '401';
+      const isApartment = room.room_number === '401';
 
-      // Calculate accommodation costs
       const accommodation = this.calculateAccommodationCosts(
         baseRate,
         numberOfNights,
@@ -221,7 +466,6 @@ export class UnifiedPricingService {
         isApartment
       );
 
-      // Calculate service fees
       const services = this.calculateServiceFees(
         params.adults,
         params.children,
@@ -231,7 +475,6 @@ export class UnifiedPricingService {
         isApartment
       );
 
-      // Apply short stay supplement if applicable
       const isShortStay = numberOfNights < 3;
       const shortStaySuplement = isShortStay
         ? accommodation.netAccommodation * this.config.serviceFees.shortStaySupplementRate
@@ -265,8 +508,7 @@ export class UnifiedPricingService {
   }
 
   /**
-   * Calculate total pricing for a reservation — drop-in replacement for the old pricingCalculator
-   * and pricingEngine. Returns PricingCalculation so existing callers need minimal changes.
+   * @deprecated Use generateCharges() instead. Kept for backward compat during migration.
    */
   async calculateTotal(params: {
     roomId: string;
@@ -317,115 +559,101 @@ export class UnifiedPricingService {
     };
   }
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // HELPERS (public — used by other services)
+  // ═══════════════════════════════════════════════════════════════════════════
+
   /**
-   * Day-by-day pricing breakdown with individual guest tracking
+   * Get seasonal period for a date
    */
-  async calculateDayByDayBreakdown(params: DayByDayPricingParams): Promise<DayByDayPricingResult> {
-    try {
-      // Get reservation details
-      const { data: reservation, error: reservationError } = await supabase
-        .from('reservations')
-        .select(
-          `
-          *,
-          rooms (*),
-          pricing_tiers (*)
-        `
-        )
-        .eq('id', params.reservationId)
-        .single();
+  public getSeasonalPeriod(date: Date): SeasonalPeriod {
+    const month = date.getMonth() + 1;
 
-      if (reservationError) throw reservationError;
+    if (month <= 4 || month === 12) return 'A'; // Winter/Early Spring
+    if (month === 5 || month >= 10) return 'B'; // Spring/Late Fall
+    if (month === 6 || month === 9) return 'C'; // Early Summer/Early Fall
+    if (month >= 7 && month <= 8) return 'D'; // Peak Summer
 
-      // Get or create daily details
-      let dailyDetails = await this.getReservationDailyDetails(params.reservationId);
-
-      if (params.dailyDetails) {
-        // Update with provided daily details
-        dailyDetails = await this.updateDailyDetails(params.reservationId, params.dailyDetails);
-      }
-
-      // Calculate pricing for each day
-      const dailyBreakdown = [];
-
-      for (const day of dailyDetails) {
-        const breakdown = await this.calculateSingleDayPricing(reservation, day);
-        dailyBreakdown.push(breakdown);
-      }
-
-      // Calculate summary
-      const summary = {
-        totalNights: dailyBreakdown.length,
-        totalAccommodation: dailyBreakdown.reduce(
-          (sum, day) => sum + day.pricing.netAccommodation,
-          0
-        ),
-        totalServices: dailyBreakdown.reduce((sum, day) => sum + day.pricing.serviceFees.total, 0),
-        grandTotal: dailyBreakdown.reduce((sum, day) => sum + day.pricing.dailyTotal, 0),
-      };
-
-      return {
-        reservationId: params.reservationId,
-        dailyBreakdown,
-        summary,
-      };
-    } catch (error) {
-      console.error('Error calculating day-by-day breakdown:', error);
-      throw error;
-    }
+    return 'A';
   }
 
   /**
-   * Update individual guest day presence
+   * Get tourism tax rate for a date
    */
-  async updateGuestDayPresence(params: GuestDayPresenceParams): Promise<void> {
+  public getTourismTaxRate(date: Date): number {
+    const month = date.getMonth() + 1;
+
+    // April-September: EUR 1.60
+    if (month >= 4 && month <= 9) {
+      return this.config.tourismTaxRates.high;
+    }
+
+    // October-March: EUR 1.10
+    return this.config.tourismTaxRates.low;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PRIVATE HELPERS
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Get room seasonal rate with pricing tier discount
+   */
+  private async getRoomSeasonalRate(
+    roomId: string,
+    stayDate: Date,
+    pricingTierId?: string
+  ): Promise<number> {
     try {
-      // Update daily detail record
-      const { error } = await supabase.from('reservation_daily_details').upsert(
-        {
-          reservation_id: params.reservationId,
-          stay_date: params.stayDate.toISOString().split('T')[0],
-          adults_present: params.adultsPresent,
-          children_present: params.childrenPresent,
-          parking_spots_needed: params.parkingSpots,
-          pets_present: params.hasPets,
-          pet_count: params.petCount || 0,
-          towel_rentals: params.towelRentals,
-          notes: params.notes,
-        },
-        {
-          onConflict: 'reservation_id,stay_date',
+      const { data, error } = await supabase.rpc('get_room_price', {
+        p_room_id: parseInt(roomId),
+        p_date: stayDate.toISOString().split('T')[0],
+      });
+
+      if (error || !data || data.length === 0) {
+        console.warn(`No seasonal rate found for room ${roomId} on ${stayDate}, using fallback`);
+        return 100.0;
+      }
+
+      let finalRate: number = data[0].base_rate;
+
+      if (pricingTierId) {
+        const { data: tierData, error: tierError } = await supabase
+          .from('pricing_tiers')
+          .select('*')
+          .eq('id', parseInt(pricingTierId))
+          .single();
+
+        if (!tierError && tierData) {
+          const seasonCode = data[0].season_code?.toLowerCase();
+          const discountKey = `seasonal_rate_${seasonCode}`;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const discountValue = (tierData as any)[discountKey];
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          if ((tierData as any).is_percentage_discount && discountValue) {
+            finalRate = finalRate * (1 - Number(discountValue));
+          }
         }
-      );
+      }
 
-      if (error) throw error;
-
-      // Recalculate pricing for this day
-      await this.recalculateDayPricing(params.reservationId, params.stayDate);
+      return finalRate;
     } catch (error) {
-      console.error('Error updating guest day presence:', error);
-      throw error;
+      console.error('Error getting room seasonal rate:', error);
+      return 100.0;
     }
   }
 
-  /**
-   * VAT-compliant pricing calculation (no double charging)
-   */
+  /** VAT-compliant pricing calculation (no double charging) */
   private calculateVATCompliantPricing(baseAmount: number): VATBreakdown {
-    // Croatian room rates already include VAT
-    // This method extracts the VAT portion for reporting purposes only
     const vatAmount = baseAmount * (this.config.vatRate / (1 + this.config.vatRate));
-
     return {
       baseAmount,
-      vatAmount, // For reporting only
-      totalAmount: baseAmount, // No additional VAT charged
+      vatAmount,
+      totalAmount: baseAmount,
     };
   }
 
-  /**
-   * Calculate accommodation costs with child discounts
-   */
+  /** Calculate accommodation costs with child discounts (legacy path) */
   private calculateAccommodationCosts(
     baseRate: number,
     numberOfNights: number,
@@ -437,15 +665,11 @@ export class UnifiedPricingService {
     let childDiscounts = 0;
 
     if (isApartment) {
-      // Room 401: Fixed price per apartment, not per person
       subtotal = baseRate * numberOfNights;
-      // No child discounts for apartment (fixed pricing)
     } else {
-      // Regular rooms: Per person pricing
       const totalGuests = adults + children.length;
       subtotal = baseRate * totalGuests * numberOfNights;
 
-      // Calculate child discounts
       for (const child of children) {
         const childRate = baseRate * numberOfNights;
         if (child.age <= 3) {
@@ -471,9 +695,7 @@ export class UnifiedPricingService {
     };
   }
 
-  /**
-   * Calculate service fees
-   */
+  /** Calculate service fees (legacy path) */
   private calculateServiceFees(
     adults: number,
     children: GuestChild[],
@@ -481,39 +703,27 @@ export class UnifiedPricingService {
     checkInDate: Date,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     services: any,
-    isApartment: boolean
+    _isApartment: boolean
   ) {
-    // Tourism tax
     const tourismTaxRate = this.getTourismTaxRate(checkInDate);
     let tourismTax = adults * tourismTaxRate * numberOfNights;
 
-    // Add tourism tax for children 12+
     for (const child of children) {
       if (child.age >= 12 && child.age < 18) {
-        tourismTax += tourismTaxRate * 0.5 * numberOfNights; // 50% for 12-18
+        tourismTax += tourismTaxRate * 0.5 * numberOfNights;
       } else if (child.age >= 18) {
-        tourismTax += tourismTaxRate * numberOfNights; // Full rate for 18+
+        tourismTax += tourismTaxRate * numberOfNights;
       }
-      // Children under 12: free
     }
 
-    // Parking fees
     let parkingFees = 0;
     if (services.parkingSpots && services.parkingSpots > 0) {
-      if (isApartment) {
-        // Room 401 includes 3 free parking spaces
-        const extraSpaces = Math.max(0, services.parkingSpots - 3);
-        parkingFees = extraSpaces * this.config.serviceFees.parkingFeePerNight * numberOfNights;
-      } else {
-        parkingFees =
-          services.parkingSpots * this.config.serviceFees.parkingFeePerNight * numberOfNights;
-      }
+      parkingFees =
+        services.parkingSpots * this.config.serviceFees.parkingFeePerNight * numberOfNights;
     }
 
-    // Pet fees (per night)
     const petFees = services.hasPets ? this.config.serviceFees.petFeePerNight * numberOfNights : 0;
 
-    // Towel rentals
     const towelRentals =
       (services.towelRentals || 0) * this.config.serviceFees.towelRentalPerDay * numberOfNights;
 
@@ -527,372 +737,69 @@ export class UnifiedPricingService {
   }
 
   /**
-   * Get seasonal period for a date
+   * Build consecutive season blocks from a check-in date and number of nights.
+   * E.g. 5 nights starting Jun 28 might yield: [{C, 2 nights}, {D, 3 nights}]
    */
-  public getSeasonalPeriod(date: Date): SeasonalPeriod {
-    const month = date.getMonth() + 1;
+  private buildSeasonBlocks(checkIn: Date, numberOfNights: number): SeasonBlock[] {
+    const blocks: SeasonBlock[] = [];
+    let currentDate = new Date(checkIn);
+    let currentSeason = this.getSeasonalPeriod(currentDate);
+    let blockStart = new Date(currentDate);
+    let blockNights = 0;
 
-    // Simplified Croatian seasonal logic
-    if (month <= 4 || month === 12) return 'A'; // Winter/Early Spring
-    if (month === 5 || month >= 10) return 'B'; // Spring/Late Fall
-    if (month === 6 || month === 9) return 'C'; // Early Summer/Early Fall
-    if (month >= 7 && month <= 8) return 'D'; // Peak Summer
-
-    return 'A';
-  }
-
-  /**
-   * Get tourism tax rate for a date
-   */
-  public getTourismTaxRate(date: Date): number {
-    const month = date.getMonth() + 1;
-
-    // April-September: €1.50
-    if (month >= 4 && month <= 9) {
-      return this.config.tourismTaxRates.high;
+    for (let i = 0; i < numberOfNights; i++) {
+      const season = this.getSeasonalPeriod(currentDate);
+      if (season !== currentSeason) {
+        // Close previous block
+        blocks.push({ season: currentSeason, startDate: blockStart, nights: blockNights });
+        currentSeason = season;
+        blockStart = new Date(currentDate);
+        blockNights = 0;
+      }
+      blockNights++;
+      currentDate = new Date(currentDate);
+      currentDate.setDate(currentDate.getDate() + 1);
     }
 
-    // October-March: €1.10
-    return this.config.tourismTaxRates.low;
-  }
-
-  /**
-   * Get room seasonal rate with pricing tier discount
-   */
-  private async getRoomSeasonalRate(
-    roomId: string,
-    stayDate: Date,
-    pricingTierId?: string
-  ): Promise<number> {
-    try {
-      // Use the DB function which correctly matches by date range, is_active, and priority
-      const { data, error } = await supabase.rpc('get_room_price', {
-        p_room_id: parseInt(roomId),
-        p_date: stayDate.toISOString().split('T')[0],
-      });
-
-      if (error || !data || data.length === 0) {
-        console.warn(`No seasonal rate found for room ${roomId} on ${stayDate}, using fallback`);
-        return 100.0;
-      }
-
-      let finalRate: number = data[0].base_rate;
-
-      // Apply pricing tier discount if applicable
-      if (pricingTierId) {
-        const { data: tierData, error: tierError } = await supabase
-          .from('pricing_tiers')
-          .select('*')
-          .eq('id', pricingTierId)
-          .single();
-
-        if (!tierError && tierData) {
-          const seasonCode = data[0].season_code?.toLowerCase();
-          const discountKey = `seasonal_rate_${seasonCode}`;
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const discountValue = (tierData as any)[discountKey];
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          if ((tierData as any).is_percentage_discount && discountValue) {
-            finalRate = finalRate * (1 - Number(discountValue));
-          }
-        }
-      }
-
-      return finalRate;
-    } catch (error) {
-      console.error('Error getting room seasonal rate:', error);
-      return 100.0;
+    // Close final block
+    if (blockNights > 0) {
+      blocks.push({ season: currentSeason, startDate: blockStart, nights: blockNights });
     }
+
+    return blocks;
   }
 
   /**
-   * Get or create daily details for a reservation
+   * Build tourism tax periods (high/low) across the stay.
+   * Groups consecutive nights with the same tax rate.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private async getReservationDailyDetails(reservationId: string): Promise<any[]> {
-    try {
-      // Check if daily details exist
-      const { data: existingDetails, error: detailsError } = await supabase
-        .from('reservation_daily_details')
-        .select('*')
-        .eq('reservation_id', reservationId)
-        .order('stay_date');
+  private buildTaxPeriods(
+    checkIn: Date,
+    numberOfNights: number
+  ): Array<{ isHigh: boolean; nights: number }> {
+    const periods: Array<{ isHigh: boolean; nights: number }> = [];
+    let currentDate = new Date(checkIn);
 
-      if (detailsError) throw detailsError;
+    for (let i = 0; i < numberOfNights; i++) {
+      const month = currentDate.getMonth() + 1;
+      const isHigh = month >= 4 && month <= 9;
 
-      if (existingDetails && existingDetails.length > 0) {
-        return existingDetails;
-      }
-
-      // Create initial daily details from reservation
-      return await this.createInitialDailyDetails(reservationId);
-    } catch (error) {
-      console.error('Error getting reservation daily details:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Create initial daily details from main reservation
-   */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private async createInitialDailyDetails(reservationId: string): Promise<any[]> {
-    try {
-      // Get reservation data
-      const { data: reservation, error: reservationError } = await supabase
-        .from('reservations')
-        .select(
-          `
-          *,
-          guest_children (id, name, age)
-        `
-        )
-        .eq('id', reservationId)
-        .single();
-
-      if (reservationError) throw reservationError;
-
-      const checkIn = new Date(reservation.check_in);
-      const checkOut = new Date(reservation.check_out);
-      const dailyDetails = [];
-
-      // Get children IDs
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const childrenIds = (reservation.guest_children || []).map((child: any) => child.id);
-
-      // Create daily detail for each night
-      for (let date = new Date(checkIn); date < checkOut; date.setDate(date.getDate() + 1)) {
-        const dailyDetail = {
-          reservation_id: reservationId,
-          stay_date: date.toISOString().split('T')[0],
-          adults_present: reservation.adults,
-          children_present: childrenIds,
-          parking_spots_needed: reservation.parking_required ? 1 : 0,
-          pets_present: reservation.has_pets || false,
-          pet_count: reservation.pet_count || 0,
-          towel_rentals: 0,
-        };
-
-        dailyDetails.push(dailyDetail);
-      }
-
-      // Insert into database
-      const { data: insertedDetails, error: insertError } = await supabase
-        .from('reservation_daily_details')
-        .insert(dailyDetails)
-        .select();
-
-      if (insertError) throw insertError;
-
-      return insertedDetails || dailyDetails;
-    } catch (error) {
-      console.error('Error creating initial daily details:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Calculate pricing for a single day
-   */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private async calculateSingleDayPricing(reservation: any, dailyDetail: any): Promise<any> {
-    try {
-      const stayDate = new Date(dailyDetail.stay_date);
-      const seasonalPeriod = this.getSeasonalPeriod(stayDate);
-      const baseRate = await this.getRoomSeasonalRate(
-        reservation.room_id,
-        stayDate,
-        reservation.pricing_tier_id
-      );
-
-      const isApartment = reservation.rooms?.number === '401';
-
-      // Get children details
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let childrenPresent: any[] = [];
-      if (dailyDetail.children_present && dailyDetail.children_present.length > 0) {
-        const { data: children } = await supabase
-          .from('guest_children')
-          .select('id, name, age')
-          .in('id', dailyDetail.children_present);
-
-        childrenPresent = children || [];
-      }
-
-      // Calculate base accommodation
-      let baseAccommodation: number;
-      if (isApartment) {
-        baseAccommodation = baseRate;
+      if (periods.length > 0 && periods[periods.length - 1].isHigh === isHigh) {
+        periods[periods.length - 1].nights++;
       } else {
-        baseAccommodation = baseRate * (dailyDetail.adults_present + childrenPresent.length);
+        periods.push({ isHigh, nights: 1 });
       }
 
-      // Calculate child discounts
-      let childDiscounts = 0;
-      if (!isApartment) {
-        for (const child of childrenPresent) {
-          if (child.age <= 3) {
-            childDiscounts += baseRate * this.config.childDiscounts.age0to3;
-          } else if (child.age <= 7) {
-            childDiscounts += baseRate * this.config.childDiscounts.age3to7;
-          } else if (child.age <= 14) {
-            childDiscounts += baseRate * this.config.childDiscounts.age7to14;
-          }
-        }
-      }
-
-      const netAccommodation = baseAccommodation - childDiscounts;
-
-      // Calculate service fees for this day
-      const serviceFees = this.calculateDailyServiceFees(
-        dailyDetail.adults_present,
-        childrenPresent,
-        dailyDetail.parking_spots_needed || 0,
-        dailyDetail.pets_present || false,
-        dailyDetail.towel_rentals || 0,
-        isApartment,
-        stayDate
-      );
-
-      return {
-        date: new Date(dailyDetail.stay_date),
-        occupancy: {
-          adults: dailyDetail.adults_present,
-          children: childrenPresent,
-        },
-        pricing: {
-          seasonalPeriod,
-          baseRate,
-          baseAccommodation,
-          childDiscounts,
-          netAccommodation,
-          serviceFees,
-          dailyTotal: netAccommodation + serviceFees.total,
-        },
-        editable: true,
-      };
-    } catch (error) {
-      console.error('Error calculating single day pricing:', error);
-      throw error;
+      currentDate = new Date(currentDate);
+      currentDate.setDate(currentDate.getDate() + 1);
     }
+
+    return periods;
   }
 
-  /**
-   * Calculate service fees for a single day
-   */
-  private calculateDailyServiceFees(
-    adults: number,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    children: any[],
-    parkingSpots: number,
-    hasPets: boolean,
-    towelRentals: number,
-    isApartment: boolean,
-    stayDate: Date
-  ) {
-    // Tourism tax
-    const tourismTaxRate = this.getTourismTaxRate(stayDate);
-    let tourism = adults * tourismTaxRate;
-    tourism += children.filter((child) => child.age >= 12).length * tourismTaxRate;
-
-    // Parking
-    let parking = 0;
-    if (parkingSpots > 0) {
-      if (isApartment) {
-        const extraSpaces = Math.max(0, parkingSpots - 3);
-        parking = extraSpaces * this.config.serviceFees.parkingFeePerNight;
-      } else {
-        parking = parkingSpots * this.config.serviceFees.parkingFeePerNight;
-      }
-    }
-
-    // Pets (per night — called once per day so no further multiplication)
-    const pets = hasPets ? this.config.serviceFees.petFeePerNight : 0;
-
-    // Towels
-    const towels = towelRentals * this.config.serviceFees.towelRentalPerDay;
-
-    return {
-      parking,
-      pets,
-      towels,
-      tourism,
-      total: parking + pets + towels + tourism,
-    };
-  }
-
-  /**
-   * Update daily details
-   */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private async updateDailyDetails(reservationId: string, dailyDetails: any[]): Promise<any[]> {
-    try {
-      const updates = dailyDetails.map((detail) => ({
-        reservation_id: reservationId,
-        stay_date: detail.date.toISOString().split('T')[0],
-        adults_present: detail.adultsPresent,
-        children_present: detail.childrenPresent,
-        parking_spots_needed: detail.parkingSpots,
-        pets_present: detail.hasPets,
-        towel_rentals: detail.towelRentals,
-      }));
-
-      const { data: updatedDetails, error } = await supabase
-        .from('reservation_daily_details')
-        .upsert(updates, { onConflict: 'reservation_id,stay_date' })
-        .select();
-
-      if (error) throw error;
-
-      return updatedDetails || [];
-    } catch (error) {
-      console.error('Error updating daily details:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Recalculate pricing for a specific day
-   */
-  private async recalculateDayPricing(reservationId: string, stayDate: Date): Promise<void> {
-    try {
-      // Get updated reservation and daily detail
-      const { data: reservation, error: reservationError } = await supabase
-        .from('reservations')
-        .select(`*, rooms (*), pricing_tiers (*)`)
-        .eq('id', reservationId)
-        .single();
-
-      if (reservationError) throw reservationError;
-
-      const { data: dailyDetail, error: dailyError } = await supabase
-        .from('reservation_daily_details')
-        .select('*')
-        .eq('reservation_id', reservationId)
-        .eq('stay_date', stayDate.toISOString().split('T')[0])
-        .single();
-
-      if (dailyError) throw dailyError;
-
-      // Calculate new pricing
-      const pricingBreakdown = await this.calculateSingleDayPricing(reservation, dailyDetail);
-
-      // Update pricing in database
-      const { error: updateError } = await supabase
-        .from('reservation_daily_details')
-        .update({
-          daily_base_accommodation: pricingBreakdown.pricing.baseAccommodation,
-          daily_child_discounts: pricingBreakdown.pricing.childDiscounts,
-          daily_service_fees: pricingBreakdown.pricing.serviceFees,
-          daily_total: pricingBreakdown.pricing.dailyTotal,
-        })
-        .eq('id', dailyDetail.id);
-
-      if (updateError) throw updateError;
-    } catch (error) {
-      console.error('Error recalculating day pricing:', error);
-      throw error;
-    }
+  /** Round to 2 decimal places */
+  private round(value: number): number {
+    return Math.round(value * 100) / 100;
   }
 }
 
