@@ -4,7 +4,7 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 
 export default tseslint.config(
-  { ignores: ['dist', 'coverage', 'node_modules', 'scripts', 'example', 'qr-frontend', '**/__tests__/**', '**/*.test.ts', '**/*.test.tsx', '**/*.spec.ts', '**/*.spec.tsx'] },
+  { ignores: ['dist', 'coverage', 'node_modules', 'scripts', 'example', 'qr-frontend', '**/__tests__/**', '**/*.test.ts', '**/*.test.tsx', '**/*.spec.ts', '**/*.spec.tsx', 'src/lib/database.types.ts'] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ['**/*.{ts,tsx}'],
