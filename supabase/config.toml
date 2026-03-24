@@ -347,3 +347,22 @@ s3_region = "env(S3_REGION)"
 s3_access_key = "env(S3_ACCESS_KEY)"
 # Configures AWS_SECRET_ACCESS_KEY for S3 bucket
 s3_secret_key = "env(S3_SECRET_KEY)"
+
+
+[functions.assign-role]
+verify_jwt = false
+
+[functions.fiscalize-invoice]
+verify_jwt = false
+
+[functions.send-email]
+verify_jwt = false
+
+[functions.daily-notifications]
+verify_jwt = false
+
+[functions.reset-room-cleaning]
+verify_jwt = false
+
+[functions.nfc-clean-room]
+verify_jwt = false
