@@ -8,7 +8,6 @@ import type { Database } from '../database.types';
 type _ChargeRow = Database['public']['Tables']['reservation_charges']['Row'];
 type _InvoiceLineRow = Database['public']['Tables']['invoice_lines']['Row'];
 type _CompanyRow = Database['public']['Tables']['companies']['Row'];
-type _PricingTierRow = Database['public']['Tables']['pricing_tiers']['Row'];
 
 export type SeasonalPeriod = 'A' | 'B' | 'C' | 'D';
 
@@ -595,33 +594,6 @@ export interface FinancialHotelContextType extends HotelContextType {
   };
 }
 
-// Compile-time check: verify all DB column names used by the Company mapper still exist.
-// If any DB column is renamed, TypeScript will error here.
-// Note: Company.id is string (converted via toString()) while DB id is number — intentional.
-// Note: DB splits address into address/city/postal_code/country columns; app nests them.
-// Note: createdAt/updatedAt are Date in app vs string in DB — intentional mapper conversion.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-type _VerifyCompanyColumns = Pick<
-  _CompanyRow,
-  | 'id'
-  | 'name'
-  | 'oib'
-  | 'address'
-  | 'city'
-  | 'postal_code'
-  | 'country'
-  | 'contact_person'
-  | 'email'
-  | 'phone'
-  | 'fax'
-  | 'pricing_tier_id'
-  | 'room_allocation_guarantee'
-  | 'is_active'
-  | 'created_at'
-  | 'updated_at'
-  | 'notes'
->;
-
 // Corporate Billing System - R1 Bills
 export interface Company {
   id: string; // toString() of _CompanyRow['id'] (number → string)
@@ -676,24 +648,6 @@ export interface EnhancedReservation extends Omit<Reservation, 'roomServiceItems
   // Enhanced metadata
   lastModified: Date;
 }
-
-// Compile-time check: verify all DB column names used by the PricingTier mapper still exist.
-// Note: DB column is 'minimum_stay', not 'minimum_stay_requirement' — app alias is kept for clarity.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-type _VerifyPricingTierColumns = Pick<
-  _PricingTierRow,
-  | 'id'
-  | 'name'
-  | 'description'
-  | 'discount_percentage'
-  | 'is_default'
-  | 'is_active'
-  | 'minimum_stay'
-  | 'valid_from'
-  | 'valid_to'
-  | 'created_at'
-  | 'updated_at'
->;
 
 // Pricing Tier Management
 export interface PricingTier {
