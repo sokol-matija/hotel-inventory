@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { Label } from '../../ui/label';
@@ -7,23 +9,16 @@ import { Switch } from '../../ui/switch';
 import { useUpdatePricingTier } from '../../../lib/queries/hooks/usePricingTiers';
 import { PricingTier } from '../../../lib/hotel/types';
 import { X } from 'lucide-react';
+import {
+  pricingTierSchema,
+  type PricingTierFormValues,
+} from '../../../lib/hotel/schemas/pricingTier';
 
 interface EditPricingTierModalProps {
   isOpen: boolean;
   tier: PricingTier;
   onClose: () => void;
   onSuccess: () => void;
-}
-
-interface FormData {
-  name: string;
-  description: string;
-  discountPercentage: number;
-  minimumStay: number;
-  validFrom: string;
-  validTo: string;
-  isActive: boolean;
-  isDefault: boolean;
 }
 
 export default function EditPricingTierModal({
@@ -34,25 +29,35 @@ export default function EditPricingTierModal({
 }: EditPricingTierModalProps) {
   const updatePricingTierMutation = useUpdatePricingTier();
 
-  const [formData, setFormData] = useState<FormData>({
-    name: '',
-    description: '',
-    discountPercentage: 0,
-    minimumStay: 1,
-    validFrom: '',
-    validTo: '',
-    isActive: true,
-    isDefault: false,
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    setError,
+    reset,
+    formState: { errors },
+  } = useForm<PricingTierFormValues>({
+    resolver: zodResolver(pricingTierSchema),
+    defaultValues: {
+      name: '',
+      description: '',
+      discountPercentage: 0,
+      minimumStay: 1,
+      validFrom: '',
+      validTo: '',
+      isActive: true,
+      isDefault: false,
+    },
   });
 
-  // Initialize form data when tier changes
   useEffect(() => {
     if (tier) {
-      setFormData({
+      reset({
         name: tier.name,
         description: tier.description,
         discountPercentage: tier.discountPercentage,
-        minimumStay: tier.minimumStayRequirement || 1,
+        minimumStay: tier.minimumStayRequirement ?? 1,
         validFrom: tier.validFrom
           ? tier.validFrom.toISOString().split('T')[0]
           : new Date().toISOString().split('T')[0],
@@ -61,33 +66,21 @@ export default function EditPricingTierModal({
         isDefault: tier.isDefault,
       });
     }
-  }, [tier]);
+  }, [tier, reset]);
 
-  const handleInputChange = (field: keyof FormData, value: unknown) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
+  const isActive = watch('isActive');
+  const isDefault = watch('isDefault');
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (updatePricingTierMutation.isPending) return;
-
-    if (!formData.name.trim()) {
-      alert('Please enter a pricing tier name.');
-      return;
-    }
-
+  const onSubmit = (values: PricingTierFormValues) => {
     const updates: Partial<PricingTier> = {
-      name: formData.name.trim(),
-      description: formData.description.trim(),
-      discountPercentage: formData.discountPercentage,
-      minimumStayRequirement: formData.minimumStay,
-      validFrom: formData.validFrom ? new Date(formData.validFrom) : undefined,
-      validTo: formData.validTo ? new Date(formData.validTo) : undefined,
-      isActive: formData.isActive,
-      isDefault: formData.isDefault,
+      name: values.name.trim(),
+      description: values.description.trim(),
+      discountPercentage: values.discountPercentage,
+      minimumStayRequirement: values.minimumStay,
+      validFrom: values.validFrom ? new Date(values.validFrom) : undefined,
+      validTo: values.validTo ? new Date(values.validTo) : undefined,
+      isActive: values.isActive,
+      isDefault: values.isDefault,
     };
 
     updatePricingTierMutation.mutate(
@@ -96,7 +89,7 @@ export default function EditPricingTierModal({
         onSuccess: () => onSuccess(),
         onError: (error) => {
           console.error('Failed to update pricing tier:', error);
-          alert('Failed to update pricing tier. Please try again.');
+          setError('root', { message: 'Failed to update pricing tier. Please try again.' });
         },
       }
     );
@@ -114,7 +107,7 @@ export default function EditPricingTierModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6 p-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 p-6">
           {/* Basic Information */}
           <div className="space-y-4">
             <div className="space-y-2">
@@ -122,19 +115,19 @@ export default function EditPricingTierModal({
               <Input
                 id="name"
                 type="text"
-                value={formData.name}
-                onChange={(e) => handleInputChange('name', e.target.value)}
                 placeholder="e.g., Corporate Discount, Extended Stay, VIP"
+                className={errors.name ? 'border-destructive' : ''}
+                {...register('name')}
               />
+              {errors.name && <p className="text-destructive text-sm">{errors.name.message}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
-                value={formData.description}
-                onChange={(e) => handleInputChange('description', e.target.value)}
                 placeholder="Brief description of this pricing tier"
                 rows={2}
+                {...register('description')}
               />
             </div>
           </div>
@@ -145,15 +138,16 @@ export default function EditPricingTierModal({
             <Input
               id="discountPercentage"
               type="number"
-              value={formData.discountPercentage}
-              onChange={(e) =>
-                handleInputChange('discountPercentage', parseFloat(e.target.value) || 0)
-              }
               min="0"
               max="100"
               step="1"
               placeholder="e.g., 10 for 10% off"
+              className={errors.discountPercentage ? 'border-destructive' : ''}
+              {...register('discountPercentage', { valueAsNumber: true })}
             />
+            {errors.discountPercentage && (
+              <p className="text-destructive text-sm">{errors.discountPercentage.message}</p>
+            )}
             <p className="text-xs text-gray-500">
               Applied to all accommodation charges for reservations using this tier.
             </p>
@@ -165,11 +159,14 @@ export default function EditPricingTierModal({
             <Input
               id="minimumStay"
               type="number"
-              value={formData.minimumStay}
-              onChange={(e) => handleInputChange('minimumStay', parseInt(e.target.value) || 1)}
               min="1"
               max="30"
+              className={errors.minimumStay ? 'border-destructive' : ''}
+              {...register('minimumStay', { valueAsNumber: true })}
             />
+            {errors.minimumStay && (
+              <p className="text-destructive text-sm">{errors.minimumStay.message}</p>
+            )}
           </div>
 
           {/* Validity Period */}
@@ -179,18 +176,24 @@ export default function EditPricingTierModal({
               <Input
                 id="validFrom"
                 type="date"
-                value={formData.validFrom}
-                onChange={(e) => handleInputChange('validFrom', e.target.value)}
+                className={errors.validFrom ? 'border-destructive' : ''}
+                {...register('validFrom')}
               />
+              {errors.validFrom && (
+                <p className="text-destructive text-sm">{errors.validFrom.message}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="validTo">Valid To</Label>
               <Input
                 id="validTo"
                 type="date"
-                value={formData.validTo}
-                onChange={(e) => handleInputChange('validTo', e.target.value)}
+                className={errors.validTo ? 'border-destructive' : ''}
+                {...register('validTo')}
               />
+              {errors.validTo && (
+                <p className="text-destructive text-sm">{errors.validTo.message}</p>
+              )}
             </div>
           </div>
 
@@ -198,20 +201,23 @@ export default function EditPricingTierModal({
           <div className="flex items-center space-x-6">
             <div className="flex items-center space-x-3">
               <Switch
-                checked={formData.isActive}
-                onCheckedChange={(checked: boolean) => handleInputChange('isActive', checked)}
+                checked={isActive}
+                onCheckedChange={(checked) => setValue('isActive', checked)}
               />
               <Label>Active</Label>
             </div>
             <div className="flex items-center space-x-3">
               <Switch
-                checked={formData.isDefault}
-                onCheckedChange={(checked: boolean) => handleInputChange('isDefault', checked)}
-                disabled={tier.isDefault && formData.isDefault}
+                checked={isDefault}
+                onCheckedChange={(checked) => setValue('isDefault', checked)}
+                disabled={tier.isDefault && isDefault}
               />
               <Label>Set as Default Tier</Label>
             </div>
           </div>
+
+          {/* Root Error */}
+          {errors.root && <p className="text-destructive text-sm">{errors.root.message}</p>}
 
           {/* Submit Buttons */}
           <div className="flex items-center justify-end space-x-4 border-t border-gray-200 pt-4">
