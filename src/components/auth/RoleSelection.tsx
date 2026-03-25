@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from './AuthProvider';
+import { useUserRoles } from '@/lib/queries/hooks/useAuth';
 import {
   User,
   ChefHat,
@@ -18,12 +19,6 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useToast } from '@/hooks/use-toast';
-
-interface Role {
-  id: number;
-  name: string;
-  description: string | null;
-}
 
 interface RoleSelectionProps {
   onRoleSelected: () => void;
@@ -57,39 +52,15 @@ export default function RoleSelection({ onRoleSelected }: RoleSelectionProps) {
   useAuth();
   const { t } = useTranslation();
   const { toast } = useToast();
-  const [roles, setRoles] = useState<Role[]>([]);
   const [selectedRole, setSelectedRole] = useState<number | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAdminPassword, setShowAdminPassword] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
-  const [adminRole, setAdminRole] = useState<Role | null>(null);
   const [showPasswordText, setShowPasswordText] = useState(false);
 
-  useEffect(() => {
-    fetchRoles();
-  }, []);
-
-  const fetchRoles = async () => {
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase.from('user_roles').select('*').order('name');
-
-      if (error) throw error;
-
-      // Separate admin role from others
-      const allRoles = data || [];
-      const adminRoleData = allRoles.find((role) => role.name === 'admin');
-      const otherRoles = allRoles.filter((role) => role.name !== 'admin');
-
-      setRoles(otherRoles);
-      setAdminRole(adminRoleData || null);
-    } catch (error) {
-      console.error('Error fetching roles:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { data: allRoles = [], isLoading } = useUserRoles();
+  const roles = allRoles.filter((role) => role.name !== 'admin');
+  const adminRole = allRoles.find((role) => role.name === 'admin') ?? null;
 
   const handleRoleSelect = useCallback((roleId: number, roleName: string) => {
     if (roleName === 'admin') {

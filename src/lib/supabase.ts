@@ -14,4 +14,4 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
 
 // Re-export generated types for convenience — import from here or directly from database.types
 export type { Database } from './database.types';
-export type { Tables, TablesInsert, TablesUpdate, Enums } from './database.types';
+export type { Tables, TablesInsert, TablesUpdate, Enums, Json } from './database.types';

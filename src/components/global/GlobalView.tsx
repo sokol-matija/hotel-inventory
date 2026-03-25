@@ -53,14 +53,14 @@ export default function GlobalView() {
 
       let matchesPerishable = true;
       if (perishableFilter === 'perishable') {
-        matchesPerishable = item.item.category.requires_expiration;
+        matchesPerishable = item.item.category.requires_expiration ?? false;
       } else if (perishableFilter === 'non-perishable') {
-        matchesPerishable = !item.item.category.requires_expiration;
+        matchesPerishable = !(item.item.category.requires_expiration ?? false);
       }
 
       let matchesActiveFilter = true;
       if (activeFilter === 'lowStock') {
-        matchesActiveFilter = item.quantity <= item.item.minimum_stock;
+        matchesActiveFilter = item.quantity <= (item.item.minimum_stock ?? 0);
       } else if (activeFilter === 'expiring') {
         const sevenDaysFromNow = new Date();
         sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
@@ -177,7 +177,7 @@ export default function GlobalView() {
 
           <div className="space-y-4">
             {filteredInventory.map((item) => {
-              const isLowStock = item.quantity <= item.item.minimum_stock;
+              const isLowStock = item.quantity <= (item.item.minimum_stock ?? 0);
 
               return (
                 <div

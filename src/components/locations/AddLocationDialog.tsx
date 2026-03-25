@@ -5,7 +5,7 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { supabase } from '@/lib/supabase';
+import { useCreateLocation } from '@/lib/queries/hooks/useLocations';
 import { useTranslation } from 'react-i18next';
 import { MapPin, Loader2 } from 'lucide-react';
 
@@ -29,34 +29,32 @@ export default function AddLocationDialog({
     description: '',
     is_refrigerated: false,
   });
-  const [submitting, setSubmitting] = useState(false);
+
+  const createLocation = useCreateLocation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitting(true);
 
-    try {
-      const { error } = await supabase.from('locations').insert([
-        {
-          name: formData.name,
-          type: formData.type,
-          description: formData.description || null,
-          is_refrigerated:
-            formData.is_refrigerated || ['refrigerator', 'freezer'].includes(formData.type),
+    createLocation.mutate(
+      {
+        name: formData.name,
+        type: formData.type,
+        description: formData.description || null,
+        is_refrigerated:
+          formData.is_refrigerated || ['refrigerator', 'freezer'].includes(formData.type),
+      },
+      {
+        onSuccess: () => {
+          onLocationAdded();
+          onClose();
+          setFormData({ name: '', type: '', description: '', is_refrigerated: false });
         },
-      ]);
-
-      if (error) throw error;
-
-      onLocationAdded();
-      onClose();
-      setFormData({ name: '', type: '', description: '', is_refrigerated: false });
-    } catch (error) {
-      console.error('Error adding location:', error);
-      alert('Error adding location. Please try again.');
-    } finally {
-      setSubmitting(false);
-    }
+        onError: (error) => {
+          console.error('Error adding location:', error);
+          alert('Error adding location. Please try again.');
+        },
+      }
+    );
   };
 
   const handleChange = (field: string, value: string | boolean) => {
@@ -144,8 +142,8 @@ export default function AddLocationDialog({
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={submitting}>
-              {submitting ? (
+            <Button type="submit" disabled={createLocation.isPending}>
+              {createLocation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Adding...

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../queryKeys';
-import { supabase, Database } from '../../supabase';
+import { supabase, Database, TablesUpdate } from '../../supabase';
 import { Company } from '../../hotel/types';
 
 // ─── Mapping helpers ──────────────────────────────────────────────────────────
@@ -68,8 +68,7 @@ async function createCompanyInDB(
 }
 
 async function updateCompanyInDB(id: string, updates: Partial<Company>): Promise<Company> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const updateData: any = {};
+  const updateData: TablesUpdate<'companies'> = {};
   if (updates.name !== undefined) updateData.name = updates.name;
   if (updates.oib !== undefined) updateData.oib = updates.oib;
   if (updates.address !== undefined) {

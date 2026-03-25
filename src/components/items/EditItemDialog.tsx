@@ -5,37 +5,15 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { supabase } from '@/lib/supabase';
-import { auditLog } from '@/lib/auditLog';
+import { useCategories, useUpdateItem, type ItemWithCategory } from '@/lib/queries/hooks/useItems';
 import { useTranslation } from 'react-i18next';
 import { Package, Loader2 } from 'lucide-react';
-
-interface Item {
-  id: number;
-  name: string;
-  description: string | null;
-  unit: string | null;
-  price: number | null;
-  minimum_stock: number | null;
-  category_id: number;
-  category: {
-    id: number;
-    name: string;
-    requires_expiration: boolean | null;
-  };
-}
-
-interface Category {
-  id: number;
-  name: string;
-  requires_expiration: boolean;
-}
 
 interface EditItemDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onItemUpdated: () => void;
-  item: Item;
+  item: ItemWithCategory;
 }
 
 export default function EditItemDialog({
@@ -53,13 +31,13 @@ export default function EditItemDialog({
     minimum_stock: '',
     category_id: '',
   });
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+
+  const { data: categoriesData, isLoading } = useCategories();
+  const categories = categoriesData ?? [];
+  const updateItem = useUpdateItem();
 
   useEffect(() => {
     if (isOpen) {
-      fetchCategories();
       setFormData({
         name: item.name,
         description: item.description || '',
@@ -71,59 +49,42 @@ export default function EditItemDialog({
     }
   }, [isOpen, item]);
 
-  const fetchCategories = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.from('categories').select('*').order('name');
-
-      if (error) throw error;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setCategories((data || []) as any);
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitting(true);
 
-    try {
-      const newData = {
-        name: formData.name,
-        description: formData.description || null,
-        unit: formData.unit,
-        price: formData.price ? parseFloat(formData.price) : null,
-        minimum_stock: parseInt(formData.minimum_stock),
-        category_id: parseInt(formData.category_id),
-      };
+    const newData = {
+      name: formData.name,
+      description: formData.description || null,
+      unit: formData.unit,
+      price: formData.price ? parseFloat(formData.price) : null,
+      minimum_stock: parseInt(formData.minimum_stock),
+      category_id: parseInt(formData.category_id),
+    };
 
-      const { error } = await supabase.from('items').update(newData).eq('id', item.id);
-
-      if (error) throw error;
-
-      // Log the item update
-      const oldData = {
-        name: item.name,
-        description: item.description,
-        unit: item.unit,
-        price: item.price,
-        minimum_stock: item.minimum_stock,
-        category_id: item.category_id,
-      };
-
-      await auditLog.itemUpdated(item.id, oldData, newData);
-
-      onItemUpdated();
-      onClose();
-    } catch (error) {
-      console.error('Error updating item:', error);
-      alert('Error updating item. Please try again.');
-    } finally {
-      setSubmitting(false);
-    }
+    updateItem.mutate(
+      {
+        id: item.id,
+        data: newData,
+        oldData: {
+          name: item.name,
+          description: item.description,
+          unit: item.unit,
+          price: item.price,
+          minimum_stock: item.minimum_stock,
+          category_id: item.category_id,
+        },
+      },
+      {
+        onSuccess: () => {
+          onItemUpdated();
+          onClose();
+        },
+        onError: (error) => {
+          console.error('Error updating item:', error);
+          alert('Error updating item. Please try again.');
+        },
+      }
+    );
   };
 
   const handleChange = (field: string, value: string) => {
@@ -206,7 +167,7 @@ export default function EditItemDialog({
 
           <div>
             <Label htmlFor="category">Category *</Label>
-            {loading ? (
+            {isLoading ? (
               <div className="flex items-center space-x-2 py-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 <span>Loading categories...</span>
@@ -234,8 +195,8 @@ export default function EditItemDialog({
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={submitting}>
-              {submitting ? (
+            <Button type="submit" disabled={updateItem.isPending}>
+              {updateItem.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Updating...

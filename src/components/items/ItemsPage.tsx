@@ -7,7 +7,7 @@ import AddItemDialog from './AddItemDialog';
 import EditItemDialog from './EditItemDialog';
 import { useTranslation } from 'react-i18next';
 import { Package, Plus, Search, Edit, Trash2, DollarSign, AlertTriangle } from 'lucide-react';
-import { useItemsWithCounts, useDeleteItem } from '@/lib/queries/hooks/useItems';
+import { useItemsWithCounts, useCategories, useDeleteItem } from '@/lib/queries/hooks/useItems';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queries/queryKeys';
 
@@ -21,11 +21,9 @@ export default function ItemsPage() {
     return t(`categories.${key}`, { defaultValue: categoryName });
   };
 
-  const { data, isLoading } = useItemsWithCounts();
+  const { data: items = [], isLoading } = useItemsWithCounts();
+  const { data: categories = [] } = useCategories();
   const deleteItemMutation = useDeleteItem();
-
-  const categories = data?.categories ?? [];
-  const items = data?.items ?? [];
 
   type ItemType = (typeof items)[number];
 

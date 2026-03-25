@@ -3,16 +3,9 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { supabase } from '@/lib/supabase';
-import { auditLog } from '@/lib/auditLog';
+import { useCategories, useCreateItem } from '@/lib/queries/hooks/useItems';
 import { useTranslation } from 'react-i18next';
 import { X, Package, DollarSign, Hash, AlertCircle } from 'lucide-react';
-
-interface Category {
-  id: number;
-  name: string;
-  requires_expiration: boolean;
-}
 
 interface AddItemDialogProps {
   isOpen: boolean;
@@ -30,27 +23,25 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
     price: '',
     minimum_stock: '0',
   });
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const { data: categoriesData } = useCategories();
+  const categories = categoriesData ?? [];
+  const createItem = useCreateItem();
+
   useEffect(() => {
-    if (isOpen) {
-      fetchCategories();
+    if (!isOpen) {
+      setFormData({
+        name: '',
+        description: '',
+        category_id: '',
+        unit: 'pieces',
+        price: '',
+        minimum_stock: '0',
+      });
+      setErrors({});
     }
   }, [isOpen]);
-
-  const fetchCategories = async () => {
-    try {
-      const { data, error } = await supabase.from('categories').select('*').order('name');
-
-      if (error) throw error;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setCategories((data || []) as any);
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-    }
-  };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -84,50 +75,29 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
 
     if (!validateForm()) return;
 
-    setLoading(true);
-    try {
-      const itemData = {
+    createItem.mutate(
+      {
         name: formData.name.trim(),
         description: formData.description.trim() || null,
         category_id: parseInt(formData.category_id),
         unit: formData.unit.trim(),
         price: formData.price ? parseFloat(formData.price) : null,
         minimum_stock: parseInt(formData.minimum_stock),
-      };
-
-      // Temporarily disable safeSupabaseCall to test if it's causing issues
-      const { data, error } = await supabase.from('items').insert([itemData]).select();
-      if (error) throw error;
-
-      // Log the item creation
-      if (data && data[0]) {
-        await auditLog.itemCreated(data[0].id, itemData);
+      },
+      {
+        onSuccess: () => {
+          onItemAdded();
+          onClose();
+        },
+        onError: () => {
+          setErrors({ submit: t('items.failedToAdd') });
+        },
       }
-
-      // Reset form
-      setFormData({
-        name: '',
-        description: '',
-        category_id: '',
-        unit: 'pieces',
-        price: '',
-        minimum_stock: '0',
-      });
-      setErrors({});
-
-      onItemAdded();
-      onClose();
-    } catch (error) {
-      console.error('Error adding item:', error);
-      setErrors({ submit: t('items.failedToAdd') });
-    } finally {
-      setLoading(false);
-    }
+    );
   };
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: '' }));
     }
@@ -313,8 +283,8 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
               <Button type="button" variant="outline" onClick={onClose} className="flex-1">
                 {t('common.cancel')}
               </Button>
-              <Button type="submit" disabled={loading} className="flex-1">
-                {loading ? (
+              <Button type="submit" disabled={createItem.isPending} className="flex-1">
+                {createItem.isPending ? (
                   <div className="flex items-center space-x-2">
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                     <span>{t('common.adding')}</span>

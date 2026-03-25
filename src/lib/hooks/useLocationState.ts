@@ -56,7 +56,7 @@ export function useLocationState() {
     isLoading,
     error: queryError,
   } = useQuery({
-    queryKey: queryKeys.locations.detail(id ?? ''),
+    queryKey: queryKeys.locations.detail(Number(id ?? 0)),
     queryFn: () => locationService.fetchLocationData(id!),
     enabled: !!id,
   });
@@ -90,7 +90,7 @@ export function useLocationState() {
     mutationFn: ({ inventoryId, newQuantity }: { inventoryId: number; newQuantity: number }) =>
       locationService.updateQuantity(inventoryId, newQuantity, user!.id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.locations.detail(id ?? '') });
+      queryClient.invalidateQueries({ queryKey: queryKeys.locations.detail(Number(id ?? 0)) });
       queryClient.invalidateQueries({ queryKey: queryKeys.locations.withStats() });
       setEditingQuantityState(null);
       setTempQuantityState('');
@@ -100,7 +100,7 @@ export function useLocationState() {
   const deleteItemMutation = useMutation({
     mutationFn: (inventoryId: number) => locationService.deleteInventoryItem(inventoryId, user!.id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.locations.detail(id ?? '') });
+      queryClient.invalidateQueries({ queryKey: queryKeys.locations.detail(Number(id ?? 0)) });
       queryClient.invalidateQueries({ queryKey: queryKeys.locations.withStats() });
     },
   });
@@ -114,7 +114,7 @@ export function useLocationState() {
       dragOperation: DragOperation;
     }) => locationService.updateInventoryOrder(inv, dragOperation, user!.id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.locations.detail(id ?? '') });
+      queryClient.invalidateQueries({ queryKey: queryKeys.locations.detail(Number(id ?? 0)) });
       setActiveIdState(null);
     },
     onError: () => {
@@ -141,11 +141,11 @@ export function useLocationState() {
 
   // Data operations
   const fetchLocationData = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: queryKeys.locations.detail(id ?? '') });
+    queryClient.invalidateQueries({ queryKey: queryKeys.locations.detail(Number(id ?? 0)) });
   }, [queryClient, id]);
 
   const refreshAfterAdd = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: queryKeys.locations.detail(id ?? '') });
+    queryClient.invalidateQueries({ queryKey: queryKeys.locations.detail(Number(id ?? 0)) });
     queryClient.invalidateQueries({ queryKey: queryKeys.locations.withStats() });
     setShowAddDialog(false);
   }, [queryClient, id]);

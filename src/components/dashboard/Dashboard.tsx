@@ -64,7 +64,7 @@ export default function Dashboard() {
     return {
       totalItems: inventory.length,
       lowStockItems: inventory.filter(
-        (item) => item.item && item.quantity <= item.item.minimum_stock
+        (item) => item.item && item.quantity <= (item.item.minimum_stock ?? 0)
       ).length,
       expiringItems: inventory.filter(
         (item) =>
@@ -221,7 +221,7 @@ export default function Dashboard() {
           <div className="space-y-4">
             {sortedInventory.slice(0, 10).map((item) => {
               const expirationStatus = getExpirationStatus(item.expiration_date);
-              const isLowStock = item.quantity <= item.item.minimum_stock;
+              const isLowStock = item.quantity <= (item.item.minimum_stock ?? 0);
 
               return (
                 <div

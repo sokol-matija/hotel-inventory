@@ -122,9 +122,9 @@ export class LabelService {
         bg_color: labelData.bgColor || randomColor.bg,
       };
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await supabase
         .from('labels')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .insert(insertData as any)
         .select()
         .single();

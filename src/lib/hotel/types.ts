@@ -1,6 +1,15 @@
 // Hotel Management System - TypeScript Interfaces
 // Hotel Porec - Real Business Data Structures
 
+// DB row type aliases — private to this file. Used as compile-time anchors so that if
+// a DB column is renamed, TypeScript will flag the mismatch here rather than silently drifting.
+import type { Database } from '../database.types';
+
+type _ChargeRow = Database['public']['Tables']['reservation_charges']['Row'];
+type _InvoiceLineRow = Database['public']['Tables']['invoice_lines']['Row'];
+type _CompanyRow = Database['public']['Tables']['companies']['Row'];
+type _PricingTierRow = Database['public']['Tables']['pricing_tiers']['Row'];
+
 export type SeasonalPeriod = 'A' | 'B' | 'C' | 'D';
 
 export type RoomType =
@@ -98,30 +107,30 @@ export type ChargeType =
   | 'discount';
 
 export interface ReservationCharge {
-  id: number;
-  reservationId: number;
-  chargeType: ChargeType;
-  description: string;
-  quantity: number;
-  unitPrice: number;
-  total: number;
-  vatRate: number;
-  stayDate?: string | null;
-  sortOrder: number;
-  createdAt?: string | null;
-  updatedAt?: string | null;
+  id: _ChargeRow['id'];
+  reservationId: _ChargeRow['reservation_id'];
+  chargeType: ChargeType; // Stricter union of _ChargeRow['charge_type']
+  description: _ChargeRow['description'];
+  quantity: _ChargeRow['quantity'];
+  unitPrice: _ChargeRow['unit_price'];
+  total: _ChargeRow['total'];
+  vatRate: _ChargeRow['vat_rate'];
+  stayDate?: _ChargeRow['stay_date'];
+  sortOrder: _ChargeRow['sort_order'];
+  createdAt?: _ChargeRow['created_at'];
+  updatedAt?: _ChargeRow['updated_at'];
 }
 
 export interface InvoiceLine {
-  id: number;
-  invoiceId: number;
-  chargeType: ChargeType;
-  description: string;
-  quantity: number;
-  unitPrice: number;
-  total: number;
-  vatRate: number;
-  sortOrder: number;
+  id: _InvoiceLineRow['id'];
+  invoiceId: _InvoiceLineRow['invoice_id'];
+  chargeType: ChargeType; // Stricter union of _InvoiceLineRow['charge_type']
+  description: _InvoiceLineRow['description'];
+  quantity: _InvoiceLineRow['quantity'];
+  unitPrice: _InvoiceLineRow['unit_price'];
+  total: _InvoiceLineRow['total'];
+  vatRate: _InvoiceLineRow['vat_rate'];
+  sortOrder: _InvoiceLineRow['sort_order'];
 }
 
 export interface RoomServiceItem {
@@ -586,23 +595,50 @@ export interface FinancialHotelContextType extends HotelContextType {
   };
 }
 
+// Compile-time check: verify all DB column names used by the Company mapper still exist.
+// If any DB column is renamed, TypeScript will error here.
+// Note: Company.id is string (converted via toString()) while DB id is number — intentional.
+// Note: DB splits address into address/city/postal_code/country columns; app nests them.
+// Note: createdAt/updatedAt are Date in app vs string in DB — intentional mapper conversion.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+type _VerifyCompanyColumns = Pick<
+  _CompanyRow,
+  | 'id'
+  | 'name'
+  | 'oib'
+  | 'address'
+  | 'city'
+  | 'postal_code'
+  | 'country'
+  | 'contact_person'
+  | 'email'
+  | 'phone'
+  | 'fax'
+  | 'pricing_tier_id'
+  | 'room_allocation_guarantee'
+  | 'is_active'
+  | 'created_at'
+  | 'updated_at'
+  | 'notes'
+>;
+
 // Corporate Billing System - R1 Bills
 export interface Company {
-  id: string;
-  name: string;
-  oib: string; // Croatian tax number (unique)
+  id: string; // toString() of _CompanyRow['id'] (number → string)
+  name: string; // _CompanyRow['name']
+  oib: string; // _CompanyRow['oib'] — mapper normalises null → ''
   address: {
-    street: string;
-    city: string;
-    postalCode: string;
-    country: string;
+    street: string; // _CompanyRow['address']
+    city: string; // _CompanyRow['city']
+    postalCode: string; // _CompanyRow['postal_code']
+    country: string; // _CompanyRow['country']
   };
-  contactPerson: string;
-  email: string;
-  phone: string;
-  fax?: string;
+  contactPerson: string; // _CompanyRow['contact_person']
+  email: string; // _CompanyRow['email']
+  phone: string; // _CompanyRow['phone'] — mapper normalises null → ''
+  fax?: string; // _CompanyRow['fax']
 
-  // Additional business details
+  // Additional business details (not yet in DB — planned columns)
   vatNumber?: string;
   businessRegistrationNumber?: string;
   discountPercentage?: number;
@@ -619,14 +655,14 @@ export interface Company {
   // Business relationship
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   pricingTier?: any; // For joined queries
-  pricingTierId?: string; // Links to PricingTier
-  roomAllocationGuarantee?: number; // Number of guaranteed rooms
+  pricingTierId?: string; // toString() of _CompanyRow['pricing_tier_id']
+  roomAllocationGuarantee?: _CompanyRow['room_allocation_guarantee'];
 
   // Metadata
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  notes: string;
+  isActive: boolean; // _CompanyRow['is_active'] — mapper normalises null → true
+  createdAt: Date; // parsed from _CompanyRow['created_at'] (string → Date)
+  updatedAt: Date; // parsed from _CompanyRow['updated_at'] (string → Date)
+  notes: string; // _CompanyRow['notes'] — mapper normalises null → ''
 }
 
 // Enhanced Reservation with Corporate Billing
@@ -641,17 +677,35 @@ export interface EnhancedReservation extends Omit<Reservation, 'roomServiceItems
   lastModified: Date;
 }
 
+// Compile-time check: verify all DB column names used by the PricingTier mapper still exist.
+// Note: DB column is 'minimum_stay', not 'minimum_stay_requirement' — app alias is kept for clarity.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+type _VerifyPricingTierColumns = Pick<
+  _PricingTierRow,
+  | 'id'
+  | 'name'
+  | 'description'
+  | 'discount_percentage'
+  | 'is_default'
+  | 'is_active'
+  | 'minimum_stay'
+  | 'valid_from'
+  | 'valid_to'
+  | 'created_at'
+  | 'updated_at'
+>;
+
 // Pricing Tier Management
 export interface PricingTier {
-  id: string;
-  name: string;
-  description: string;
-  discountPercentage: number; // e.g. 10 = 10% off all accommodation charges
-  isDefault: boolean;
-  isActive: boolean;
-  minimumStayRequirement?: number;
-  validFrom?: Date;
-  validTo?: Date;
-  createdAt: Date;
-  updatedAt: Date;
+  id: string; // toString() of _PricingTierRow['id'] (number → string)
+  name: string; // _PricingTierRow['name']
+  description: string; // _PricingTierRow['description'] — mapper normalises null → ''
+  discountPercentage: number; // _PricingTierRow['discount_percentage'] — mapper normalises null → 0
+  isDefault: boolean; // _PricingTierRow['is_default'] — mapper normalises null → false
+  isActive: boolean; // _PricingTierRow['is_active'] — mapper normalises null → true
+  minimumStayRequirement?: number; // _PricingTierRow['minimum_stay'] — DB column: minimum_stay
+  validFrom?: Date; // parsed from _PricingTierRow['valid_from'] (string | null → Date)
+  validTo?: Date; // parsed from _PricingTierRow['valid_to'] (string | null → Date)
+  createdAt: Date; // parsed from _PricingTierRow['created_at'] (string → Date)
+  updatedAt: Date; // parsed from _PricingTierRow['updated_at'] (string → Date)
 }

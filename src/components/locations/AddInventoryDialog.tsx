@@ -146,7 +146,7 @@ export default function AddInventoryDialog({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: queryKeys.locations.detail(String(locationId)),
+        queryKey: queryKeys.locations.detail(locationId),
       });
       queryClient.invalidateQueries({ queryKey: queryKeys.locations.withStats() });
       onInventoryAdded();

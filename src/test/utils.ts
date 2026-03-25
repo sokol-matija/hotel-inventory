@@ -3,6 +3,9 @@ import { render, type RenderOptions } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import type { Room, Reservation } from '@/lib/hotel/types';
+import type { ItemWithCategory, Category, ActiveItem } from '@/lib/queries/hooks/useItems';
+import type { LocationWithStats } from '@/lib/queries/hooks/useLocations';
+import type { InventoryWithDetails } from '@/lib/queries/hooks/useInventory';
 
 // ── TanStack Query ────────────────────────────────────────────────────────────
 
@@ -58,6 +61,92 @@ export function createSupabaseMock(resolvedValue: { data: unknown; error: unknow
 // ── Type-safe Factories ───────────────────────────────────────────────────────
 
 let _id = 0;
+
+// ── Inventory Factories ───────────────────────────────────────────────────────
+
+export function buildCategory(overrides: Partial<Category> = {}): Category {
+  _id++;
+  return {
+    id: _id,
+    name: `Category ${_id}`,
+    requires_expiration: false,
+    created_at: '2026-01-01T00:00:00Z',
+    ...overrides,
+  } as Category;
+}
+
+export function buildItemWithCategory(overrides: Partial<ItemWithCategory> = {}): ItemWithCategory {
+  _id++;
+  return {
+    id: _id,
+    name: `Item ${_id}`,
+    description: null,
+    unit: 'pieces',
+    price: null,
+    minimum_stock: 5,
+    is_active: true,
+    category_id: 1,
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: null,
+    category: { id: 1, name: 'Food & Beverage', requires_expiration: false },
+    inventory_count: 0,
+    total_quantity: 0,
+    ...overrides,
+  } as ItemWithCategory;
+}
+
+export function buildActiveItem(overrides: Partial<ActiveItem> = {}): ActiveItem {
+  _id++;
+  return {
+    id: _id,
+    name: `Item ${_id}`,
+    unit: 'pieces',
+    category: { name: 'Food & Beverage', requires_expiration: false },
+    ...overrides,
+  } as ActiveItem;
+}
+
+export function buildInventoryEntry(
+  overrides: Partial<InventoryWithDetails> = {}
+): InventoryWithDetails {
+  _id++;
+  return {
+    id: _id,
+    quantity: 10,
+    expiration_date: null,
+    cost_per_unit: null,
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-01T00:00:00Z',
+    item: {
+      id: 1,
+      name: 'Coffee',
+      description: null,
+      unit: 'kg',
+      minimum_stock: 5,
+      category: { id: 1, name: 'Beverages', requires_expiration: false },
+    },
+    location: { id: 1, name: 'Main Storage', type: 'storage', is_refrigerated: false },
+    ...overrides,
+  } as InventoryWithDetails;
+}
+
+export function buildLocationWithStats(
+  overrides: Partial<LocationWithStats> = {}
+): LocationWithStats {
+  _id++;
+  return {
+    id: _id,
+    name: `Location ${_id}`,
+    type: 'storage',
+    description: null,
+    is_refrigerated: false,
+    inventory_count: 0,
+    low_stock_count: 0,
+    expiring_count: 0,
+    total_items: 0,
+    ...overrides,
+  };
+}
 
 export function buildRoom(overrides: Partial<Room> = {}): Room {
   _id++;

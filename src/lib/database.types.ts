@@ -1686,6 +1686,7 @@ export type Database = {
           season_name: string;
         }[];
       };
+      get_user_role_id: { Args: never; Returns: number };
       log_audit_entry: {
         Args: {
           p_action: string;

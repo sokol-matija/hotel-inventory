@@ -1,6 +1,34 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase';
+import { supabase, Database } from '@/lib/supabase';
 import { queryKeys } from '../queryKeys';
+
+// ─── DB row types ──────────────────────────────────────────────────────────────
+
+type AuditRow = Database['public']['Tables']['audit_logs']['Row'];
+
+// ─── Mapping helpers ───────────────────────────────────────────────────────────
+
+type AuditRowWithProfile = AuditRow & {
+  user_profile?: { role: { name: string } | null } | null;
+};
+
+function mapAuditLogFromDB(row: AuditRowWithProfile): AuditLogEntry {
+  const profile = row.user_profile;
+  return {
+    id: row.id,
+    user_id: row.user_id,
+    action: row.action as AuditLogEntry['action'],
+    table_name: row.table_name,
+    record_id: row.record_id != null ? Number(row.record_id) : null,
+    old_values: row.old_values as Record<string, unknown> | null,
+    new_values: row.new_values as Record<string, unknown> | null,
+    description: row.description,
+    created_at: row.created_at,
+    user_profile: profile?.role ? { role: { name: profile.role.name } } : undefined,
+  };
+}
+
+// ─── Types ─────────────────────────────────────────────────────────────────────
 
 export interface AuditLogEntry {
   id: number;
@@ -19,6 +47,8 @@ export interface AuditLogEntry {
   };
 }
 
+// ─── Service functions ─────────────────────────────────────────────────────────
+
 async function fetchAuditLogs(): Promise<AuditLogEntry[]> {
   const { data, error } = await supabase
     .from('audit_logs')
@@ -34,9 +64,10 @@ async function fetchAuditLogs(): Promise<AuditLogEntry[]> {
     .limit(500);
 
   if (error) throw error;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (data ?? []) as any as AuditLogEntry[];
+  return (data ?? []).map((row) => mapAuditLogFromDB(row as unknown as AuditRowWithProfile));
 }
+
+// ─── Hooks ─────────────────────────────────────────────────────────────────────
 
 export function useAuditLogs() {
   return useQuery({

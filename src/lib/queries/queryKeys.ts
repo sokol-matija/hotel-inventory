@@ -36,7 +36,7 @@ export const queryKeys = {
   locations: {
     all: () => ['locations'] as const,
     withStats: () => ['locations', 'withStats'] as const,
-    detail: (id: string) => ['locations', id] as const,
+    detail: (id: number) => ['locations', id] as const,
   },
   items: {
     withCounts: () => ['items', 'withCounts'] as const,
@@ -53,6 +53,9 @@ export const queryKeys = {
   },
   auditLogs: {
     all: () => ['auditLogs'] as const,
+  },
+  userRoles: {
+    all: () => ['userRoles'] as const,
   },
   roomService: {
     foodAndBeverage: () => ['roomService', 'foodAndBeverage'] as const,
