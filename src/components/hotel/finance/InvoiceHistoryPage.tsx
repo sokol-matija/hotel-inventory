@@ -95,8 +95,8 @@ export default function InvoiceHistoryPage() {
   const handleDownloadPDF = async (invoice: Invoice) => {
     try {
       // Find related reservation
-      const reservation = reservations.find((r) => r.id === Number(invoice.reservationId));
-      const guest = guests.find((g) => g.id === Number(invoice.guestId));
+      const reservation = reservations.find((r) => r.id === invoice.reservationId);
+      const guest = guests.find((g) => g.id === invoice.guestId);
       const room = reservation ? rooms.find((r) => r.id === reservation.room_id) : undefined;
 
       if (!reservation || !guest || !room) {
@@ -141,7 +141,7 @@ export default function InvoiceHistoryPage() {
   };
 
   const getReservationDetails = (invoice: Invoice) => {
-    return reservations.find((r) => r.id === Number(invoice.reservationId));
+    return reservations.find((r) => r.id === invoice.reservationId);
   };
 
   return (

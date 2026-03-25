@@ -235,8 +235,8 @@ export function useReservationActions(
             updateReservationInState,
             async () => {
               const allocationResult = await virtualRoomService.convertToRealReservation(
-                String(reservationId),
-                String(newRoomId),
+                reservationId,
+                newRoomId,
                 allocationGuestData!
               );
               if (!allocationResult.success)

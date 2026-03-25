@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from '@tanstack/react-router';
 import { Button } from '../ui/button';
-import { useAuth } from '../auth/AuthProvider';
+import { useAuth } from '@/stores/authStore';
 import { useTranslation } from 'react-i18next';
 import {
   Home,

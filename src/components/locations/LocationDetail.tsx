@@ -9,7 +9,7 @@ import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { useLocationState } from '@/lib/hooks/useLocationState';
 import { InventoryItem } from '@/lib/services/LocationService';
-import { useAuth } from '../auth/AuthProvider';
+import { useAuth } from '@/stores/authStore';
 import AddInventoryDialog from './AddInventoryDialog';
 import { formatDate } from '@/lib/dateUtils';
 import {

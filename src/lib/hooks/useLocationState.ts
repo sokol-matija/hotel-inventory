@@ -3,7 +3,7 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import { useParams } from '@tanstack/react-router';
-import { useAuth } from '@/components/auth/AuthProvider';
+import { useAuth } from '@/stores/authStore';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../queries/queryKeys';
 import {

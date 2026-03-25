@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { supabase } from '@/lib/supabase';
-import { useAuth } from './AuthProvider';
+import { useAuth } from '@/stores/authStore';
 import { useUserRoles } from '@/lib/queries/hooks/useAuth';
 import {
   User,

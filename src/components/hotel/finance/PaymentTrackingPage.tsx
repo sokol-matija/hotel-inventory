@@ -33,7 +33,7 @@ export default function PaymentTrackingPage() {
   const cashPayments = getPaymentsByMethod('cash').reduce((sum, p) => sum + p.amount, 0);
   const cardPayments = getPaymentsByMethod('card').reduce((sum, p) => sum + p.amount, 0);
 
-  const getInvoiceNumber = (invoiceId: string) => {
+  const getInvoiceNumber = (invoiceId: number) => {
     return invoices.find((inv) => inv.id === invoiceId)?.invoiceNumber || 'Unknown';
   };
 

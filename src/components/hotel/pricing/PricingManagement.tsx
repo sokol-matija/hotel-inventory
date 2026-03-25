@@ -26,7 +26,7 @@ export default function PricingManagement() {
     );
   }, [pricingTiers, searchTerm]);
 
-  const handleDeleteTier = (id: string) => {
+  const handleDeleteTier = (id: number) => {
     if (
       window.confirm(
         'Are you sure you want to delete this pricing tier? This action cannot be undone.'

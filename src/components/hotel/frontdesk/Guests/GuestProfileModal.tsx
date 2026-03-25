@@ -2,7 +2,13 @@ import React, { useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '../../../ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
 import { Button } from '../../../ui/button';
 import { Badge } from '../../../ui/badge';
@@ -258,6 +264,13 @@ export default function GuestProfileModal({
               )}
             </div>
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            {mode === 'create'
+              ? 'Form to create a new guest profile'
+              : isEditing
+                ? 'Form to edit guest information'
+                : 'View guest profile details'}
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate>

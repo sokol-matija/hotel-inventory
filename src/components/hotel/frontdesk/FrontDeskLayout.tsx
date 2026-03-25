@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Outlet } from '@tanstack/react-router';
 import { Menu } from 'lucide-react';
-import { useAuth } from '../../auth/AuthProvider';
+import { useAuth } from '@/stores/authStore';
 import { SupabaseHotelProvider } from '../../../lib/hotel/state/SupabaseHotelContext';
 import HotelSidebar from '../shared/HotelSidebar';
 import MobileNav from '../../layout/MobileNav';

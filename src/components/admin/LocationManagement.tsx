@@ -4,7 +4,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { useLocationsWithStats, useUpdateLocation } from '@/lib/queries/hooks/useLocations';
-import { useAuth } from '../auth/AuthProvider';
+import { useAuth } from '@/stores/authStore';
 import { useTranslation } from 'react-i18next';
 import { Edit, Save, X, Refrigerator, Warehouse } from 'lucide-react';
 

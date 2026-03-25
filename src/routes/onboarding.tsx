@@ -1,6 +1,6 @@
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
 import { useEffect } from 'react';
-import { useAuth } from '@/components/auth/AuthProvider';
+import { useAuth } from '@/stores/authStore';
 import RoleSelection from '@/components/auth/RoleSelection';
 
 function OnboardingPage() {

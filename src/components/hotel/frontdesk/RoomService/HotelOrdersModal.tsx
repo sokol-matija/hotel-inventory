@@ -107,7 +107,7 @@ export default function HotelOrdersModal({
         roomId: String(reservation.room_id),
         roomNumber: room ? formatRoomNumber(room) : String(reservation.room_id),
         guestName,
-        reservationId: String(reservation.id),
+        reservationId: reservation.id,
         items: orderItems,
         subtotal: totals.subtotal,
         tax: totals.tax,

@@ -9,7 +9,8 @@ if (import.meta.env.DEV) {
 import './i18n';
 import { RouterProvider } from '@tanstack/react-router';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { AuthProvider, useAuth } from './components/auth/AuthProvider';
+import { AuthProvider } from './components/auth/AuthProvider';
+import { useAuth } from '@/stores/authStore';
 import { router, queryClient } from './router';
 import { ErrorBoundary } from './components/ErrorBoundary';
 

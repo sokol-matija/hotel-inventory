@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { useAuth } from '../auth/AuthProvider';
+import { useAuth } from '@/stores/authStore';
 import { useTranslation } from 'react-i18next';
 import { formatDateTimeForDisplay } from '@/lib/dateUtils';
 import {

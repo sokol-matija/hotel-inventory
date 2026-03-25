@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
-import { useAuth } from '../auth/AuthProvider';
+import { useAuth } from '@/stores/authStore';
 import { useTranslation } from 'react-i18next';
 import { formatDate, getCurrentDateFormatted } from '@/lib/dateUtils';
 import {

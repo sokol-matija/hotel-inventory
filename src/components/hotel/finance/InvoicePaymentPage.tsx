@@ -98,7 +98,7 @@ export default function InvoicePaymentPage() {
   const totalRevenue = getTotalRevenue(invoices);
   const statusColors = INVOICE_STATUS_COLORS;
 
-  const getInvoiceNumber = (invoiceId: string) => {
+  const getInvoiceNumber = (invoiceId: number) => {
     return invoices.find((inv) => inv.id === invoiceId)?.invoiceNumber || 'Unknown';
   };
 

@@ -114,12 +114,8 @@ export default function ReservationPopup({
   } = useReservationState(event, onClose, onStatusChange);
 
   // Fetch charges to derive total from reservation_charges
-  const numericReservationId = reservationData?.reservation
-    ? typeof reservationData.reservation.id === 'string'
-      ? parseInt(reservationData.reservation.id, 10)
-      : reservationData.reservation.id
-    : undefined;
-  const { data: charges = [] } = useReservationCharges(numericReservationId as number | undefined);
+  const numericReservationId = reservationData?.reservation?.id;
+  const { data: charges = [] } = useReservationCharges(numericReservationId);
   const chargesTotalAmount = charges.reduce((sum, c) => sum + c.total, 0);
 
   // Company data for R1 billing — resolved from TQ cache

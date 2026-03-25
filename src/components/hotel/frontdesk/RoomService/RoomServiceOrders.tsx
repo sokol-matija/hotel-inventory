@@ -38,7 +38,7 @@ import {
 import { useReservations } from '../../../../lib/queries/hooks/useReservations';
 import { printReceipt as printBixolonReceipt } from '../../../../lib/printers/bixolonPrinter';
 import { HOTEL_POREC } from '../../../../lib/hotel/hotelData';
-import { useAuth } from '../../../../components/auth/AuthProvider';
+import { useAuth } from '@/stores/authStore';
 
 export default function RoomServiceOrders() {
   const { user } = useAuth();

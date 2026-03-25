@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Outlet, useNavigate } from '@tanstack/react-router';
 import Sidebar from './Sidebar';
 import MobileNav from './MobileNav';
-import { useAuth } from '../auth/AuthProvider';
+import { useAuth } from '@/stores/authStore';
 import LanguageSwitcher from '../ui/LanguageSwitcher';
 
 export default function Layout() {

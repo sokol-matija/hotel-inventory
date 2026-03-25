@@ -15,7 +15,7 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-vi.mock('@/components/auth/AuthProvider', () => ({
+vi.mock('@/stores/authStore', () => ({
   useAuth: vi.fn(),
 }));
 
@@ -45,7 +45,7 @@ vi.mock('./EditItemDialog', () => ({
     isOpen ? React.createElement('div', { 'data-testid': 'edit-item-dialog' }) : null,
 }));
 
-import { useAuth } from '@/components/auth/AuthProvider';
+import { useAuth } from '@/stores/authStore';
 import { useItemsWithCounts, useCategories, useDeleteItem } from '@/lib/queries/hooks/useItems';
 
 // ── Test data ─────────────────────────────────────────────────────────────────

@@ -27,7 +27,7 @@ const FiscalizationTestPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [submissionResults, setSubmissionResults] = useState<any[]>([]);
-  const [selectedInvoice, setSelectedInvoice] = useState<string>('');
+  const [selectedInvoice, setSelectedInvoice] = useState<number | ''>('');
   const [xmlPreview, setXmlPreview] = useState<string>('');
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [serviceStatus, setServiceStatus] = useState<any>(null);
@@ -63,7 +63,7 @@ const FiscalizationTestPage: React.FC = () => {
     }
   };
 
-  const generateXmlPreview = (invoiceId: string) => {
+  const generateXmlPreview = (invoiceId: number) => {
     const invoice = invoices.find((inv) => inv.id === invoiceId);
     if (!invoice) return;
 
@@ -88,7 +88,7 @@ const FiscalizationTestPage: React.FC = () => {
     }
   };
 
-  const submitTestInvoice = async (invoiceId: string) => {
+  const submitTestInvoice = async (invoiceId: number) => {
     const invoice = invoices.find((inv) => inv.id === invoiceId);
     if (!invoice) return;
 

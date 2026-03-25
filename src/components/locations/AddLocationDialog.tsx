@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -80,6 +80,7 @@ export default function AddLocationDialog({
             <MapPin className="h-5 w-5" />
             <span>{t('locations.addNewLocation')}</span>
           </DialogTitle>
+          <DialogDescription className="sr-only">{t('locations.addNewLocation')}</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
