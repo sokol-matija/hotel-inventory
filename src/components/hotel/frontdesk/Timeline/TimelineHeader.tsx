@@ -93,13 +93,23 @@ export function TimelineHeader({
       {/* Navigation row */}
       <div className="flex items-center justify-between border-b border-gray-100 p-4">
         <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" onClick={() => onNavigate('PREV')}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onNavigate('PREV')}
+            aria-label="Previous 14 days"
+          >
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <Button variant="outline" size="sm" onClick={() => onNavigate('TODAY')}>
             Today
           </Button>
-          <Button variant="outline" size="sm" onClick={() => onNavigate('NEXT')}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onNavigate('NEXT')}
+            aria-label="Next 14 days"
+          >
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
@@ -135,6 +145,7 @@ export function TimelineHeader({
                 type="button"
                 className="cursor-pointer border-r border-gray-200 p-2 text-center transition-all hover:bg-gray-50"
                 title={`${format(date, 'EEEE, MMMM dd, yyyy')} - Click for detailed breakdown`}
+                aria-label={`${format(date, 'EEEE, MMMM dd, yyyy')} — ${showFreeRooms ? `${availability.availableRooms} rooms available` : `${availability.occupiedRooms} rooms occupied`}. Click for detailed breakdown.`}
                 onClick={() => handleAvailabilityClick(date)}
               >
                 <div

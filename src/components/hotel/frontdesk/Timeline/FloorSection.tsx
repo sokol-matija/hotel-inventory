@@ -98,6 +98,7 @@ export function FloorSection({
       <button
         type="button"
         className="relative z-10 w-full cursor-pointer border-b border-gray-200 bg-gray-50 p-3 text-left transition-colors hover:bg-gray-100"
+        aria-expanded={isExpanded}
         onClick={onToggle}
       >
         <div className="flex items-center justify-between">

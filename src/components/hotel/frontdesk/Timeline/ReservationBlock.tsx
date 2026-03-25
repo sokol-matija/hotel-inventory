@@ -303,6 +303,7 @@ export function ReservationBlock({
           <button
             className="flex h-4 w-4 items-center justify-center rounded-sm bg-blue-500 text-xs text-white shadow-sm transition-all duration-200 hover:bg-blue-600 hover:shadow-md"
             title="Move left (previous day)"
+            aria-label="Move reservation to previous day"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -321,6 +322,7 @@ export function ReservationBlock({
           <button
             className="flex h-4 w-4 items-center justify-center rounded-sm bg-blue-500 text-xs text-white shadow-sm transition-all duration-200 hover:bg-blue-600 hover:shadow-md"
             title="Move right (next day)"
+            aria-label="Move reservation to next day"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -368,6 +370,7 @@ export function ReservationBlock({
             <button
               className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 text-xs font-bold text-white shadow-sm transition-all duration-200 hover:scale-110 hover:bg-blue-600 hover:shadow-md"
               title="Expand to previous day (PM)"
+              aria-label="Expand check-in to previous day (PM)"
               disabled={startDayIndex <= 0}
               onClick={(e) => {
                 e.preventDefault();
@@ -390,6 +393,7 @@ export function ReservationBlock({
             <button
               className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white shadow-sm transition-all duration-200 hover:scale-110 hover:bg-blue-700 hover:shadow-md"
               title="Contract from left (remove one day)"
+              aria-label="Contract check-in by one day"
               disabled={reservationDays <= 1}
               onClick={(e) => {
                 e.preventDefault();
@@ -415,6 +419,7 @@ export function ReservationBlock({
             <button
               className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 text-xs font-bold text-white shadow-sm transition-all duration-200 hover:scale-110 hover:bg-blue-600 hover:shadow-md"
               title="Expand to next day (AM)"
+              aria-label="Expand check-out to next day (AM)"
               disabled={endDayIndex >= 13}
               onClick={(e) => {
                 e.preventDefault();
@@ -437,6 +442,7 @@ export function ReservationBlock({
             <button
               className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white shadow-sm transition-all duration-200 hover:scale-110 hover:bg-blue-700 hover:shadow-md"
               title="Contract from right (remove one day)"
+              aria-label="Contract check-out by one day"
               disabled={reservationDays <= 1}
               onClick={(e) => {
                 e.preventDefault();
