@@ -1,5 +1,4 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-import { addDays } from 'date-fns';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import {
@@ -25,23 +24,20 @@ import { useGuests } from '../../../lib/queries/hooks/useGuests';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../../../lib/queries/queryKeys';
 import { format } from 'date-fns';
-import { formatRoomNumber } from '../../../lib/hotel/calendarUtils';
-import { CalendarEvent, ReservationStatus, Reservation } from '../../../lib/hotel/types';
-import type { Guest } from '../../../lib/queries/hooks/useGuests';
+import { CalendarEvent, Reservation, ReservationStatus } from '../../../lib/hotel/types';
 import type { Room } from '../../../lib/queries/hooks/useRooms';
 import ReservationPopup from './Reservations/ReservationPopup';
 import ModernCreateBookingModal from './ModernCreateBookingModal';
 import RoomChangeConfirmDialog from './RoomChangeConfirmDialog';
 import HotelOrdersModal from './RoomService/HotelOrdersModal';
 import hotelNotification from '../../../lib/notifications';
-import { OrderItem } from '../../../lib/hotel/orderTypes';
 import { useHotelTimelineState } from '../../../lib/hooks/useHotelTimelineState';
+import { useReservationActions } from '../../../lib/hooks/useReservationActions';
 import { useSimpleDragCreate, DragCreateSelection } from '../../../lib/hooks/useSimpleDragCreate';
 import SimpleDragCreateButton from './SimpleDragCreateButton';
 // EnhancedDailyViewModal removed — operated on dropped reservation_daily_details table
 import DragCreateOverlay from './DragCreateOverlay';
 import { virtualRoomService } from '../../../lib/hotel/services/VirtualRoomService';
-import { OptimisticUpdateService } from '../../../lib/hotel/services/OptimisticUpdateService';
 // unifiedPricingService removed — pricing now handled via reservation_charges
 import { Button } from '../../ui/button';
 
@@ -107,23 +103,6 @@ export default function HotelTimeline({
   const timelineRef = useRef<HTMLDivElement>(null);
   const cellRefs = useRef<Map<string, HTMLElement>>(new Map());
 
-  const [optimisticOverrides, setOptimisticOverrides] = useState<Map<string, Partial<Reservation>>>(
-    new Map()
-  );
-
-  const localReservations = useMemo(
-    () =>
-      reservations.map((r) => {
-        const overrides = optimisticOverrides.get(r.id);
-        return overrides ? { ...r, ...overrides } : r;
-      }),
-    [reservations, optimisticOverrides]
-  );
-
-  const updateReservationInState = useCallback((id: string, updates: Partial<Reservation>) => {
-    setOptimisticOverrides((prev) => new Map(prev).set(id, { ...prev.get(id), ...updates }));
-  }, []);
-
   const {
     currentDate,
     overviewDate,
@@ -158,6 +137,25 @@ export default function HotelTimeline({
     clearDragCreate,
     positionContextMenu,
   } = useHotelTimelineState();
+
+  const {
+    localReservations,
+    handleMoveReservation,
+    handleMoveReservationArrow,
+    handleConfirmRoomChange,
+    handleFreeUpgrade,
+    handleResizeReservation,
+    handleDrinksOrderComplete,
+  } = useReservationActions({
+    reservations,
+    rooms,
+    guests,
+    roomChangeDialog,
+    selectedReservation,
+    showRoomChangeDialog,
+    closeRoomChangeDialog,
+    updateReservation,
+  });
 
   const [showHotelOrdersModal, setShowHotelOrdersModal] = useState(false);
   const [hotelOrdersReservation, setHotelOrdersReservation] = useState<Reservation | null>(null);
@@ -292,397 +290,6 @@ export default function HotelTimeline({
     }
   };
 
-  const basicRoomAvailabilityCheck = (
-    excludeReservationId: string,
-    roomId: string,
-    checkIn: Date,
-    checkOut: Date
-  ) => {
-    const roomReservations = localReservations.filter(
-      (r) => r.roomId === roomId && r.id !== excludeReservationId
-    );
-    const conflicts: Array<{
-      type: string;
-      severity: string;
-      message: string;
-      suggestedAlternatives?: Room[];
-    }> = [];
-    const checkInTime = checkIn.getTime();
-    const checkOutTime = checkOut.getTime();
-
-    for (const reservation of roomReservations) {
-      const existingCheckIn = new Date(reservation.checkIn).getTime();
-      const existingCheckOut = new Date(reservation.checkOut).getTime();
-      if (!(checkOutTime <= existingCheckIn || checkInTime >= existingCheckOut)) {
-        const guest = guests.find((g) => g.id === Number(reservation.guestId));
-        conflicts.push({
-          type: 'overlapping_reservation',
-          severity: 'error',
-          message: `Room ${roomId} is already booked by ${guest?.display_name || 'Guest'} from ${new Date(existingCheckIn).toLocaleDateString()} to ${new Date(existingCheckOut).toLocaleDateString()}`,
-        });
-      }
-    }
-
-    return Promise.resolve({
-      hasConflict: conflicts.length > 0,
-      conflicts,
-      warnings: [],
-      suggestions: [],
-    });
-  };
-
-  const handleMoveReservation = async (
-    reservationId: string,
-    newRoomId: string,
-    newCheckIn: Date,
-    newCheckOut: Date
-  ) => {
-    try {
-      const reservation = localReservations.find((r) => r.id === reservationId);
-      if (!reservation) throw new Error('Reservation not found');
-
-      const oldRoom = rooms.find((r) => r.id.toString() === reservation.roomId);
-      const newRoom = rooms.find((r) => r.id.toString() === newRoomId);
-      if (!oldRoom || !newRoom) throw new Error('Room not found');
-
-      const isVirtualToReal =
-        virtualRoomService.isVirtualRoom(oldRoom) && !virtualRoomService.isVirtualRoom(newRoom);
-
-      let allocationGuestData: Partial<Guest> | undefined;
-
-      if (isVirtualToReal) {
-        const guest = guests.find((g) => g.id === Number(reservation.guestId));
-        if (!guest) {
-          hotelNotification.error('Allocation Failed', 'Guest not found for reservation');
-          return;
-        }
-        allocationGuestData = {
-          first_name: guest.first_name,
-          last_name: guest.last_name,
-          email: guest.email,
-          phone: guest.phone,
-          nationality: guest.nationality,
-          date_of_birth: guest.date_of_birth,
-        };
-      }
-
-      const conflictResult = await basicRoomAvailabilityCheck(
-        reservationId,
-        newRoomId,
-        newCheckIn,
-        newCheckOut
-      );
-
-      if (conflictResult.hasConflict) {
-        hotelNotification.error(
-          'Move Blocked!',
-          conflictResult.conflicts.map((c) => c.message).join('\n'),
-          5
-        );
-        const firstConflict = conflictResult.conflicts[0];
-        if (firstConflict?.suggestedAlternatives?.length) {
-          hotelNotification.info(
-            'Alternative Rooms',
-            `Try: ${firstConflict.suggestedAlternatives.map((r) => `Room ${r.room_number}`).join(', ')}`,
-            7
-          );
-        }
-        return;
-      }
-
-      if (conflictResult.warnings.length > 0) {
-        hotelNotification.warning(
-          'Move Warnings',
-          conflictResult.warnings.map((w: { message: string }) => w.message).join('\n'),
-          4
-        );
-      }
-
-      const guest = guests.find((g) => g.id === Number(reservation.guestId));
-      const isRoomTypeChange = oldRoom.room_types?.code !== newRoom.room_types?.code;
-      const updatedReservationData: Partial<Reservation> = {
-        roomId: newRoomId,
-        checkIn: newCheckIn,
-        checkOut: newCheckOut,
-      };
-
-      if (isRoomTypeChange) {
-        showRoomChangeDialog(reservationId, reservation.roomId, newRoomId);
-        return;
-      }
-
-      const optimisticService = OptimisticUpdateService.getInstance();
-      let result: { success: boolean; error?: string };
-
-      if (isVirtualToReal) {
-        result = await optimisticService.optimisticUpdateReservation(
-          reservationId,
-          reservation,
-          {
-            roomId: newRoomId,
-            checkIn: newCheckIn,
-            checkOut: newCheckOut,
-            status: 'confirmed' as ReservationStatus,
-          },
-          updateReservationInState,
-          async () => {
-            const allocationResult = await virtualRoomService.convertToRealReservation(
-              reservationId,
-              newRoomId,
-              allocationGuestData!
-            );
-            if (!allocationResult.success)
-              throw new Error(allocationResult.error || 'Allocation failed');
-          }
-        );
-      } else {
-        result = await optimisticService.optimisticMoveReservation(
-          reservationId,
-          reservation,
-          newRoomId,
-          newCheckIn,
-          newCheckOut,
-          updateReservationInState,
-          async () => {
-            await updateReservation(reservationId, updatedReservationData);
-          }
-        );
-      }
-
-      if (!result.success) {
-        hotelNotification.error(
-          isVirtualToReal ? 'Allocation Failed' : 'Move Failed',
-          result.error || 'Failed to complete operation. Please try again.',
-          4
-        );
-        return;
-      }
-
-      if (isVirtualToReal) {
-        hotelNotification.success(
-          'Reservation Allocated!',
-          `${guest?.display_name || 'Guest'} allocated to ${formatRoomNumber(newRoom)} • ${newCheckIn.toLocaleDateString()} - ${newCheckOut.toLocaleDateString()}`,
-          5
-        );
-      } else {
-        hotelNotification.success(
-          'Reservation Moved Successfully!',
-          `${guest?.display_name || 'Guest'} moved from ${formatRoomNumber(oldRoom)} to ${formatRoomNumber(newRoom)} • ${newCheckIn.toLocaleDateString()} - ${newCheckOut.toLocaleDateString()}`,
-          5
-        );
-      }
-    } catch {
-      hotelNotification.error(
-        'Failed to Move Reservation',
-        'Unable to move the reservation. Please try again.',
-        5
-      );
-    }
-  };
-
-  const handleMoveReservationArrow = async (direction: 'left' | 'right') => {
-    if (!selectedReservation) {
-      hotelNotification.info(
-        'No Selection',
-        'Please select a reservation first to move it with arrow keys.',
-        3
-      );
-      return;
-    }
-    const reservation = localReservations.find((r) => r.id === selectedReservation.id);
-    if (!reservation) {
-      hotelNotification.error(
-        'Reservation Not Found',
-        'Selected reservation could not be found.',
-        3
-      );
-      return;
-    }
-    const daysToMove = direction === 'left' ? -1 : 1;
-    await handleMoveReservation(
-      reservation.id,
-      reservation.roomId,
-      addDays(reservation.checkIn, daysToMove),
-      addDays(reservation.checkOut, daysToMove)
-    );
-  };
-
-  const handleConfirmRoomChange = async () => {
-    if (!roomChangeDialog.show || !roomChangeDialog.reservationId) return;
-    const reservation = localReservations.find((r) => r.id === roomChangeDialog.reservationId);
-    const targetRoom = rooms.find((r) => r.id.toString() === roomChangeDialog.toRoomId);
-    const currentRoom = rooms.find((r) => r.id.toString() === roomChangeDialog.fromRoomId);
-    if (!reservation || !targetRoom || !currentRoom) return;
-
-    try {
-      // Pricing recalculation for room changes will be handled via reservation_charges (Phase 7+)
-      const updatedReservationData = {
-        roomId: targetRoom.id.toString(),
-        checkIn: reservation.checkIn,
-        checkOut: reservation.checkOut,
-      };
-
-      const optimisticService = OptimisticUpdateService.getInstance();
-      const result = await optimisticService.optimisticUpdateReservation(
-        roomChangeDialog.reservationId,
-        reservation,
-        updatedReservationData,
-        updateReservationInState,
-        async () => {
-          await updateReservation(roomChangeDialog.reservationId, updatedReservationData);
-        }
-      );
-
-      if (result.success) {
-        const guest = guests.find((g) => g.id === Number(reservation.guestId));
-        hotelNotification.success(
-          'Room Change Successful!',
-          `${guest?.display_name || 'Guest'} moved from ${formatRoomNumber(currentRoom)} to ${formatRoomNumber(targetRoom)} with updated pricing`,
-          5
-        );
-      } else {
-        hotelNotification.error('Move Failed!', result.error || 'Failed to move reservation', 5);
-        return;
-      }
-      closeRoomChangeDialog();
-    } catch {
-      hotelNotification.error(
-        'Failed to Change Room',
-        'Unable to complete the room change. Please try again.',
-        5
-      );
-    }
-  };
-
-  const handleFreeUpgrade = async () => {
-    if (!roomChangeDialog.show || !roomChangeDialog.reservationId) return;
-    const reservation = localReservations.find((r) => r.id === roomChangeDialog.reservationId);
-    const targetRoom = rooms.find((r) => r.id.toString() === roomChangeDialog.toRoomId);
-    const currentRoom = rooms.find((r) => r.id.toString() === roomChangeDialog.fromRoomId);
-    if (!reservation || !targetRoom || !currentRoom) return;
-
-    try {
-      const updatedReservationData = {
-        roomId: targetRoom.id.toString(),
-        checkIn: reservation.checkIn,
-        checkOut: reservation.checkOut,
-      };
-      const optimisticService = OptimisticUpdateService.getInstance();
-      const result = await optimisticService.optimisticUpdateReservation(
-        roomChangeDialog.reservationId,
-        reservation,
-        updatedReservationData,
-        updateReservationInState,
-        async () => {
-          await updateReservation(roomChangeDialog.reservationId, updatedReservationData);
-        }
-      );
-
-      if (result.success) {
-        const guest = guests.find((g) => g.id === Number(reservation.guestId));
-        hotelNotification.success(
-          'Free Upgrade Applied!',
-          `${guest?.display_name || 'Guest'} received a FREE UPGRADE from ${formatRoomNumber(currentRoom)} to ${formatRoomNumber(targetRoom)}!`,
-          7
-        );
-      } else {
-        hotelNotification.error(
-          'Upgrade Failed!',
-          result.error || 'Failed to apply free upgrade',
-          5
-        );
-        return;
-      }
-      closeRoomChangeDialog();
-    } catch {
-      hotelNotification.error(
-        'Failed to Apply Upgrade',
-        'Unable to complete the free upgrade. Please try again.',
-        5
-      );
-    }
-  };
-
-  const handleResizeReservation = async (
-    reservationId: string,
-    side: 'start' | 'end',
-    newDate: Date
-  ) => {
-    try {
-      const reservation = localReservations.find((r) => r.id === reservationId);
-      if (!reservation) throw new Error('Reservation not found');
-
-      const room = rooms.find((r) => r.id.toString() === reservation.roomId);
-      const guest = guests.find((g) => g.id === Number(reservation.guestId));
-      const newCheckIn = side === 'start' ? newDate : reservation.checkIn;
-      const newCheckOut = side === 'end' ? newDate : reservation.checkOut;
-      const daysDiff = Math.ceil(
-        (newCheckOut.getTime() - newCheckIn.getTime()) / (24 * 60 * 60 * 1000)
-      );
-
-      if (daysDiff < 1) {
-        hotelNotification.error('Invalid Reservation Length', 'Minimum stay is 1 day', 3);
-        return;
-      }
-
-      const hasConflict = localReservations.some(
-        (r) =>
-          r.id !== reservationId &&
-          r.roomId === reservation.roomId &&
-          ((newCheckIn >= r.checkIn && newCheckIn < r.checkOut) ||
-            (newCheckOut > r.checkIn && newCheckOut <= r.checkOut) ||
-            (newCheckIn <= r.checkIn && newCheckOut >= r.checkOut))
-      );
-
-      if (hasConflict) {
-        hotelNotification.error(
-          'Booking Conflict',
-          'Another reservation conflicts with these dates',
-          4
-        );
-        return;
-      }
-
-      // Pricing recalculation for date changes will be handled via reservation_charges (Phase 7+)
-      const updatedData = {
-        checkIn: newCheckIn,
-        checkOut: newCheckOut,
-        numberOfNights: daysDiff,
-      };
-
-      const optimisticService = OptimisticUpdateService.getInstance();
-      const result = await optimisticService.optimisticUpdateReservation(
-        reservationId,
-        reservation,
-        updatedData,
-        updateReservationInState,
-        async () => {
-          await updateReservation(reservationId, updatedData);
-        }
-      );
-
-      if (result.success) {
-        hotelNotification.success(
-          'Reservation Updated!',
-          `${guest?.display_name || 'Guest'} • ${room ? formatRoomNumber(room) : 'Room'} • ${newCheckIn.toLocaleDateString()} - ${newCheckOut.toLocaleDateString()}`,
-          6
-        );
-      } else {
-        hotelNotification.error(
-          'Update Failed',
-          result.error || 'Failed to update reservation. Please try again.',
-          4
-        );
-      }
-    } catch {
-      hotelNotification.error(
-        'Failed to Update Reservation',
-        'Unable to change reservation dates. Please try again.',
-        4
-      );
-    }
-  };
-
   const selectedEvent: CalendarEvent | null = useMemo(() => {
     if (!selectedReservation) return null;
     const room = rooms.find((r) => r.id.toString() === selectedReservation.roomId);
@@ -739,35 +346,6 @@ export default function HotelTimeline({
     },
     [dragCreate, rooms, handleRoomClick]
   );
-
-  const handleDrinksOrderComplete = async (orderItems: OrderItem[], orderTotal: number) => {
-    if (!hotelOrdersReservation) return;
-    try {
-      const room = rooms.find((r) => r.id.toString() === hotelOrdersReservation.roomId);
-
-      // Update notes on the reservation (charges are stored separately in reservation_charges)
-      const updatedReservation = {
-        notes:
-          (hotelOrdersReservation.notes || '') +
-          `\nRoom Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map((item) => `${item.quantity}x ${item.itemName}`).join(', ')} - Total: €${orderTotal.toFixed(2)}`,
-      };
-
-      await updateReservation(hotelOrdersReservation.id, updatedReservation);
-      hotelNotification.success(
-        'Room Service Added to Bill',
-        `€${orderTotal.toFixed(2)} in charges added to Room ${room ? formatRoomNumber(room) : hotelOrdersReservation.roomId} bill`,
-        4
-      );
-      setShowHotelOrdersModal(false);
-      setHotelOrdersReservation(null);
-    } catch {
-      hotelNotification.error(
-        'Failed to Add Room Service',
-        'Unable to add room service to room bill. Please try again.',
-        5
-      );
-    }
-  };
 
   // Shared props passed down to all FloorSection components
   const floorSectionSharedProps = {
@@ -1125,7 +703,11 @@ export default function HotelTimeline({
               setShowHotelOrdersModal(false);
               setHotelOrdersReservation(null);
             }}
-            onOrderComplete={handleDrinksOrderComplete}
+            onOrderComplete={(orderItems, total) => {
+              handleDrinksOrderComplete(hotelOrdersReservation, orderItems, total);
+              setShowHotelOrdersModal(false);
+              setHotelOrdersReservation(null);
+            }}
           />
         )}
 
