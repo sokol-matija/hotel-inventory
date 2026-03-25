@@ -5,10 +5,9 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { supabase } from '@/lib/supabase';
 import { Chrome, Mail, Lock, CheckCircle2, X } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 export default function LoginPage() {
-  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -54,10 +53,8 @@ export default function LoginPage() {
       if (isSignUp) {
         // Check if passwords match
         if (password !== confirmPassword) {
-          toast({
-            title: 'Passwords Do Not Match',
+          toast.error('Passwords Do Not Match', {
             description: 'Please make sure both password fields match.',
-            variant: 'destructive',
           });
           setIsLoading(false);
           return;
@@ -78,11 +75,9 @@ export default function LoginPage() {
             error.message.includes('already registered') ||
             error.message.includes('User already exists')
           ) {
-            toast({
-              title: 'Email Already Registered',
+            toast.error('Email Already Registered', {
               description:
                 'This email is already associated with an account. Please use a different email or sign in with your existing account.',
-              variant: 'destructive',
             });
           } else {
             setErrorMessage(error.message);

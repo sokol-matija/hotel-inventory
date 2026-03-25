@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react';
 import { useSearch } from '@tanstack/react-router';
 import { CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 interface CleaningResult {
   success: boolean;
@@ -22,8 +22,6 @@ export const NFCCleanRoomPage = () => {
   const searchParams = useSearch({ strict: false });
   const [result, setResult] = useState<CleaningResult | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
-
   useEffect(() => {
     // Get room ID from URL parameter
     const roomId = (searchParams as { roomId?: string }).roomId;
@@ -70,16 +68,12 @@ export const NFCCleanRoomPage = () => {
 
       // Show toast notification on the NFC page
       if (data.success) {
-        toast({
-          title: '✅ Success',
+        toast.success('✅ Success', {
           description: `Room ${data.roomNumber} has been marked as clean!`,
-          variant: 'default',
         });
       } else {
-        toast({
-          title: '❌ Error',
+        toast.error('❌ Error', {
           description: data.error || 'Could not mark room as clean',
-          variant: 'destructive',
         });
       }
     } catch (error) {
@@ -93,11 +87,7 @@ export const NFCCleanRoomPage = () => {
       });
 
       // Show error toast notification
-      toast({
-        title: '❌ Error',
-        description: errorMessage,
-        variant: 'destructive',
-      });
+      toast.error('❌ Error', { description: errorMessage });
     } finally {
       setIsLoading(false);
     }

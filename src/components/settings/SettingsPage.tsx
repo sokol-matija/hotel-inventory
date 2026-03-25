@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { supabase } from '@/lib/supabase';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import {
   togglePushNotifications,
   isPushNotificationSupported,
@@ -22,7 +22,6 @@ interface NotificationSettings {
 const SettingsPage: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const { toast } = useToast();
   const [settings, setSettings] = useState<NotificationSettings>({
     pushNotificationsEnabled: false,
     pushSubscription: null,
@@ -52,11 +51,7 @@ const SettingsPage: React.FC = () => {
 
       if (error) {
         console.error('Error loading settings:', error);
-        toast({
-          title: t('settings.error'),
-          description: t('settings.loadError'),
-          variant: 'destructive',
-        });
+        toast.error(t('settings.error'), { description: t('settings.loadError') });
       } else {
         setSettings({
           pushNotificationsEnabled: data?.push_notifications_enabled || false,
@@ -85,22 +80,18 @@ const SettingsPage: React.FC = () => {
           pushNotificationsEnabled: newEnabled,
         }));
 
-        toast({
-          title: t('settings.success'),
+        toast.success(t('settings.success'), {
           description: newEnabled
             ? t('settings.notificationsEnabled')
             : t('settings.notificationsDisabled'),
-          variant: 'default',
         });
 
         // Settings updated successfully
       }
     } catch (error) {
       console.error('Error toggling notifications:', error);
-      toast({
-        title: t('settings.error'),
+      toast.error(t('settings.error'), {
         description: error instanceof Error ? error.message : t('settings.toggleError'),
-        variant: 'destructive',
       });
     } finally {
       setIsToggling(false);
@@ -112,11 +103,7 @@ const SettingsPage: React.FC = () => {
 
     sendLocalNotification(testNotification);
 
-    toast({
-      title: t('settings.testSent'),
-      description: t('settings.testSentDescription'),
-      variant: 'default',
-    });
+    toast.success(t('settings.testSent'), { description: t('settings.testSentDescription') });
   };
 
   if (loading) {

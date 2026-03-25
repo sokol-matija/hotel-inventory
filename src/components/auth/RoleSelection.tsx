@@ -18,7 +18,7 @@ import {
   EyeOff,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 interface RoleSelectionProps {
   onRoleSelected: () => void;
@@ -51,7 +51,6 @@ const BACKGROUND_STYLE = {
 export default function RoleSelection({ onRoleSelected }: RoleSelectionProps) {
   useAuth();
   const { t } = useTranslation();
-  const { toast } = useToast();
   const [selectedRole, setSelectedRole] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAdminPassword, setShowAdminPassword] = useState(false);
@@ -103,15 +102,11 @@ export default function RoleSelection({ onRoleSelected }: RoleSelectionProps) {
         error instanceof Error && error.message.includes('Incorrect admin password')
           ? t('auth.incorrectAdminPassword')
           : t('auth.errorCreatingProfile');
-      toast({
-        title: t('auth.settingUpAccount'),
-        description: message,
-        variant: 'destructive',
-      });
+      toast.error(t('auth.settingUpAccount'), { description: message });
     } finally {
       setIsSubmitting(false);
     }
-  }, [selectedRole, adminRole, adminPassword, onRoleSelected, t, toast]);
+  }, [selectedRole, adminRole, adminPassword, onRoleSelected, t]);
 
   if (isLoading) {
     return (
