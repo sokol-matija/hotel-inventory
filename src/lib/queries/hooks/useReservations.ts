@@ -279,7 +279,7 @@ export function useCreateReservation() {
       if (fetchError) throw fetchError;
       return full;
     },
-    onSuccess: () => {
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.reservations.all() });
       queryClient.invalidateQueries({ queryKey: queryKeys.guests.all() });
     },
