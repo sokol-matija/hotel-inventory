@@ -95,3 +95,6 @@ qr-frontend
 
 CLAUDE.md
 /docs/zavrsni-rad
+/src/routeTree.gen.ts
+
+.claude/worktrees/
