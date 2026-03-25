@@ -254,7 +254,7 @@ export class ReservationService {
             fiscalData.zki!,
             fiscalData.qrCodeData!,
             totalAmount,
-            typeof guest.id === 'string' ? parseInt(guest.id) : guest.id // Add guest_id to satisfy database constraint
+            guest.id // guest.id is number (QueryData-derived type)
           );
         } catch (dbError) {
           console.error('❌ Failed to save fiscal data to database:', dbError);
@@ -484,7 +484,7 @@ export class ReservationService {
    * Creates invoice record and fiscal_record entry
    */
   private async saveFiscalDataToDatabase(
-    reservationId: string | number,
+    reservationId: number,
     invoiceNumber: string,
     jir: string,
     zki: string,
@@ -492,8 +492,7 @@ export class ReservationService {
     totalAmount: number,
     guestId: number // Added to satisfy billing_target constraint
   ): Promise<void> {
-    const reservationIdNum =
-      typeof reservationId === 'string' ? parseInt(reservationId) : reservationId;
+    const reservationIdNum = reservationId;
 
     // Step 1: Create or get invoice record
     const { data: existingInvoice } = await supabase

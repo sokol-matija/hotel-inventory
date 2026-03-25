@@ -75,7 +75,7 @@ export async function createInvoice(
   }
 
   return {
-    id: String(invoice.id),
+    id: invoice.id,
     invoiceNumber: invoice.invoice_number,
   } as Pick<Invoice, 'id' | 'invoiceNumber'>;
 }

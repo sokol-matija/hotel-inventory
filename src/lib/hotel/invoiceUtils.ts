@@ -29,10 +29,10 @@ export function getInvoiceStatusColor(status: string): string {
 // ── Lookup helpers ────────────────────────────────────────────────────────────
 
 export function getGuestName(
-  guestId: string,
+  guestId: number,
   guests: Pick<Guest, 'id' | 'display_name'>[]
 ): string {
-  return guests.find((g) => g.id === Number(guestId))?.display_name ?? 'Unknown Guest';
+  return guests.find((g) => g.id === guestId)?.display_name ?? 'Unknown Guest';
 }
 
 export function getRoomNumber(
@@ -40,7 +40,7 @@ export function getRoomNumber(
   reservations: Pick<Reservation, 'id' | 'room_id'>[],
   rooms: Pick<Room, 'id' | 'room_number'>[]
 ): string {
-  const reservation = reservations.find((r) => r.id === Number(invoice.reservationId));
+  const reservation = reservations.find((r) => r.id === invoice.reservationId);
   if (!reservation) return 'Unknown Room';
   return rooms.find((r) => r.id === reservation.room_id)?.room_number ?? 'Unknown Room';
 }

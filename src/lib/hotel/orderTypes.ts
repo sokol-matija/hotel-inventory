@@ -16,7 +16,7 @@ export interface RoomServiceOrder {
   roomId: string;
   roomNumber: string;
   guestName: string;
-  reservationId?: string;
+  reservationId?: number;
   items: OrderItem[];
   subtotal: number;
   tax: number;

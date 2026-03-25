@@ -31,7 +31,7 @@ export const queryKeys = {
   },
   pricingTiers: {
     all: () => ['pricingTiers'] as const,
-    detail: (id: string) => ['pricingTiers', id] as const,
+    detail: (id: number) => ['pricingTiers', id] as const,
   },
   labels: {
     all: () => ['labels'] as const,

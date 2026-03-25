@@ -16,7 +16,7 @@ const pricingTiersQuery = supabase
 export type PricingTierRow = QueryData<typeof pricingTiersQuery>[number];
 
 export interface PricingTier {
-  id: string; // toString() of PricingTierRow['id'] (number → string)
+  id: number;
   name: string;
   description: string;
   discountPercentage: number;
@@ -33,7 +33,7 @@ export interface PricingTier {
 
 function mapPricingTierFromDB(row: PricingTierRow): PricingTier {
   return {
-    id: row.id.toString(),
+    id: row.id,
     name: row.name,
     description: row.description || '',
     discountPercentage: Number(row.discount_percentage ?? 0),
@@ -77,7 +77,7 @@ async function createPricingTierInDB(
 }
 
 async function updatePricingTierInDB(
-  id: string,
+  id: number,
   updates: Partial<PricingTier>
 ): Promise<PricingTier> {
   const { data } = await supabase
@@ -93,19 +93,15 @@ async function updatePricingTierInDB(
       is_default: updates.isDefault,
       updated_at: new Date().toISOString(),
     })
-    .eq('id', parseInt(id))
+    .eq('id', id)
     .select()
     .single()
     .throwOnError();
   return mapPricingTierFromDB(data);
 }
 
-async function deletePricingTierInDB(id: string): Promise<void> {
-  await supabase
-    .from('pricing_tiers')
-    .update({ is_active: false })
-    .eq('id', parseInt(id))
-    .throwOnError();
+async function deletePricingTierInDB(id: number): Promise<void> {
+  await supabase.from('pricing_tiers').update({ is_active: false }).eq('id', id).throwOnError();
 }
 
 // ─── Hooks ────────────────────────────────────────────────────────────────────
@@ -130,7 +126,7 @@ export function useCreatePricingTier() {
 export function useUpdatePricingTier() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: Partial<PricingTier> }) =>
+    mutationFn: ({ id, updates }: { id: number; updates: Partial<PricingTier> }) =>
       updatePricingTierInDB(id, updates),
     onSettled: () => {
       return queryClient.invalidateQueries({ queryKey: queryKeys.pricingTiers.all() });

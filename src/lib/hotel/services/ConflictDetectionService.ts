@@ -59,7 +59,7 @@ export interface BookingWarning {
 export interface BookingSuggestion {
   type: 'room_upgrade' | 'date_shift' | 'package_offer' | 'early_checkin';
   message: string;
-  roomId?: string;
+  roomId?: number;
   suggestedDates?: { checkIn: Date; checkOut: Date };
   benefitDescription?: string;
 }
@@ -179,7 +179,7 @@ export class ConflictDetectionService {
    * Check for conflicts when creating a new reservation
    */
   async checkNewReservation(
-    roomId: string,
+    roomId: number,
     checkIn: Date,
     checkOut: Date,
     guestId: string,
@@ -192,7 +192,7 @@ export class ConflictDetectionService {
     try {
       // Get all reservations for the room in the date range
       const existingReservations = await getReservationsByRoomAndDateRange(
-        Number(roomId),
+        roomId,
         startOfDay(checkIn),
         endOfDay(checkOut)
       );
@@ -222,7 +222,7 @@ export class ConflictDetectionService {
       }
 
       // Check room availability and status
-      const room = await getRoomById(Number(roomId));
+      const room = await getRoomById(roomId);
       if (!room) {
         conflicts.push({
           type: 'room_unavailable',
@@ -266,7 +266,7 @@ export class ConflictDetectionService {
    */
   async checkReservationMove(
     reservationId: number,
-    newRoomId: string,
+    newRoomId: number,
     newCheckIn: Date,
     newCheckOut: Date
   ): Promise<ConflictResult> {
@@ -279,7 +279,7 @@ export class ConflictDetectionService {
   async checkBatchOperations(
     operations: Array<{
       type: 'create' | 'move' | 'extend';
-      roomId: string;
+      roomId: number;
       checkIn: Date;
       checkOut: Date;
       reservationId?: number;
@@ -334,28 +334,23 @@ export class ConflictDetectionService {
    * Find alternative rooms for conflicted booking
    */
   private async findAlternativeRooms(
-    originalRoomId: string,
+    originalRoomId: number,
     checkIn: Date,
     checkOut: Date
   ): Promise<Room[]> {
     try {
       const allRooms = await getRooms();
-      const originalRoom = allRooms.find((r) => r.id.toString() === originalRoomId);
+      const originalRoom = allRooms.find((r) => r.id === originalRoomId);
 
       if (!originalRoom) return [];
 
       const alternatives: Room[] = [];
 
       for (const room of allRooms) {
-        if (room.id.toString() === originalRoomId) continue;
+        if (room.id === originalRoomId) continue;
 
         // Check if room is available
-        const roomConflict = await this.checkNewReservation(
-          room.id.toString(),
-          checkIn,
-          checkOut,
-          ''
-        );
+        const roomConflict = await this.checkNewReservation(room.id, checkIn, checkOut, '');
         if (!roomConflict.hasConflict) {
           // Prefer same room type or higher
           if (
@@ -385,7 +380,7 @@ export class ConflictDetectionService {
    * Check for maintenance periods (placeholder for future implementation)
    */
   private async checkMaintenancePeriods(
-    _roomId: string,
+    _roomId: number,
     _checkIn: Date,
     _checkOut: Date,
     _conflicts: BookingConflict[]
@@ -398,7 +393,7 @@ export class ConflictDetectionService {
    * Validate business rules and add warnings/suggestions
    */
   private async validateBusinessRules(
-    roomId: string,
+    roomId: number,
     checkIn: Date,
     checkOut: Date,
     guestId: string,
@@ -448,18 +443,16 @@ export class ConflictDetectionService {
     // NOTE: We query rooms directly here instead of calling findAlternativeRooms()
     // to avoid infinite recursion: findAlternativeRooms → checkNewReservation → validateBusinessRules → findAlternativeRooms
     try {
-      const room = await getRoomById(Number(roomId));
+      const room = await getRoomById(roomId);
       if (room && !room.is_premium) {
         const allRooms = await getRooms();
-        const premiumAlternatives = allRooms.filter(
-          (r) => r.is_premium && r.id.toString() !== roomId
-        );
+        const premiumAlternatives = allRooms.filter((r) => r.is_premium && r.id !== roomId);
 
         if (premiumAlternatives.length > 0) {
           suggestions.push({
             type: 'room_upgrade',
             message: `Premium room ${premiumAlternatives[0].room_number} available for upgrade`,
-            roomId: premiumAlternatives[0].id.toString(),
+            roomId: premiumAlternatives[0].id,
             benefitDescription: 'Enhanced amenities and better view',
           });
         }
@@ -474,7 +467,7 @@ export class ConflictDetectionService {
    */
   async validateDragOperation(
     sourceReservationId: number,
-    targetRoomId: string,
+    targetRoomId: number,
     targetDate: Date,
     _isStartDrag: boolean = false
   ): Promise<{ valid: boolean; message?: string; conflicts?: BookingConflict[] }> {

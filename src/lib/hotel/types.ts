@@ -159,8 +159,8 @@ export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
 
 export interface Payment {
   id: string;
-  invoiceId: string;
-  reservationId?: string; // Links to reservation
+  invoiceId: number;
+  reservationId?: number; // Links to reservation
   amount: number;
   currency: string;
   method: PaymentMethod;

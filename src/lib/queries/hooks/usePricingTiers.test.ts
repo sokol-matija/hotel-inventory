@@ -86,7 +86,7 @@ describe('usePricingTiers', () => {
     expect(result.current.data).toHaveLength(1);
     expect(result.current.data?.[0].name).toBe('Standard');
     expect(result.current.data?.[0].isDefault).toBe(true);
-    expect(result.current.data?.[0].id).toBe('1');
+    expect(result.current.data?.[0].id).toBe(1);
   });
 
   it('surfaces error state when query fails (proves throwOnError works)', async () => {
@@ -155,7 +155,7 @@ describe('useUpdatePricingTier', () => {
       wrapper: wrapWith(queryClient),
     });
 
-    result.current.mutate({ id: '1', updates: { name: 'Updated Standard' } });
+    result.current.mutate({ id: 1, updates: { name: 'Updated Standard' } });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
@@ -181,7 +181,7 @@ describe('useDeletePricingTier', () => {
       wrapper: wrapWith(queryClient),
     });
 
-    result.current.mutate('1');
+    result.current.mutate(1);
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
@@ -197,8 +197,8 @@ describe('useDeletePricingTier', () => {
     queryClient.setQueryData(
       ['pricingTiers'],
       [
-        { id: '1', name: 'Standard' },
-        { id: '2', name: 'Premium' },
+        { id: 1, name: 'Standard' },
+        { id: 2, name: 'Premium' },
       ]
     );
 
@@ -206,12 +206,12 @@ describe('useDeletePricingTier', () => {
       wrapper: wrapWith(queryClient),
     });
 
-    result.current.mutate('1');
+    result.current.mutate(1);
 
     await waitFor(() => expect(result.current.isError).toBe(true));
 
     // Cache should be restored
-    const cached = queryClient.getQueryData(['pricingTiers']) as Array<{ id: string }>;
+    const cached = queryClient.getQueryData(['pricingTiers']) as Array<{ id: number }>;
     expect(cached).toHaveLength(2);
   });
 });

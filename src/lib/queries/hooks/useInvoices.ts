@@ -43,11 +43,11 @@ const invoicesQuery = supabase
 export type InvoiceRow = QueryData<typeof invoicesQuery>[number];
 
 export interface Invoice {
-  id: string;
+  id: number;
   invoiceNumber: string;
-  reservationId: string;
-  guestId: string;
-  companyId?: string;
+  reservationId: number;
+  guestId: number;
+  companyId?: number;
   guest?: Guest;
   reservation?: Reservation;
   issueDate: Date;
@@ -104,11 +104,11 @@ function mapInvoiceReservation(row: InvoiceRow): Partial<Reservation> {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapRowToInvoice(row: any): Invoice {
   return {
-    id: row.id.toString(),
+    id: row.id,
     invoiceNumber: row.invoice_number,
-    reservationId: row.reservation_id?.toString() || '',
-    guestId: row.guest_id?.toString() || '',
-    companyId: row.company_id?.toString(),
+    reservationId: row.reservation_id ?? 0,
+    guestId: row.guest_id ?? 0,
+    companyId: row.company_id ?? undefined,
     issueDate: new Date(row.issue_date),
     dueDate: new Date(row.due_date || row.issue_date),
     status: (row.status || 'draft') as InvoiceStatus,

@@ -174,8 +174,8 @@ export async function processRoomServiceOrder(
     }
 
     // Persist as a reservation_charges row if the order is billed to a room
-    const reservationId = order.reservationId ? parseInt(order.reservationId) : NaN;
-    if (!isNaN(reservationId) && order.paymentMethod === 'room_bill') {
+    const reservationId = order.reservationId;
+    if (reservationId != null && order.paymentMethod === 'room_bill') {
       const orderTotal = order.items.reduce((sum, item) => sum + item.totalPrice, 0);
       const description = order.items
         .map((item) => `${item.quantity}× ${item.itemName}`)

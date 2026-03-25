@@ -72,9 +72,9 @@ export class HotelEracuniService {
     const additionalServices = this.extractAdditionalServices(hotelInvoice);
 
     return {
-      id: hotelInvoice.id,
-      reservation_id: hotelInvoice.reservationId,
-      guest_id: hotelInvoice.guestId,
+      id: String(hotelInvoice.id),
+      reservation_id: String(hotelInvoice.reservationId),
+      guest_id: String(hotelInvoice.guestId),
       invoice_number: this.formatInvoiceNumber(hotelInvoice.invoiceNumber),
       invoice_date: hotelInvoice.issueDate.toISOString().split('T')[0],
       due_date: hotelInvoice.dueDate.toISOString().split('T')[0],

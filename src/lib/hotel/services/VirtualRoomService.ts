@@ -23,7 +23,7 @@ export interface CreateUnallocatedReservationData {
 
 export interface AllocationResult {
   success: boolean;
-  reservationId?: string;
+  reservationId?: number;
   error?: string;
 }
 
@@ -248,7 +248,7 @@ export class VirtualRoomService {
 
       return {
         success: true,
-        reservationId: reservation.id.toString(),
+        reservationId: reservation.id,
       };
     } catch (error) {
       console.error('Exception creating unallocated reservation:', error);
@@ -264,8 +264,8 @@ export class VirtualRoomService {
    * (Move from virtual room to real room)
    */
   public async convertToRealReservation(
-    reservationId: string,
-    targetRoomId: string,
+    reservationId: number,
+    targetRoomId: number,
     guestData?: Partial<Guest>
   ): Promise<AllocationResult> {
     try {
@@ -273,7 +273,7 @@ export class VirtualRoomService {
       const { data: existingReservation, error: fetchError } = await supabase
         .from('reservations')
         .select('*')
-        .eq('id', parseInt(reservationId))
+        .eq('id', reservationId)
         .single();
 
       if (fetchError || !existingReservation) {
@@ -290,7 +290,7 @@ export class VirtualRoomService {
         .select(
           '*, room_types!room_type_id(code), room_pricing(base_rate, pricing_seasons(code, year_pattern))'
         )
-        .eq('id', parseInt(targetRoomId))
+        .eq('id', targetRoomId)
         .single();
 
       if (roomError || !targetRoom) {
@@ -307,7 +307,7 @@ export class VirtualRoomService {
       const checkOutDate = new Date(existingReservation.check_out_date);
 
       const pricing = await unifiedPricingService.calculateTotal({
-        roomId: targetRoomId,
+        roomId: String(targetRoomId),
         checkIn: checkInDate,
         checkOut: checkOutDate,
         adults: existingReservation.adults || 1,
@@ -319,7 +319,7 @@ export class VirtualRoomService {
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const updates: any = {
-        room_id: parseInt(targetRoomId),
+        room_id: targetRoomId,
         status: 'confirmed',
         base_room_rate: pricing.baseRate,
         subtotal: pricing.subtotal,
@@ -363,7 +363,7 @@ export class VirtualRoomService {
       const { error: updateError } = await supabase
         .from('reservations')
         .update(updates)
-        .eq('id', parseInt(reservationId));
+        .eq('id', reservationId);
 
       if (updateError) {
         console.error('Error updating reservation:', updateError);

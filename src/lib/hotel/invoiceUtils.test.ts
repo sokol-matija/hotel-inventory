@@ -17,10 +17,10 @@ import type { Reservation } from '../queries/hooks/useReservations';
 
 function buildInvoice(overrides: Partial<Invoice> = {}): Invoice {
   return {
-    id: '1',
+    id: 1,
     invoiceNumber: 'INV-001',
-    guestId: '10',
-    reservationId: '20',
+    guestId: 10,
+    reservationId: 20,
     status: 'draft',
     totalAmount: 100,
     issueDate: new Date('2026-01-01'),
@@ -61,19 +61,19 @@ describe('getInvoiceStatusColor', () => {
 
 describe('getGuestName', () => {
   it('returns display_name for known guest', () => {
-    expect(getGuestName('10', guests)).toBe('Ana Horvat');
+    expect(getGuestName(10, guests)).toBe('Ana Horvat');
   });
 
   it('returns display_name for another known guest', () => {
-    expect(getGuestName('11', guests)).toBe('Ivan Novak');
+    expect(getGuestName(11, guests)).toBe('Ivan Novak');
   });
 
   it('returns "Unknown Guest" for missing guest', () => {
-    expect(getGuestName('99', guests)).toBe('Unknown Guest');
+    expect(getGuestName(99, guests)).toBe('Unknown Guest');
   });
 
   it('returns "Unknown Guest" for empty guests array', () => {
-    expect(getGuestName('10', [])).toBe('Unknown Guest');
+    expect(getGuestName(10, [])).toBe('Unknown Guest');
   });
 });
 
@@ -81,23 +81,23 @@ describe('getGuestName', () => {
 
 describe('getRoomNumber', () => {
   it('returns room_number via reservation lookup', () => {
-    const invoice = buildInvoice({ reservationId: '20' });
+    const invoice = buildInvoice({ reservationId: 20 });
     expect(getRoomNumber(invoice, reservations, rooms)).toBe('101');
   });
 
   it('returns correct room for second reservation', () => {
-    const invoice = buildInvoice({ reservationId: '21' });
+    const invoice = buildInvoice({ reservationId: 21 });
     expect(getRoomNumber(invoice, reservations, rooms)).toBe('202');
   });
 
   it('returns "Unknown Room" when reservation not found', () => {
-    const invoice = buildInvoice({ reservationId: '99' });
+    const invoice = buildInvoice({ reservationId: 99 });
     expect(getRoomNumber(invoice, reservations, rooms)).toBe('Unknown Room');
   });
 
   it('returns "Unknown Room" when room not found for reservation', () => {
     const orphanReservations: Pick<Reservation, 'id' | 'room_id'>[] = [{ id: 20, room_id: 999 }];
-    const invoice = buildInvoice({ reservationId: '20' });
+    const invoice = buildInvoice({ reservationId: 20 });
     expect(getRoomNumber(invoice, orphanReservations, rooms)).toBe('Unknown Room');
   });
 });
@@ -107,24 +107,24 @@ describe('getRoomNumber', () => {
 describe('filterInvoices', () => {
   const invoices = [
     buildInvoice({
-      id: '1',
+      id: 1,
       invoiceNumber: 'INV-001',
-      guestId: '10',
-      reservationId: '20',
+      guestId: 10,
+      reservationId: 20,
       status: 'paid',
     }),
     buildInvoice({
-      id: '2',
+      id: 2,
       invoiceNumber: 'INV-002',
-      guestId: '11',
-      reservationId: '21',
+      guestId: 11,
+      reservationId: 21,
       status: 'draft',
     }),
     buildInvoice({
-      id: '3',
+      id: 3,
       invoiceNumber: 'INV-003',
-      guestId: '10',
-      reservationId: '20',
+      guestId: 10,
+      reservationId: 20,
       status: 'overdue',
     }),
   ];
@@ -136,13 +136,13 @@ describe('filterInvoices', () => {
   it('filters by status', () => {
     const result = filterInvoices(invoices, guests, reservations, rooms, '', 'paid');
     expect(result).toHaveLength(1);
-    expect(result[0].id).toBe('1');
+    expect(result[0].id).toBe(1);
   });
 
   it('filters by invoice number search', () => {
     const result = filterInvoices(invoices, guests, reservations, rooms, 'INV-002', 'all');
     expect(result).toHaveLength(1);
-    expect(result[0].id).toBe('2');
+    expect(result[0].id).toBe(2);
   });
 
   it('filters by guest name search (case insensitive)', () => {
@@ -153,13 +153,13 @@ describe('filterInvoices', () => {
   it('filters by room number search', () => {
     const result = filterInvoices(invoices, guests, reservations, rooms, '202', 'all');
     expect(result).toHaveLength(1);
-    expect(result[0].id).toBe('2');
+    expect(result[0].id).toBe(2);
   });
 
   it('combines status and search filters', () => {
     const result = filterInvoices(invoices, guests, reservations, rooms, 'Ana', 'paid');
     expect(result).toHaveLength(1);
-    expect(result[0].id).toBe('1');
+    expect(result[0].id).toBe(1);
   });
 
   it('returns empty when no match', () => {
