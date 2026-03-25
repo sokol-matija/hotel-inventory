@@ -1,7 +1,11 @@
 import { renderHook, waitFor } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createWrapper, createTestQueryClient } from '@/test/utils';
-import { useFoodAndBeverageItems, useProcessRoomServiceOrder } from './useRoomService';
+import {
+  useFoodAndBeverageItems,
+  useProcessRoomServiceOrder,
+  useFridgeItems,
+} from './useRoomService';
 import React from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 
@@ -185,5 +189,153 @@ describe('useProcessRoomServiceOrder', () => {
     const flatKeys = invalidatedKeys.flatMap((k) => k ?? []);
     expect(flatKeys).toContain('roomService');
     expect(flatKeys).toContain('inventory');
+  });
+});
+
+// ── useFridgeItems ────────────────────────────────────────────────────────────
+
+const fridgeItem = {
+  id: 10,
+  name: 'Mineral Water',
+  description: 'Still water',
+  unit: 'bottle',
+  price: 2.5,
+  minimum_stock: 10,
+  is_active: true,
+  category: { id: 4, name: 'Drinks', requires_expiration: false },
+  inventory: [
+    {
+      id: 1,
+      location_id: 2,
+      quantity: 24,
+      expiration_date: null,
+      location: { id: 2, name: 'Bar Fridge', is_refrigerated: true },
+    },
+  ],
+};
+
+describe('useFridgeItems', () => {
+  afterEach(() => vi.clearAllMocks());
+
+  it('returns items that have refrigerated inventory with stock', async () => {
+    mockState.items = { data: [fridgeItem], error: null };
+
+    const { result } = renderHook(() => useFridgeItems(), { wrapper: createWrapper() });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(result.current.data).toHaveLength(1);
+    expect(result.current.data?.[0].name).toBe('Mineral Water');
+    expect(result.current.data?.[0].totalStock).toBe(24);
+  });
+
+  it('excludes items with only non-refrigerated inventory', async () => {
+    mockState.items = {
+      data: [
+        {
+          ...fridgeItem,
+          id: 11,
+          name: 'Olive Oil',
+          inventory: [
+            {
+              id: 2,
+              location_id: 1,
+              quantity: 5,
+              expiration_date: null,
+              location: { id: 1, name: 'Main Storage', is_refrigerated: false },
+            },
+          ],
+        },
+      ],
+      error: null,
+    };
+
+    const { result } = renderHook(() => useFridgeItems(), { wrapper: createWrapper() });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toHaveLength(0);
+  });
+
+  it('excludes refrigerated entries with zero quantity', async () => {
+    mockState.items = {
+      data: [
+        {
+          ...fridgeItem,
+          inventory: [
+            {
+              id: 1,
+              location_id: 2,
+              quantity: 0,
+              expiration_date: null,
+              location: { id: 2, name: 'Bar Fridge', is_refrigerated: true },
+            },
+          ],
+        },
+      ],
+      error: null,
+    };
+
+    const { result } = renderHook(() => useFridgeItems(), { wrapper: createWrapper() });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toHaveLength(0);
+  });
+
+  it('counts only refrigerated stock in totalStock when mixed locations', async () => {
+    mockState.items = {
+      data: [
+        {
+          ...fridgeItem,
+          inventory: [
+            {
+              id: 1,
+              location_id: 1,
+              quantity: 10,
+              expiration_date: null,
+              location: { id: 1, name: 'Storage', is_refrigerated: false },
+            },
+            {
+              id: 2,
+              location_id: 2,
+              quantity: 8,
+              expiration_date: null,
+              location: { id: 2, name: 'Bar Fridge', is_refrigerated: true },
+            },
+          ],
+        },
+      ],
+      error: null,
+    };
+
+    const { result } = renderHook(() => useFridgeItems(), { wrapper: createWrapper() });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.[0].totalStock).toBe(8);
+  });
+
+  it('returns empty array when no items have refrigerated stock', async () => {
+    mockState.items = { data: [], error: null };
+
+    const { result } = renderHook(() => useFridgeItems(), { wrapper: createWrapper() });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual([]);
+  });
+
+  it('does not run query when enabled is false', () => {
+    mockState.items = { data: [fridgeItem], error: null };
+
+    const { result } = renderHook(() => useFridgeItems(false), { wrapper: createWrapper() });
+
+    expect(result.current.fetchStatus).toBe('idle');
+    expect(result.current.data).toBeUndefined();
+  });
+
+  it('surfaces error state when fetch fails', async () => {
+    mockState.items = { data: null, error: new Error('Fridge fetch failed') };
+
+    const { result } = renderHook(() => useFridgeItems(), { wrapper: createWrapper() });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
   });
 });

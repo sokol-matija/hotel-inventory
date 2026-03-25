@@ -4,6 +4,10 @@ import { vi } from 'vitest';
 import React from 'react';
 import { createWrapper, createTestQueryClient, buildReservation } from '@/test/utils';
 
+vi.mock('@/lib/hotel/services/BookingService', () => ({
+  createFullBooking: vi.fn().mockResolvedValue({ reservationId: 42 }),
+}));
+
 vi.mock('@/lib/supabase', () => {
   const mockOrderFn = vi.fn();
   const mockSelectFn = vi.fn().mockReturnValue({
@@ -21,10 +25,13 @@ vi.mock('@/lib/supabase', () => {
 });
 
 import { supabase } from '@/lib/supabase';
+import { createFullBooking } from '@/lib/hotel/services/BookingService';
 import {
   useReservations,
   useUpdateReservationStatus,
   useDeleteReservation,
+  useCreateFullBooking,
+  type CreateFullBookingInput,
 } from './useReservations';
 
 /** Wrapper that exposes the queryClient for state inspection */
@@ -290,5 +297,58 @@ describe('useDeleteReservation', () => {
 
     const cached = queryClient.getQueryData<(typeof r1)[]>(['reservations']);
     expect(cached).toHaveLength(2);
+  });
+});
+
+// ── useCreateFullBooking ──────────────────────────────────────────────────────
+
+const minimalBookingInput: CreateFullBookingInput = {
+  roomId: 1,
+  checkInDate: new Date('2026-05-01'),
+  checkOutDate: new Date('2026-05-05'),
+  adultsCount: 2,
+  childrenCount: 0,
+  guests: [{ firstName: 'Ivan', lastName: 'Horvat', type: 'adult' }],
+  hasPets: false,
+  parkingRequired: false,
+  isR1: false,
+  companyId: null,
+  labelId: null,
+  charges: [],
+};
+
+describe('useCreateFullBooking', () => {
+  afterEach(() => vi.clearAllMocks());
+
+  it('delegates to createFullBooking and resolves with reservationId', async () => {
+    const queryClient = createTestQueryClient();
+    const { result } = renderHook(() => useCreateFullBooking(), { wrapper: wrapWith(queryClient) });
+
+    result.current.mutate(minimalBookingInput);
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    // TQ v5 passes a second context arg to mutationFn — check only the variables
+    expect(vi.mocked(createFullBooking).mock.calls[0][0]).toEqual(minimalBookingInput);
+    expect(result.current.data?.reservationId).toBe(42);
+  });
+
+  it('invalidates reservations, rooms, and guests caches on settled', async () => {
+    const queryClient = createTestQueryClient();
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+
+    const { result } = renderHook(() => useCreateFullBooking(), { wrapper: wrapWith(queryClient) });
+
+    result.current.mutate(minimalBookingInput);
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    const keys = invalidateSpy.mock.calls
+      .map((call) => (call[0] as { queryKey?: unknown[] }).queryKey)
+      .flatMap((k) => k ?? []);
+
+    expect(keys).toContain('reservations');
+    expect(keys).toContain('rooms');
+    expect(keys).toContain('guests');
   });
 });

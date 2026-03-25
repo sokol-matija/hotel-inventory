@@ -1,9 +1,15 @@
 import { renderHook, waitFor } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createWrapper, createTestQueryClient } from '@/test/utils';
-import { useInventoryWithDetails, useUpdateInventoryQuantity } from './useInventory';
+import {
+  useInventoryWithDetails,
+  useUpdateInventoryQuantity,
+  useAddInventory,
+  type AddInventoryInput,
+} from './useInventory';
 import React from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
+import { supabase } from '@/lib/supabase';
 
 // ── Mutable per-table mock ────────────────────────────────────────────────────
 // vi.hoisted runs before vi.mock so the factory can close over the shared state.
@@ -173,5 +179,104 @@ describe('useUpdateInventoryQuantity', () => {
       15,
       'Dashboard'
     );
+  });
+});
+
+// ── useAddInventory ───────────────────────────────────────────────────────────
+
+describe('useAddInventory', () => {
+  const payload: AddInventoryInput = {
+    item_id: 1,
+    location_id: 3,
+    quantity: 10,
+    expiration_date: null,
+    cost_per_unit: null,
+  };
+
+  afterEach(() => vi.clearAllMocks());
+
+  it('inserts with display_order = max + 1 when existing entries are present', async () => {
+    const insertSpy = vi
+      .fn()
+      .mockReturnValue({ throwOnError: vi.fn().mockResolvedValue({ data: null, error: null }) });
+
+    // First from('inventory') → select for max display_order
+    vi.mocked(supabase.from).mockReturnValueOnce({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          order: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue({ data: [{ display_order: 5 }], error: null }),
+          }),
+        }),
+      }),
+    } as never);
+
+    // Second from('inventory') → insert
+    vi.mocked(supabase.from).mockReturnValueOnce({ insert: insertSpy } as never);
+
+    const { result } = renderHook(() => useAddInventory(), { wrapper: createWrapper() });
+    result.current.mutate(payload);
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(insertSpy).toHaveBeenCalledWith([expect.objectContaining({ display_order: 6 })]);
+  });
+
+  it('inserts with display_order = 1 when no existing inventory in the location', async () => {
+    const insertSpy = vi
+      .fn()
+      .mockReturnValue({ throwOnError: vi.fn().mockResolvedValue({ data: null, error: null }) });
+
+    vi.mocked(supabase.from).mockReturnValueOnce({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          order: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+        }),
+      }),
+    } as never);
+
+    vi.mocked(supabase.from).mockReturnValueOnce({ insert: insertSpy } as never);
+
+    const { result } = renderHook(() => useAddInventory(), { wrapper: createWrapper() });
+    result.current.mutate(payload);
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(insertSpy).toHaveBeenCalledWith([expect.objectContaining({ display_order: 1 })]);
+  });
+
+  it('invalidates location detail and locations withStats on settled', async () => {
+    vi.mocked(supabase.from).mockReturnValueOnce({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          order: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+        }),
+      }),
+    } as never);
+
+    vi.mocked(supabase.from).mockReturnValueOnce({
+      insert: vi
+        .fn()
+        .mockReturnValue({ throwOnError: vi.fn().mockResolvedValue({ data: null, error: null }) }),
+    } as never);
+
+    const queryClient = createTestQueryClient();
+    const spy = vi.spyOn(queryClient, 'invalidateQueries');
+
+    const { result } = renderHook(() => useAddInventory(), {
+      wrapper: ({ children }) =>
+        React.createElement(QueryClientProvider, { client: queryClient }, children),
+    });
+
+    result.current.mutate(payload);
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    const invalidatedKeys = spy.mock.calls
+      .map((call) => (call[0] as { queryKey?: unknown[] }).queryKey)
+      .flatMap((k) => k ?? []);
+
+    expect(invalidatedKeys).toContain('locations');
   });
 });
