@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { QueryData } from '@supabase/supabase-js';
 import { queryKeys } from '../queryKeys';
 import { supabase } from '../../supabase';
-import { PricingTier } from '../../hotel/types';
 
 // ─── Query definition ──────────────────────────────────────────────────────────
 
@@ -15,6 +14,20 @@ const pricingTiersQuery = supabase
 // ─── Derived types ──────────────────────────────────────────────────────────────
 
 export type PricingTierRow = QueryData<typeof pricingTiersQuery>[number];
+
+export interface PricingTier {
+  id: string; // toString() of PricingTierRow['id'] (number → string)
+  name: string;
+  description: string;
+  discountPercentage: number;
+  isDefault: boolean;
+  isActive: boolean;
+  minimumStayRequirement?: number;
+  validFrom?: Date;
+  validTo?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 // ─── Mapping helpers ──────────────────────────────────────────────────────────
 

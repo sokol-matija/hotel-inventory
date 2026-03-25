@@ -3,7 +3,6 @@ import { QueryData } from '@supabase/supabase-js';
 import { queryKeys } from '../queryKeys';
 import { supabase } from '../../supabase';
 import type { TablesInsert, TablesUpdate } from '../../supabase';
-import { ReservationCharge, ChargeType } from '../../hotel/types';
 
 // ─── Query definition ──────────────────────────────────────────────────────────
 
@@ -12,6 +11,32 @@ const chargesQuery = supabase.from('reservation_charges').select('*').order('cre
 // ─── Derived types ──────────────────────────────────────────────────────────────
 
 export type ReservationChargeRow = QueryData<typeof chargesQuery>[number];
+
+export type ChargeType =
+  | 'accommodation'
+  | 'tourism_tax'
+  | 'parking'
+  | 'pet_fee'
+  | 'short_stay_supplement'
+  | 'room_service'
+  | 'towel_rental'
+  | 'additional'
+  | 'discount';
+
+export interface ReservationCharge {
+  id: ReservationChargeRow['id'];
+  reservationId: ReservationChargeRow['reservation_id'];
+  chargeType: ChargeType;
+  description: ReservationChargeRow['description'];
+  quantity: ReservationChargeRow['quantity'];
+  unitPrice: ReservationChargeRow['unit_price'];
+  total: ReservationChargeRow['total'];
+  vatRate: ReservationChargeRow['vat_rate'];
+  stayDate?: ReservationChargeRow['stay_date'];
+  sortOrder: ReservationChargeRow['sort_order'];
+  createdAt?: ReservationChargeRow['created_at'];
+  updatedAt?: ReservationChargeRow['updated_at'];
+}
 
 // ─── Mapping helpers ──────────────────────────────────────────────────────────
 

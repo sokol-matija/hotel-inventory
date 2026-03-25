@@ -3,7 +3,6 @@ import { QueryData } from '@supabase/supabase-js';
 import { queryKeys } from '../queryKeys';
 import { supabase } from '../../supabase';
 import type { TablesUpdate } from '../../supabase';
-import { Company } from '../../hotel/types';
 
 // ─── Query definition ──────────────────────────────────────────────────────────
 
@@ -12,6 +11,40 @@ const companiesQuery = supabase.from('companies').select('*').eq('is_active', tr
 // ─── Derived types ──────────────────────────────────────────────────────────────
 
 export type CompanyRow = QueryData<typeof companiesQuery>[number];
+
+export interface Company {
+  id: string; // toString() of CompanyRow['id'] (number → string)
+  name: string;
+  oib: string;
+  address: {
+    street: string;
+    city: string;
+    postalCode: string;
+    country: string;
+  };
+  contactPerson: string;
+  email: string;
+  phone: string;
+  fax?: string;
+  vatNumber?: string;
+  businessRegistrationNumber?: string;
+  discountPercentage?: number;
+  paymentTerms?: string;
+  billingAddress?: {
+    street: string;
+    city: string;
+    postalCode: string;
+    country: string;
+  };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  pricingTier?: any;
+  pricingTierId?: string;
+  roomAllocationGuarantee?: CompanyRow['room_allocation_guarantee'];
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  notes: string;
+}
 
 // ─── Mapping helpers ──────────────────────────────────────────────────────────
 

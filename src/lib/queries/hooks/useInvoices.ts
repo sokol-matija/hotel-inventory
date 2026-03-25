@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { QueryData } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { queryKeys } from '../queryKeys';
-import type { Invoice, Guest, Reservation, InvoiceStatus } from '@/lib/hotel/types';
+import type { Guest, Reservation, InvoiceStatus, Payment } from '@/lib/hotel/types';
 
 // ─── Query definition ──────────────────────────────────────────────────────────
 
@@ -50,6 +50,48 @@ const invoicesQuery = supabase
 // ─── Derived types ─────────────────────────────────────────────────────────────
 
 export type InvoiceRow = QueryData<typeof invoicesQuery>[number];
+
+export interface Invoice {
+  id: string;
+  invoiceNumber: string;
+  reservationId: string;
+  guestId: string;
+  companyId?: string;
+  guest?: Guest;
+  reservation?: Reservation;
+  issueDate: Date;
+  dueDate: Date;
+  serviceDate?: Date;
+  paidDate?: Date;
+  status: InvoiceStatus;
+  currency: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  items: any[];
+  subtotal: number;
+  vatRate: number;
+  vatAmount: number;
+  tourismTax: number;
+  totalAmount: number;
+  paidAmount: number;
+  remainingAmount: number;
+  paymentMethod?: string;
+  fiscalData?: {
+    oib: string;
+    jir: string;
+    zki: string;
+    qrCodeData?: string;
+    fiscalReceiptUrl?: string;
+    operatorOib?: string;
+  };
+  payments?: Payment[];
+  issuedBy?: string;
+  pdfPath?: string;
+  isEmailSent?: boolean;
+  emailSentAt?: Date;
+  notes: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 // ─── Mapping helpers ───────────────────────────────────────────────────────────
 

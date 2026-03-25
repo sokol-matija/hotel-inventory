@@ -1,14 +1,13 @@
 // Hotel Management System - TypeScript Interfaces
 // Hotel Porec - Real Business Data Structures
 
-// DB row type aliases — private to this file. Used as compile-time anchors so that if
-// a DB column is renamed, TypeScript will flag the mismatch here rather than silently drifting.
-import type { Database } from '../database.types';
 import type { Room } from '@/lib/queries/hooks/useRooms';
 
-type _ChargeRow = Database['public']['Tables']['reservation_charges']['Row'];
-type _InvoiceLineRow = Database['public']['Tables']['invoice_lines']['Row'];
-type _CompanyRow = Database['public']['Tables']['companies']['Row'];
+// Re-exports: DB-backed entity types live in their hook files.
+export type { ChargeType, ReservationCharge } from '@/lib/queries/hooks/useReservationCharges';
+export type { Company } from '@/lib/queries/hooks/useCompanies';
+export type { PricingTier } from '@/lib/queries/hooks/usePricingTiers';
+export type { Invoice } from '@/lib/queries/hooks/useInvoices';
 
 export type SeasonalPeriod = 'A' | 'B' | 'C' | 'D';
 
@@ -57,46 +56,6 @@ export interface GuestChild {
 // Re-exported here for backward compatibility.
 import type { Guest } from '@/lib/queries/hooks/useGuests';
 export type { Guest };
-
-// ─── Charge model ──────────────────────────────────────────────────────────────
-
-export type ChargeType =
-  | 'accommodation'
-  | 'tourism_tax'
-  | 'parking'
-  | 'pet_fee'
-  | 'short_stay_supplement'
-  | 'room_service'
-  | 'towel_rental'
-  | 'additional'
-  | 'discount';
-
-export interface ReservationCharge {
-  id: _ChargeRow['id'];
-  reservationId: _ChargeRow['reservation_id'];
-  chargeType: ChargeType; // Stricter union of _ChargeRow['charge_type']
-  description: _ChargeRow['description'];
-  quantity: _ChargeRow['quantity'];
-  unitPrice: _ChargeRow['unit_price'];
-  total: _ChargeRow['total'];
-  vatRate: _ChargeRow['vat_rate'];
-  stayDate?: _ChargeRow['stay_date'];
-  sortOrder: _ChargeRow['sort_order'];
-  createdAt?: _ChargeRow['created_at'];
-  updatedAt?: _ChargeRow['updated_at'];
-}
-
-export interface InvoiceLine {
-  id: _InvoiceLineRow['id'];
-  invoiceId: _InvoiceLineRow['invoice_id'];
-  chargeType: ChargeType; // Stricter union of _InvoiceLineRow['charge_type']
-  description: _InvoiceLineRow['description'];
-  quantity: _InvoiceLineRow['quantity'];
-  unitPrice: _InvoiceLineRow['unit_price'];
-  total: _InvoiceLineRow['total'];
-  vatRate: _InvoiceLineRow['vat_rate'];
-  sortOrder: _InvoiceLineRow['sort_order'];
-}
 
 export interface RoomServiceItem {
   id: string;
@@ -327,69 +286,10 @@ export const HOTEL_CONSTANTS = {
   MIN_NIGHTS_NO_SUPPLEMENT: 3,
 } as const;
 
-// Financial Management - Invoice and Payment Tracking
+// Financial Management — domain union types (not DB entities)
 export type PaymentMethod = 'cash' | 'card' | 'bank_transfer' | 'online' | 'booking-com' | 'other';
 export type PaymentStatus = 'pending' | 'partial' | 'paid' | 'refunded' | 'cancelled';
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
-
-export interface Invoice {
-  id: string;
-  invoiceNumber: string; // Croatian fiscal format: YYYY-NNN-NNNN
-  reservationId: string; // Links to existing reservation
-  guestId: string; // Links to existing guest
-  companyId?: string; // For corporate billing
-  guest?: Guest; // For joined queries
-  company?: Company; // For joined queries
-  reservation?: Reservation; // For joined queries with full reservation data
-
-  // Invoice dates
-  issueDate: Date;
-  dueDate: Date;
-  serviceDate?: Date;
-  paidDate?: Date;
-
-  // Status tracking
-  status: InvoiceStatus;
-
-  // Financial details (copies from reservation for audit trail)
-  currency: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  items: any[]; // Invoice line items
-  subtotal: number;
-  vatRate: number;
-  vatAmount: number;
-  tourismTax: number;
-  totalAmount: number;
-  paidAmount: number;
-  remainingAmount: number;
-
-  // Payment details
-  paymentMethod?: string;
-
-  // Croatian fiscal compliance
-  fiscalData?: {
-    oib: string; // Hotel's OIB tax ID
-    jir: string; // Jedinstveni identifikator računa (JIR)
-    zki: string; // Zaštitni kod izdavatelja (ZKI)
-    qrCodeData?: string; // QR code data for fiscal receipt
-    fiscalReceiptUrl?: string; // URL to fiscal receipt
-    operatorOib?: string; // Operator's OIB who issued invoice
-  };
-
-  // Payment tracking
-  payments?: Payment[]; // Made optional
-
-  // Document management
-  issuedBy?: string;
-  pdfPath?: string;
-  isEmailSent?: boolean;
-  emailSentAt?: Date;
-
-  // Metadata
-  notes: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
 
 export interface Payment {
   id: string;
@@ -511,97 +411,7 @@ export interface RevenueAnalytics {
   periods: any[];
 }
 
-// Extended Hotel Context with Financial Management
-export interface FinancialHotelContextType extends HotelContextType {
-  // Financial data
-  invoices: Invoice[];
-  payments: Payment[];
-  fiscalRecords: FiscalRecord[];
-  revenueAnalytics: RevenueAnalytics[];
-
-  // Financial actions - Invoices
-  generateInvoice: (reservationId: string) => Promise<Invoice>;
-  updateInvoiceStatus: (invoiceId: string, status: InvoiceStatus) => Promise<void>;
-  getInvoicesByGuest: (guestId: string) => Invoice[];
-  getInvoicesByDateRange: (start: Date, end: Date) => Invoice[];
-  getOverdueInvoices: () => Invoice[];
-
-  // Financial actions - Payments
-  addPayment: (payment: Omit<Payment, 'id' | 'createdAt'>) => Promise<void>;
-  updatePaymentStatus: (paymentId: string, status: PaymentStatus) => Promise<void>;
-  getPaymentsByInvoice: (invoiceId: string) => Payment[];
-  getPaymentsByMethod: (method: PaymentMethod) => Payment[];
-
-  // Revenue analytics
-  calculateRevenueAnalytics: (
-    period: 'daily' | 'weekly' | 'monthly' | 'yearly',
-    startDate: Date,
-    endDate: Date
-  ) => RevenueAnalytics;
-
-  // Croatian fiscal compliance
-  submitFiscalRecord: (invoiceId: string) => Promise<FiscalRecord>;
-  validateFiscalCompliance: (invoiceId: string) => Promise<boolean>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  generateFiscalReport: (startDate: Date, endDate: Date) => Promise<any>;
-
-  // Financial utilities
-  getTotalRevenue: (startDate: Date, endDate: Date) => number;
-  getUnpaidInvoices: () => Invoice[];
-  getPaymentSummary: (
-    startDate: Date,
-    endDate: Date
-  ) => {
-    total: number;
-    cash: number;
-    card: number;
-    bank: number;
-    online: number;
-  };
-}
-
-// Corporate Billing System - R1 Bills
-export interface Company {
-  id: string; // toString() of _CompanyRow['id'] (number → string)
-  name: string; // _CompanyRow['name']
-  oib: string; // _CompanyRow['oib'] — mapper normalises null → ''
-  address: {
-    street: string; // _CompanyRow['address']
-    city: string; // _CompanyRow['city']
-    postalCode: string; // _CompanyRow['postal_code']
-    country: string; // _CompanyRow['country']
-  };
-  contactPerson: string; // _CompanyRow['contact_person']
-  email: string; // _CompanyRow['email']
-  phone: string; // _CompanyRow['phone'] — mapper normalises null → ''
-  fax?: string; // _CompanyRow['fax']
-
-  // Additional business details (not yet in DB — planned columns)
-  vatNumber?: string;
-  businessRegistrationNumber?: string;
-  discountPercentage?: number;
-  paymentTerms?: string;
-
-  // Billing address (if different from main address)
-  billingAddress?: {
-    street: string;
-    city: string;
-    postalCode: string;
-    country: string;
-  };
-
-  // Business relationship
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  pricingTier?: any; // For joined queries
-  pricingTierId?: string; // toString() of _CompanyRow['pricing_tier_id']
-  roomAllocationGuarantee?: _CompanyRow['room_allocation_guarantee'];
-
-  // Metadata
-  isActive: boolean; // _CompanyRow['is_active'] — mapper normalises null → true
-  createdAt: Date; // parsed from _CompanyRow['created_at'] (string → Date)
-  updatedAt: Date; // parsed from _CompanyRow['updated_at'] (string → Date)
-  notes: string; // _CompanyRow['notes'] — mapper normalises null → ''
-}
+// Company type lives in useCompanies.ts — re-exported at top of this file.
 
 // Enhanced Reservation with Corporate Billing
 export interface EnhancedReservation extends Omit<Reservation, 'roomServiceItems'> {
@@ -615,17 +425,4 @@ export interface EnhancedReservation extends Omit<Reservation, 'roomServiceItems
   lastModified: Date;
 }
 
-// Pricing Tier Management
-export interface PricingTier {
-  id: string; // toString() of _PricingTierRow['id'] (number → string)
-  name: string; // _PricingTierRow['name']
-  description: string; // _PricingTierRow['description'] — mapper normalises null → ''
-  discountPercentage: number; // _PricingTierRow['discount_percentage'] — mapper normalises null → 0
-  isDefault: boolean; // _PricingTierRow['is_default'] — mapper normalises null → false
-  isActive: boolean; // _PricingTierRow['is_active'] — mapper normalises null → true
-  minimumStayRequirement?: number; // _PricingTierRow['minimum_stay'] — DB column: minimum_stay
-  validFrom?: Date; // parsed from _PricingTierRow['valid_from'] (string | null → Date)
-  validTo?: Date; // parsed from _PricingTierRow['valid_to'] (string | null → Date)
-  createdAt: Date; // parsed from _PricingTierRow['created_at'] (string → Date)
-  updatedAt: Date; // parsed from _PricingTierRow['updated_at'] (string → Date)
-}
+// PricingTier type lives in usePricingTiers.ts — re-exported at top of this file.
