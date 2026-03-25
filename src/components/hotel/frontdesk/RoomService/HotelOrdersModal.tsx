@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
+import { Skeleton } from '../../../ui/skeleton';
 import { Button } from '../../../ui/button';
 import { Input } from '../../../ui/input';
 import { Label } from '../../../ui/label';
@@ -201,7 +202,18 @@ export default function HotelOrdersModal({
                     Failed to load menu items. Please close and try again.
                   </div>
                 ) : isLoadingItems ? (
-                  <div className="py-8 text-center">Loading items...</div>
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <div key={i} className="rounded-lg border p-4">
+                        <div className="mb-2 flex items-start justify-between">
+                          <Skeleton className="h-5 w-32" />
+                          <Skeleton className="h-5 w-16" />
+                        </div>
+                        <Skeleton className="mb-3 h-4 w-full" />
+                        <Skeleton className="h-8 w-full" />
+                      </div>
+                    ))}
+                  </div>
                 ) : filteredItems.length === 0 ? (
                   <div className="py-8 text-center text-gray-500">
                     {searchTerm ? 'No items match your search.' : 'No items currently in stock.'}

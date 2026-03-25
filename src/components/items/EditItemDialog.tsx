@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { useCategories, useUpdateItem, type ItemWithCategory } from '@/lib/queries/hooks/useItems';
 import { useTranslation } from 'react-i18next';
 import { Package, Loader2 } from 'lucide-react';
+import { Skeleton } from '../ui/skeleton';
 
 // ─── Schema ────────────────────────────────────────────────────────────────────
 
@@ -214,10 +215,7 @@ export default function EditItemDialog({
           <div>
             <Label htmlFor="edit-category">{t('common.category')} *</Label>
             {isLoading ? (
-              <div className="flex items-center space-x-2 py-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>{t('common.loadingCategories')}</span>
-              </div>
+              <Skeleton className="h-10 w-full" />
             ) : (
               <Select
                 value={watchedCategoryId}

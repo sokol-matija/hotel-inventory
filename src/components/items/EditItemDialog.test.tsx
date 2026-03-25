@@ -139,7 +139,7 @@ describe('EditItemDialog', () => {
     expect(screen.getByRole('button', { name: /updating/i })).toBeDisabled();
   });
 
-  it('shows loading state for categories', () => {
+  it('hides category select while categories are loading', () => {
     vi.mocked(useCategories).mockReturnValue({
       data: undefined,
       isLoading: true,
@@ -147,7 +147,9 @@ describe('EditItemDialog', () => {
 
     renderDialog();
 
-    // Component renders t('common.loadingCategories') which returns the key itself
-    expect(screen.getByText('common.loadingCategories')).toBeInTheDocument();
+    // Skeleton replaces the Select — category combobox should not be visible
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+    // Loading text should also be gone (we removed the Loader2 spinner)
+    expect(screen.queryByText('common.loadingCategories')).not.toBeInTheDocument();
   });
 });

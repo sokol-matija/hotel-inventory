@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { useCategories, useCreateItem } from '@/lib/queries/hooks/useItems';
 import { useTranslation } from 'react-i18next';
 import { X, Package, DollarSign, Hash, AlertCircle } from 'lucide-react';
+import { Skeleton } from '../ui/skeleton';
 
 // ─── Schema ────────────────────────────────────────────────────────────────────
 
@@ -61,7 +62,7 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
     },
   });
 
-  const { data: categoriesData } = useCategories();
+  const { data: categoriesData, isLoading: categoriesLoading } = useCategories();
   const categories = categoriesData ?? [];
   const createItem = useCreateItem();
 
@@ -156,20 +157,24 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
             {/* Category */}
             <div>
               <Label htmlFor="category">{t('common.category')} *</Label>
-              <select
-                id="category"
-                className={`w-full rounded-md border px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none ${
-                  errors.category_id ? 'border-destructive' : 'border-gray-300'
-                }`}
-                {...register('category_id')}
-              >
-                <option value="">{t('common.selectCategory')}</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
+              {categoriesLoading ? (
+                <Skeleton className="h-10 w-full" />
+              ) : (
+                <select
+                  id="category"
+                  className={`w-full rounded-md border px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+                    errors.category_id ? 'border-destructive' : 'border-gray-300'
+                  }`}
+                  {...register('category_id')}
+                >
+                  <option value="">{t('common.selectCategory')}</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              )}
               {errors.category_id && (
                 <p className="text-destructive mt-1 text-sm">
                   {t(errors.category_id.message ?? '')}

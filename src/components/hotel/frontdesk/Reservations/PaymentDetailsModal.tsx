@@ -12,9 +12,9 @@ import {
   Users,
   Calendar,
   CheckCircle,
-  Loader2,
   Pencil,
 } from 'lucide-react';
+import { Skeleton } from '../../../ui/skeleton';
 import EditChargesPanel from './EditChargesPanel';
 import { Reservation, Guest, Company } from '../../../../lib/hotel/types';
 import type { ReservationUpdateInput } from '../../../../lib/queries/hooks/useReservations';
@@ -255,9 +255,15 @@ export default function PaymentDetailsModal({
                   onClose={() => setIsEditMode(false)}
                 />
               ) : chargesLoading ? (
-                <div className="flex items-center justify-center py-6">
-                  <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
-                  <span className="ml-2 text-sm text-gray-500">Loading charges...</span>
+                <div className="space-y-2">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="flex items-center justify-between gap-4">
+                      <Skeleton className="h-5 flex-1" />
+                      <Skeleton className="h-5 w-10" />
+                      <Skeleton className="h-5 w-20" />
+                      <Skeleton className="h-5 w-20" />
+                    </div>
+                  ))}
                 </div>
               ) : charges.length === 0 ? (
                 <p className="py-4 text-center text-sm text-gray-500">
