@@ -6,36 +6,22 @@ import { queryKeys } from '../queryKeys';
 
 type AuditRow = Database['public']['Tables']['audit_logs']['Row'];
 
-// ─── Mapping helpers ───────────────────────────────────────────────────────────
+// ─── Query definition (module-level for TypeScript inference) ─────────────────
+// Note: QueryData cannot resolve the FK-hinted join for user_profiles, so we
+// keep the hand-written AuditLogEntry interface and cast after fetching.
+
+// ─── Types ─────────────────────────────────────────────────────────────────────
 
 type AuditRowWithProfile = AuditRow & {
   user_profile?: { role: { name: string } | null } | null;
 };
-
-function mapAuditLogFromDB(row: AuditRowWithProfile): AuditLogEntry {
-  const profile = row.user_profile;
-  return {
-    id: row.id,
-    user_id: row.user_id,
-    action: row.action as AuditLogEntry['action'],
-    table_name: row.table_name,
-    record_id: row.record_id != null ? Number(row.record_id) : null,
-    old_values: row.old_values as Record<string, unknown> | null,
-    new_values: row.new_values as Record<string, unknown> | null,
-    description: row.description,
-    created_at: row.created_at,
-    user_profile: profile?.role ? { role: { name: profile.role.name } } : undefined,
-  };
-}
-
-// ─── Types ─────────────────────────────────────────────────────────────────────
 
 export interface AuditLogEntry {
   id: number;
   user_id: string | null;
   action: 'CREATE' | 'UPDATE' | 'DELETE' | 'QUANTITY_UPDATE';
   table_name: string;
-  record_id: number | null;
+  record_id: string | null;
   old_values: Record<string, unknown> | null;
   new_values: Record<string, unknown> | null;
   description: string | null;
@@ -47,10 +33,28 @@ export interface AuditLogEntry {
   };
 }
 
+// ─── Mapping helpers ───────────────────────────────────────────────────────────
+
+function mapAuditLogFromDB(row: AuditRowWithProfile): AuditLogEntry {
+  const profile = row.user_profile;
+  return {
+    id: row.id,
+    user_id: row.user_id,
+    action: row.action as AuditLogEntry['action'],
+    table_name: row.table_name,
+    record_id: row.record_id,
+    old_values: row.old_values as Record<string, unknown> | null,
+    new_values: row.new_values as Record<string, unknown> | null,
+    description: row.description,
+    created_at: row.created_at,
+    user_profile: profile?.role ? { role: { name: profile.role.name } } : undefined,
+  };
+}
+
 // ─── Service functions ─────────────────────────────────────────────────────────
 
 async function fetchAuditLogs(): Promise<AuditLogEntry[]> {
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from('audit_logs')
     .select(
       `
@@ -61,9 +65,9 @@ async function fetchAuditLogs(): Promise<AuditLogEntry[]> {
     `
     )
     .order('created_at', { ascending: false })
-    .limit(500);
+    .limit(500)
+    .throwOnError();
 
-  if (error) throw error;
   return (data ?? []).map((row) => mapAuditLogFromDB(row as unknown as AuditRowWithProfile));
 }
 
