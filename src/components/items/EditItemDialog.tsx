@@ -1,4 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
+import { useForm, type Resolver } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -9,12 +12,35 @@ import { useCategories, useUpdateItem, type ItemWithCategory } from '@/lib/queri
 import { useTranslation } from 'react-i18next';
 import { Package, Loader2 } from 'lucide-react';
 
+// ─── Schema ────────────────────────────────────────────────────────────────────
+
+const editItemSchema = z.object({
+  name: z.string().min(1, 'validation.nameRequired'),
+  description: z.string().optional(),
+  unit: z.string().min(1, 'validation.unitRequired'),
+  price: z.preprocess(
+    (v) => (v === '' || v === undefined || v === null ? undefined : Number(v)),
+    z.number().min(0, 'validation.priceNegative').optional()
+  ),
+  minimum_stock: z.preprocess(
+    (v) => (v === '' || v === undefined || v === null ? 0 : Number(v)),
+    z.number().min(0, 'validation.minStockNegative')
+  ),
+  category_id: z.string().min(1, 'validation.categoryRequired'),
+});
+
+type EditItemFormValues = z.output<typeof editItemSchema>;
+
+// ─── Props ─────────────────────────────────────────────────────────────────────
+
 interface EditItemDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onItemUpdated: () => void;
   item: ItemWithCategory;
 }
+
+// ─── Component ─────────────────────────────────────────────────────────────────
 
 export default function EditItemDialog({
   isOpen,
@@ -23,42 +49,54 @@ export default function EditItemDialog({
   item,
 }: EditItemDialogProps) {
   const { t } = useTranslation();
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    unit: '',
-    price: '',
-    minimum_stock: '',
-    category_id: '',
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<EditItemFormValues>({
+    resolver: zodResolver(editItemSchema) as Resolver<EditItemFormValues>,
+    defaultValues: {
+      name: item.name,
+      description: item.description ?? '',
+      unit: item.unit ?? '',
+      price: item.price ?? undefined,
+      minimum_stock: item.minimum_stock ?? 0,
+      category_id: item.category_id.toString(),
+    },
   });
 
   const { data: categoriesData, isLoading } = useCategories();
   const categories = categoriesData ?? [];
   const updateItem = useUpdateItem();
 
+  const watchedCategoryId = watch('category_id');
+
+  // Re-populate form whenever the dialog opens with a (possibly new) item
   useEffect(() => {
     if (isOpen) {
-      setFormData({
+      reset({
         name: item.name,
-        description: item.description || '',
+        description: item.description ?? '',
         unit: item.unit ?? '',
-        price: item.price?.toString() || '',
-        minimum_stock: (item.minimum_stock ?? 0).toString(),
+        price: item.price ?? undefined,
+        minimum_stock: item.minimum_stock ?? 0,
         category_id: item.category_id.toString(),
       });
     }
-  }, [isOpen, item]);
+  }, [isOpen, item, reset]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const onSubmit = (values: EditItemFormValues) => {
     const newData = {
-      name: formData.name,
-      description: formData.description || null,
-      unit: formData.unit,
-      price: formData.price ? parseFloat(formData.price) : null,
-      minimum_stock: parseInt(formData.minimum_stock),
-      category_id: parseInt(formData.category_id),
+      name: values.name,
+      description: values.description || null,
+      unit: values.unit,
+      price: values.price ?? null,
+      minimum_stock: values.minimum_stock,
+      category_id: parseInt(values.category_id, 10),
     };
 
     updateItem.mutate(
@@ -81,17 +119,9 @@ export default function EditItemDialog({
         },
         onError: (error) => {
           console.error('Error updating item:', error);
-          alert('Error updating item. Please try again.');
         },
       }
     );
-  };
-
-  const handleChange = (field: string, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
   };
 
   return (
@@ -100,84 +130,100 @@ export default function EditItemDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <Package className="h-5 w-5" />
-            <span>Edit Item</span>
+            <span>{t('items.editItem')}</span>
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          {/* Item Name */}
           <div>
-            <Label htmlFor="name">Item Name *</Label>
+            <Label htmlFor="edit-name">{t('items.itemName')} *</Label>
             <Input
-              id="name"
-              value={formData.name}
-              onChange={(e) => handleChange('name', e.target.value)}
+              id="edit-name"
               placeholder={t('items.enterItemName')}
-              required
+              className={errors.name ? 'border-destructive' : ''}
+              {...register('name')}
             />
+            {errors.name && (
+              <p className="text-destructive mt-1 text-sm">{t(errors.name.message ?? '')}</p>
+            )}
           </div>
 
+          {/* Description */}
           <div>
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="edit-description">{t('common.description')}</Label>
             <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => handleChange('description', e.target.value)}
+              id="edit-description"
               placeholder={t('items.enterDescription')}
               rows={3}
+              {...register('description')}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
+            {/* Unit */}
             <div>
-              <Label htmlFor="unit">Unit *</Label>
+              <Label htmlFor="edit-unit">{t('common.unit')} *</Label>
               <Input
-                id="unit"
-                value={formData.unit}
-                onChange={(e) => handleChange('unit', e.target.value)}
+                id="edit-unit"
                 placeholder="e.g., pieces, kg, liters"
-                required
+                className={errors.unit ? 'border-destructive' : ''}
+                {...register('unit')}
               />
+              {errors.unit && (
+                <p className="text-destructive mt-1 text-sm">{t(errors.unit.message ?? '')}</p>
+              )}
             </div>
 
+            {/* Price */}
             <div>
-              <Label htmlFor="price">Price</Label>
+              <Label htmlFor="edit-price">{t('items.priceOptional')}</Label>
               <Input
-                id="price"
+                id="edit-price"
                 type="number"
                 step="0.01"
-                value={formData.price}
-                onChange={(e) => handleChange('price', e.target.value)}
                 placeholder="0.00"
+                className={errors.price ? 'border-destructive' : ''}
+                {...register('price')}
               />
+              {errors.price && (
+                <p className="text-destructive mt-1 text-sm">{t(errors.price.message ?? '')}</p>
+              )}
             </div>
           </div>
 
+          {/* Minimum Stock */}
           <div>
-            <Label htmlFor="minimum_stock">Minimum Stock *</Label>
+            <Label htmlFor="edit-minimum_stock">{t('common.minStock')} *</Label>
             <Input
-              id="minimum_stock"
+              id="edit-minimum_stock"
               type="number"
               min="0"
-              value={formData.minimum_stock}
-              onChange={(e) => handleChange('minimum_stock', e.target.value)}
               placeholder="0"
-              required
+              className={errors.minimum_stock ? 'border-destructive' : ''}
+              {...register('minimum_stock')}
             />
+            {errors.minimum_stock && (
+              <p className="text-destructive mt-1 text-sm">
+                {t(errors.minimum_stock.message ?? '')}
+              </p>
+            )}
           </div>
 
+          {/* Category */}
           <div>
-            <Label htmlFor="category">Category *</Label>
+            <Label htmlFor="edit-category">{t('common.category')} *</Label>
             {isLoading ? (
               <div className="flex items-center space-x-2 py-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Loading categories...</span>
+                <span>{t('common.loadingCategories')}</span>
               </div>
             ) : (
               <Select
-                value={formData.category_id}
-                onValueChange={(value) => handleChange('category_id', value)}
+                value={watchedCategoryId}
+                onValueChange={(value) => setValue('category_id', value, { shouldValidate: true })}
               >
-                <SelectTrigger>
+                <SelectTrigger className={errors.category_id ? 'border-destructive' : ''}>
                   <SelectValue placeholder={t('common.selectCategory')} />
                 </SelectTrigger>
                 <SelectContent>
@@ -189,20 +235,23 @@ export default function EditItemDialog({
                 </SelectContent>
               </Select>
             )}
+            {errors.category_id && (
+              <p className="text-destructive mt-1 text-sm">{t(errors.category_id.message ?? '')}</p>
+            )}
           </div>
 
           <div className="flex justify-end space-x-2 pt-4">
             <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={updateItem.isPending}>
               {updateItem.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Updating...
+                  {t('common.updating')}
                 </>
               ) : (
-                'Update Item'
+                t('items.updateItem')
               )}
             </Button>
           </div>

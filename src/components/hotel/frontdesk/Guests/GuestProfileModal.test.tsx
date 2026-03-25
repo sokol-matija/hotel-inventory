@@ -1,4 +1,4 @@
-import { screen, render } from '@testing-library/react';
+import { screen, render, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import React from 'react';
@@ -7,6 +7,9 @@ import { buildGuest } from '@/test/utils';
 import type { Guest } from '@/lib/queries/hooks/useGuests';
 
 // ── Module mocks ──────────────────────────────────────────────────────────────
+
+// JSDOM does not implement scrollIntoView; Radix Select calls it internally.
+window.HTMLElement.prototype.scrollIntoView = vi.fn();
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -262,25 +265,36 @@ describe('GuestProfileModal', () => {
     });
 
     it('allows editing nationality via dropdown', async () => {
-      const user = userEvent.setup();
       setupMocks();
       render(<GuestProfileModal isOpen={true} onClose={vi.fn()} guest={testGuest} mode="edit" />);
 
-      const nationalitySelect = screen.getByLabelText(/Nationality/i) as HTMLSelectElement;
-      await user.selectOptions(nationalitySelect, 'Austrian');
+      // Nationality uses shadcn <Select> (Radix) via Controller.
+      // The SelectTrigger is a combobox button; open it with fireEvent to bypass
+      // the pointer-events:none that the Dialog overlay sets on body in jsdom.
+      const nationalityTrigger = screen.getByRole('combobox', { name: /Nationality/i });
+      expect(nationalityTrigger).toHaveTextContent('German'); // pre-filled from testGuest
 
-      expect(nationalitySelect).toHaveValue('Austrian');
+      fireEvent.click(nationalityTrigger);
+      const austrianOption = await screen.findByRole('option', { name: 'Austrian' });
+      fireEvent.click(austrianOption);
+
+      expect(nationalityTrigger).toHaveTextContent('Austrian');
     });
 
     it('allows editing preferred language via dropdown', async () => {
-      const user = userEvent.setup();
       setupMocks();
       render(<GuestProfileModal isOpen={true} onClose={vi.fn()} guest={testGuest} mode="edit" />);
 
-      const languageSelect = screen.getByLabelText(/Preferred Language/i) as HTMLSelectElement;
-      await user.selectOptions(languageSelect, 'en');
+      // Language uses shadcn <Select> (Radix) via Controller.
+      // The testGuest has preferred_language 'de', which maps to 'German' display name.
+      const languageTrigger = screen.getByRole('combobox', { name: /Preferred Language/i });
+      expect(languageTrigger).toHaveTextContent('German');
 
-      expect(languageSelect).toHaveValue('en');
+      fireEvent.click(languageTrigger);
+      const englishOption = await screen.findByRole('option', { name: 'English' });
+      fireEvent.click(englishOption);
+
+      expect(languageTrigger).toHaveTextContent('English');
     });
 
     it('allows toggling has_pets checkbox', async () => {
@@ -454,16 +468,17 @@ describe('GuestProfileModal', () => {
       );
     });
 
-    it('shows alert when trying to save without required fields', async () => {
+    it('shows inline validation errors on missing required fields', async () => {
       const user = userEvent.setup();
       setupMocks();
-      vi.spyOn(window, 'alert').mockImplementation(vi.fn());
 
       render(<GuestProfileModal isOpen={true} onClose={vi.fn()} mode="create" />);
 
       await user.click(screen.getByRole('button', { name: /save/i }));
 
-      expect(window.alert).toHaveBeenCalledWith('Please fill in first and last name');
+      // RHF+Zod now shows inline <p class="text-sm text-destructive"> errors instead of alert()
+      expect(await screen.findByText('First name is required')).toBeInTheDocument();
+      expect(screen.getByText('Last name is required')).toBeInTheDocument();
     });
   });
 

@@ -1,8 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
 import { Button } from '../../../ui/button';
 import { Badge } from '../../../ui/badge';
+import { Input } from '../../../ui/input';
+import { Label } from '../../../ui/label';
+import { Textarea } from '../../../ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/select';
 import {
   User,
   Phone,
@@ -20,20 +27,28 @@ import { Guest } from '../../../../lib/queries/hooks/useGuests';
 import { useCreateGuest, useUpdateGuest } from '../../../../lib/queries/hooks/useGuests';
 import type { TablesInsert } from '@/lib/supabase';
 
-interface GuestProfileModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  guest?: Guest | null;
-  initialData?: {
-    firstName?: string;
-    lastName?: string;
-    fullName?: string;
-    email?: string;
-    phone?: string;
-  };
-  mode: 'view' | 'edit' | 'create';
-  onSave?: (guest: Guest) => void;
-}
+// ─── Zod schema ───────────────────────────────────────────────────────────────
+
+const guestFormSchema = z.object({
+  first_name: z.string().min(1, 'First name is required'),
+  last_name: z.string().min(1, 'Last name is required'),
+  email: z
+    .string()
+    .optional()
+    .refine((val) => !val || z.string().email().safeParse(val).success, {
+      message: 'Please enter a valid email address',
+    }),
+  phone: z.string().optional(),
+  nationality: z.string().optional(),
+  preferred_language: z.string().optional(),
+  has_pets: z.boolean(),
+  is_vip: z.boolean(),
+  notes: z.string().optional(),
+});
+
+type FormData = z.infer<typeof guestFormSchema>;
+
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const NATIONALITIES = [
   'German',
@@ -62,17 +77,24 @@ const LANGUAGES = [
   { code: 'other', name: 'Other' },
 ];
 
-type FormData = {
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone: string;
-  nationality: string;
-  preferred_language: string;
-  has_pets: boolean;
-  is_vip: boolean;
-  notes: string;
-};
+// ─── Props ────────────────────────────────────────────────────────────────────
+
+interface GuestProfileModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  guest?: Guest | null;
+  initialData?: {
+    firstName?: string;
+    lastName?: string;
+    fullName?: string;
+    email?: string;
+    phone?: string;
+  };
+  mode: 'view' | 'edit' | 'create';
+  onSave?: (guest: Guest) => void;
+}
+
+// ─── Default value helpers ────────────────────────────────────────────────────
 
 function guestToForm(g: Guest): FormData {
   return {
@@ -103,6 +125,8 @@ function emptyForm(initialData?: GuestProfileModalProps['initialData']): FormDat
   };
 }
 
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export default function GuestProfileModal({
   isOpen,
   onClose,
@@ -113,50 +137,52 @@ export default function GuestProfileModal({
 }: GuestProfileModalProps) {
   const createGuestMutation = useCreateGuest();
   const updateGuestMutation = useUpdateGuest();
-  const [isEditing, setIsEditing] = useState(mode === 'edit' || mode === 'create');
-  const [isSaving, setIsSaving] = useState(false);
-  const [formData, setFormData] = useState<FormData>(() =>
-    guest ? guestToForm(guest) : emptyForm(initialData)
-  );
 
-  // Re-initialize form when guest/open changes
+  const form = useForm<FormData>({
+    resolver: zodResolver(guestFormSchema),
+    defaultValues: guest ? guestToForm(guest) : emptyForm(initialData),
+  });
+
+  const {
+    register,
+    control,
+    handleSubmit,
+    reset,
+    watch,
+    formState: { errors, isSubmitting },
+  } = form;
+
+  const [isEditing, setIsEditing] = React.useState(mode === 'edit' || mode === 'create');
+
+  // Re-initialize form when guest/open changes.
+  // NOTE: To fully reset this component when the guest changes, prefer mounting it
+  // with a stable key: <GuestProfileModal key={guest?.id ?? 'new'} ... />
   useEffect(() => {
-    if (guest) {
-      setFormData(guestToForm(guest));
-    } else {
-      setFormData(emptyForm(initialData));
-    }
+    reset(guest ? guestToForm(guest) : emptyForm(initialData));
     setIsEditing(mode === 'edit' || mode === 'create');
-    // NOTE: To fully reset this component when the guest changes, prefer mounting it
-    // with a stable key: <GuestProfileModal key={guest?.id ?? 'new'} ... />
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [guest?.id, isOpen]);
 
-  const handleInputChange = (field: keyof FormData, value: unknown) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+  const watchedIsVip = watch('is_vip');
+  const watchedHasPets = watch('has_pets');
+
+  const formatPhoneNumber = (phone: string) => {
+    return phone.replace(/(\+\d{1,3})-?(\d{1,3})-?(\d+)/, '$1 $2 $3');
   };
 
-  const handleSave = async () => {
+  const onSubmit = async (data: FormData) => {
     try {
-      setIsSaving(true);
-
-      // Validate required fields
-      if (!formData.first_name || !formData.last_name) {
-        alert('Please fill in first and last name');
-        return;
-      }
-
       const insertPayload: TablesInsert<'guests'> = {
-        first_name: formData.first_name,
-        last_name: formData.last_name,
-        full_name: `${formData.first_name} ${formData.last_name}`.trim(),
-        email: formData.email || null,
-        phone: formData.phone || null,
-        nationality: formData.nationality || null,
-        preferred_language: formData.preferred_language || null,
-        has_pets: formData.has_pets,
-        is_vip: formData.is_vip,
-        notes: formData.notes || null,
+        first_name: data.first_name,
+        last_name: data.last_name,
+        full_name: `${data.first_name} ${data.last_name}`.trim(),
+        email: data.email || null,
+        phone: data.phone || null,
+        nationality: data.nationality || null,
+        preferred_language: data.preferred_language || null,
+        has_pets: data.has_pets,
+        is_vip: data.is_vip,
+        notes: data.notes || null,
       };
 
       if (mode === 'create') {
@@ -169,9 +195,14 @@ export default function GuestProfileModal({
       if (onSave && guest) {
         onSave({
           ...guest,
-          ...formData,
-          display_name: `${formData.first_name} ${formData.last_name}`.trim(),
-          full_name: `${formData.first_name} ${formData.last_name}`.trim(),
+          ...data,
+          email: data.email ?? null,
+          phone: data.phone ?? null,
+          nationality: data.nationality ?? null,
+          preferred_language: data.preferred_language ?? null,
+          notes: data.notes ?? null,
+          display_name: `${data.first_name} ${data.last_name}`.trim(),
+          full_name: `${data.first_name} ${data.last_name}`.trim(),
         });
       }
 
@@ -179,14 +210,7 @@ export default function GuestProfileModal({
       onClose();
     } catch (error) {
       console.error('Failed to save guest:', error);
-      alert('Failed to save guest profile. Please try again.');
-    } finally {
-      setIsSaving(false);
     }
-  };
-
-  const formatPhoneNumber = (phone: string) => {
-    return phone.replace(/(\+\d{1,3})-?(\d{1,3})-?(\d+)/, '$1 $2 $3');
   };
 
   if (!isOpen) return null;
@@ -226,9 +250,9 @@ export default function GuestProfileModal({
                     <X className="mr-1 h-4 w-4" />
                     Cancel
                   </Button>
-                  <Button size="sm" onClick={handleSave} disabled={isSaving}>
+                  <Button size="sm" onClick={handleSubmit(onSubmit)} disabled={isSubmitting}>
                     <Save className="mr-1 h-4 w-4" />
-                    {isSaving ? 'Saving...' : 'Save'}
+                    {isSubmitting ? 'Saving...' : 'Save'}
                   </Button>
                 </>
               )}
@@ -236,281 +260,303 @@ export default function GuestProfileModal({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Basic Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <User className="h-5 w-5" />
-                <span>Basic Information</span>
-                {formData.is_vip && (
-                  <Badge variant="secondary" className="ml-2">
-                    <Star className="mr-1 h-3 w-3" />
-                    VIP
-                  </Badge>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div>
-                  <label
-                    htmlFor="guest-first-name"
-                    className="mb-1 block text-sm font-medium text-gray-700"
-                  >
-                    First Name *
-                  </label>
-                  {isEditing ? (
-                    <input
-                      id="guest-first-name"
-                      type="text"
-                      className="w-full rounded-md border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500"
-                      value={formData.first_name}
-                      onChange={(e) => handleInputChange('first_name', e.target.value)}
-                      placeholder="Enter first name"
-                    />
-                  ) : (
-                    <p className="p-2 text-gray-900">{formData.first_name}</p>
+        <form onSubmit={handleSubmit(onSubmit)} noValidate>
+          <div className="space-y-6">
+            {/* Basic Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <User className="h-5 w-5" />
+                  <span>Basic Information</span>
+                  {watchedIsVip && (
+                    <Badge variant="secondary" className="ml-2">
+                      <Star className="mr-1 h-3 w-3" />
+                      VIP
+                    </Badge>
                   )}
-                </div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  {/* First Name */}
+                  <div className="space-y-1">
+                    <Label htmlFor="guest-first-name">First Name *</Label>
+                    {isEditing ? (
+                      <>
+                        <Input
+                          id="guest-first-name"
+                          type="text"
+                          placeholder="Enter first name"
+                          {...register('first_name')}
+                        />
+                        {errors.first_name && (
+                          <p className="text-destructive text-sm">{errors.first_name.message}</p>
+                        )}
+                      </>
+                    ) : (
+                      <p className="p-2 text-gray-900">{watch('first_name')}</p>
+                    )}
+                  </div>
 
-                <div>
-                  <label
-                    htmlFor="guest-last-name"
-                    className="mb-1 block text-sm font-medium text-gray-700"
-                  >
-                    Last Name *
-                  </label>
-                  {isEditing ? (
-                    <input
-                      id="guest-last-name"
-                      type="text"
-                      className="w-full rounded-md border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500"
-                      value={formData.last_name}
-                      onChange={(e) => handleInputChange('last_name', e.target.value)}
-                      placeholder="Enter last name"
-                    />
-                  ) : (
-                    <p className="p-2 text-gray-900">{formData.last_name}</p>
-                  )}
-                </div>
+                  {/* Last Name */}
+                  <div className="space-y-1">
+                    <Label htmlFor="guest-last-name">Last Name *</Label>
+                    {isEditing ? (
+                      <>
+                        <Input
+                          id="guest-last-name"
+                          type="text"
+                          placeholder="Enter last name"
+                          {...register('last_name')}
+                        />
+                        {errors.last_name && (
+                          <p className="text-destructive text-sm">{errors.last_name.message}</p>
+                        )}
+                      </>
+                    ) : (
+                      <p className="p-2 text-gray-900">{watch('last_name')}</p>
+                    )}
+                  </div>
 
-                <div>
-                  <label
-                    htmlFor="guest-email"
-                    className="mb-1 block text-sm font-medium text-gray-700"
-                  >
-                    Email Address
-                  </label>
-                  {isEditing ? (
-                    <input
-                      id="guest-email"
-                      type="email"
-                      className="w-full rounded-md border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500"
-                      value={formData.email}
-                      onChange={(e) => handleInputChange('email', e.target.value)}
-                      placeholder="guest@example.com"
-                    />
-                  ) : (
-                    <div className="flex items-center space-x-2 p-2">
-                      <Mail className="h-4 w-4 text-gray-500" />
-                      <span>{formData.email}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="guest-phone"
-                    className="mb-1 block text-sm font-medium text-gray-700"
-                  >
-                    Phone Number
-                  </label>
-                  {isEditing ? (
-                    <input
-                      id="guest-phone"
-                      type="tel"
-                      className="w-full rounded-md border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500"
-                      value={formData.phone}
-                      onChange={(e) => handleInputChange('phone', e.target.value)}
-                      placeholder="+49-30-12345678"
-                    />
-                  ) : (
-                    <div className="flex items-center space-x-2 p-2">
-                      <Phone className="h-4 w-4 text-gray-500" />
-                      <span>{formatPhoneNumber(formData.phone || '')}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="guest-nationality"
-                    className="mb-1 block text-sm font-medium text-gray-700"
-                  >
-                    Nationality
-                  </label>
-                  {isEditing ? (
-                    <select
-                      id="guest-nationality"
-                      className="w-full rounded-md border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500"
-                      value={formData.nationality}
-                      onChange={(e) => handleInputChange('nationality', e.target.value)}
-                    >
-                      {NATIONALITIES.map((nationality) => (
-                        <option key={nationality} value={nationality}>
-                          {nationality}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <div className="flex items-center space-x-2 p-2">
-                      <MapPin className="h-4 w-4 text-gray-500" />
-                      <span>{formData.nationality}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="guest-preferred-language"
-                    className="mb-1 block text-sm font-medium text-gray-700"
-                  >
-                    Preferred Language
-                  </label>
-                  {isEditing ? (
-                    <select
-                      id="guest-preferred-language"
-                      className="w-full rounded-md border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500"
-                      value={formData.preferred_language}
-                      onChange={(e) => handleInputChange('preferred_language', e.target.value)}
-                    >
-                      {LANGUAGES.map((lang) => (
-                        <option key={lang.code} value={lang.code}>
-                          {lang.name}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <p className="p-2 text-gray-700">
-                      {LANGUAGES.find((l) => l.code === formData.preferred_language)?.name ||
-                        formData.preferred_language}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Special Preferences */}
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="flex items-center space-x-2">
-                  {isEditing ? (
-                    <label className="flex cursor-pointer items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={formData.has_pets}
-                        onChange={(e) => handleInputChange('has_pets', e.target.checked)}
-                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span>Travels with pets</span>
-                    </label>
-                  ) : (
-                    formData.has_pets && (
-                      <div className="flex items-center space-x-2 text-sm text-gray-600">
-                        <span>🐕</span>
-                        <span>Travels with pets</span>
+                  {/* Email */}
+                  <div className="space-y-1">
+                    <Label htmlFor="guest-email">Email Address</Label>
+                    {isEditing ? (
+                      <>
+                        <Input
+                          id="guest-email"
+                          type="email"
+                          placeholder="guest@example.com"
+                          {...register('email')}
+                        />
+                        {errors.email && (
+                          <p className="text-destructive text-sm">{errors.email.message}</p>
+                        )}
+                      </>
+                    ) : (
+                      <div className="flex items-center space-x-2 p-2">
+                        <Mail className="h-4 w-4 text-gray-500" />
+                        <span>{watch('email')}</span>
                       </div>
-                    )
-                  )}
+                    )}
+                  </div>
+
+                  {/* Phone */}
+                  <div className="space-y-1">
+                    <Label htmlFor="guest-phone">Phone Number</Label>
+                    {isEditing ? (
+                      <>
+                        <Input
+                          id="guest-phone"
+                          type="tel"
+                          placeholder="+49-30-12345678"
+                          {...register('phone')}
+                        />
+                        {errors.phone && (
+                          <p className="text-destructive text-sm">{errors.phone.message}</p>
+                        )}
+                      </>
+                    ) : (
+                      <div className="flex items-center space-x-2 p-2">
+                        <Phone className="h-4 w-4 text-gray-500" />
+                        <span>{formatPhoneNumber(watch('phone') || '')}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Nationality */}
+                  <div className="space-y-1">
+                    <Label htmlFor="guest-nationality">Nationality</Label>
+                    {isEditing ? (
+                      <>
+                        <Controller
+                          name="nationality"
+                          control={control}
+                          render={({ field }) => (
+                            <Select value={field.value} onValueChange={field.onChange}>
+                              <SelectTrigger id="guest-nationality">
+                                <SelectValue placeholder="Select nationality" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {NATIONALITIES.map((nationality) => (
+                                  <SelectItem key={nationality} value={nationality}>
+                                    {nationality}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
+                        {errors.nationality && (
+                          <p className="text-destructive text-sm">{errors.nationality.message}</p>
+                        )}
+                      </>
+                    ) : (
+                      <div className="flex items-center space-x-2 p-2">
+                        <MapPin className="h-4 w-4 text-gray-500" />
+                        <span>{watch('nationality')}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Preferred Language */}
+                  <div className="space-y-1">
+                    <Label htmlFor="guest-preferred-language">Preferred Language</Label>
+                    {isEditing ? (
+                      <>
+                        <Controller
+                          name="preferred_language"
+                          control={control}
+                          render={({ field }) => (
+                            <Select value={field.value} onValueChange={field.onChange}>
+                              <SelectTrigger id="guest-preferred-language">
+                                <SelectValue placeholder="Select language" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {LANGUAGES.map((lang) => (
+                                  <SelectItem key={lang.code} value={lang.code}>
+                                    {lang.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
+                        {errors.preferred_language && (
+                          <p className="text-destructive text-sm">
+                            {errors.preferred_language.message}
+                          </p>
+                        )}
+                      </>
+                    ) : (
+                      <p className="p-2 text-gray-700">
+                        {LANGUAGES.find((l) => l.code === watch('preferred_language'))?.name ||
+                          watch('preferred_language')}
+                      </p>
+                    )}
+                  </div>
                 </div>
 
-                <div className="flex items-center space-x-2">
-                  {isEditing ? (
-                    <label className="flex cursor-pointer items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={formData.is_vip}
-                        onChange={(e) => handleInputChange('is_vip', e.target.checked)}
-                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                {/* Special Preferences */}
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div className="flex items-center space-x-2">
+                    {isEditing ? (
+                      <Controller
+                        name="has_pets"
+                        control={control}
+                        render={({ field }) => (
+                          <label className="flex cursor-pointer items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              checked={field.value}
+                              onChange={(e) => field.onChange(e.target.checked)}
+                              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <span>Travels with pets</span>
+                          </label>
+                        )}
                       />
-                      <span>VIP Status</span>
-                    </label>
-                  ) : (
-                    formData.is_vip && (
+                    ) : (
+                      watchedHasPets && (
+                        <div className="flex items-center space-x-2 text-sm text-gray-600">
+                          <span>🐕</span>
+                          <span>Travels with pets</span>
+                        </div>
+                      )
+                    )}
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    {isEditing ? (
+                      <Controller
+                        name="is_vip"
+                        control={control}
+                        render={({ field }) => (
+                          <label className="flex cursor-pointer items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              checked={field.value}
+                              onChange={(e) => field.onChange(e.target.checked)}
+                              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <span>VIP Status</span>
+                          </label>
+                        )}
+                      />
+                    ) : (
+                      watchedIsVip && (
+                        <Badge variant="secondary">
+                          <Star className="mr-1 h-3 w-3" />
+                          VIP Guest
+                        </Badge>
+                      )
+                    )}
+                  </div>
+                </div>
+
+                {/* Notes */}
+                {isEditing && (
+                  <div className="space-y-1">
+                    <Label htmlFor="guest-notes">Notes</Label>
+                    <Textarea
+                      id="guest-notes"
+                      rows={3}
+                      placeholder="Internal notes about this guest"
+                      {...register('notes')}
+                    />
+                    {errors.notes && (
+                      <p className="text-destructive text-sm">{errors.notes.message}</p>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Children Information — note: guest_children is a separate table, not loaded here */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Baby className="h-5 w-5" />
+                  <span>Children</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="py-4 text-center text-gray-500">
+                  Children are managed separately via the reservation booking form.
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Stay History */}
+            {!isEditing && guest && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Calendar className="h-5 w-5" />
+                    <span>Stay History</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center space-x-4 text-sm text-gray-600">
+                    <div className="flex items-center space-x-1">
+                      <Users className="h-4 w-4" />
+                      <span>
+                        Member since{' '}
+                        {guest.created_at ? new Date(guest.created_at).getFullYear() : 'N/A'}
+                      </span>
+                    </div>
+                    {guest.is_vip && (
                       <Badge variant="secondary">
                         <Star className="mr-1 h-3 w-3" />
                         VIP Guest
                       </Badge>
-                    )
-                  )}
-                </div>
-              </div>
-
-              {/* Notes */}
-              {isEditing && (
-                <div>
-                  <label
-                    htmlFor="guest-notes"
-                    className="mb-1 block text-sm font-medium text-gray-700"
-                  >
-                    Notes
-                  </label>
-                  <textarea
-                    id="guest-notes"
-                    className="w-full rounded-md border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500"
-                    rows={3}
-                    value={formData.notes}
-                    onChange={(e) => handleInputChange('notes', e.target.value)}
-                    placeholder="Internal notes about this guest"
-                  />
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Children Information — note: guest_children is a separate table, not loaded here */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Baby className="h-5 w-5" />
-                <span>Children</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="py-4 text-center text-gray-500">
-                Children are managed separately via the reservation booking form.
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Stay History */}
-          {!isEditing && guest && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Calendar className="h-5 w-5" />
-                  <span>Stay History</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center space-x-4 text-sm text-gray-600">
-                  <div className="flex items-center space-x-1">
-                    <Users className="h-4 w-4" />
-                    <span>
-                      Member since{' '}
-                      {guest.created_at ? new Date(guest.created_at).getFullYear() : 'N/A'}
-                    </span>
+                    )}
                   </div>
-                  {guest.is_vip && (
-                    <Badge variant="secondary">
-                      <Star className="mr-1 h-3 w-3" />
-                      VIP Guest
-                    </Badge>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
   );

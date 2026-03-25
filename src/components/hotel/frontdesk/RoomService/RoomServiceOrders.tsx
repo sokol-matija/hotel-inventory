@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
 import { Button } from '../../../ui/button';
 import { Input } from '../../../ui/input';
@@ -246,7 +247,11 @@ export default function RoomServiceOrders() {
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="py-8 text-center">Loading items...</div>
+              <div className="grid max-h-96 grid-cols-1 gap-3 overflow-y-auto md:grid-cols-2">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <Skeleton key={i} className="h-20 w-full rounded-md" />
+                ))}
+              </div>
             ) : (
               <div className="grid max-h-96 grid-cols-1 gap-4 overflow-y-auto md:grid-cols-2">
                 {filteredItems.map((item) => (

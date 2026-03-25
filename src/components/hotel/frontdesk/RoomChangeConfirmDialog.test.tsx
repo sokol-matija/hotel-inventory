@@ -54,8 +54,8 @@ const guest = buildGuest({
 });
 
 const reservation = buildReservation({
-  id: 'res-upgrade-test',
-  numberOfNights: 4,
+  id: 12345678,
+  number_of_nights: 4,
 });
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -127,7 +127,7 @@ describe('RoomChangeConfirmDialog', () => {
 
       expect(screen.getByText(/John Doe/)).toBeInTheDocument();
       // Reservation ID is last 8 chars
-      const resIdSliced = reservation.id.slice(-8);
+      const resIdSliced = String(reservation.id).slice(-8);
       expect(screen.getByText(new RegExp(resIdSliced))).toBeInTheDocument();
     });
 

@@ -4,6 +4,7 @@ import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import React from 'react';
 import { ReservationBlock } from './ReservationBlock';
 import { buildReservation, buildGuest, buildRoom } from '@/test/utils';
+import type { Reservation } from '@/lib/hotel/types';
 
 // ── Module mocks ──────────────────────────────────────────────────────────────
 
@@ -53,9 +54,9 @@ vi.mock('lucide-react', () => ({
 // ── Test data ─────────────────────────────────────────────────────────────────
 
 describe('ReservationBlock', () => {
-  let mockOnClick: ReturnType<typeof vi.fn>;
-  let mockOnMove: ReturnType<typeof vi.fn>;
-  let mockOnResize: ReturnType<typeof vi.fn>;
+  let mockOnClick: (reservation: Reservation) => void;
+  let mockOnMove: (id: number, roomId: number, checkIn: Date, checkOut: Date) => void;
+  let mockOnResize: (id: number, side: 'start' | 'end', date: Date) => void;
 
   const baseReservation = buildReservation({
     check_in_date: '2026-04-01',
@@ -79,9 +80,9 @@ describe('ReservationBlock', () => {
   const timelineStart = new Date('2026-04-01');
 
   beforeEach(() => {
-    mockOnClick = vi.fn();
-    mockOnMove = vi.fn();
-    mockOnResize = vi.fn();
+    mockOnClick = vi.fn() as unknown as typeof mockOnClick;
+    mockOnMove = vi.fn() as unknown as typeof mockOnMove;
+    mockOnResize = vi.fn() as unknown as typeof mockOnResize;
   });
 
   afterEach(() => {
@@ -213,9 +214,6 @@ describe('ReservationBlock', () => {
           name: 'VIP',
           color: '#fff',
           bg_color: '#000',
-          hotel_id: '1',
-          created_at: null,
-          updated_at: null,
         },
       });
 

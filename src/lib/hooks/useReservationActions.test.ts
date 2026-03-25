@@ -623,8 +623,28 @@ describe('handleDrinksOrderComplete', () => {
     const updateReservation = vi.fn().mockResolvedValue(undefined);
     const reservation = buildReservation({ id: 1, room_id: 1, internal_notes: '' });
     const orderItems = [
-      { quantity: 2, itemName: 'Cola', id: 1, price: 3, unit: 'pcs' },
-      { quantity: 1, itemName: 'Beer', id: 2, price: 5, unit: 'pcs' },
+      {
+        id: 'item-1',
+        itemId: 1,
+        itemName: 'Cola',
+        category: 'Drinks',
+        price: 3,
+        quantity: 2,
+        totalPrice: 6,
+        unit: 'pcs',
+        availableStock: 10,
+      },
+      {
+        id: 'item-2',
+        itemId: 2,
+        itemName: 'Beer',
+        category: 'Drinks',
+        price: 5,
+        quantity: 1,
+        totalPrice: 5,
+        unit: 'pcs',
+        availableStock: 10,
+      },
     ];
 
     const { result } = renderHook(() =>

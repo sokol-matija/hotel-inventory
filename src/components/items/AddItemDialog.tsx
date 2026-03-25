@@ -1,4 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
+import { useForm, type Resolver } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -7,82 +10,86 @@ import { useCategories, useCreateItem } from '@/lib/queries/hooks/useItems';
 import { useTranslation } from 'react-i18next';
 import { X, Package, DollarSign, Hash, AlertCircle } from 'lucide-react';
 
+// ─── Schema ────────────────────────────────────────────────────────────────────
+
+const addItemSchema = z.object({
+  name: z.string().min(1, 'validation.nameRequired'),
+  description: z.string().optional(),
+  category_id: z.string().min(1, 'validation.categoryRequired'),
+  unit: z.string().min(1, 'validation.unitRequired'),
+  price: z.preprocess(
+    (v) => (v === '' || v === undefined || v === null ? undefined : Number(v)),
+    z.number().min(0, 'validation.priceNegative').optional()
+  ),
+  minimum_stock: z.preprocess(
+    (v) => (v === '' || v === undefined || v === null ? 0 : Number(v)),
+    z.number().min(0, 'validation.minStockNegative')
+  ),
+});
+
+type AddItemFormValues = z.output<typeof addItemSchema>;
+
+// ─── Props ─────────────────────────────────────────────────────────────────────
+
 interface AddItemDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onItemAdded: () => void;
 }
 
+// ─── Component ─────────────────────────────────────────────────────────────────
+
 export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemDialogProps) {
   const { t } = useTranslation();
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    category_id: '',
-    unit: 'pieces',
-    price: '',
-    minimum_stock: '0',
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    setError,
+    formState: { errors },
+  } = useForm<AddItemFormValues>({
+    resolver: zodResolver(addItemSchema) as Resolver<AddItemFormValues>,
+    defaultValues: {
+      name: '',
+      description: '',
+      category_id: '',
+      unit: 'pieces',
+      price: undefined,
+      minimum_stock: 0,
+    },
   });
-  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const { data: categoriesData } = useCategories();
   const categories = categoriesData ?? [];
   const createItem = useCreateItem();
 
+  const watchedCategoryId = watch('category_id');
+
+  // Reset form when dialog closes
   useEffect(() => {
     if (!isOpen) {
-      setFormData({
+      reset({
         name: '',
         description: '',
         category_id: '',
         unit: 'pieces',
-        price: '',
-        minimum_stock: '0',
+        price: undefined,
+        minimum_stock: 0,
       });
-      setErrors({});
     }
-  }, [isOpen]);
+  }, [isOpen, reset]);
 
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = t('validation.nameRequired');
-    }
-
-    if (!formData.category_id) {
-      newErrors.category_id = t('validation.categoryRequired');
-    }
-
-    if (!formData.unit.trim()) {
-      newErrors.unit = t('validation.unitRequired');
-    }
-
-    if (formData.price && parseFloat(formData.price) < 0) {
-      newErrors.price = t('validation.priceNegative');
-    }
-
-    if (parseInt(formData.minimum_stock) < 0) {
-      newErrors.minimum_stock = t('validation.minStockNegative');
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!validateForm()) return;
-
+  const onSubmit = (values: AddItemFormValues) => {
     createItem.mutate(
       {
-        name: formData.name.trim(),
-        description: formData.description.trim() || null,
-        category_id: parseInt(formData.category_id),
-        unit: formData.unit.trim(),
-        price: formData.price ? parseFloat(formData.price) : null,
-        minimum_stock: parseInt(formData.minimum_stock),
+        name: values.name.trim(),
+        description: values.description?.trim() || null,
+        category_id: parseInt(values.category_id, 10),
+        unit: values.unit.trim(),
+        price: values.price ?? null,
+        minimum_stock: values.minimum_stock,
       },
       {
         onSuccess: () => {
@@ -90,20 +97,17 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
           onClose();
         },
         onError: () => {
-          setErrors({ submit: t('items.failedToAdd') });
+          setError('root', { message: t('items.failedToAdd') });
         },
       }
     );
   };
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: '' }));
-    }
-  };
-
   if (!isOpen) return null;
+
+  const selectedCategory = watchedCategoryId
+    ? categories.find((c) => c.id === parseInt(watchedCategoryId, 10))
+    : undefined;
 
   return (
     <div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black p-4">
@@ -122,23 +126,19 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
         </CardHeader>
 
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             {/* Item Name */}
             <div>
               <Label htmlFor="name">{t('items.itemName')} *</Label>
               <Input
                 id="name"
                 type="text"
-                value={formData.name}
-                onChange={(e) => handleInputChange('name', e.target.value)}
                 placeholder={t('items.enterItemName')}
-                className={errors.name ? 'border-red-500' : ''}
+                className={errors.name ? 'border-destructive' : ''}
+                {...register('name')}
               />
               {errors.name && (
-                <p className="mt-1 flex items-center text-sm text-red-500">
-                  <AlertCircle className="mr-1 h-3 w-3" />
-                  {errors.name}
-                </p>
+                <p className="text-destructive mt-1 text-sm">{t(errors.name.message ?? '')}</p>
               )}
             </div>
 
@@ -147,10 +147,9 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
               <Label htmlFor="description">{t('common.description')}</Label>
               <textarea
                 id="description"
-                value={formData.description}
-                onChange={(e) => handleInputChange('description', e.target.value)}
                 placeholder={t('items.enterDescription')}
                 className="min-h-[80px] w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                {...register('description')}
               />
             </div>
 
@@ -159,11 +158,10 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
               <Label htmlFor="category">{t('common.category')} *</Label>
               <select
                 id="category"
-                value={formData.category_id}
-                onChange={(e) => handleInputChange('category_id', e.target.value)}
                 className={`w-full rounded-md border px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none ${
-                  errors.category_id ? 'border-red-500' : 'border-gray-300'
+                  errors.category_id ? 'border-destructive' : 'border-gray-300'
                 }`}
+                {...register('category_id')}
               >
                 <option value="">{t('common.selectCategory')}</option>
                 {categories.map((category) => (
@@ -173,9 +171,8 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
                 ))}
               </select>
               {errors.category_id && (
-                <p className="mt-1 flex items-center text-sm text-red-500">
-                  <AlertCircle className="mr-1 h-3 w-3" />
-                  {errors.category_id}
+                <p className="text-destructive mt-1 text-sm">
+                  {t(errors.category_id.message ?? '')}
                 </p>
               )}
             </div>
@@ -186,11 +183,10 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
                 <Label htmlFor="unit">{t('common.unit')} *</Label>
                 <select
                   id="unit"
-                  value={formData.unit}
-                  onChange={(e) => handleInputChange('unit', e.target.value)}
                   className={`w-full rounded-md border px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none ${
-                    errors.unit ? 'border-red-500' : 'border-gray-300'
+                    errors.unit ? 'border-destructive' : 'border-gray-300'
                   }`}
+                  {...register('unit')}
                 >
                   <option value="pieces">{t('units.pieces')}</option>
                   <option value="kg">{t('units.kg')}</option>
@@ -201,10 +197,7 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
                   <option value="packages">{t('units.packages')}</option>
                 </select>
                 {errors.unit && (
-                  <p className="mt-1 flex items-center text-sm text-red-500">
-                    <AlertCircle className="mr-1 h-3 w-3" />
-                    {errors.unit}
-                  </p>
+                  <p className="text-destructive mt-1 text-sm">{t(errors.unit.message ?? '')}</p>
                 )}
               </div>
 
@@ -217,16 +210,14 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
                     id="minimum_stock"
                     type="number"
                     min="0"
-                    value={formData.minimum_stock}
-                    onChange={(e) => handleInputChange('minimum_stock', e.target.value)}
                     placeholder="0"
-                    className={`pl-10 ${errors.minimum_stock ? 'border-red-500' : ''}`}
+                    className={`pl-10 ${errors.minimum_stock ? 'border-destructive' : ''}`}
+                    {...register('minimum_stock')}
                   />
                 </div>
                 {errors.minimum_stock && (
-                  <p className="mt-1 flex items-center text-sm text-red-500">
-                    <AlertCircle className="mr-1 h-3 w-3" />
-                    {errors.minimum_stock}
+                  <p className="text-destructive mt-1 text-sm">
+                    {t(errors.minimum_stock.message ?? '')}
                   </p>
                 )}
               </div>
@@ -242,38 +233,32 @@ export default function AddItemDialog({ isOpen, onClose, onItemAdded }: AddItemD
                   type="number"
                   step="0.01"
                   min="0"
-                  value={formData.price}
-                  onChange={(e) => handleInputChange('price', e.target.value)}
                   placeholder="0.00"
-                  className={`pl-10 ${errors.price ? 'border-red-500' : ''}`}
+                  className={`pl-10 ${errors.price ? 'border-destructive' : ''}`}
+                  {...register('price')}
                 />
               </div>
               {errors.price && (
-                <p className="mt-1 flex items-center text-sm text-red-500">
-                  <AlertCircle className="mr-1 h-3 w-3" />
-                  {errors.price}
-                </p>
+                <p className="text-destructive mt-1 text-sm">{t(errors.price.message ?? '')}</p>
               )}
             </div>
 
             {/* Expiration Warning */}
-            {formData.category_id &&
-              categories.find((c) => c.id === parseInt(formData.category_id))
-                ?.requires_expiration && (
-                <div className="rounded-md border border-amber-200 bg-amber-50 p-3">
-                  <p className="flex items-center text-sm text-amber-800">
-                    <AlertCircle className="mr-2 h-4 w-4 text-amber-600" />
-                    {t('items.expirationWarning')}
-                  </p>
-                </div>
-              )}
+            {selectedCategory?.requires_expiration && (
+              <div className="rounded-md border border-amber-200 bg-amber-50 p-3">
+                <p className="flex items-center text-sm text-amber-800">
+                  <AlertCircle className="mr-2 h-4 w-4 text-amber-600" />
+                  {t('items.expirationWarning')}
+                </p>
+              </div>
+            )}
 
             {/* Submit Error */}
-            {errors.submit && (
+            {errors.root && (
               <div className="rounded-md border border-red-200 bg-red-50 p-3">
                 <p className="flex items-center text-sm text-red-700">
                   <AlertCircle className="mr-2 h-4 w-4" />
-                  {errors.submit}
+                  {errors.root.message}
                 </p>
               </div>
             )}

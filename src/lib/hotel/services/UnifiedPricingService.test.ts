@@ -247,8 +247,8 @@ describe('UnifiedPricingService', () => {
           parkingRequired: false,
         });
 
-        const accOrder = charges.find((c) => c.chargeType === 'accommodation')!.sortOrder;
-        const taxOrder = charges.find((c) => c.chargeType === 'tourism_tax')!.sortOrder;
+        const accOrder = charges.find((c) => c.chargeType === 'accommodation')!.sortOrder!;
+        const taxOrder = charges.find((c) => c.chargeType === 'tourism_tax')!.sortOrder!;
         expect(accOrder).toBeLessThan(taxOrder);
       });
     });
@@ -714,7 +714,7 @@ describe('UnifiedPricingService', () => {
           parkingRequired: true,
         });
 
-        const orders = charges.map((c) => c.sortOrder);
+        const orders = charges.map((c) => c.sortOrder!);
         expect(orders[0]).toBe(0);
         // Monotonically increasing
         for (let i = 1; i < orders.length; i++) {

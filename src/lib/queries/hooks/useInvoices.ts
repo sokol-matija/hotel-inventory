@@ -32,16 +32,7 @@ const invoicesQuery = supabase
       number_of_nights,
       adults,
       children_count,
-      subtotal,
-      vat_amount,
-      tourism_tax,
-      total_amount,
-      pet_fee,
-      parking_fee,
-      additional_charges,
-      status_id,
-      seasonal_period,
-      base_room_rate
+      status_id
     )
   `
   )
@@ -65,8 +56,7 @@ export interface Invoice {
   paidDate?: Date;
   status: InvoiceStatus;
   currency: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  items: any[];
+  items: unknown[];
   subtotal: number;
   vatRate: number;
   vatAmount: number;
@@ -95,37 +85,20 @@ export interface Invoice {
 
 // ─── Mapping helpers ───────────────────────────────────────────────────────────
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapInvoiceReservation(row: any): Partial<Reservation> {
+function mapInvoiceReservation(row: InvoiceRow): Partial<Reservation> {
   const r = row.reservations;
+  if (!r) return {};
   return {
-    id: r.id.toString(),
-    roomId: r.room_id?.toString() || '',
-    guestId: row.guest_id?.toString() || '',
-    checkIn: new Date(r.check_in_date),
-    checkOut: new Date(r.check_out_date),
-    numberOfGuests: r.adults + (r.children_count || 0),
+    id: r.id,
+    room_id: r.room_id,
+    guest_id: row.guest_id ?? undefined,
+    check_in_date: r.check_in_date,
+    check_out_date: r.check_out_date,
     adults: r.adults,
-    children: [],
-    // reservations uses status_id (FK), not a status string — default to 'confirmed'
-    status: 'confirmed',
-    totalAmount: parseFloat(r.total_amount || '0'),
-    numberOfNights: r.number_of_nights,
-    baseRoomRate: parseFloat(r.base_room_rate || '0'),
-    subtotal: parseFloat(r.subtotal || '0'),
-    vatAmount: parseFloat(r.vat_amount || '0'),
-    tourismTax: parseFloat(r.tourism_tax || '0'),
-    petFee: parseFloat(r.pet_fee || '0'),
-    parkingFee: parseFloat(r.parking_fee || '0'),
-    additionalCharges: parseFloat(r.additional_charges || '0'),
-    specialRequests: '',
-    bookingSource: 'direct',
-    hasPets: false,
-    hasParking: false,
-    seasonalPeriod: r.seasonal_period || 'low',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  } as unknown as Partial<Reservation>;
+    number_of_guests: r.adults + (r.children_count || 0),
+    number_of_nights: r.number_of_nights,
+    status_id: r.status_id,
+  };
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

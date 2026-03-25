@@ -73,7 +73,8 @@ describe('EditItemDialog', () => {
 
   it('pre-fills item name from prop', () => {
     renderDialog();
-    const nameInput = screen.getByLabelText(/item name/i);
+    // Label is rendered as the i18n key "items.itemName *" since t() returns the key
+    const nameInput = screen.getByLabelText(/items\.itemName/i);
     expect(nameInput).toHaveValue('Coffee');
   });
 
@@ -85,7 +86,8 @@ describe('EditItemDialog', () => {
 
   it('pre-fills minimum stock from prop', () => {
     renderDialog();
-    const minStockInput = screen.getByLabelText(/minimum stock/i);
+    // Label is rendered as the i18n key "common.minStock *" since t() returns the key
+    const minStockInput = screen.getByLabelText(/common\.minStock/i);
     expect(minStockInput).toHaveValue(5);
   });
 
@@ -100,11 +102,11 @@ describe('EditItemDialog', () => {
     renderDialog();
 
     // Clear and retype name
-    const nameInput = screen.getByLabelText(/item name/i);
+    const nameInput = screen.getByLabelText(/items\.itemName/i);
     await user.clear(nameInput);
     await user.type(nameInput, 'Updated Coffee');
 
-    await user.click(screen.getByRole('button', { name: /update item/i }));
+    await user.click(screen.getByRole('button', { name: /items\.updateItem/i }));
 
     expect(mockMutate).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -145,6 +147,7 @@ describe('EditItemDialog', () => {
 
     renderDialog();
 
-    expect(screen.getByText(/loading categories/i)).toBeInTheDocument();
+    // Component renders t('common.loadingCategories') which returns the key itself
+    expect(screen.getByText('common.loadingCategories')).toBeInTheDocument();
   });
 });

@@ -20,6 +20,7 @@ import {
 import { Guest } from '../../../../lib/queries/hooks/useGuests';
 import { useGuests } from '../../../../lib/queries/hooks/useGuests';
 import { useReservations } from '../../../../lib/queries/hooks/useReservations';
+import { Skeleton } from '@/components/ui/skeleton';
 import GuestProfileModal from './GuestProfileModal';
 
 interface GuestManagementPageProps {
@@ -27,7 +28,7 @@ interface GuestManagementPageProps {
 }
 
 export default function GuestManagementPage({ onGuestSelect }: GuestManagementPageProps) {
-  const { data: guests = [] } = useGuests();
+  const { data: guests = [], isLoading: guestsLoading } = useGuests();
   const { data: reservations = [] } = useReservations();
   const getGuestStayHistory = (guestId: number) =>
     reservations
@@ -269,7 +270,13 @@ export default function GuestManagementPage({ onGuestSelect }: GuestManagementPa
           <CardTitle>Guest Directory</CardTitle>
         </CardHeader>
         <CardContent>
-          {filteredGuests.length === 0 ? (
+          {guestsLoading ? (
+            <div className="space-y-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-20 w-full rounded-md" />
+              ))}
+            </div>
+          ) : filteredGuests.length === 0 ? (
             <div className="py-8 text-center">
               <User className="mx-auto mb-4 h-12 w-12 text-gray-400" />
               <p className="text-gray-500">No guests found matching your criteria</p>
