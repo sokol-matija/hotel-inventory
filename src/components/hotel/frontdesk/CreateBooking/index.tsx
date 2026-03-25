@@ -452,7 +452,7 @@ export default function ModernCreateBookingModal({
                     >
                       <option value="">-- Select a company --</option>
                       {companies
-                        .filter((c) => c.isActive)
+                        .filter((c) => c.is_active)
                         .sort((a, b) => a.name.localeCompare(b.name))
                         .map((company) => (
                           <option key={company.id} value={company.id}>
@@ -461,8 +461,8 @@ export default function ModernCreateBookingModal({
                         ))}
                     </select>
                     <p className="mt-2 text-xs text-gray-500">
-                      {companies.filter((c) => c.isActive).length} active compan
-                      {companies.filter((c) => c.isActive).length === 1 ? 'y' : 'ies'} available
+                      {companies.filter((c) => c.is_active).length} active compan
+                      {companies.filter((c) => c.is_active).length === 1 ? 'y' : 'ies'} available
                     </p>
                   </div>
                 )}

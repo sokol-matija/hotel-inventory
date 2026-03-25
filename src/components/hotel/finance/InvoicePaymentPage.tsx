@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useInvoices } from '../../../lib/queries/hooks/useInvoices';
 import { useGuests } from '../../../lib/queries/hooks/useGuests';
 import { useRooms } from '../../../lib/queries/hooks/useRooms';
@@ -52,7 +53,13 @@ export default function InvoicePaymentPage() {
   const getUnpaidInvoices = () => invoices.filter((inv) => inv.status !== 'paid');
 
   if (isLoading) {
-    return <div className="flex items-center justify-center p-8 text-gray-500">Loading...</div>;
+    return (
+      <div className="space-y-3 p-6">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Skeleton key={i} className="h-14 w-full rounded-md" />
+        ))}
+      </div>
+    );
   }
 
   if (isError) {
@@ -153,29 +160,8 @@ export default function InvoicePaymentPage() {
           .single();
 
         if (companyData && !companyError) {
-          // Transform database format to Company type
-          company = {
-            id: String(companyData.id),
-            name: companyData.name,
-            oib: companyData.oib ?? '',
-            address: {
-              street: companyData.address ?? '',
-              city: companyData.city ?? '',
-              postalCode: companyData.postal_code ?? '',
-              country: companyData.country ?? '',
-            },
-            contactPerson: companyData.contact_person ?? '',
-            email: companyData.email ?? '',
-            phone: companyData.phone ?? '',
-            fax: companyData.fax ?? undefined,
-            pricingTierId:
-              companyData.pricing_tier_id != null ? String(companyData.pricing_tier_id) : undefined,
-            roomAllocationGuarantee: companyData.room_allocation_guarantee ?? undefined,
-            isActive: companyData.is_active ?? false,
-            notes: companyData.notes ?? '',
-            createdAt: new Date(companyData.created_at ?? Date.now()),
-            updatedAt: new Date(companyData.updated_at ?? Date.now()),
-          };
+          // Company type is now the DB row type directly
+          company = companyData;
         }
       }
 

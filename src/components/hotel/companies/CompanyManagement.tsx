@@ -22,16 +22,16 @@ export default function CompanyManagement() {
   const filteredCompanies = useMemo(() => {
     return companies.filter((company) => {
       // Filter by status
-      if (filter === 'active' && !company.isActive) return false;
-      if (filter === 'inactive' && company.isActive) return false;
+      if (filter === 'active' && !company.is_active) return false;
+      if (filter === 'inactive' && company.is_active) return false;
 
       // Search filter
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase();
         return (
           company.name.toLowerCase().includes(searchLower) ||
-          company.oib.includes(searchTerm) ||
-          company.address.city.toLowerCase().includes(searchLower) ||
+          (company.oib ?? '').includes(searchTerm) ||
+          company.city.toLowerCase().includes(searchLower) ||
           company.email.toLowerCase().includes(searchLower)
         );
       }
@@ -40,7 +40,7 @@ export default function CompanyManagement() {
     });
   }, [companies, searchTerm, filter]);
 
-  const handleDeleteCompany = (companyId: string, companyName: string) => {
+  const handleDeleteCompany = (companyId: number, companyName: string) => {
     if (
       window.confirm(
         `Are you sure you want to delete company "${companyName}"? This action cannot be undone.`
@@ -61,7 +61,8 @@ export default function CompanyManagement() {
     }
   };
 
-  const formatDate = (dateString: string | Date) => {
+  const formatDate = (dateString: string | Date | null) => {
+    if (!dateString) return '';
     return new Date(dateString).toLocaleDateString('en-GB');
   };
 
@@ -120,14 +121,14 @@ export default function CompanyManagement() {
                 size="sm"
                 onClick={() => setFilter('active')}
               >
-                Active ({companies.filter((c) => c.isActive).length})
+                Active ({companies.filter((c) => c.is_active).length})
               </Button>
               <Button
                 variant={filter === 'inactive' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setFilter('inactive')}
               >
-                Inactive ({companies.filter((c) => !c.isActive).length})
+                Inactive ({companies.filter((c) => !c.is_active).length})
               </Button>
             </div>
           </div>
@@ -161,17 +162,17 @@ export default function CompanyManagement() {
           </Card>
         ) : (
           filteredCompanies.map((company) => (
-            <Card key={company.id} className={!company.isActive ? 'opacity-60' : ''}>
+            <Card key={company.id} className={!company.is_active ? 'opacity-60' : ''}>
               <CardContent className="pt-6">
                 <div className="flex flex-col justify-between lg:flex-row lg:items-center">
                   {/* Company Info */}
                   <div className="flex-1 space-y-3">
                     <div className="flex items-center space-x-3">
                       <h3 className="text-lg font-semibold">{company.name}</h3>
-                      <Badge variant={company.isActive ? 'default' : 'secondary'}>
-                        {company.isActive ? 'Active' : 'Inactive'}
+                      <Badge variant={company.is_active ? 'default' : 'secondary'}>
+                        {company.is_active ? 'Active' : 'Inactive'}
                       </Badge>
-                      {company.pricingTierId && (
+                      {company.pricing_tier_id && (
                         <Badge variant="outline" className="text-xs">
                           Custom Pricing
                         </Badge>
@@ -189,7 +190,7 @@ export default function CompanyManagement() {
                       <div className="flex items-center space-x-2">
                         <MapPin className="h-4 w-4 text-gray-400" />
                         <span>
-                          {company.address.city}, {company.address.country}
+                          {company.city}, {company.country}
                         </span>
                       </div>
 
@@ -207,15 +208,15 @@ export default function CompanyManagement() {
                         </div>
                       )}
 
-                      {company.contactPerson && (
+                      {company.contact_person && (
                         <div className="flex items-center space-x-2">
                           <User className="h-4 w-4 text-gray-400" />
-                          <span>{company.contactPerson}</span>
+                          <span>{company.contact_person}</span>
                         </div>
                       )}
 
                       <div className="text-xs text-gray-500">
-                        Created: {formatDate(company.createdAt)}
+                        Created: {formatDate(company.created_at)}
                       </div>
                     </div>
 

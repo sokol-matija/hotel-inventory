@@ -91,15 +91,15 @@ export async function generatePDFInvoice(data: InvoiceData): Promise<void> {
     // Company billing (R1)
     doc.text(data.company.name, 20, 105);
     doc.text(`OIB: ${data.company.oib}`, 20, 111);
-    doc.text(data.company.address.street, 20, 117);
-    const countryName = convertToDisplayName(data.company.address.country);
+    doc.text(data.company.address ?? '', 20, 117);
+    const countryName = convertToDisplayName(data.company.country ?? '');
     doc.text(
-      `${data.company.address.postalCode} ${data.company.address.city}, ${countryName}`,
+      `${data.company.postal_code ?? ''} ${data.company.city ?? ''}, ${countryName}`,
       20,
       123
     );
-    if (data.company.contactPerson) {
-      doc.text(`Contact: ${data.company.contactPerson}`, 20, 129);
+    if (data.company.contact_person) {
+      doc.text(`Contact: ${data.company.contact_person}`, 20, 129);
     }
     doc.text(`Email: ${data.company.email}`, 20, 135);
 

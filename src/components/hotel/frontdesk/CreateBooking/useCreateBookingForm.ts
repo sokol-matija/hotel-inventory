@@ -195,9 +195,9 @@ export function useCreateBookingForm({
 
     const selectedCompany =
       isCompanyBilling && selectedCompanyId
-        ? companies.find((c) => c.id === selectedCompanyId)
+        ? companies.find((c) => String(c.id) === selectedCompanyId)
         : undefined;
-    const pricingTierId = selectedCompany?.pricingTierId ?? undefined;
+    const pricingTierId = selectedCompany?.pricing_tier_id?.toString() ?? undefined;
 
     let cancelled = false;
     setChargesLoading(true);

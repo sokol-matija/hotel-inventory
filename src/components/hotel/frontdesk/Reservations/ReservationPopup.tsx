@@ -144,31 +144,8 @@ export default function ReservationPopup({
           if (error) {
             console.error('Error fetching company:', error);
           } else if (companyData) {
-            // Transform to Company type
-            setCompany({
-              id: String(companyData.id),
-              name: companyData.name,
-              oib: companyData.oib ?? '',
-              address: {
-                street: companyData.address ?? '',
-                city: companyData.city ?? '',
-                postalCode: companyData.postal_code ?? '',
-                country: companyData.country ?? '',
-              },
-              contactPerson: companyData.contact_person ?? '',
-              email: companyData.email ?? '',
-              phone: companyData.phone ?? '',
-              fax: companyData.fax ?? undefined,
-              pricingTierId:
-                companyData.pricing_tier_id != null
-                  ? String(companyData.pricing_tier_id)
-                  : undefined,
-              roomAllocationGuarantee: companyData.room_allocation_guarantee ?? undefined,
-              isActive: companyData.is_active ?? false,
-              notes: companyData.notes ?? '',
-              createdAt: new Date(companyData.created_at ?? Date.now()),
-              updatedAt: new Date(companyData.updated_at ?? Date.now()),
-            });
+            // Company type is now the DB row type directly
+            setCompany(companyData);
           }
         } catch (error) {
           console.error('Error loading company data:', error);
@@ -329,23 +306,23 @@ export default function ReservationPopup({
                       <div className="flex items-start space-x-2">
                         <MapPin className="mt-0.5 h-4 w-4 text-blue-600" />
                         <div>
-                          <p className="text-sm text-gray-700">{company.address.street}</p>
+                          <p className="text-sm text-gray-700">{company.address}</p>
                           <p className="text-sm text-gray-700">
-                            {company.address.postalCode} {company.address.city}
+                            {company.postal_code} {company.city}
                           </p>
                           <p className="text-sm text-gray-700">
-                            {convertToDisplayName(company.address.country)}
+                            {convertToDisplayName(company.country ?? '')}
                           </p>
                           <p className="text-xs text-gray-500">Address</p>
                         </div>
                       </div>
                     </div>
                     <div className="space-y-3">
-                      {company.contactPerson && (
+                      {company.contact_person && (
                         <div className="flex items-start space-x-2">
                           <User className="mt-0.5 h-4 w-4 text-blue-600" />
                           <div>
-                            <p className="text-sm text-gray-700">{company.contactPerson}</p>
+                            <p className="text-sm text-gray-700">{company.contact_person}</p>
                             <p className="text-xs text-gray-500">Contact Person</p>
                           </div>
                         </div>

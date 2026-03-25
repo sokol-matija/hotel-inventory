@@ -86,8 +86,8 @@ describe('useCompanies', () => {
 
     expect(result.current.data).toHaveLength(1);
     expect(result.current.data?.[0].name).toBe('Acme Corp');
-    expect(result.current.data?.[0].address.city).toBe('Zagreb');
-    expect(result.current.data?.[0].id).toBe('1');
+    expect(result.current.data?.[0].city).toBe('Zagreb');
+    expect(result.current.data?.[0].id).toBe(1);
   });
 
   it('surfaces error state when query fails (proves throwOnError works)', async () => {
@@ -124,15 +124,19 @@ describe('useCreateCompany', () => {
 
     const { result } = renderHook(() => useCreateCompany(), { wrapper: wrapWith(queryClient) });
 
+    // useCreateCompany now accepts raw DB insert shape (flat fields)
     result.current.mutate({
       name: 'New Corp',
       oib: '98765432100',
-      address: { street: 'Side Street 2', city: 'Split', postalCode: '21000', country: 'Croatia' },
-      contactPerson: 'Jane Smith',
+      address: 'Side Street 2',
+      city: 'Split',
+      postal_code: '21000',
+      country: 'Croatia',
+      contact_person: 'Jane Smith',
       email: 'jane@newcorp.com',
       phone: '',
-      isActive: true,
-      notes: '',
+      is_active: true,
+      notes: null,
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -157,7 +161,8 @@ describe('useUpdateCompany', () => {
 
     const { result } = renderHook(() => useUpdateCompany(), { wrapper: wrapWith(queryClient) });
 
-    result.current.mutate({ id: '1', updates: { name: 'Updated Corp' } });
+    // useUpdateCompany now accepts numeric id
+    result.current.mutate({ id: 1, updates: { name: 'Updated Corp' } });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
@@ -181,7 +186,8 @@ describe('useDeleteCompany', () => {
 
     const { result } = renderHook(() => useDeleteCompany(), { wrapper: wrapWith(queryClient) });
 
-    result.current.mutate('1');
+    // useDeleteCompany now accepts numeric id
+    result.current.mutate(1);
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
@@ -193,12 +199,12 @@ describe('useDeleteCompany', () => {
     mockState.companies = { data: null, error: new Error('Delete failed') };
 
     const queryClient = createTestQueryClient();
-    // Pre-populate cache with two companies
+    // Pre-populate cache with two companies (using numeric ids matching new DB row type)
     queryClient.setQueryData(
       ['companies'],
       [
-        { id: '1', name: 'Acme Corp', isActive: true },
-        { id: '2', name: 'Beta Corp', isActive: true },
+        { id: 1, name: 'Acme Corp', is_active: true },
+        { id: 2, name: 'Beta Corp', is_active: true },
       ]
     );
 
@@ -206,7 +212,7 @@ describe('useDeleteCompany', () => {
       wrapper: wrapWith(queryClient),
     });
 
-    result.current.mutate('1');
+    result.current.mutate(1);
 
     await waitFor(() => expect(result.current.isError).toBe(true));
 

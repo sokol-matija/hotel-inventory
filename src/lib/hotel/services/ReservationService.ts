@@ -198,29 +198,8 @@ export class ReservationService {
           .single();
 
         if (companyData && !companyError) {
-          // Transform database format to Company type
-          company = {
-            id: String(companyData.id),
-            name: companyData.name,
-            oib: companyData.oib ?? '',
-            address: {
-              street: companyData.address ?? '',
-              city: companyData.city ?? '',
-              postalCode: companyData.postal_code ?? '',
-              country: companyData.country ?? '',
-            },
-            contactPerson: companyData.contact_person ?? '',
-            email: companyData.email ?? '',
-            phone: companyData.phone ?? '',
-            fax: companyData.fax ?? undefined,
-            pricingTierId:
-              companyData.pricing_tier_id != null ? String(companyData.pricing_tier_id) : undefined,
-            roomAllocationGuarantee: companyData.room_allocation_guarantee ?? undefined,
-            isActive: companyData.is_active ?? false,
-            notes: companyData.notes ?? '',
-            createdAt: new Date(companyData.created_at ?? Date.now()),
-            updatedAt: new Date(companyData.updated_at ?? Date.now()),
-          };
+          // Company type is now the DB row type directly
+          company = companyData;
         }
       }
 

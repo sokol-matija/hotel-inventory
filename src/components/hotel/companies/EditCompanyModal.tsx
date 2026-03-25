@@ -1,14 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { Label } from '../../ui/label';
 import { Textarea } from '../../ui/textarea';
 import { X, Building2, Check, AlertCircle } from 'lucide-react';
-import { Company } from '../../../lib/hotel/types';
-import { useUpdateCompany } from '../../../lib/queries/hooks/useCompanies';
+import { cn } from '@/lib/utils';
+import { Company, useUpdateCompany } from '../../../lib/queries/hooks/useCompanies';
 import hotelNotification from '../../../lib/notifications';
 import { convertToCountryCode, convertToDisplayName } from '../../../lib/hotel/countryCodeUtils';
+import { companySchema, type CompanyFormValues } from '../../../lib/hotel/schemas/company';
 
 interface EditCompanyModalProps {
   isOpen: boolean;
@@ -16,152 +19,95 @@ interface EditCompanyModalProps {
   company: Company;
 }
 
-interface CompanyFormData {
-  name: string;
-  oib: string;
-  address: string;
-  city: string;
-  postalCode: string;
-  country: string;
-  contactPerson: string;
-  email: string;
-  phone: string;
-  fax: string;
-  pricingTierId: string;
-  roomAllocationGuarantee: number;
-  isActive: boolean;
-  notes: string;
-}
-
-const validateOIB = (oib: string) => /^\d{11}$/.test(oib);
-
 export default function EditCompanyModal({ isOpen, onClose, company }: EditCompanyModalProps) {
   const updateCompanyMutation = useUpdateCompany();
-  const [formData, setFormData] = useState<CompanyFormData>({
-    name: '',
-    oib: '',
-    address: '',
-    city: '',
-    postalCode: '',
-    country: '',
-    contactPerson: '',
-    email: '',
-    phone: '',
-    fax: '',
-    pricingTierId: '',
-    roomAllocationGuarantee: 0,
-    isActive: true,
-    notes: '',
-  });
-  const [oibValidation, setOibValidation] = useState<{ isValid: boolean; message: string } | null>(
-    null
-  );
 
-  // Populate form data when company changes
+  const {
+    register,
+    handleSubmit,
+    watch,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<CompanyFormValues>({
+    resolver: zodResolver(companySchema),
+    defaultValues: {
+      name: '',
+      oib: '',
+      address: '',
+      city: '',
+      postalCode: '',
+      country: 'Croatia',
+      contactPerson: '',
+      email: '',
+      phone: '',
+      fax: '',
+      pricingTierId: '',
+      roomAllocationGuarantee: 0,
+      isActive: true,
+      notes: '',
+    },
+  });
+
   useEffect(() => {
     if (company) {
-      setFormData({
+      reset({
         name: company.name,
-        oib: company.oib,
-        address: company.address.street,
-        city: company.address.city,
-        postalCode: company.address.postalCode,
-        country: convertToDisplayName(company.address.country),
-        contactPerson: company.contactPerson,
-        email: company.email,
-        phone: company.phone,
-        fax: company.fax || '',
-        pricingTierId: company.pricingTierId || '',
-        roomAllocationGuarantee: company.roomAllocationGuarantee || 0,
-        isActive: company.isActive,
-        notes: company.notes,
+        oib: company.oib ?? '',
+        address: company.address ?? '',
+        city: company.city ?? '',
+        postalCode: company.postal_code ?? '',
+        country: convertToDisplayName(company.country ?? 'Croatia'),
+        contactPerson: company.contact_person ?? '',
+        email: company.email ?? '',
+        phone: company.phone ?? '',
+        fax: company.fax ?? '',
+        pricingTierId: company.pricing_tier_id?.toString() ?? '',
+        roomAllocationGuarantee: company.room_allocation_guarantee ?? 0,
+        isActive: company.is_active ?? true,
+        notes: company.notes ?? '',
       });
-
-      if (company.oib) {
-        const isValid = validateOIB(company.oib);
-        setOibValidation({
-          isValid,
-          message: isValid ? 'Valid Croatian OIB' : 'Invalid Croatian OIB checksum',
-        });
-      }
     }
-  }, [company]);
+  }, [company, reset]);
 
-  const handleOibChange = (oib: string) => {
-    setFormData((prev) => ({ ...prev, oib }));
+  const oibValue = watch('oib');
+  const oibTouched = oibValue.length > 0;
+  const oibValid = oibTouched && !errors.oib;
+  const oibInvalid = oibTouched && !!errors.oib;
 
-    if (oib.length === 0) {
-      setOibValidation(null);
-      return;
+  const onSubmit = async (data: CompanyFormValues) => {
+    try {
+      const updates: import('../../../lib/supabase').TablesUpdate<'companies'> = {
+        name: data.name,
+        oib: data.oib,
+        address: data.address,
+        city: data.city,
+        postal_code: data.postalCode,
+        country: convertToCountryCode(data.country),
+        contact_person: data.contactPerson,
+        email: data.email,
+        phone: data.phone,
+        fax: data.fax || undefined,
+        pricing_tier_id: data.pricingTierId ? parseInt(data.pricingTierId) : undefined,
+        room_allocation_guarantee: data.roomAllocationGuarantee || undefined,
+        is_active: data.isActive,
+        notes: data.notes,
+      };
+
+      await updateCompanyMutation.mutateAsync({ id: company.id, updates });
+
+      hotelNotification.success(
+        'Company Updated',
+        `Company "${data.name}" has been successfully updated.`
+      );
+
+      onClose();
+    } catch (error) {
+      console.error('Failed to update company:', error);
+      hotelNotification.error(
+        'Update Failed',
+        'Failed to update company. Please check if the OIB conflicts with another company and try again.'
+      );
     }
-    if (oib.length !== 11) {
-      setOibValidation({ isValid: false, message: 'OIB must be exactly 11 digits' });
-      return;
-    }
-    if (!/^\d{11}$/.test(oib)) {
-      setOibValidation({ isValid: false, message: 'OIB must contain only digits' });
-      return;
-    }
-
-    const isValid = validateOIB(oib);
-    setOibValidation({
-      isValid,
-      message: isValid ? 'Valid Croatian OIB' : 'Invalid Croatian OIB checksum',
-    });
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!formData.name.trim() || !formData.oib.trim()) {
-      hotelNotification.error('Validation Error', 'Company name and OIB are required.');
-      return;
-    }
-
-    if (!oibValidation?.isValid) {
-      hotelNotification.error('Invalid OIB', 'Please enter a valid Croatian OIB number.');
-      return;
-    }
-
-    const updates: Partial<Company> = {
-      name: formData.name,
-      oib: formData.oib,
-      address: {
-        street: formData.address,
-        city: formData.city,
-        postalCode: formData.postalCode,
-        country: convertToCountryCode(formData.country),
-      },
-      contactPerson: formData.contactPerson,
-      email: formData.email,
-      phone: formData.phone,
-      fax: formData.fax || undefined,
-      pricingTierId: formData.pricingTierId || undefined,
-      roomAllocationGuarantee: formData.roomAllocationGuarantee || undefined,
-      isActive: formData.isActive,
-      notes: formData.notes,
-      updatedAt: new Date(),
-    };
-
-    updateCompanyMutation.mutate(
-      { id: company.id, updates },
-      {
-        onSuccess: () => {
-          hotelNotification.success(
-            'Company Updated',
-            `Company "${formData.name}" has been successfully updated.`
-          );
-          onClose();
-        },
-        onError: (error) => {
-          console.error('Failed to update company:', error);
-          hotelNotification.error(
-            'Update Failed',
-            'Failed to update company. Please check if the OIB conflicts with another company and try again.'
-          );
-        },
-      }
-    );
   };
 
   if (!isOpen) return null;
@@ -169,7 +115,6 @@ export default function EditCompanyModal({ isOpen, onClose, company }: EditCompa
   return (
     <div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black p-4">
       <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white shadow-xl">
-        {/* Header */}
         <div className="flex items-center justify-between border-b p-6">
           <div className="flex items-center space-x-3">
             <Building2 className="h-6 w-6 text-blue-600" />
@@ -183,8 +128,7 @@ export default function EditCompanyModal({ isOpen, onClose, company }: EditCompa
           </Button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6 p-6">
-          {/* Company Information */}
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 p-6">
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Company Information</CardTitle>
@@ -195,90 +139,65 @@ export default function EditCompanyModal({ isOpen, onClose, company }: EditCompa
                   <Label htmlFor="name">Company Name *</Label>
                   <Input
                     id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+                    {...register('name')}
                     placeholder="Enter company name"
-                    required
+                    className={cn(
+                      errors.name && 'border-destructive focus-visible:ring-destructive'
+                    )}
                   />
+                  {errors.name && (
+                    <p className="text-destructive mt-1 text-sm">{errors.name.message}</p>
+                  )}
                 </div>
-
                 <div>
                   <Label htmlFor="oib">Croatian OIB (Tax Number) *</Label>
                   <div className="relative">
                     <Input
                       id="oib"
-                      value={formData.oib}
-                      onChange={(e) => handleOibChange(e.target.value)}
+                      {...register('oib')}
                       placeholder="12345678901"
                       maxLength={11}
-                      className={
-                        oibValidation
-                          ? oibValidation.isValid
-                            ? 'border-green-300 focus:border-green-500'
-                            : 'border-red-300 focus:border-red-500'
-                          : ''
-                      }
-                      required
+                      className={cn(
+                        oibValid && 'border-green-300 focus-visible:ring-green-500',
+                        oibInvalid && 'border-destructive focus-visible:ring-destructive'
+                      )}
                     />
-                    {oibValidation && (
-                      <div className="absolute top-1/2 right-3 -translate-y-1/2 transform">
-                        {oibValidation.isValid ? (
+                    {oibTouched && (
+                      <div className="absolute top-1/2 right-3 -translate-y-1/2">
+                        {oibValid ? (
                           <Check className="h-4 w-4 text-green-500" />
                         ) : (
-                          <AlertCircle className="h-4 w-4 text-red-500" />
+                          <AlertCircle className="text-destructive h-4 w-4" />
                         )}
                       </div>
                     )}
                   </div>
-                  {oibValidation && (
-                    <p
-                      className={`mt-1 text-xs ${oibValidation.isValid ? 'text-green-600' : 'text-red-600'}`}
-                    >
-                      {oibValidation.message}
-                    </p>
+                  {oibValid && <p className="mt-1 text-xs text-green-600">Valid Croatian OIB</p>}
+                  {errors.oib && (
+                    <p className="text-destructive mt-1 text-sm">{errors.oib.message}</p>
                   )}
                 </div>
               </div>
 
               <div>
                 <Label htmlFor="address">Address</Label>
-                <Input
-                  id="address"
-                  value={formData.address}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, address: e.target.value }))}
-                  placeholder="Street address"
-                />
+                <Input id="address" {...register('address')} placeholder="Street address" />
               </div>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <div>
                   <Label htmlFor="city">City</Label>
-                  <Input
-                    id="city"
-                    value={formData.city}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, city: e.target.value }))}
-                    placeholder="City"
-                  />
+                  <Input id="city" {...register('city')} placeholder="City" />
                 </div>
-
                 <div>
                   <Label htmlFor="postalCode">Postal Code</Label>
-                  <Input
-                    id="postalCode"
-                    value={formData.postalCode}
-                    onChange={(e) =>
-                      setFormData((prev) => ({ ...prev, postalCode: e.target.value }))
-                    }
-                    placeholder="12345"
-                  />
+                  <Input id="postalCode" {...register('postalCode')} placeholder="12345" />
                 </div>
-
                 <div>
                   <Label htmlFor="country">Country</Label>
                   <select
                     id="country"
-                    value={formData.country}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, country: e.target.value }))}
+                    {...register('country')}
                     className="w-full rounded-md border border-gray-300 p-2"
                   >
                     <option value="Croatia">🇭🇷 Croatia</option>
@@ -293,7 +212,6 @@ export default function EditCompanyModal({ isOpen, onClose, company }: EditCompa
             </CardContent>
           </Card>
 
-          {/* Contact Information */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Contact Information</CardTitle>
@@ -304,51 +222,39 @@ export default function EditCompanyModal({ isOpen, onClose, company }: EditCompa
                   <Label htmlFor="contactPerson">Contact Person</Label>
                   <Input
                     id="contactPerson"
-                    value={formData.contactPerson}
-                    onChange={(e) =>
-                      setFormData((prev) => ({ ...prev, contactPerson: e.target.value }))
-                    }
+                    {...register('contactPerson')}
                     placeholder="Full name"
                   />
                 </div>
-
                 <div>
                   <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
                     type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
+                    {...register('email')}
                     placeholder="contact@company.com"
+                    className={cn(
+                      errors.email && 'border-destructive focus-visible:ring-destructive'
+                    )}
                   />
+                  {errors.email && (
+                    <p className="text-destructive mt-1 text-sm">{errors.email.message}</p>
+                  )}
                 </div>
               </div>
-
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                   <Label htmlFor="phone">Phone</Label>
-                  <Input
-                    id="phone"
-                    value={formData.phone}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
-                    placeholder="+385 XX XXX XXXX"
-                  />
+                  <Input id="phone" {...register('phone')} placeholder="+385 XX XXX XXXX" />
                 </div>
-
                 <div>
                   <Label htmlFor="fax">Fax (Optional)</Label>
-                  <Input
-                    id="fax"
-                    value={formData.fax}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, fax: e.target.value }))}
-                    placeholder="+385 XX XXX XXXX"
-                  />
+                  <Input id="fax" {...register('fax')} placeholder="+385 XX XXX XXXX" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Business Settings */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Business Settings</CardTitle>
@@ -361,40 +267,28 @@ export default function EditCompanyModal({ isOpen, onClose, company }: EditCompa
                     id="roomAllocationGuarantee"
                     type="number"
                     min="0"
-                    value={formData.roomAllocationGuarantee}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        roomAllocationGuarantee: parseInt(e.target.value) || 0,
-                      }))
-                    }
+                    {...register('roomAllocationGuarantee', { valueAsNumber: true })}
                     placeholder="0"
                   />
                   <p className="mt-1 text-xs text-gray-500">
                     Number of guaranteed room allocations
                   </p>
                 </div>
-
                 <div className="flex items-center space-x-2">
                   <input
                     type="checkbox"
                     id="isActive"
-                    checked={formData.isActive}
-                    onChange={(e) =>
-                      setFormData((prev) => ({ ...prev, isActive: e.target.checked }))
-                    }
+                    {...register('isActive')}
                     className="h-4 w-4 rounded border-gray-300 text-blue-600"
                   />
                   <Label htmlFor="isActive">Active Company</Label>
                 </div>
               </div>
-
               <div>
                 <Label htmlFor="notes">Notes</Label>
                 <Textarea
                   id="notes"
-                  value={formData.notes}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
+                  {...register('notes')}
                   placeholder="Additional notes about this company..."
                   rows={3}
                 />
@@ -402,17 +296,12 @@ export default function EditCompanyModal({ isOpen, onClose, company }: EditCompa
             </CardContent>
           </Card>
 
-          {/* Actions */}
           <div className="flex items-center justify-end space-x-3 border-t pt-4">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={updateCompanyMutation.isPending || !oibValidation?.isValid}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              {updateCompanyMutation.isPending ? 'Updating...' : 'Update Company'}
+            <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700">
+              {isSubmitting ? 'Updating...' : 'Update Company'}
             </Button>
           </div>
         </form>
