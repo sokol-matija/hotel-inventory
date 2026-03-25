@@ -1,12 +1,10 @@
-import { createFileRoute, redirect } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
 import Layout from '@/components/layout/Layout';
 import { RouteErrorFallback } from '@/components/ui/RouteErrorFallback';
+import { requireAuth } from '@/lib/routeUtils';
 
 export const Route = createFileRoute('/_layout')({
-  beforeLoad: ({ context }) => {
-    if (!context.auth.user) throw redirect({ to: '/login' });
-    if (!context.auth.hasProfile) throw redirect({ to: '/onboarding' });
-  },
+  beforeLoad: requireAuth,
   component: Layout,
   errorComponent: ({ error, reset }) => <RouteErrorFallback error={error} reset={reset} />,
 });
