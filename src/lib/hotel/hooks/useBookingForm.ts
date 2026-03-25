@@ -2,7 +2,8 @@
 // Separates form logic from UI components
 
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Room, Guest, GuestChild, ReservationStatus, Company, Reservation } from '../types';
+import { Guest, GuestChild, ReservationStatus, Company, Reservation } from '../types';
+import type { Room } from '../../queries/hooks/useRooms';
 import { BookingService, BookingData, BookingValidationError } from '../services/BookingService';
 
 export interface BookingFormState {

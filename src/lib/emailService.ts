@@ -1,7 +1,8 @@
 // Hotel Email Service for Guest Information
 // Sends check-in instructions, breakfast times, and hotel amenities information
 
-import { Reservation, Guest, Room } from './hotel/types';
+import { Reservation, Guest } from './hotel/types';
+import type { Room } from './queries/hooks/useRooms';
 import { format } from 'date-fns';
 import { HOTEL_POREC_ROOMS } from './hotel/hotelData';
 import { formatRoomNumber } from './hotel/calendarUtils';
@@ -270,7 +271,7 @@ ${this.getEmailStyles()}
                 <div class="info-grid">
                     <div class="info-item">
                         <div class="info-label">Room</div>
-                        <div class="info-value">${formatRoomNumber(room)} - ${room.type.replace('-', ' ').replace(/\b\w/g, (l) => l.toUpperCase())}</div>
+                        <div class="info-value">${formatRoomNumber(room)} - ${room.name_english}</div>
                     </div>
                     <div class="info-item">
                         <div class="info-label">Guests</div>
@@ -754,7 +755,8 @@ ${this.getEmailStyles()}
     try {
       // Try to get guest and room from parameters, fallback to sample data
       const guestData = guest || reservation.guest;
-      const roomData = room || HOTEL_POREC_ROOMS.find((r) => r.id === reservation.roomId);
+      const roomData =
+        room || HOTEL_POREC_ROOMS.find((r) => r.id.toString() === reservation.roomId);
 
       if (!guestData || !roomData) {
         throw new Error('Guest or room not found');
@@ -788,7 +790,8 @@ ${this.getEmailStyles()}
     try {
       // Try to get guest and room from parameters, fallback to sample data
       const guestData = guest || reservation.guest;
-      const roomData = room || HOTEL_POREC_ROOMS.find((r) => r.id === reservation.roomId);
+      const roomData =
+        room || HOTEL_POREC_ROOMS.find((r) => r.id.toString() === reservation.roomId);
 
       if (!guestData || !roomData) {
         throw new Error('Guest or room not found');
@@ -820,7 +823,8 @@ ${this.getEmailStyles()}
     try {
       // Try to get guest and room from parameters, fallback to sample data
       const guestData = guest || reservation.guest;
-      const roomData = room || HOTEL_POREC_ROOMS.find((r) => r.id === reservation.roomId);
+      const roomData =
+        room || HOTEL_POREC_ROOMS.find((r) => r.id.toString() === reservation.roomId);
 
       if (!guestData || !roomData) {
         throw new Error('Guest or room not found');

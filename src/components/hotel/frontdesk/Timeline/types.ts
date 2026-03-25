@@ -1,4 +1,5 @@
-import { Room, Reservation } from '../../../../lib/hotel/types';
+import { Reservation } from '../../../../lib/hotel/types';
+import type { Room } from '../../../../lib/queries/hooks/useRooms';
 
 export interface RoomTypeAvailability {
   total: number;

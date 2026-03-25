@@ -1,6 +1,6 @@
 import { supabase } from '../supabase';
 import { InventoryItem, RoomServiceOrder, OrderItem, OrderValidationResult } from './orderTypes';
-import { Room } from './types';
+import type { Room } from '@/lib/queries/hooks/useRooms';
 
 /**
  * Fetch all food and beverage items from inventory
@@ -255,7 +255,7 @@ async function reduceInventoryQuantity(itemId: number, quantityToReduce: number)
 export function getAvailableRooms(rooms: Room[]): Room[] {
   // For now, return all rooms. In a real implementation,
   // you might filter by occupancy status
-  return rooms.sort((a, b) => a.number.localeCompare(b.number));
+  return rooms.sort((a, b) => a.room_number.localeCompare(b.room_number));
 }
 
 /**

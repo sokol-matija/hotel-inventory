@@ -111,7 +111,7 @@ export default function EmailTestPage() {
                 <div>
                   <div className="text-sm text-gray-500">Room</div>
                   <div className="font-medium">
-                    {testData.room.number} - {testData.room.nameEnglish}
+                    {testData.room.room_number} - {testData.room.name_english}
                   </div>
                 </div>
                 <div>

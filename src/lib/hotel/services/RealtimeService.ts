@@ -3,7 +3,8 @@
 
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { supabase } from '../../supabase';
-import { Reservation, Room, Guest } from '../types';
+import { Reservation, Guest } from '../types';
+import type { Room } from '@/lib/queries/hooks/useRooms';
 import { HOTEL_ID } from '../constants';
 
 export type RealtimeEventType = 'INSERT' | 'UPDATE' | 'DELETE';

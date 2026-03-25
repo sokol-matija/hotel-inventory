@@ -24,7 +24,8 @@
  * @since August 2025
  */
 
-import { Reservation, Room } from '../types';
+import { Reservation } from '../types';
+import type { Room } from '@/lib/queries/hooks/useRooms';
 import { DatabaseAdapter } from './DatabaseAdapter';
 import { startOfDay, endOfDay } from 'date-fns';
 
@@ -236,20 +237,28 @@ export class ConflictDetectionService {
   ): Promise<Room[]> {
     try {
       const allRooms = await this.databaseAdapter.getRooms();
-      const originalRoom = allRooms.find((r) => r.id === originalRoomId);
+      const originalRoom = allRooms.find((r) => r.id.toString() === originalRoomId);
 
       if (!originalRoom) return [];
 
       const alternatives: Room[] = [];
 
       for (const room of allRooms) {
-        if (room.id === originalRoomId) continue;
+        if (room.id.toString() === originalRoomId) continue;
 
         // Check if room is available
-        const roomConflict = await this.checkNewReservation(room.id, checkIn, checkOut, '');
+        const roomConflict = await this.checkNewReservation(
+          room.id.toString(),
+          checkIn,
+          checkOut,
+          ''
+        );
         if (!roomConflict.hasConflict) {
           // Prefer same room type or higher
-          if (room.type === originalRoom.type || room.isPremium >= originalRoom.isPremium) {
+          if (
+            room.room_types?.code === originalRoom.room_types?.code ||
+            (room.is_premium ? 1 : 0) >= (originalRoom.is_premium ? 1 : 0)
+          ) {
             alternatives.push(room);
           }
         }
@@ -337,15 +346,17 @@ export class ConflictDetectionService {
     // to avoid infinite recursion: findAlternativeRooms → checkNewReservation → validateBusinessRules → findAlternativeRooms
     try {
       const room = await this.databaseAdapter.getRoomById(roomId);
-      if (room && !room.isPremium) {
+      if (room && !room.is_premium) {
         const allRooms = await this.databaseAdapter.getRooms();
-        const premiumAlternatives = allRooms.filter((r) => r.isPremium && r.id !== roomId);
+        const premiumAlternatives = allRooms.filter(
+          (r) => r.is_premium && r.id.toString() !== roomId
+        );
 
         if (premiumAlternatives.length > 0) {
           suggestions.push({
             type: 'room_upgrade',
-            message: `Premium room ${premiumAlternatives[0].number} available for upgrade`,
-            roomId: premiumAlternatives[0].id,
+            message: `Premium room ${premiumAlternatives[0].room_number} available for upgrade`,
+            roomId: premiumAlternatives[0].id.toString(),
             benefitDescription: 'Enhanced amenities and better view',
           });
         }

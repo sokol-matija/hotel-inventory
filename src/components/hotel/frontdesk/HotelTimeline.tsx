@@ -26,13 +26,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../../../lib/queries/queryKeys';
 import { format } from 'date-fns';
 import { formatRoomNumber } from '../../../lib/hotel/calendarUtils';
-import {
-  CalendarEvent,
-  ReservationStatus,
-  Reservation,
-  Room,
-  Guest,
-} from '../../../lib/hotel/types';
+import { CalendarEvent, ReservationStatus, Reservation, Guest } from '../../../lib/hotel/types';
+import type { Room } from '../../../lib/queries/hooks/useRooms';
 import ReservationPopup from './Reservations/ReservationPopup';
 import ModernCreateBookingModal from './ModernCreateBookingModal';
 import RoomChangeConfirmDialog from './RoomChangeConfirmDialog';
@@ -345,8 +340,8 @@ export default function HotelTimeline({
       const reservation = localReservations.find((r) => r.id === reservationId);
       if (!reservation) throw new Error('Reservation not found');
 
-      const oldRoom = rooms.find((r) => r.id === reservation.roomId);
-      const newRoom = rooms.find((r) => r.id === newRoomId);
+      const oldRoom = rooms.find((r) => r.id.toString() === reservation.roomId);
+      const newRoom = rooms.find((r) => r.id.toString() === newRoomId);
       if (!oldRoom || !newRoom) throw new Error('Room not found');
 
       const isVirtualToReal =
@@ -391,7 +386,7 @@ export default function HotelTimeline({
         if (firstConflict?.suggestedAlternatives?.length) {
           hotelNotification.info(
             'Alternative Rooms',
-            `Try: ${firstConflict.suggestedAlternatives.map((r) => `Room ${r.number}`).join(', ')}`,
+            `Try: ${firstConflict.suggestedAlternatives.map((r) => `Room ${r.room_number}`).join(', ')}`,
             7
           );
         }
@@ -407,7 +402,7 @@ export default function HotelTimeline({
       }
 
       const guest = guests.find((g) => g.id === reservation.guestId);
-      const isRoomTypeChange = oldRoom.type !== newRoom.type;
+      const isRoomTypeChange = oldRoom.room_types?.code !== newRoom.room_types?.code;
       const updatedReservationData: Partial<Reservation> = {
         roomId: newRoomId,
         checkIn: newCheckIn,
@@ -518,14 +513,14 @@ export default function HotelTimeline({
   const handleConfirmRoomChange = async () => {
     if (!roomChangeDialog.show || !roomChangeDialog.reservationId) return;
     const reservation = localReservations.find((r) => r.id === roomChangeDialog.reservationId);
-    const targetRoom = rooms.find((r) => r.id === roomChangeDialog.toRoomId);
-    const currentRoom = rooms.find((r) => r.id === roomChangeDialog.fromRoomId);
+    const targetRoom = rooms.find((r) => r.id.toString() === roomChangeDialog.toRoomId);
+    const currentRoom = rooms.find((r) => r.id.toString() === roomChangeDialog.fromRoomId);
     if (!reservation || !targetRoom || !currentRoom) return;
 
     try {
       // Pricing recalculation for room changes will be handled via reservation_charges (Phase 7+)
       const updatedReservationData = {
-        roomId: targetRoom.id,
+        roomId: targetRoom.id.toString(),
         checkIn: reservation.checkIn,
         checkOut: reservation.checkOut,
       };
@@ -565,13 +560,13 @@ export default function HotelTimeline({
   const handleFreeUpgrade = async () => {
     if (!roomChangeDialog.show || !roomChangeDialog.reservationId) return;
     const reservation = localReservations.find((r) => r.id === roomChangeDialog.reservationId);
-    const targetRoom = rooms.find((r) => r.id === roomChangeDialog.toRoomId);
-    const currentRoom = rooms.find((r) => r.id === roomChangeDialog.fromRoomId);
+    const targetRoom = rooms.find((r) => r.id.toString() === roomChangeDialog.toRoomId);
+    const currentRoom = rooms.find((r) => r.id.toString() === roomChangeDialog.fromRoomId);
     if (!reservation || !targetRoom || !currentRoom) return;
 
     try {
       const updatedReservationData = {
-        roomId: targetRoom.id,
+        roomId: targetRoom.id.toString(),
         checkIn: reservation.checkIn,
         checkOut: reservation.checkOut,
       };
@@ -620,7 +615,7 @@ export default function HotelTimeline({
       const reservation = localReservations.find((r) => r.id === reservationId);
       if (!reservation) throw new Error('Reservation not found');
 
-      const room = rooms.find((r) => r.id === reservation.roomId);
+      const room = rooms.find((r) => r.id.toString() === reservation.roomId);
       const guest = guests.find((g) => g.id === reservation.guestId);
       const newCheckIn = side === 'start' ? newDate : reservation.checkIn;
       const newCheckOut = side === 'end' ? newDate : reservation.checkOut;
@@ -693,7 +688,7 @@ export default function HotelTimeline({
 
   const selectedEvent: CalendarEvent | null = useMemo(() => {
     if (!selectedReservation) return null;
-    const room = rooms.find((r) => r.id === selectedReservation.roomId);
+    const room = rooms.find((r) => r.id.toString() === selectedReservation.roomId);
     const guest = guests.find((g) => g.id === selectedReservation.guestId);
     return {
       id: `event-${selectedReservation.id}`,
@@ -705,7 +700,7 @@ export default function HotelTimeline({
       resource: {
         status: selectedReservation.status,
         guestName: guest?.fullName || 'Guest',
-        roomNumber: room?.number || 'Unknown',
+        roomNumber: room?.room_number || 'Unknown',
         numberOfGuests: selectedReservation.numberOfGuests,
         hasPets: guest?.hasPets || false,
       },
@@ -740,7 +735,7 @@ export default function HotelTimeline({
             checkOut: completedSelection.checkOutDate,
           };
           setDragCreatePreSelectedDates(dragDates);
-          const room = rooms.find((r) => r.id === roomId);
+          const room = rooms.find((r) => r.id.toString() === roomId);
           if (room) handleRoomClick(room);
         }
       }
@@ -751,7 +746,7 @@ export default function HotelTimeline({
   const handleDrinksOrderComplete = async (orderItems: OrderItem[], orderTotal: number) => {
     if (!hotelOrdersReservation) return;
     try {
-      const room = rooms.find((r) => r.id === hotelOrdersReservation.roomId);
+      const room = rooms.find((r) => r.id.toString() === hotelOrdersReservation.roomId);
 
       // Update notes on the reservation (charges are stored separately in reservation_charges)
       const updatedReservation = {
@@ -1105,8 +1100,8 @@ export default function HotelTimeline({
             const reservation = localReservations.find(
               (r) => r.id === roomChangeDialog.reservationId
             );
-            const currentRoom = rooms.find((r) => r.id === roomChangeDialog.fromRoomId);
-            const targetRoom = rooms.find((r) => r.id === roomChangeDialog.toRoomId);
+            const currentRoom = rooms.find((r) => r.id.toString() === roomChangeDialog.fromRoomId);
+            const targetRoom = rooms.find((r) => r.id.toString() === roomChangeDialog.toRoomId);
             const guest = reservation
               ? guests.find((g) => g.id === reservation.guestId) || null
               : null;

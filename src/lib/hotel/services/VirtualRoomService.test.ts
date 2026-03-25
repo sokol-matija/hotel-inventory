@@ -24,23 +24,22 @@ beforeEach(() => {
 
 describe('VirtualRoomService.isVirtualRoom', () => {
   it('returns true for a room on floor 5', () => {
-    const room = buildRoom({ floor: 5, type: 'double' });
+    const room = buildRoom({ floor_number: 5, room_types: { code: 'double' } });
     expect(service.isVirtualRoom(room)).toBe(true);
   });
 
   it('returns true for a room with type UNALLOC regardless of floor', () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const room = buildRoom({ floor: 1, type: 'UNALLOC' as any });
+    const room = buildRoom({ floor_number: 1, room_types: { code: 'UNALLOC' } });
     expect(service.isVirtualRoom(room)).toBe(true);
   });
 
   it('returns false for a normal room on a regular floor', () => {
-    const room = buildRoom({ floor: 2, type: 'double' });
+    const room = buildRoom({ floor_number: 2, room_types: { code: 'double' } });
     expect(service.isVirtualRoom(room)).toBe(false);
   });
 
   it('returns false for floor 4 (boundary below virtual floor)', () => {
-    const room = buildRoom({ floor: 4, type: 'double' });
+    const room = buildRoom({ floor_number: 4, room_types: { code: 'double' } });
     expect(service.isVirtualRoom(room)).toBe(false);
   });
 });

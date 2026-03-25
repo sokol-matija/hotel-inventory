@@ -3,7 +3,8 @@
 
 import { HotelEmailService, EmailLanguage, EmailType } from '../emailService';
 import { ntfyService, BookingNotificationData } from '../ntfyService';
-import { Reservation, Guest, Room } from '../hotel/types';
+import { Reservation, Guest } from '../hotel/types';
+import type { Room } from '../queries/hooks/useRooms';
 import hotelNotification from '../notifications';
 
 export interface TestResult {
@@ -68,26 +69,27 @@ export class EmailTestService {
     };
 
     const testRoom: Room = {
-      id: 'room-301',
-      number: '301',
-      floor: 3,
-      type: 'double',
-      nameCroatian: 'Dvokrevetna soba',
-      nameEnglish: 'Double Room',
-      seasonalRates: {
+      id: 301,
+      room_number: '301',
+      floor_number: 3,
+      room_types: { code: 'double' },
+      name_croatian: 'Dvokrevetna soba',
+      name_english: 'Double Room',
+      seasonal_rates: {
         A: 120,
         B: 150,
         C: 180,
         D: 220,
       },
-      maxOccupancy: 2,
-      isPremium: false,
+      max_occupancy: 2,
+      is_premium: false,
       amenities: ['WiFi', 'Air Conditioning', 'Sea View'],
+      is_clean: true,
     };
 
     const testReservation: Reservation = {
       id: 'test-reservation-001',
-      roomId: testRoom.id,
+      roomId: testRoom.id.toString(),
       guestId: testGuest.id,
       checkIn: new Date(Date.now() + 86400000), // Tomorrow
       checkOut: new Date(Date.now() + 5 * 86400000), // 5 days from now

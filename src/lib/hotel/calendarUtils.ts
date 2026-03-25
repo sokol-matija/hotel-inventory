@@ -1,5 +1,6 @@
 // Hotel Calendar Utilities - Convert hotel data to calendar events
-import { CalendarEvent, Reservation, ReservationStatus, Room } from './types';
+import { CalendarEvent, Reservation, ReservationStatus } from './types';
+import type { Room } from '@/lib/queries/hooks/useRooms';
 import { addDays, isWithinInterval, startOfDay } from 'date-fns';
 
 // Status color mapping for reservation blocks
@@ -53,9 +54,9 @@ export function reservationToCalendarEvent(
     return null;
   }
 
-  const room = rooms.find((r) => r.id === reservation.roomId);
+  const room = rooms.find((r) => r.id.toString() === reservation.roomId);
 
-  const roomNumber = room?.number || 'Unknown';
+  const roomNumber = room?.room_number || 'Unknown';
   const guestName = reservation.guest?.fullName || 'Unknown Guest';
 
   // Create title based on status
@@ -343,17 +344,13 @@ export function generateDateRange(startDate: Date, days: number): Date[] {
 }
 
 // Format room number for display
-export function formatRoomNumber(room: { number: string; isPremium: boolean }): string {
-  return room.isPremium ? `⭐ ${room.number}` : room.number;
+export function formatRoomNumber(room: { room_number: string; is_premium: boolean }): string {
+  return room.is_premium ? `⭐ ${room.room_number}` : room.room_number;
 }
 
 // Get room type display name
-export function getRoomTypeDisplay(room: {
-  type: string;
-  nameCroatian: string;
-  nameEnglish: string;
-}): string {
-  return room.nameEnglish;
+export function getRoomTypeDisplay(room: { name_english: string }): string {
+  return room.name_english;
 }
 
 // Custom event style function for React Big Calendar

@@ -4,6 +4,7 @@
 // DB row type aliases — private to this file. Used as compile-time anchors so that if
 // a DB column is renamed, TypeScript will flag the mismatch here rather than silently drifting.
 import type { Database } from '../database.types';
+import type { Room } from '@/lib/queries/hooks/useRooms';
 
 type _ChargeRow = Database['public']['Tables']['reservation_charges']['Row'];
 type _InvoiceLineRow = Database['public']['Tables']['invoice_lines']['Row'];
@@ -42,24 +43,8 @@ export interface Hotel {
   taxId: string; // OIB - Croatian tax ID
 }
 
-export interface Room {
-  id: string;
-  number: string;
-  floor: number;
-  type: RoomType;
-  nameCroatian: string;
-  nameEnglish: string;
-  seasonalRates: {
-    A: number; // Winter/Early Spring
-    B: number; // Spring/Late Fall
-    C: number; // Early Summer/Early Fall
-    D: number; // Peak Summer
-  };
-  maxOccupancy: number;
-  isPremium: boolean;
-  amenities: string[];
-  is_clean?: boolean;
-}
+// Room interface moved to src/lib/queries/hooks/useRooms.ts (TQ v5 pattern).
+// Import Room from '@/lib/queries/hooks/useRooms' — NOT from here.
 
 export interface GuestChild {
   name: string;

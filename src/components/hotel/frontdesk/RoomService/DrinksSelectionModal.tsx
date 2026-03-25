@@ -305,7 +305,7 @@ export default function DrinksSelectionModal({
 
   if (!isOpen) return null;
 
-  const room = rooms.find((r) => r.id === reservation.roomId);
+  const room = rooms.find((r) => r.id.toString() === reservation.roomId);
   const guest = reservation.guest;
 
   return (

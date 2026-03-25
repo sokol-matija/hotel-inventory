@@ -15,7 +15,7 @@ import {
   Package,
   AlertTriangle,
 } from 'lucide-react';
-import { Room } from '../../../../lib/hotel/types';
+import type { Room } from '../../../../lib/queries/hooks/useRooms';
 import { useRooms } from '../../../../lib/queries/hooks/useRooms';
 import { useGuests } from '../../../../lib/queries/hooks/useGuests';
 import {
@@ -120,7 +120,7 @@ export default function RoomServiceOrders() {
     if (!selectedRoom || orderItems.length === 0 || !validationResult?.isValid) return;
 
     const activeReservation = reservations.find(
-      (r) => r.roomId === selectedRoom.id && r.status === 'checked-in'
+      (r) => r.roomId === selectedRoom.id.toString() && r.status === 'checked-in'
     );
     const guestName =
       activeReservation?.guest?.fullName ||
@@ -129,8 +129,8 @@ export default function RoomServiceOrders() {
     const totals = calculateOrderTotal(orderItems);
 
     const orderData: Omit<RoomServiceOrder, 'id' | 'orderNumber' | 'orderedAt'> = {
-      roomId: selectedRoom.id,
-      roomNumber: selectedRoom.number,
+      roomId: selectedRoom.id.toString(),
+      roomNumber: selectedRoom.room_number,
       guestName,
       items: orderItems,
       subtotal: totals.subtotal,
@@ -205,7 +205,7 @@ export default function RoomServiceOrders() {
                 <select
                   value={selectedRoom?.id || ''}
                   onChange={(e) => {
-                    const room = availableRooms.find((r) => r.id === e.target.value);
+                    const room = availableRooms.find((r) => r.id === Number(e.target.value));
                     setSelectedRoom(room || null);
                   }}
                   className="w-full rounded-md border border-gray-300 p-2"
@@ -213,7 +213,7 @@ export default function RoomServiceOrders() {
                   <option value="">Choose a room...</option>
                   {availableRooms.map((room) => (
                     <option key={room.id} value={room.id}>
-                      Room {room.number} - {room.type}
+                      Room {room.room_number} - {room.room_types?.code ?? ''}
                     </option>
                   ))}
                 </select>
@@ -221,9 +221,9 @@ export default function RoomServiceOrders() {
 
               {selectedRoom && (
                 <div className="rounded-md bg-blue-50 p-3">
-                  <h4 className="font-medium">Room {selectedRoom.number}</h4>
-                  <p className="text-sm text-gray-600">{selectedRoom.type}</p>
-                  <p className="text-sm text-gray-600">Max {selectedRoom.maxOccupancy} guests</p>
+                  <h4 className="font-medium">Room {selectedRoom.room_number}</h4>
+                  <p className="text-sm text-gray-600">{selectedRoom.room_types?.code ?? ''}</p>
+                  <p className="text-sm text-gray-600">Max {selectedRoom.max_occupancy} guests</p>
                 </div>
               )}
             </div>

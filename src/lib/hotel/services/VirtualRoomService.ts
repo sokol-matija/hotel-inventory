@@ -2,7 +2,8 @@
 // Handles creation, assignment, and conversion of virtual rooms (501-599)
 
 import { supabase } from '../../supabase';
-import { Room, Guest } from '../types';
+import { Guest } from '../types';
+import type { Room } from '@/lib/queries/hooks/useRooms';
 import { unifiedPricingService } from './UnifiedPricingService';
 
 export interface VirtualRoomConfig {
@@ -49,7 +50,10 @@ export class VirtualRoomService {
    * Check if a room is a virtual room (Floor 5)
    */
   public isVirtualRoom(room: Room): boolean {
-    return room.floor === this.config.VIRTUAL_FLOOR || room.type === this.config.VIRTUAL_ROOM_TYPE;
+    return (
+      room.floor_number === this.config.VIRTUAL_FLOOR ||
+      room.room_types?.code === this.config.VIRTUAL_ROOM_TYPE
+    );
   }
 
   /**
@@ -387,35 +391,26 @@ export class VirtualRoomService {
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private transformDatabaseRoomToRoom(dbRoom: any): Room {
+    const pricing = dbRoom.room_pricing as
+      | { base_rate: number; pricing_seasons?: { code: string } }[]
+      | null;
     return {
-      id: dbRoom.id.toString(),
-      number: dbRoom.room_number,
-      floor: dbRoom.floor_number,
-      type: dbRoom.room_types?.code || 'double',
-      nameCroatian: `Soba ${dbRoom.room_number}`,
-      nameEnglish: `Room ${dbRoom.room_number}`,
-      seasonalRates: {
-        A:
-          (
-            dbRoom.room_pricing as { base_rate: number; pricing_seasons?: { code: string } }[]
-          )?.find((rp) => rp.pricing_seasons?.code === 'A')?.base_rate ?? 0,
-        B:
-          (
-            dbRoom.room_pricing as { base_rate: number; pricing_seasons?: { code: string } }[]
-          )?.find((rp) => rp.pricing_seasons?.code === 'B')?.base_rate ?? 0,
-        C:
-          (
-            dbRoom.room_pricing as { base_rate: number; pricing_seasons?: { code: string } }[]
-          )?.find((rp) => rp.pricing_seasons?.code === 'C')?.base_rate ?? 0,
-        D:
-          (
-            dbRoom.room_pricing as { base_rate: number; pricing_seasons?: { code: string } }[]
-          )?.find((rp) => rp.pricing_seasons?.code === 'D')?.base_rate ?? 0,
+      id: dbRoom.id as number,
+      room_number: dbRoom.room_number as string,
+      floor_number: dbRoom.floor_number as number,
+      room_types: dbRoom.room_types as { code: string } | null,
+      max_occupancy: (dbRoom.max_occupancy as number) || 2,
+      is_premium: (dbRoom.is_premium as boolean) || false,
+      amenities: (dbRoom.amenities as string[]) || [],
+      is_clean: (dbRoom.is_clean as boolean) || false,
+      name_croatian: `Soba ${dbRoom.room_number as string}`,
+      name_english: `Room ${dbRoom.room_number as string}`,
+      seasonal_rates: {
+        A: pricing?.find((rp) => rp.pricing_seasons?.code === 'A')?.base_rate ?? 0,
+        B: pricing?.find((rp) => rp.pricing_seasons?.code === 'B')?.base_rate ?? 0,
+        C: pricing?.find((rp) => rp.pricing_seasons?.code === 'C')?.base_rate ?? 0,
+        D: pricing?.find((rp) => rp.pricing_seasons?.code === 'D')?.base_rate ?? 0,
       },
-      maxOccupancy: dbRoom.max_occupancy || 2,
-      isPremium: dbRoom.is_premium || false,
-      amenities: dbRoom.amenities || [],
-      is_clean: dbRoom.is_clean || false,
     };
   }
 }

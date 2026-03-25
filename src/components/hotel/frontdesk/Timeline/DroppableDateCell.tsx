@@ -1,6 +1,7 @@
 import { format, startOfDay } from 'date-fns';
 import { useDrop } from 'react-dnd';
-import { Reservation, Room } from '../../../../lib/hotel/types';
+import { Reservation } from '../../../../lib/hotel/types';
+import type { Room } from '../../../../lib/queries/hooks/useRooms';
 import { ItemTypes, DragItem, SimpleDragCreateHook } from './types';
 
 const EMPTY_RESERVATIONS: Reservation[] = [];
@@ -59,7 +60,7 @@ export function DroppableDateCell({
       (resCheckOutDate.getTime() - startOfDay(date).getTime()) / (24 * 60 * 60 * 1000)
     );
 
-    if (res.roomId === room.id && resStartDay <= dayIndex && resEndDay > dayIndex) {
+    if (res.roomId === room.id.toString() && resStartDay <= dayIndex && resEndDay > dayIndex) {
       if (dayIndex === resStartDay && isSecondHalf) return true;
       if (dayIndex === resEndDay && !isSecondHalf) return true;
       if (dayIndex > resStartDay && dayIndex < resEndDay) return true;
@@ -69,7 +70,7 @@ export function DroppableDateCell({
 
   const isInDragPreview =
     dragCreatePreview &&
-    dragCreatePreview.roomId === room.id &&
+    dragCreatePreview.roomId === room.id.toString() &&
     isDragCreating &&
     ((dayIndex === dragCreatePreview.startDay && isSecondHalf) ||
       (dayIndex > dragCreatePreview.startDay && dayIndex < dragCreatePreview.endDay) ||
@@ -82,7 +83,7 @@ export function DroppableDateCell({
         const isAllocationFromFloor5 = item.currentRoomFloor === 5;
 
         if (isAllocationFromFloor5) {
-          onMoveReservation(item.reservationId, room.id, item.checkIn, item.checkOut);
+          onMoveReservation(item.reservationId, room.id.toString(), item.checkIn, item.checkOut);
         } else {
           const originalDuration = Math.ceil(
             (item.checkOut.getTime() - item.checkIn.getTime()) / (24 * 60 * 60 * 1000)
@@ -94,20 +95,20 @@ export function DroppableDateCell({
             const newCheckOut = new Date(newCheckIn);
             newCheckOut.setDate(newCheckOut.getDate() + originalDuration);
             newCheckOut.setHours(11, 0, 0, 0);
-            onMoveReservation(item.reservationId, room.id, newCheckIn, newCheckOut);
+            onMoveReservation(item.reservationId, room.id.toString(), newCheckIn, newCheckOut);
           } else {
             const newCheckOut = new Date(date);
             newCheckOut.setHours(11, 0, 0, 0);
             const newCheckIn = new Date(newCheckOut);
             newCheckIn.setDate(newCheckIn.getDate() - originalDuration);
             newCheckIn.setHours(15, 0, 0, 0);
-            onMoveReservation(item.reservationId, room.id, newCheckIn, newCheckOut);
+            onMoveReservation(item.reservationId, room.id.toString(), newCheckIn, newCheckOut);
           }
         }
       },
       canDrop: (item: DragItem) => {
         const isSamePosition =
-          item.currentRoomId === room.id &&
+          item.currentRoomId === room.id.toString() &&
           new Date(item.checkIn).toDateString() === date.toDateString() &&
           ((isSecondHalf && new Date(item.checkIn).getHours() >= 12) ||
             (!isSecondHalf && new Date(item.checkIn).getHours() < 12));
@@ -123,15 +124,18 @@ export function DroppableDateCell({
 
   const handleClick = (e: React.MouseEvent) => {
     if (hasExistingReservation) return;
-    if (shouldHighlightCell && shouldHighlightCell(room.id, date, !isSecondHalf) !== 'none') {
+    if (
+      shouldHighlightCell &&
+      shouldHighlightCell(room.id.toString(), date, !isSecondHalf) !== 'none'
+    ) {
       e.preventDefault();
-      onCellClick?.(room.id, date, !isSecondHalf);
+      onCellClick?.(room.id.toString(), date, !isSecondHalf);
     }
   };
 
   const getSimpleDragCreateStyle = () => {
     if (!shouldHighlightCell) return '';
-    const highlightType = shouldHighlightCell(room.id, date, !isSecondHalf);
+    const highlightType = shouldHighlightCell(room.id.toString(), date, !isSecondHalf);
     switch (highlightType) {
       case 'selectable':
         return !isSecondHalf
@@ -146,7 +150,7 @@ export function DroppableDateCell({
 
   const handleMouseEnter = () => {
     if (dragCreate?.actions?.setHoverPreview && dragCreate?.state?.isSelecting) {
-      dragCreate.actions.setHoverPreview(room.id, date, !isSecondHalf);
+      dragCreate.actions.setHoverPreview(room.id.toString(), date, !isSecondHalf);
     }
   };
 
@@ -172,9 +176,9 @@ export function DroppableDateCell({
             !hasExistingReservation &&
             onCellClick &&
             shouldHighlightCell &&
-            shouldHighlightCell(room.id, date, !isSecondHalf) !== 'none'
+            shouldHighlightCell(room.id.toString(), date, !isSecondHalf) !== 'none'
           ) {
-            onCellClick(room.id, date, !isSecondHalf);
+            onCellClick(room.id.toString(), date, !isSecondHalf);
           }
         }
       }}

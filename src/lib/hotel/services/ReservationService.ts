@@ -1,7 +1,8 @@
 // ReservationService - Business logic for reservation management
 // Handles email operations, fiscal invoice generation, and reservation state management
 
-import { CalendarEvent, Reservation, Guest, Room, Company } from '../types';
+import { CalendarEvent, Reservation, Guest, Company } from '../types';
+import type { Room } from '@/lib/queries/hooks/useRooms';
 import { RESERVATION_STATUS_COLORS } from '../calendarUtils';
 import { HotelEmailService } from '../../emailService';
 import hotelNotification from '../../notifications';
@@ -215,7 +216,7 @@ export class ReservationService {
         vatAmount: reservation.vatAmount,
         items: [
           {
-            name: `Room ${room.number} - ${room.nameEnglish}`,
+            name: `Room ${room.room_number} - ${room.name_english}`,
             quantity: reservation.numberOfNights,
             unitPrice: reservation.baseRoomRate,
             vatRate: 13, // Croatian accommodation VAT rate (since 2018)

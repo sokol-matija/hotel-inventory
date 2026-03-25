@@ -206,7 +206,7 @@ export default function ReservationPopup({
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2">
-              <span>🔧 Room {room.number} - Maintenance</span>
+              <span>🔧 Room {room.room_number} - Maintenance</span>
               <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
                 Out of Service
               </Badge>
@@ -215,7 +215,7 @@ export default function ReservationPopup({
           <div className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Room {room.number}</CardTitle>
+                <CardTitle className="text-lg">Room {room.room_number}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center space-x-2">
@@ -244,7 +244,7 @@ export default function ReservationPopup({
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <span>Room {room.number}</span>
+                <span>Room {room.room_number}</span>
                 <Badge
                   style={{
                     backgroundColor: statusColors.backgroundColor,
@@ -564,7 +564,7 @@ export default function ReservationPopup({
                   </div>
                   <div className="space-y-2">
                     <div className="text-sm text-gray-500">Room Type</div>
-                    <div className="font-medium">{room.nameEnglish}</div>
+                    <div className="font-medium">{room.name_english}</div>
                   </div>
                 </div>
 

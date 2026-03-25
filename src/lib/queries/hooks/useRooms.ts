@@ -1,25 +1,133 @@
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
+import { QueryData } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
 import { queryKeys } from '../queryKeys';
-import { hotelDataService } from '../../hotel/services/HotelDataService';
-import { Room } from '../../hotel/types';
+
+// ─── Query definition ────────────────────────────────────────────────────────
+
+const roomsQuery = supabase
+  .from('rooms')
+  .select(
+    '*, room_types!room_type_id(code), room_pricing(base_rate, pricing_seasons(code, year_pattern))'
+  )
+  .eq('is_active', true)
+  .order('room_number');
+
+// ─── Derived types ────────────────────────────────────────────────────────────
+
+type RoomRow = QueryData<typeof roomsQuery>[number];
+
+export interface Room {
+  // DB columns (snake_case — same as DB)
+  id: number;
+  room_number: string;
+  floor_number: number;
+  max_occupancy: number;
+  is_premium: boolean;
+  amenities: string[];
+  is_clean: boolean;
+  room_types: { code: string } | null;
+
+  // Computed (not in DB — derived from room_types.code)
+  name_english: string;
+  name_croatian: string;
+  seasonal_rates: { A: number; B: number; C: number; D: number };
+}
+
+// ─── Name lookup tables ───────────────────────────────────────────────────────
+
+const ROOM_TYPE_CROATIAN_NAMES: Record<string, string> = {
+  BD: 'Velika dvokrevetna soba',
+  BS: 'Velika jednokrevetna soba',
+  D: 'Dvokrevetna soba',
+  T: 'Trokrevetna soba',
+  S: 'Jednokrevetna soba',
+  F: 'Obiteljska soba',
+  A: 'Apartman',
+  RA: '401 ROOFTOP APARTMAN',
+};
+
+const ROOM_TYPE_ENGLISH_NAMES: Record<string, string> = {
+  // Legacy single-letter codes
+  BD: 'Big Double Room',
+  BS: 'Big Single Room',
+  D: 'Double Room',
+  T: 'Triple Room',
+  S: 'Single Room',
+  F: 'Family Room',
+  A: 'Apartment',
+  RA: '401 Rooftop Apartment',
+  // Current database room types (lowercase)
+  single: 'Single Room',
+  double: 'Double Room',
+  triple: 'Triple Room',
+  family: 'Family Room',
+  apartment: 'Apartment',
+};
+
+function getRoomCroatianName(code: string): string {
+  return ROOM_TYPE_CROATIAN_NAMES[code] ?? 'Dvokrevetna soba';
+}
+
+function getRoomEnglishName(code: string): string {
+  return ROOM_TYPE_ENGLISH_NAMES[code] ?? `${code.charAt(0).toUpperCase()}${code.slice(1)} Room`;
+}
+
+// ─── Mapping helper ───────────────────────────────────────────────────────────
+
+function mapRoom(row: RoomRow): Room {
+  const code = row.room_types?.code ?? 'double';
+  const pricing = row.room_pricing as Array<{
+    base_rate: number;
+    pricing_seasons: { code: string; year_pattern: number } | null;
+  }> | null;
+
+  return {
+    id: row.id,
+    room_number: row.room_number,
+    floor_number: row.floor_number,
+    max_occupancy: row.max_occupancy ?? 2,
+    is_premium: row.is_premium ?? false,
+    amenities: (row.amenities as string[]) ?? [],
+    is_clean: row.is_clean ?? false,
+    room_types: row.room_types,
+    name_english: getRoomEnglishName(code),
+    name_croatian: getRoomCroatianName(code),
+    seasonal_rates: {
+      A: pricing?.find((rp) => rp.pricing_seasons?.code === 'A')?.base_rate ?? 50,
+      B: pricing?.find((rp) => rp.pricing_seasons?.code === 'B')?.base_rate ?? 60,
+      C: pricing?.find((rp) => rp.pricing_seasons?.code === 'C')?.base_rate ?? 80,
+      D: pricing?.find((rp) => rp.pricing_seasons?.code === 'D')?.base_rate ?? 100,
+    },
+  };
+}
+
+// ─── Service function ─────────────────────────────────────────────────────────
+
+async function fetchRooms(): Promise<Room[]> {
+  const { data } = await roomsQuery.throwOnError();
+  return (data ?? []).map(mapRoom);
+}
+
+// ─── Hooks ─────────────────────────────────────────────────────────────────────
 
 export function useRooms() {
   return useQuery({
     queryKey: queryKeys.rooms.all(),
-    queryFn: () => hotelDataService.getRooms(),
+    queryFn: fetchRooms,
   });
 }
 
-/** Derived view: rooms indexed by floor. Shares the same query as useRooms(). */
+/** Derived view: rooms grouped by floor_number. Shares the same query as useRooms(). */
 export function useRoomsByFloor() {
   const { data: rooms = [], ...rest } = useRooms();
 
   const roomsByFloor = useMemo(() => {
     const map: Record<number, Room[]> = {};
     rooms.forEach((room) => {
-      if (!map[room.floor]) map[room.floor] = [];
-      map[room.floor].push(room);
+      if (!map[room.floor_number]) map[room.floor_number] = [];
+      map[room.floor_number].push(room);
     });
     return map;
   }, [rooms]);
@@ -27,12 +135,12 @@ export function useRoomsByFloor() {
   return { roomsByFloor, ...rest };
 }
 
-/** Derived view: rooms keyed by id. Shares the same query as useRooms(). */
+/** Derived view: rooms keyed by id (number). Shares the same query as useRooms(). */
 export function useRoomLookup() {
   const { data: rooms = [], ...rest } = useRooms();
 
   const roomLookup = useMemo(() => {
-    const map: Record<string, Room> = {};
+    const map: Record<number, Room> = {};
     rooms.forEach((room) => {
       map[room.id] = room;
     });

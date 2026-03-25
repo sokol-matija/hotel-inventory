@@ -94,7 +94,7 @@ export default function HotelOrdersModal({
   const handleAddToRoomBill = () => {
     if (orderItems.length === 0) return;
 
-    const room = rooms.find((r) => r.id === reservation.roomId);
+    const room = rooms.find((r) => r.id.toString() === reservation.roomId);
     const totals = calculateOrderTotal();
 
     processOrder.mutate(
@@ -147,7 +147,7 @@ export default function HotelOrdersModal({
 
   if (!isOpen) return null;
 
-  const room = rooms.find((r) => r.id === reservation.roomId);
+  const room = rooms.find((r) => r.id.toString() === reservation.roomId);
   const guest = reservation.guest;
 
   return (

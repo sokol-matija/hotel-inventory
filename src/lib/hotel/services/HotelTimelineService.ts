@@ -2,7 +2,8 @@
 // Handles date navigation, room status calculations, drag operations, and reservation management
 
 import { format, addDays, startOfDay, isSameDay } from 'date-fns';
-import { CalendarEvent, Reservation, Room, Guest, ReservationStatus } from '../types';
+import { CalendarEvent, Reservation, Guest, ReservationStatus } from '../types';
+import type { Room } from '@/lib/queries/hooks/useRooms';
 import { RESERVATION_STATUS_COLORS } from '../calendarUtils';
 
 export interface TimelineContextMenu {
@@ -130,7 +131,7 @@ export class HotelTimelineService {
         return checkIn < timelineEnd && checkOut > timelineStart;
       })
       .map((reservation) => {
-        const room = rooms.find((r) => r.id === reservation.roomId);
+        const room = rooms.find((r) => r.id.toString() === reservation.roomId);
 
         return {
           id: `${reservation.id}-${reservation.roomId}`,
@@ -142,7 +143,7 @@ export class HotelTimelineService {
           resource: {
             status: reservation.status,
             guestName: reservation.guest?.fullName ?? 'Unknown Guest',
-            roomNumber: room ? room.number : 'Unknown Room',
+            roomNumber: room ? room.room_number : 'Unknown Room',
             numberOfGuests: reservation.adults + reservation.children.length,
             hasPets: reservation.hasPets ?? false,
           },
@@ -213,7 +214,7 @@ export class HotelTimelineService {
 
     // Initialize all rooms as available
     rooms.forEach((room) => {
-      occupancy[room.id] = { status: 'available' };
+      occupancy[room.id.toString()] = { status: 'available' };
     });
 
     // Process reservations for the target date
@@ -253,7 +254,7 @@ export class HotelTimelineService {
 
     // Initialize all rooms as available
     rooms.forEach((room) => {
-      occupancy[room.id] = { status: 'available' };
+      occupancy[room.id.toString()] = { status: 'available' };
     });
 
     // Process each reservation
@@ -301,10 +302,10 @@ export class HotelTimelineService {
     const roomsByFloor: Record<number, Room[]> = {};
 
     rooms.forEach((room) => {
-      if (!roomsByFloor[room.floor]) {
-        roomsByFloor[room.floor] = [];
+      if (!roomsByFloor[room.floor_number]) {
+        roomsByFloor[room.floor_number] = [];
       }
-      roomsByFloor[room.floor].push(room);
+      roomsByFloor[room.floor_number].push(room);
     });
 
     return roomsByFloor;
@@ -381,7 +382,7 @@ export class HotelTimelineService {
     rooms: Room[]
   ): { valid: boolean; error?: string } {
     // Check if target room exists
-    const targetRoom = rooms.find((r) => r.id === targetRoomId);
+    const targetRoom = rooms.find((r) => r.id.toString() === targetRoomId);
     if (!targetRoom) {
       return { valid: false, error: 'Target room not found' };
     }
@@ -398,7 +399,7 @@ export class HotelTimelineService {
     if (conflicts.length > 0) {
       return {
         valid: false,
-        error: `Room ${targetRoom.number} has conflicting reservations during this period`,
+        error: `Room ${targetRoom.room_number} has conflicting reservations during this period`,
       };
     }
 

@@ -141,14 +141,14 @@ export function RoomAvailabilityModal({
                   <div
                     key={room.id}
                     className={`rounded-md border p-2 text-center text-xs font-medium ${
-                      room.isPremium
+                      room.is_premium
                         ? 'border-amber-200 bg-amber-50 text-amber-700'
-                        : room.floor >= 4
+                        : room.floor_number >= 4
                           ? 'border-purple-200 bg-purple-50 text-purple-700'
                           : 'border-blue-200 bg-blue-50 text-blue-700'
                     }`}
                   >
-                    {room.number}
+                    {room.room_number}
                   </div>
                 ))}
               </div>

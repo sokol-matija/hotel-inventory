@@ -9,7 +9,7 @@ import { CheckCircle2, Loader2, Copy, Smartphone } from 'lucide-react';
 
 interface RoomStatus {
   id: string;
-  number: string;
+  room_number: string;
   is_clean: boolean;
   last_updated: Date | null;
 }
@@ -67,7 +67,7 @@ export const NFCTestPage = () => {
       setRooms(
         (data || []).map((room) => ({
           id: String(room.id),
-          number: room.room_number,
+          room_number: room.room_number,
           is_clean: room.is_clean || false,
           last_updated: null,
         }))
@@ -225,7 +225,7 @@ export const NFCTestPage = () => {
                   >
                     <div className="flex-1">
                       <div className="flex items-center gap-3">
-                        <span className="font-semibold">Room {room.number}</span>
+                        <span className="font-semibold">Room {room.room_number}</span>
                         <Badge variant={room.is_clean ? 'default' : 'destructive'}>
                           {room.is_clean ? '✅ Clean' : '❌ Dirty'}
                         </Badge>
@@ -298,7 +298,7 @@ export const NFCTestPage = () => {
                   className="flex items-center justify-between rounded border bg-gray-50 p-2"
                 >
                   <div>
-                    <p className="text-sm font-medium">Room {room.number}</p>
+                    <p className="text-sm font-medium">Room {room.room_number}</p>
                     <p className="text-xs break-all text-gray-500">{uri}</p>
                   </div>
                   <Button

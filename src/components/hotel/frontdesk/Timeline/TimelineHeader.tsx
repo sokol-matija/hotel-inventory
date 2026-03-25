@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { format, addDays, isSameDay } from 'date-fns';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '../../../ui/button';
-import { Room, Reservation } from '../../../../lib/hotel/types';
+import { Reservation } from '../../../../lib/hotel/types';
+import type { Room } from '../../../../lib/queries/hooks/useRooms';
 import { DayAvailability } from './types';
 
 interface TimelineHeaderProps {
@@ -30,18 +31,18 @@ function calculateDayAvailability(
   });
 
   const occupiedRoomIds = new Set(occupiedReservations.map((r) => r.roomId));
-  const availableRooms = rooms.filter((room) => !occupiedRoomIds.has(room.id));
+  const availableRooms = rooms.filter((room) => !occupiedRoomIds.has(room.id.toString()));
 
   const roomsByType = {
-    standard: rooms.filter((r) => !r.isPremium && r.floor <= 2),
-    premium: rooms.filter((r) => r.isPremium && r.floor <= 3),
-    suite: rooms.filter((r) => r.floor >= 4),
+    standard: rooms.filter((r) => !r.is_premium && r.floor_number <= 2),
+    premium: rooms.filter((r) => r.is_premium && r.floor_number <= 3),
+    suite: rooms.filter((r) => r.floor_number >= 4),
   };
 
   const availableByType = {
-    standard: availableRooms.filter((r) => !r.isPremium && r.floor <= 2),
-    premium: availableRooms.filter((r) => r.isPremium && r.floor <= 3),
-    suite: availableRooms.filter((r) => r.floor >= 4),
+    standard: availableRooms.filter((r) => !r.is_premium && r.floor_number <= 2),
+    premium: availableRooms.filter((r) => r.is_premium && r.floor_number <= 3),
+    suite: availableRooms.filter((r) => r.floor_number >= 4),
   };
 
   return {

@@ -16,7 +16,8 @@ import {
   Pencil,
 } from 'lucide-react';
 import EditChargesPanel from './EditChargesPanel';
-import { Reservation, Guest, Room, Company } from '../../../../lib/hotel/types';
+import { Reservation, Guest, Company } from '../../../../lib/hotel/types';
+import type { Room } from '../../../../lib/queries/hooks/useRooms';
 import { generatePDFInvoice, generateInvoiceNumber } from '../../../../lib/pdfInvoiceGenerator';
 import { useUpdateReservation } from '../../../../lib/queries/hooks/useReservations';
 import { useReservationCharges } from '../../../../lib/queries/hooks/useReservationCharges';
@@ -212,7 +213,7 @@ export default function PaymentDetailsModal({
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <Calculator className="h-5 w-5" />
-            <span>Payment Breakdown - Room {room.number}</span>
+            <span>Payment Breakdown - Room {room.room_number}</span>
           </DialogTitle>
         </DialogHeader>
 
@@ -231,7 +232,7 @@ export default function PaymentDetailsModal({
                 <div>
                   <div className="text-sm text-gray-500">Room</div>
                   <div className="font-medium">
-                    {room.number} - {room.nameEnglish}
+                    {room.room_number} - {room.name_english}
                   </div>
                 </div>
                 <div>

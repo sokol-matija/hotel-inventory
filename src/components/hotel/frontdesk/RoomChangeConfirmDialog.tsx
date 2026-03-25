@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import { Button } from '../../ui/button';
 import { Badge } from '../../ui/badge';
 import { formatRoomNumber, getRoomTypeDisplay } from '../../../lib/hotel/calendarUtils';
-import { Room, Reservation, Guest } from '../../../lib/hotel/types';
+import { Reservation, Guest } from '../../../lib/hotel/types';
+import type { Room } from '../../../lib/queries/hooks/useRooms';
 import { ArrowRight, Gift, DollarSign, X } from 'lucide-react';
 
 interface RoomChangeConfirmDialogProps {
@@ -30,8 +31,8 @@ export default function RoomChangeConfirmDialog({
   if (!isOpen) return null;
 
   // Calculate price difference (using average seasonal rate)
-  const currentRate = Object.values(currentRoom.seasonalRates).reduce((a, b) => a + b, 0) / 4;
-  const targetRate = Object.values(targetRoom.seasonalRates).reduce((a, b) => a + b, 0) / 4;
+  const currentRate = Object.values(currentRoom.seasonal_rates).reduce((a, b) => a + b, 0) / 4;
+  const targetRate = Object.values(targetRoom.seasonal_rates).reduce((a, b) => a + b, 0) / 4;
   const priceDifference = targetRate - currentRate;
   const isUpgrade = priceDifference > 0;
   const isDowngrade = priceDifference < 0;
@@ -67,7 +68,7 @@ export default function RoomChangeConfirmDialog({
               <div className="text-lg font-bold text-gray-900">{formatRoomNumber(currentRoom)}</div>
               <div className="text-sm text-gray-600">{getRoomTypeDisplay(currentRoom)}</div>
               <div className="mt-2 text-sm font-medium text-gray-700">€{currentRate}/night</div>
-              {currentRoom.isPremium && (
+              {currentRoom.is_premium && (
                 <Badge variant="secondary" className="mt-2 text-xs">
                   Premium
                 </Badge>
@@ -85,7 +86,7 @@ export default function RoomChangeConfirmDialog({
               <div className="text-lg font-bold text-blue-900">{formatRoomNumber(targetRoom)}</div>
               <div className="text-sm text-blue-700">{getRoomTypeDisplay(targetRoom)}</div>
               <div className="mt-2 text-sm font-medium text-blue-800">€{targetRate}/night</div>
-              {targetRoom.isPremium && (
+              {targetRoom.is_premium && (
                 <Badge variant="default" className="mt-2 bg-blue-600 text-xs">
                   Premium
                 </Badge>

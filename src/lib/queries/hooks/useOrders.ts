@@ -83,8 +83,8 @@ function mapToAvailableOrderItem(item: RawOrderItem): AvailableOrderItem {
     minimum_stock: item.minimum_stock ?? 0,
     is_active: item.is_active ?? false,
     totalStock,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     locations:
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (item.inventory as any[])?.map((inv: any) => ({
         locationId: inv.location_id,
         locationName: inv.location?.name || 'Unknown',

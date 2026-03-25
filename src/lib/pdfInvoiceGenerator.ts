@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { Reservation, Guest, Room, Company, ReservationCharge } from './hotel/types';
+import { Reservation, Guest, Company, ReservationCharge } from './hotel/types';
+import type { Room } from './hotel/../queries/hooks/useRooms';
 import { format } from 'date-fns';
 import * as QRCode from 'qrcode';
 import { convertToDisplayName } from './hotel/countryCodeUtils';
@@ -128,7 +129,7 @@ export async function generatePDFInvoice(data: InvoiceData): Promise<void> {
 
   doc.setFontSize(10);
   doc.setTextColor(0, 0, 0);
-  doc.text(`Room: ${room.number} - ${room.nameEnglish}`, 110, 105);
+  doc.text(`Room: ${room.room_number} - ${room.name_english}`, 110, 105);
   doc.text(`Check-in: ${format(reservation.checkIn, 'dd.MM.yyyy')}`, 110, 111);
   doc.text(`Check-out: ${format(reservation.checkOut, 'dd.MM.yyyy')}`, 110, 117);
   doc.text(`Duration: ${reservation.numberOfNights} nights`, 110, 123);
@@ -357,7 +358,7 @@ export async function generateThermalReceipt(
   receipt += `Date: ${format(invoiceDate, 'dd.MM.yyyy HH:mm:ss')}\n`;
   receipt += `Booking: ${reservation.id.substring(0, 8).toUpperCase()}\n`;
   receipt += `Guest: ${guest.fullName}\n`;
-  receipt += `Room: ${room.number} - ${room.nameEnglish}\n`;
+  receipt += `Room: ${room.room_number} - ${room.name_english}\n`;
   receipt += `Check-in: ${format(reservation.checkIn, 'dd.MM.yyyy')}\n`;
   receipt += `Check-out: ${format(reservation.checkOut, 'dd.MM.yyyy')}\n`;
   receipt += `Nights: ${reservation.numberOfNights}\n`;

@@ -10,7 +10,8 @@ import {
   DrinkModalState,
   OccupancyData,
 } from '../hotel/services/HotelTimelineService';
-import { CalendarEvent, Reservation, Room } from '../hotel/types';
+import { CalendarEvent, Reservation } from '../hotel/types';
+import type { Room } from '../queries/hooks/useRooms';
 import { useReservations } from '../queries/hooks/useReservations';
 import { useRooms } from '../queries/hooks/useRooms';
 

@@ -1,5 +1,6 @@
 // Hotel Porec - Real Business Information and Room Configuration
-import { Hotel, Room, RoomType } from './types';
+import { Hotel, RoomType } from './types';
+import type { Room } from '@/lib/queries/hooks/useRooms';
 
 // Hotel Porec Official Information
 export const HOTEL_POREC: Hotel = {
@@ -82,6 +83,9 @@ export const ROOM_TYPES = {
   },
 } as const;
 
+// Numeric ID counter for static rooms (negative to avoid collision with real DB IDs)
+let _staticRoomId = -1;
+
 // Generate Hotel Porec room configuration (55 rooms total: 18×3 floors + 1 rooftop)
 function generateHotelRooms(): Room[] {
   const rooms: Room[] = [];
@@ -138,16 +142,17 @@ function createRoom(
   const roomTypeInfo = ROOM_TYPES[type];
 
   return {
-    id: `room-${number}`,
-    number,
-    floor,
-    type,
-    nameCroatian: roomTypeInfo.nameCroatian,
-    nameEnglish: roomTypeInfo.nameEnglish,
-    seasonalRates: roomTypeInfo.rates,
-    maxOccupancy: roomTypeInfo.maxOccupancy,
-    isPremium,
+    id: _staticRoomId--,
+    room_number: number,
+    floor_number: floor,
+    room_types: { code: type },
+    max_occupancy: roomTypeInfo.maxOccupancy,
+    is_premium: isPremium,
     amenities: [...roomTypeInfo.amenities],
+    is_clean: true,
+    name_english: roomTypeInfo.nameEnglish,
+    name_croatian: roomTypeInfo.nameCroatian,
+    seasonal_rates: roomTypeInfo.rates,
   };
 }
 
@@ -156,19 +161,19 @@ export const HOTEL_POREC_ROOMS: Room[] = generateHotelRooms();
 
 // Utility functions for room management
 export function getRoomsByFloor(floor: number): Room[] {
-  return HOTEL_POREC_ROOMS.filter((room) => room.floor === floor);
+  return HOTEL_POREC_ROOMS.filter((room) => room.floor_number === floor);
 }
 
 export function getRoomByNumber(roomNumber: string): Room | undefined {
-  return HOTEL_POREC_ROOMS.find((room) => room.number === roomNumber);
+  return HOTEL_POREC_ROOMS.find((room) => room.room_number === roomNumber);
 }
 
 export function getRoomsByType(type: RoomType): Room[] {
-  return HOTEL_POREC_ROOMS.filter((room) => room.type === type);
+  return HOTEL_POREC_ROOMS.filter((room) => room.room_types?.code === type);
 }
 
 export function getPremiumRooms(): Room[] {
-  return HOTEL_POREC_ROOMS.filter((room) => room.isPremium);
+  return HOTEL_POREC_ROOMS.filter((room) => room.is_premium);
 }
 
 // Room statistics

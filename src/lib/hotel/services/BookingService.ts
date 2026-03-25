@@ -1,5 +1,6 @@
 // BookingService - Booking validation and pricing calculations
-import { Room, Guest, GuestChild, ReservationStatus, Company, Reservation } from '../types';
+import { Guest, GuestChild, ReservationStatus, Company, Reservation } from '../types';
+import type { Room } from '@/lib/queries/hooks/useRooms';
 
 export interface BookingData {
   room?: Room;
@@ -75,7 +76,7 @@ export class BookingService {
     // Check for date conflicts
     if (bookingData.room && bookingData.checkIn && bookingData.checkOut) {
       const hasConflict = existingReservations.some((res) => {
-        if (res.roomId !== bookingData.room?.id) return false;
+        if (res.roomId !== bookingData.room?.id.toString()) return false;
         const resIn = new Date(res.checkIn);
         const resOut = new Date(res.checkOut);
         return bookingData.checkIn! < resOut && bookingData.checkOut! > resIn;

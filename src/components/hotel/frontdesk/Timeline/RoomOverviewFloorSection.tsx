@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Maximize2, Minimize2, Users, Baby, Dog, DollarSign } from 'lucide-react';
-import { Reservation, ReservationStatus, Guest, Room } from '../../../../lib/hotel/types';
+import { Reservation, ReservationStatus, Guest } from '../../../../lib/hotel/types';
+import type { Room } from '../../../../lib/queries/hooks/useRooms';
 import { RESERVATION_STATUS_COLORS } from '../../../../lib/hotel/calendarUtils';
 import { formatRoomNumber, getRoomTypeDisplay } from '../../../../lib/hotel/calendarUtils';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
@@ -67,7 +68,7 @@ export function RoomOverviewFloorSection({
   onShowDrinksModal,
 }: RoomOverviewFloorSectionProps) {
   const floorName = floor === 4 ? 'Rooftop Premium' : `Floor ${floor}`;
-  const occupiedRooms = rooms.filter((room) => occupancyData[room.id]);
+  const occupiedRooms = rooms.filter((room) => occupancyData[room.id.toString()]);
   const occupancyRate = rooms.length > 0 ? (occupiedRooms.length / rooms.length) * 100 : 0;
 
   const [contextMenu, setContextMenu] = useState<{
@@ -128,9 +129,10 @@ export function RoomOverviewFloorSection({
         <CardContent>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-6">
             {rooms.map((room) => {
-              const isOccupied = !!occupancyData[room.id];
-              const reservation = occupancyData[room.id]?.reservation;
-              const status = occupancyData[room.id]?.status;
+              const roomKey = room.id.toString();
+              const isOccupied = !!occupancyData[roomKey];
+              const reservation = occupancyData[roomKey]?.reservation;
+              const status = occupancyData[roomKey]?.status;
               const statusColors = status
                 ? RESERVATION_STATUS_COLORS[status as ReservationStatus]
                 : null;
@@ -146,12 +148,12 @@ export function RoomOverviewFloorSection({
                   key={room.id}
                   role="button"
                   tabIndex={0}
-                  data-testid={`room-card-${room.number}`}
+                  data-testid={`room-card-${room.room_number}`}
                   className={`relative cursor-pointer rounded-lg p-3 transition-all duration-200 hover:shadow-md ${
                     isOccupied && status
                       ? `border-2 ${getStatusCardColors(status)}`
                       : 'border border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50'
-                  } ${room.isPremium && !isOccupied ? 'bg-gradient-to-br from-yellow-50 to-amber-50' : ''} ${room.is_clean ? 'border-l-4 border-l-blue-500' : 'border-l-4 border-l-red-500'}`}
+                  } ${room.is_premium && !isOccupied ? 'bg-gradient-to-br from-yellow-50 to-amber-50' : ''} ${room.is_clean ? 'border-l-4 border-l-blue-500' : 'border-l-4 border-l-red-500'}`}
                   onClick={() => {
                     if (!isClosingContextMenu) onRoomClick(room, reservation);
                   }}
@@ -281,7 +283,7 @@ export function RoomOverviewFloorSection({
           onShowDrinksModal={onShowDrinksModal}
           showMarkClean={true}
           onMarkClean={(r) => {
-            window.location.href = `/nfc/clean?roomId=${r.number}`;
+            window.location.href = `/nfc/clean?roomId=${r.room_number}`;
           }}
         />
       )}

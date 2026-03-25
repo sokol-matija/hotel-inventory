@@ -1,5 +1,6 @@
 import { addDays } from 'date-fns';
-import { Reservation, ReservationStatus, Guest, Room } from '../../../../lib/hotel/types';
+import { Reservation, ReservationStatus, Guest } from '../../../../lib/hotel/types';
+import type { Room } from '../../../../lib/queries/hooks/useRooms';
 import { formatRoomNumber, getRoomTypeDisplay } from '../../../../lib/hotel/calendarUtils';
 import { Badge } from '../../../ui/badge';
 import { TimelineCleaningIndicator } from '../TimelineCleaningIndicator';
@@ -75,7 +76,7 @@ export function RoomRow({
   onShowExpandedDailyView,
   cellRefs,
 }: RoomRowProps) {
-  const roomReservations = reservations.filter((r) => r.roomId === room.id);
+  const roomReservations = reservations.filter((r) => r.roomId === room.id.toString());
 
   return (
     <div className="relative border-b border-gray-100 hover:bg-gray-50">
@@ -87,8 +88,8 @@ export function RoomRow({
             <div className="text-xs text-gray-500">{getRoomTypeDisplay(room)}</div>
           </div>
           <div className="flex items-center gap-2">
-            <TimelineCleaningIndicator roomId={room.id} />
-            {room.isPremium && (
+            <TimelineCleaningIndicator roomId={room.id.toString()} />
+            {room.is_premium && (
               <Badge variant="secondary" className="text-xs">
                 Premium
               </Badge>

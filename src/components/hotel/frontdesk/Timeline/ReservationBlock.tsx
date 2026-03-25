@@ -3,7 +3,8 @@ import { format, addDays, startOfDay } from 'date-fns';
 import { useDrag } from 'react-dnd';
 import { gsap } from 'gsap';
 import { Users, Baby, Dog, Move, Plus } from 'lucide-react';
-import { Reservation, ReservationStatus, Guest, Room } from '../../../../lib/hotel/types';
+import { Reservation, ReservationStatus, Guest } from '../../../../lib/hotel/types';
+import type { Room } from '../../../../lib/queries/hooks/useRooms';
 import { RESERVATION_STATUS_COLORS } from '../../../../lib/hotel/calendarUtils';
 import { getCountryFlag } from '../../../../lib/hotel/countryFlags';
 import LabelBadge from '../../shared/LabelBadge';
@@ -80,7 +81,7 @@ export function ReservationBlock({
       item: {
         reservationId: reservation.id,
         currentRoomId: room.id,
-        currentRoomFloor: room.floor,
+        currentRoomFloor: room.floor_number,
         checkIn: reservation.checkIn,
         checkOut: reservation.checkOut,
         guestName: guest?.fullName || 'Guest',
@@ -298,7 +299,7 @@ export function ReservationBlock({
               if (onMoveReservation && startDayIndex > 0) {
                 onMoveReservation(
                   reservation.id,
-                  room.id,
+                  room.id.toString(),
                   addDays(reservation.checkIn, -1),
                   addDays(reservation.checkOut, -1)
                 );
@@ -316,7 +317,7 @@ export function ReservationBlock({
               if (onMoveReservation && endDayIndex < 13) {
                 onMoveReservation(
                   reservation.id,
-                  room.id,
+                  room.id.toString(),
                   addDays(reservation.checkIn, 1),
                   addDays(reservation.checkOut, 1)
                 );

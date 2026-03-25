@@ -2,7 +2,8 @@
 // Handles rooms, guests, reservations, and invoices
 
 import { supabase } from '../../supabase';
-import { Room, Guest, Reservation, Hotel, Invoice } from '../types';
+import { Guest, Reservation, Hotel, Invoice } from '../types';
+import type { Room } from '@/lib/queries/hooks/useRooms';
 import { databaseAdapter } from './DatabaseAdapter';
 
 type GuestRow = { [key: string]: unknown };

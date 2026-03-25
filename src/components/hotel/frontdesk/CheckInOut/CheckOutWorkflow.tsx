@@ -83,7 +83,7 @@ export default function CheckOutWorkflow({ isOpen, onClose, reservation }: Check
 
   // Find associated guest and room data
   const guest = reservation?.guest ?? null;
-  const room = reservation ? rooms.find((r) => r.id === reservation.roomId) : null;
+  const room = reservation ? rooms.find((r) => r.id.toString() === reservation.roomId) : null;
 
   // Initialize check-out steps
   useEffect(() => {
@@ -117,7 +117,7 @@ export default function CheckOutWorkflow({ isOpen, onClose, reservation }: Check
       {
         id: 'key-return',
         title: 'Room Key Return',
-        description: `Collect room key/keycard for Room ${room?.number}`,
+        description: `Collect room key/keycard for Room ${room?.room_number}`,
         completed: roomKeyReturned,
         required: true,
         icon: Key,
@@ -349,7 +349,7 @@ export default function CheckOutWorkflow({ isOpen, onClose, reservation }: Check
                   </div>
                   <div className="space-y-1 text-sm text-gray-600">
                     <div>
-                      Room {room.number} • {room.nameEnglish}
+                      Room {room.room_number} • {room.name_english}
                     </div>
                     <div>
                       {reservation.numberOfGuests} guests • {reservation.numberOfNights} nights

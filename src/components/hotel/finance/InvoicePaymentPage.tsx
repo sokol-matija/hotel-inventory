@@ -77,13 +77,15 @@ export default function InvoicePaymentPage() {
     const guest = guests.find((g) => g.id === invoice.guestId);
     // Get room through reservation - use real reservations from context
     const reservation = reservations.find((r) => r.id === invoice.reservationId);
-    const room = reservation ? rooms.find((r) => r.id === reservation.roomId) : undefined;
+    const room = reservation
+      ? rooms.find((r) => r.id.toString() === reservation.roomId)
+      : undefined;
 
     const matchesSearch =
       !searchTerm ||
       invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
       guest?.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      room?.number.includes(searchTerm);
+      room?.room_number.includes(searchTerm);
 
     const matchesStatus = statusFilter === 'all' || invoice.status === statusFilter;
 
@@ -115,7 +117,7 @@ export default function InvoicePaymentPage() {
     if (!invoice) return 'Unknown Room';
     const reservation = reservations.find((r) => r.id === invoice.reservationId);
     if (!reservation) return 'Unknown Room';
-    return rooms.find((r) => r.id === reservation.roomId)?.number || 'Unknown Room';
+    return rooms.find((r) => r.id.toString() === reservation.roomId)?.room_number || 'Unknown Room';
   };
 
   const getInvoiceNumber = (invoiceId: string) => {
@@ -132,7 +134,9 @@ export default function InvoicePaymentPage() {
       // Use reservation data from invoice (loaded via JOIN)
       const reservation = invoice.reservation;
       const guest = invoice.guest;
-      const room = reservation ? rooms.find((r) => r.id === reservation.roomId) : undefined;
+      const room = reservation
+        ? rooms.find((r) => r.id.toString() === reservation.roomId)
+        : undefined;
 
       if (!reservation || !guest || !room) {
         hotelNotification.error(

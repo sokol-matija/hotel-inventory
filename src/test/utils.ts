@@ -2,7 +2,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, type RenderOptions } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
-import type { Room, Reservation } from '@/lib/hotel/types';
+import type { Reservation } from '@/lib/hotel/types';
+import type { Room } from '@/lib/queries/hooks/useRooms';
 import type { ItemWithCategory, Category, ActiveItem } from '@/lib/queries/hooks/useItems';
 import type { LocationWithStats } from '@/lib/queries/hooks/useLocations';
 import type { InventoryWithDetails } from '@/lib/queries/hooks/useInventory';
@@ -151,15 +152,15 @@ export function buildLocationWithStats(
 export function buildRoom(overrides: Partial<Room> = {}): Room {
   _id++;
   return {
-    id: `room-${_id}`,
-    number: `10${_id}`,
-    floor: 1,
-    type: 'double',
-    nameCroatian: `Soba 10${_id}`,
-    nameEnglish: `Room 10${_id}`,
-    seasonalRates: { A: 80, B: 100, C: 120, D: 150 },
-    maxOccupancy: 2,
-    isPremium: false,
+    id: _id,
+    room_number: `10${_id}`,
+    floor_number: 1,
+    room_types: { code: 'double' },
+    name_croatian: `Soba 10${_id}`,
+    name_english: `Room 10${_id}`,
+    seasonal_rates: { A: 80, B: 100, C: 120, D: 150 },
+    max_occupancy: 2,
+    is_premium: false,
     amenities: [],
     is_clean: true,
     ...overrides,

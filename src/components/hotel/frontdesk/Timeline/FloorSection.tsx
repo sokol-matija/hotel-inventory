@@ -1,6 +1,7 @@
 import { startOfDay } from 'date-fns';
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import { Reservation, ReservationStatus, Guest, Room } from '../../../../lib/hotel/types';
+import { Reservation, ReservationStatus, Guest } from '../../../../lib/hotel/types';
+import type { Room } from '../../../../lib/queries/hooks/useRooms';
 import { Badge } from '../../../ui/badge';
 import { RoomRow } from './RoomRow';
 import { SimpleDragCreateHook } from './types';
@@ -84,7 +85,7 @@ export function FloorSection({
   const occupiedRooms = rooms.filter((room) =>
     reservations.some(
       (r) =>
-        r.roomId === room.id &&
+        r.roomId === room.id.toString() &&
         startOfDay(today) >= startOfDay(r.checkIn) &&
         startOfDay(today) < startOfDay(r.checkOut)
     )

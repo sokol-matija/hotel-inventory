@@ -2,7 +2,8 @@
 // This adapter allows the existing application code to work with the current database structure
 
 import { supabase } from '../../supabase';
-import { Room, Guest, Reservation, Hotel, RoomType as AppRoomType } from '../types';
+import { Guest, Reservation, Hotel, RoomType as AppRoomType } from '../types';
+import type { Room } from '@/lib/queries/hooks/useRooms';
 import { HOTEL_ID } from '../constants';
 
 // Type mappings for current database structure
@@ -192,11 +193,11 @@ export class DatabaseAdapter {
       if (updates.is_clean !== undefined) {
         updateData.is_clean = updates.is_clean;
       }
-      if (updates.number !== undefined) {
-        updateData.room_number = updates.number;
+      if (updates.room_number !== undefined) {
+        updateData.room_number = updates.room_number;
       }
-      if (updates.floor !== undefined) {
-        updateData.floor_number = updates.floor;
+      if (updates.floor_number !== undefined) {
+        updateData.floor_number = updates.floor_number;
       }
       // Add more mappings as needed
 
@@ -507,22 +508,22 @@ export class DatabaseAdapter {
     const roomType = room.room_types?.code || 'double';
 
     return {
-      id: room.id.toString(),
-      number: room.room_number,
-      floor: room.floor_number,
-      type: this.mapRoomTypeCode(roomType),
-      nameCroatian: this.getRoomTypeCroatianName(roomType),
-      nameEnglish: this.getRoomTypeEnglishName(roomType),
-      seasonalRates: {
+      id: room.id,
+      room_number: room.room_number,
+      floor_number: room.floor_number,
+      room_types: room.room_types,
+      max_occupancy: room.max_occupancy || 2,
+      is_premium: room.is_premium || false,
+      amenities: room.amenities || [],
+      is_clean: room.is_clean ?? false,
+      name_croatian: this.getRoomTypeCroatianName(roomType),
+      name_english: this.getRoomTypeEnglishName(roomType),
+      seasonal_rates: {
         A: room.room_pricing?.find((rp) => rp.pricing_seasons?.code === 'A')?.base_rate ?? 50,
         B: room.room_pricing?.find((rp) => rp.pricing_seasons?.code === 'B')?.base_rate ?? 60,
         C: room.room_pricing?.find((rp) => rp.pricing_seasons?.code === 'C')?.base_rate ?? 80,
         D: room.room_pricing?.find((rp) => rp.pricing_seasons?.code === 'D')?.base_rate ?? 100,
       },
-      maxOccupancy: room.max_occupancy || 2,
-      isPremium: room.is_premium || false,
-      amenities: room.amenities || [],
-      is_clean: room.is_clean ?? false,
     };
   }
 

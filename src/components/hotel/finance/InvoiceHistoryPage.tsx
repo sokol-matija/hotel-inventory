@@ -65,13 +65,15 @@ export default function InvoiceHistoryPage() {
     const guest = guests.find((g) => g.id === invoice.guestId);
     // Get room through reservation since invoice no longer has direct roomId
     const reservation = reservations.find((r) => r.id === invoice.reservationId);
-    const room = reservation ? rooms.find((r) => r.id === reservation.roomId) : undefined;
+    const room = reservation
+      ? rooms.find((r) => r.id.toString() === reservation.roomId)
+      : undefined;
 
     const matchesSearch =
       !searchTerm ||
       invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
       guest?.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      room?.number.includes(searchTerm);
+      room?.room_number.includes(searchTerm);
 
     const matchesStatus = statusFilter === 'all' || invoice.status === statusFilter;
 
@@ -98,7 +100,7 @@ export default function InvoiceHistoryPage() {
   const getRoomNumber = (invoice: Invoice) => {
     const reservation = reservations.find((r) => r.id === invoice.reservationId);
     if (!reservation) return 'Unknown Room';
-    return rooms.find((r) => r.id === reservation.roomId)?.number || 'Unknown Room';
+    return rooms.find((r) => r.id.toString() === reservation.roomId)?.room_number || 'Unknown Room';
   };
 
   const handleViewInvoice = (invoice: Invoice) => {
@@ -111,7 +113,9 @@ export default function InvoiceHistoryPage() {
       // Find related reservation
       const reservation = reservations.find((r) => r.id === invoice.reservationId);
       const guest = guests.find((g) => g.id === invoice.guestId);
-      const room = reservation ? rooms.find((r) => r.id === reservation.roomId) : undefined;
+      const room = reservation
+        ? rooms.find((r) => r.id.toString() === reservation.roomId)
+        : undefined;
 
       if (!reservation || !guest || !room) {
         hotelNotification.error(

@@ -64,7 +64,7 @@ export default function CheckInWorkflow({ isOpen, onClose, reservation }: CheckI
 
   // Find associated guest and room data
   const guest = reservation?.guest ?? null;
-  const room = reservation ? rooms.find((r) => r.id === reservation.roomId) : null;
+  const room = reservation ? rooms.find((r) => r.id.toString() === reservation.roomId) : null;
 
   // Initialize check-in steps
   useEffect(() => {
@@ -98,7 +98,7 @@ export default function CheckInWorkflow({ isOpen, onClose, reservation }: CheckI
       {
         id: 'room-key',
         title: 'Issue Room Key',
-        description: `Provide key/keycard for Room ${room?.number}`,
+        description: `Provide key/keycard for Room ${room?.room_number}`,
         completed: roomKeyIssued,
         required: true,
         icon: Key,
@@ -259,8 +259,8 @@ export default function CheckInWorkflow({ isOpen, onClose, reservation }: CheckI
                 <div className="space-y-2">
                   <div className="flex items-center space-x-2">
                     <MapPin className="h-4 w-4 text-gray-500" />
-                    <span className="font-medium">Room {room.number}</span>
-                    <span className="text-sm text-gray-600">({room.nameEnglish})</span>
+                    <span className="font-medium">Room {room.room_number}</span>
+                    <span className="text-sm text-gray-600">({room.name_english})</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Users className="h-4 w-4 text-gray-500" />

@@ -19,7 +19,8 @@ import {
   Tag,
   Loader2,
 } from 'lucide-react';
-import { Room, Guest, GuestChild, ReservationCharge, ChargeType } from '../../../lib/hotel/types';
+import { Guest, GuestChild, ReservationCharge, ChargeType } from '../../../lib/hotel/types';
+import type { Room } from '../../../lib/queries/hooks/useRooms';
 import hotelNotification from '../../../lib/notifications';
 import { supabase } from '../../../lib/supabase';
 import { useRooms } from '../../../lib/queries/hooks/useRooms';
@@ -197,7 +198,7 @@ export default function ModernCreateBookingModal({
 
     unifiedPricingService
       .generateCharges({
-        roomId: selectedRoom.id,
+        roomId: selectedRoom.id.toString(),
         checkIn: checkInDate,
         checkOut: checkOutDate,
         guests,
@@ -234,14 +235,14 @@ export default function ModernCreateBookingModal({
 
   // Guest management functions
   const addAdult = () => {
-    const maxOccupancy = selectedRoom?.maxOccupancy || 99; // High number for unallocated
+    const maxOccupancy = selectedRoom?.max_occupancy || 99; // High number for unallocated
     if (bookingGuests.length < maxOccupancy) {
       setBookingGuests([...bookingGuests, createEmptyGuest('adult')]);
     }
   };
 
   const addChild = () => {
-    const maxOccupancy = selectedRoom?.maxOccupancy || 99; // High number for unallocated
+    const maxOccupancy = selectedRoom?.max_occupancy || 99; // High number for unallocated
     if (bookingGuests.length < maxOccupancy) {
       setBookingGuests([...bookingGuests, createEmptyGuest('child')]);
     }
@@ -363,9 +364,9 @@ export default function ModernCreateBookingModal({
     });
 
     // Occupancy validation (skip for unallocated)
-    if (selectedRoom && !isUnallocated && bookingGuests.length > selectedRoom.maxOccupancy) {
+    if (selectedRoom && !isUnallocated && bookingGuests.length > selectedRoom.max_occupancy) {
       errors.push(
-        `Total guests (${bookingGuests.length}) exceeds room capacity (${selectedRoom.maxOccupancy})`
+        `Total guests (${bookingGuests.length}) exceeds room capacity (${selectedRoom.max_occupancy})`
       );
     }
 
@@ -483,7 +484,7 @@ export default function ModernCreateBookingModal({
       const childrenCount = bookingGuests.filter((g) => g.type === 'child').length;
       const reservationData = {
         guest_id: primaryGuestId,
-        room_id: parseInt(selectedRoom!.id),
+        room_id: selectedRoom!.id,
         check_in_date: checkInDate.toISOString().split('T')[0],
         check_out_date: checkOutDate.toISOString().split('T')[0],
         adults: adultsCount,
@@ -614,14 +615,14 @@ export default function ModernCreateBookingModal({
         `Reservation for ${primaryGuest.firstName} ${primaryGuest.lastName} ` +
           `and ${totalGuests - 1} other guest${totalGuests > 2 ? 's' : ''} ` +
           `(${adults} adult${adults !== 1 ? 's' : ''}, ${children} child${children !== 1 ? 'ren' : ''}) ` +
-          `in Room ${selectedRoom!.number} has been created.`
+          `in Room ${selectedRoom!.room_number} has been created.`
       );
 
       // Send ntfy.sh notification for Room 401 bookings
-      if (selectedRoom!.number === '401') {
+      if (selectedRoom!.room_number === '401') {
         try {
           const notificationData: BookingNotificationData = {
-            roomNumber: selectedRoom!.number,
+            roomNumber: selectedRoom!.room_number,
             guestName: `${primaryGuest.firstName} ${primaryGuest.lastName}`,
             checkIn: checkInDate.toLocaleDateString('en-US', {
               month: 'short',
@@ -722,7 +723,7 @@ export default function ModernCreateBookingModal({
   const childrenCount = bookingGuests.filter((g) => g.type === 'child').length;
 
   // Filter out virtual rooms from selection
-  const availableRooms = rooms.filter((r) => r.floor !== 5);
+  const availableRooms = rooms.filter((r) => r.floor_number !== 5);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -738,10 +739,12 @@ export default function ModernCreateBookingModal({
                 {isUnallocated
                   ? 'Create Unallocated Reservation'
                   : selectedRoom
-                    ? `Create Booking - Room ${selectedRoom.number}`
+                    ? `Create Booking - Room ${selectedRoom.room_number}`
                     : 'Create Booking'}
               </span>
-              {selectedRoom && <Badge variant="outline">{selectedRoom.type}</Badge>}
+              {selectedRoom && (
+                <Badge variant="outline">{selectedRoom.room_types?.code ?? ''}</Badge>
+              )}
               {isUnallocated && (
                 <Badge variant="secondary" className="bg-blue-100 text-blue-800">
                   Unallocated
@@ -755,7 +758,7 @@ export default function ModernCreateBookingModal({
           <p className="text-sm text-gray-600">
             {adultsCount} adult{adultsCount !== 1 ? 's' : ''}, {childrenCount} child
             {childrenCount !== 1 ? 'ren' : ''}
-            {selectedRoom && !isUnallocated && ` • Max occupancy: ${selectedRoom.maxOccupancy}`}
+            {selectedRoom && !isUnallocated && ` • Max occupancy: ${selectedRoom.max_occupancy}`}
           </p>
         </CardHeader>
 
@@ -802,7 +805,7 @@ export default function ModernCreateBookingModal({
                       <select
                         value={selectedRoom?.id || ''}
                         onChange={(e) => {
-                          const room = availableRooms.find((r) => r.id === e.target.value);
+                          const room = availableRooms.find((r) => r.id === Number(e.target.value));
                           setSelectedRoom(room || null);
                         }}
                         className="w-full rounded-md border p-2"
@@ -810,11 +813,11 @@ export default function ModernCreateBookingModal({
                       >
                         <option value="">-- Select a room --</option>
                         {availableRooms
-                          .sort((a, b) => a.number.localeCompare(b.number))
+                          .sort((a, b) => a.room_number.localeCompare(b.room_number))
                           .map((room) => (
                             <option key={room.id} value={room.id}>
-                              Room {room.number} - {room.type} (Floor {room.floor}, Max:{' '}
-                              {room.maxOccupancy})
+                              Room {room.room_number} - {room.room_types?.code ?? ''} (Floor{' '}
+                              {room.floor_number}, Max: {room.max_occupancy})
                             </option>
                           ))}
                       </select>
@@ -865,7 +868,7 @@ export default function ModernCreateBookingModal({
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center text-lg">
                     <Users className="mr-2 h-4 w-4" />
-                    Guests ({bookingGuests.length}/{selectedRoom?.maxOccupancy || 10})
+                    Guests ({bookingGuests.length}/{selectedRoom?.max_occupancy || 10})
                   </CardTitle>
                   <div className="flex space-x-2">
                     <Button
@@ -873,7 +876,7 @@ export default function ModernCreateBookingModal({
                       variant="outline"
                       size="sm"
                       onClick={addAdult}
-                      disabled={bookingGuests.length >= (selectedRoom?.maxOccupancy || 10)}
+                      disabled={bookingGuests.length >= (selectedRoom?.max_occupancy || 10)}
                       className="flex items-center"
                     >
                       <UserPlus className="mr-1 h-4 w-4" />
@@ -884,7 +887,7 @@ export default function ModernCreateBookingModal({
                       variant="outline"
                       size="sm"
                       onClick={addChild}
-                      disabled={bookingGuests.length >= (selectedRoom?.maxOccupancy || 10)}
+                      disabled={bookingGuests.length >= (selectedRoom?.max_occupancy || 10)}
                       className="flex items-center"
                     >
                       <Baby className="mr-1 h-4 w-4" />
