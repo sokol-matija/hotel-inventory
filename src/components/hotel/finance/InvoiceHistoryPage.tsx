@@ -22,6 +22,14 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Invoice, Company } from '../../../lib/hotel/types';
+import {
+  INVOICE_STATUS_COLORS,
+  getGuestName,
+  getRoomNumber,
+  filterInvoices,
+  getTotalRevenue,
+  getUnpaidInvoices,
+} from '../../../lib/hotel/invoiceUtils';
 import { generatePDFInvoice } from '../../../lib/pdfInvoiceGenerator';
 import { useReservations } from '../../../lib/queries/hooks/useReservations';
 import hotelNotification from '../../../lib/notifications';
@@ -48,7 +56,6 @@ export default function InvoiceHistoryPage() {
 
   const getInvoicesByDateRange = (start: Date, end: Date) =>
     invoices.filter((inv) => inv.issueDate >= start && inv.issueDate <= end);
-  const getUnpaidInvoices = () => invoices.filter((inv) => inv.status !== 'paid');
 
   if (isLoading) {
     return (
@@ -68,46 +75,17 @@ export default function InvoiceHistoryPage() {
     );
   }
 
-  // Filter invoices based on search and status
-  const filteredInvoices = invoices.filter((invoice) => {
-    const guest = guests.find((g) => g.id === Number(invoice.guestId));
-    // Get room through reservation since invoice no longer has direct roomId
-    const reservation = reservations.find((r) => r.id === Number(invoice.reservationId));
-    const room = reservation ? rooms.find((r) => r.id === reservation.room_id) : undefined;
-
-    const matchesSearch =
-      !searchTerm ||
-      invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      guest?.display_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      room?.room_number.includes(searchTerm);
-
-    const matchesStatus = statusFilter === 'all' || invoice.status === statusFilter;
-
-    return matchesSearch && matchesStatus;
-  });
-
-  const unpaidInvoices = getUnpaidInvoices();
-  const totalRevenue = invoices
-    .filter((inv) => inv.status === 'paid')
-    .reduce((sum, inv) => sum + inv.totalAmount, 0);
-
-  const statusColors = {
-    draft: 'bg-gray-100 text-gray-800',
-    sent: 'bg-blue-100 text-blue-800',
-    paid: 'bg-green-100 text-green-800',
-    overdue: 'bg-red-100 text-red-800',
-    cancelled: 'bg-gray-100 text-gray-600',
-  };
-
-  const getGuestName = (guestId: string) => {
-    return guests.find((g) => g.id === Number(guestId))?.display_name || 'Unknown Guest';
-  };
-
-  const getRoomNumber = (invoice: Invoice) => {
-    const reservation = reservations.find((r) => r.id === Number(invoice.reservationId));
-    if (!reservation) return 'Unknown Room';
-    return rooms.find((r) => r.id === reservation.room_id)?.room_number || 'Unknown Room';
-  };
+  const filteredInvoices = filterInvoices(
+    invoices,
+    guests,
+    reservations,
+    rooms,
+    searchTerm,
+    statusFilter
+  );
+  const unpaidInvoices = getUnpaidInvoices(invoices);
+  const totalRevenue = getTotalRevenue(invoices);
+  const statusColors = INVOICE_STATUS_COLORS;
 
   const handleViewInvoice = (invoice: Invoice) => {
     setSelectedInvoice(invoice);
@@ -302,8 +280,8 @@ export default function InvoiceHistoryPage() {
                 {filteredInvoices.slice(0, 10).map((invoice) => (
                   <tr key={invoice.id} className="border-b hover:bg-gray-50">
                     <td className="px-4 py-3 font-medium">{invoice.invoiceNumber}</td>
-                    <td className="px-4 py-3">{getGuestName(invoice.guestId)}</td>
-                    <td className="px-4 py-3">{getRoomNumber(invoice)}</td>
+                    <td className="px-4 py-3">{getGuestName(invoice.guestId, guests)}</td>
+                    <td className="px-4 py-3">{getRoomNumber(invoice, reservations, rooms)}</td>
                     <td className="px-4 py-3">{format(invoice.issueDate, 'MMM dd, yyyy')}</td>
                     <td className="px-4 py-3 font-medium">€{invoice.totalAmount.toFixed(2)}</td>
                     <td className="px-4 py-3">
@@ -400,11 +378,15 @@ export default function InvoiceHistoryPage() {
                   <CardContent className="space-y-3">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Guest Name:</span>
-                      <span className="font-medium">{getGuestName(selectedInvoice.guestId)}</span>
+                      <span className="font-medium">
+                        {getGuestName(selectedInvoice.guestId, guests)}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Room Number:</span>
-                      <span className="font-medium">{getRoomNumber(selectedInvoice)}</span>
+                      <span className="font-medium">
+                        {getRoomNumber(selectedInvoice, reservations, rooms)}
+                      </span>
                     </div>
                     {(() => {
                       const reservation = getReservationDetails(selectedInvoice);

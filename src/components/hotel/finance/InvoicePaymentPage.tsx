@@ -26,6 +26,14 @@ import {
 import { format } from 'date-fns';
 import { QRCodeSVG } from 'qrcode.react';
 import { Invoice, Company, Payment } from '../../../lib/hotel/types';
+import {
+  INVOICE_STATUS_COLORS,
+  getGuestName,
+  getRoomNumber,
+  filterInvoices,
+  getTotalRevenue,
+  getUnpaidInvoices,
+} from '../../../lib/hotel/invoiceUtils';
 import { generatePDFInvoice } from '../../../lib/pdfInvoiceGenerator';
 import hotelNotification from '../../../lib/notifications';
 import { useCompanies } from '../../../lib/queries/hooks/useCompanies';
@@ -50,8 +58,6 @@ export default function InvoicePaymentPage() {
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [showInvoiceDetails, setShowInvoiceDetails] = useState(false);
   const [activeTab, setActiveTab] = useState<'invoices' | 'payments'>('invoices');
-
-  const getUnpaidInvoices = () => invoices.filter((inv) => inv.status !== 'paid');
 
   if (isLoading) {
     return (
@@ -80,51 +86,17 @@ export default function InvoicePaymentPage() {
     other: { icon: Clock, label: 'Other', color: 'text-gray-600' },
   };
 
-  // Filter invoices based on search and status
-  const filteredInvoices = invoices.filter((invoice) => {
-    const guest = guests.find((g) => g.id === Number(invoice.guestId));
-    // Get room through reservation - use real reservations from context
-    const reservation = reservations.find((r) => r.id === Number(invoice.reservationId));
-    const room = reservation ? rooms.find((r) => r.id === reservation.room_id) : undefined;
-
-    const matchesSearch =
-      !searchTerm ||
-      invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      guest?.display_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      room?.room_number.includes(searchTerm);
-
-    const matchesStatus = statusFilter === 'all' || invoice.status === statusFilter;
-
-    return matchesSearch && matchesStatus;
-  });
-
-  const unpaidInvoices = getUnpaidInvoices();
-  const totalRevenue = invoices
-    .filter((inv) => inv.status === 'paid')
-    .reduce((sum, inv) => sum + inv.totalAmount, 0);
-
-  const statusColors = {
-    draft: 'bg-gray-100 text-gray-800',
-    sent: 'bg-blue-100 text-blue-800',
-    paid: 'bg-green-100 text-green-800',
-    overdue: 'bg-red-100 text-red-800',
-    cancelled: 'bg-gray-100 text-gray-600',
-    pending: 'bg-yellow-100 text-yellow-800',
-    partial: 'bg-blue-100 text-blue-800',
-    refunded: 'bg-red-100 text-red-800',
-  };
-
-  const getGuestName = (guestId: string) => {
-    return guests.find((g) => g.id === Number(guestId))?.display_name || 'Unknown Guest';
-  };
-
-  const getRoomNumber = (invoiceId: string) => {
-    const invoice = invoices.find((inv) => inv.id === invoiceId);
-    if (!invoice) return 'Unknown Room';
-    const reservation = reservations.find((r) => r.id === Number(invoice.reservationId));
-    if (!reservation) return 'Unknown Room';
-    return rooms.find((r) => r.id === reservation.room_id)?.room_number || 'Unknown Room';
-  };
+  const filteredInvoices = filterInvoices(
+    invoices,
+    guests,
+    reservations,
+    rooms,
+    searchTerm,
+    statusFilter
+  );
+  const unpaidInvoices = getUnpaidInvoices(invoices);
+  const totalRevenue = getTotalRevenue(invoices);
+  const statusColors = INVOICE_STATUS_COLORS;
 
   const getInvoiceNumber = (invoiceId: string) => {
     return invoices.find((inv) => inv.id === invoiceId)?.invoiceNumber || 'Unknown';
@@ -344,8 +316,8 @@ export default function InvoicePaymentPage() {
                   {filteredInvoices.map((invoice) => (
                     <tr key={invoice.id} className="border-b border-gray-100 hover:bg-gray-50">
                       <td className="px-4 py-3 font-mono text-sm">{invoice.invoiceNumber}</td>
-                      <td className="px-4 py-3">{getGuestName(invoice.guestId)}</td>
-                      <td className="px-4 py-3">{getRoomNumber(invoice.id)}</td>
+                      <td className="px-4 py-3">{getGuestName(invoice.guestId, guests)}</td>
+                      <td className="px-4 py-3">{getRoomNumber(invoice, reservations, rooms)}</td>
                       <td className="px-4 py-3 font-medium">€{invoice.totalAmount.toFixed(2)}</td>
                       <td className="px-4 py-3 font-mono text-xs">
                         {invoice.fiscalData?.jir ? (
@@ -499,11 +471,11 @@ export default function InvoicePaymentPage() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-600">Guest</p>
-                  <p>{getGuestName(selectedInvoice.guestId)}</p>
+                  <p>{getGuestName(selectedInvoice.guestId, guests)}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-600">Room</p>
-                  <p>{getRoomNumber(selectedInvoice.id)}</p>
+                  <p>{getRoomNumber(selectedInvoice, reservations, rooms)}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-600">Issue Date</p>

@@ -7,6 +7,11 @@ import { X, Package, Hash, Calendar, DollarSign, AlertCircle, Type } from 'lucid
 import { useTranslation } from 'react-i18next';
 import { useActiveItems } from '@/lib/queries/hooks/useItems';
 import { useAddInventory } from '@/lib/queries/hooks/useInventory';
+import {
+  formatDateForDisplay,
+  formatDateForDatabase,
+  validateDateFormat,
+} from '@/lib/hotel/inventoryDateUtils';
 
 interface AddInventoryDialogProps {
   isOpen: boolean;
@@ -50,55 +55,6 @@ export default function AddInventoryDialog({
   const translateCategory = (categoryName: string) => {
     const key = categoryName.toLowerCase().replace(/\s+/g, '').replace(/&/g, '');
     return t(`categories.${key}`, { defaultValue: categoryName });
-  };
-
-  const formatDateForDisplay = (isoDate: string): string => {
-    if (!isoDate) return '';
-    const date = new Date(isoDate);
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
-  };
-
-  const formatDateForDatabase = (displayDate: string): string => {
-    if (!displayDate) return '';
-    const parts = displayDate.split('/');
-    if (parts.length !== 3) return '';
-    const [day, month] = parts;
-    let year = parts[2];
-    if (year.length === 2) {
-      const currentYear = new Date().getFullYear();
-      const currentCentury = Math.floor(currentYear / 100) * 100;
-      const twoDigitYear = parseInt(year, 10);
-      year = (currentCentury + twoDigitYear).toString();
-    }
-    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-  };
-
-  const validateDateFormat = (dateString: string): boolean => {
-    if (!dateString) return false;
-    const dateRegex = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/;
-    const match = dateString.match(dateRegex);
-    if (!match) return false;
-    const [, day, month, year] = match;
-    const dayNum = parseInt(day, 10);
-    const monthNum = parseInt(month, 10);
-    let yearNum = parseInt(year, 10);
-    if (year.length === 2) {
-      const currentYear = new Date().getFullYear();
-      const currentCentury = Math.floor(currentYear / 100) * 100;
-      yearNum = currentCentury + yearNum;
-    }
-    if (monthNum < 1 || monthNum > 12) return false;
-    if (dayNum < 1 || dayNum > 31) return false;
-    if (yearNum < 1900 || yearNum > 2100) return false;
-    const date = new Date(yearNum, monthNum - 1, dayNum);
-    return (
-      date.getFullYear() === yearNum &&
-      date.getMonth() === monthNum - 1 &&
-      date.getDate() === dayNum
-    );
   };
 
   const validateForm = () => {
