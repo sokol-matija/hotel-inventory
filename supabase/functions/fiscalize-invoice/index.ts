@@ -3,6 +3,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { corsHeaders, handleCors } from '../_shared/cors.ts';
 
 // These will be loaded from Deno's npm compatibility layer
 import forge from 'npm:node-forge@1.3.1';
@@ -308,17 +309,8 @@ async function sendSOAPRequest(signedXML: string): Promise<string> {
  * Main fiscalization handler
  */
 serve(async (req) => {
-  // CORS headers
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST',
-        'Access-Control-Allow-Headers':
-          'authorization, x-client-info, apikey, content-type',
-      },
-    });
-  }
+  const preflight = handleCors(req);
+  if (preflight) return preflight;
 
   try {
     // Parse request
@@ -401,10 +393,7 @@ serve(async (req) => {
       console.log('✅ Fiscalization successful:', response);
 
       return new Response(JSON.stringify(response), {
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-        },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     } else {
       const response: FiscalizationResponse = {
@@ -417,10 +406,7 @@ serve(async (req) => {
 
       return new Response(JSON.stringify(response), {
         status: 400,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-        },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
   } catch (error) {
