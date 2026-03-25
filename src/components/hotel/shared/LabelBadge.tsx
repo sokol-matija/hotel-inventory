@@ -180,7 +180,7 @@ const LabelBadge: React.FC<LabelBadgeProps> = ({
       ref={badgeRef}
       className={`inline-flex cursor-pointer items-center overflow-hidden shadow-md transition-shadow duration-300 hover:shadow-lg ${expandDirection === 'left' ? 'justify-end' : 'justify-start'} ${className} `}
       style={{
-        backgroundColor: ('bgColor' in label ? label.bgColor : label.bg_color) || '#3B82F6',
+        backgroundColor: label.bg_color || '#3B82F6',
       }}
       title={`Group: ${label.name}`}
     >

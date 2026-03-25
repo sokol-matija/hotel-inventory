@@ -106,7 +106,6 @@ const LabelAutocomplete: React.FC<LabelAutocompleteProps> = ({
     try {
       setSearchState((prev) => ({ ...prev, isLoading: true }));
       const newLabel = await labelService.createLabel({
-        hotelId,
         name: searchQuery,
         // Colors will be auto-assigned from random pool
       });

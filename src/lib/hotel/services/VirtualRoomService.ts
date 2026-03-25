@@ -411,7 +411,7 @@ export class VirtualRoomService {
         C: pricing?.find((rp) => rp.pricing_seasons?.code === 'C')?.base_rate ?? 0,
         D: pricing?.find((rp) => rp.pricing_seasons?.code === 'D')?.base_rate ?? 0,
       },
-    };
+    } as unknown as Room;
   }
 }
 

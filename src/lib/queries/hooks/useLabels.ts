@@ -4,101 +4,55 @@ import { supabase } from '../../supabase';
 import type { TablesUpdate } from '../../supabase';
 import { queryKeys } from '../queryKeys';
 
-// ─── Query definition ──────────────────────────────────────────────────────────
+// ─── Query builder ─────────────────────────────────────────────────────────────
 
-const labelsQuery = supabase.from('labels').select('*').order('name');
-
-// ─── Derived types ─────────────────────────────────────────────────────────────
-
-type LabelRow = QueryData<typeof labelsQuery>[number];
-
-export interface Label {
-  id: string;
-  hotelId: string;
-  name: string;
-  color: string;
-  bgColor: string;
-  createdAt: Date;
-  updatedAt: Date;
+function buildLabelsQuery() {
+  return supabase.from('labels').select('*').order('name');
 }
 
-export type LabelCreate = Omit<Label, 'id' | 'createdAt' | 'updatedAt' | 'color' | 'bgColor'> & {
+// ─── Derived type ─────────────────────────────────────────────────────────────
+// QueryData<> stays in sync with migrations automatically — no manual interface.
+
+export type Label = QueryData<ReturnType<typeof buildLabelsQuery>>[number];
+
+export type LabelCreate = {
+  hotel_id?: number;
+  name: string;
   color?: string;
-  bgColor?: string;
+  bg_color?: string;
 };
 
-export type LabelUpdate = Partial<Pick<Label, 'name' | 'color' | 'bgColor'>>;
-
-// ─── Mapping helper ────────────────────────────────────────────────────────────
-
-function mapLabel(row: LabelRow): Label {
-  return {
-    id: row.id,
-    hotelId: row.hotel_id.toString(),
-    name: row.name,
-    color: row.color ?? '#000000',
-    bgColor: row.bg_color ?? '#FFFFFF',
-    createdAt: new Date(row.created_at),
-    updatedAt: new Date(row.updated_at),
-  };
-}
-
-// ─── Service functions (queryFn targets) ──────────────────────────────────────
-
-async function fetchLabels(): Promise<Label[]> {
-  const { data } = await labelsQuery.throwOnError();
-  return (data ?? []).map(mapLabel);
-}
-
-async function createLabelInDB(label: LabelCreate): Promise<Label> {
-  const { data } = await supabase
-    .from('labels')
-    .insert({
-      hotel_id: parseInt(label.hotelId),
-      name: label.name,
-      color: label.color ?? '#000000',
-      bg_color: label.bgColor ?? '#FFFFFF',
-    })
-    .select()
-    .single()
-    .throwOnError();
-  return mapLabel(data);
-}
-
-async function updateLabelInDB(id: string, updates: LabelUpdate): Promise<Label> {
-  const updateData: TablesUpdate<'labels'> = {};
-  if (updates.name !== undefined) updateData.name = updates.name;
-  if (updates.color !== undefined) updateData.color = updates.color;
-  if (updates.bgColor !== undefined) updateData.bg_color = updates.bgColor;
-  updateData.updated_at = new Date().toISOString();
-
-  const { data } = await supabase
-    .from('labels')
-    .update(updateData)
-    .eq('id', id)
-    .select()
-    .single()
-    .throwOnError();
-  return mapLabel(data);
-}
-
-async function deleteLabelInDB(id: string): Promise<void> {
-  await supabase.from('labels').delete().eq('id', id).throwOnError();
-}
+export type LabelUpdate = Partial<Pick<Label, 'name' | 'color' | 'bg_color'>>;
 
 // ─── Hooks ────────────────────────────────────────────────────────────────────
 
 export function useLabels() {
   return useQuery({
     queryKey: queryKeys.labels.all(),
-    queryFn: fetchLabels,
+    queryFn: async () => {
+      const { data } = await buildLabelsQuery().throwOnError();
+      return data ?? [];
+    },
   });
 }
 
 export function useCreateLabel() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: createLabelInDB,
+    mutationFn: async (label: LabelCreate) => {
+      const { data } = await supabase
+        .from('labels')
+        .insert({
+          hotel_id: label.hotel_id ?? 1,
+          name: label.name,
+          color: label.color ?? '#000000',
+          bg_color: label.bg_color ?? '#FFFFFF',
+        })
+        .select()
+        .single()
+        .throwOnError();
+      return data;
+    },
     onSettled: () => {
       return queryClient.invalidateQueries({ queryKey: queryKeys.labels.all() });
     },
@@ -108,8 +62,22 @@ export function useCreateLabel() {
 export function useUpdateLabel() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: LabelUpdate }) =>
-      updateLabelInDB(id, updates),
+    mutationFn: async ({ id, updates }: { id: string; updates: LabelUpdate }) => {
+      const updateData: TablesUpdate<'labels'> = {};
+      if (updates.name !== undefined) updateData.name = updates.name;
+      if (updates.color !== undefined) updateData.color = updates.color;
+      if (updates.bg_color !== undefined) updateData.bg_color = updates.bg_color;
+      updateData.updated_at = new Date().toISOString();
+
+      const { data } = await supabase
+        .from('labels')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single()
+        .throwOnError();
+      return data;
+    },
     onSettled: () => {
       return queryClient.invalidateQueries({ queryKey: queryKeys.labels.all() });
     },
@@ -119,7 +87,9 @@ export function useUpdateLabel() {
 export function useDeleteLabel() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: deleteLabelInDB,
+    mutationFn: async (id: string) => {
+      await supabase.from('labels').delete().eq('id', id).throwOnError();
+    },
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.labels.all() });
       const previous = queryClient.getQueryData<Label[]>(queryKeys.labels.all());

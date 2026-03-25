@@ -102,7 +102,7 @@ function mapRoomFromDB(room: any): Room {
     name_english:
       mapping[roomType] || `${roomType.charAt(0).toUpperCase()}${roomType.slice(1)} Room`,
     seasonal_rates: { A: 50, B: 60, C: 80, D: 100 },
-  };
+  } as unknown as Room;
 }
 
 async function getRooms(): Promise<Room[]> {

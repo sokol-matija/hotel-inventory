@@ -73,8 +73,8 @@ describe('useLabels', () => {
     expect(label.id).toBe('label-1');
     expect(label.name).toBe('VIP');
     expect(label.color).toBe('#ffd700');
-    expect(label.bgColor).toBe('#1a1a1a');
-    expect(label.hotelId).toBe('1');
+    expect(label.bg_color).toBe('#1a1a1a');
+    expect(label.hotel_id).toBe(1);
   });
 
   it('returns empty array when no labels', async () => {
@@ -104,7 +104,7 @@ describe('useCreateLabel', () => {
   it('calls supabase insert and invalidates labels cache', async () => {
     const { result } = renderHook(() => useCreateLabel(), { wrapper: createWrapper() });
 
-    const newLabel = buildLabel({ name: 'Premium', color: '#ff0000', bgColor: '#00ff00' });
+    const newLabel = buildLabel({ name: 'Premium', color: '#ff0000', bg_color: '#00ff00' });
 
     await act(async () => {
       result.current.mutate(newLabel);

@@ -4,36 +4,35 @@ import { QueryData } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { queryKeys } from '../queryKeys';
 
-// ─── Query definition ────────────────────────────────────────────────────────
+// ─── Query builder ───────────────────────────────────────────────────────────
 
-const roomsQuery = supabase
-  .from('rooms')
-  .select(
-    '*, room_types!room_type_id(code), room_pricing(base_rate, pricing_seasons(code, year_pattern))'
-  )
-  .eq('is_active', true)
-  .order('room_number');
+function buildRoomsQuery() {
+  return supabase
+    .from('rooms')
+    .select(
+      '*, room_types!room_type_id(code), room_pricing(base_rate, pricing_seasons(code, year_pattern))'
+    )
+    .eq('is_active', true)
+    .order('room_number');
+}
 
-// ─── Derived types ────────────────────────────────────────────────────────────
+// ─── Derived type ─────────────────────────────────────────────────────────────
+// QueryData<> stays in sync with migrations automatically — no manual interface.
+// name_english, name_croatian, seasonal_rates are computed from joined data.
 
-type RoomRow = QueryData<typeof roomsQuery>[number];
+type RoomRow = QueryData<ReturnType<typeof buildRoomsQuery>>[number];
 
-export interface Room {
-  // DB columns (snake_case — same as DB)
-  id: number;
-  room_number: string;
-  floor_number: number;
-  max_occupancy: number;
+export type Room = Omit<RoomRow, 'is_premium' | 'is_clean' | 'amenities' | 'max_occupancy'> & {
+  // mapRoom normalizes these nullable DB columns to non-nullable
   is_premium: boolean;
-  amenities: string[];
   is_clean: boolean;
-  room_types: { code: string } | null;
-
-  // Computed (not in DB — derived from room_types.code)
+  amenities: string[];
+  max_occupancy: number;
+  // Computed from joined room_pricing + room_types
   name_english: string;
   name_croatian: string;
   seasonal_rates: { A: number; B: number; C: number; D: number };
-}
+};
 
 // ─── Name lookup tables ───────────────────────────────────────────────────────
 
@@ -84,14 +83,11 @@ function mapRoom(row: RoomRow): Room {
   }> | null;
 
   return {
-    id: row.id,
-    room_number: row.room_number,
-    floor_number: row.floor_number,
+    ...row,
     max_occupancy: row.max_occupancy ?? 2,
     is_premium: row.is_premium ?? false,
     amenities: (row.amenities as string[]) ?? [],
     is_clean: row.is_clean ?? false,
-    room_types: row.room_types,
     name_english: getRoomEnglishName(code),
     name_croatian: getRoomCroatianName(code),
     seasonal_rates: {
@@ -106,7 +102,7 @@ function mapRoom(row: RoomRow): Room {
 // ─── Service function ─────────────────────────────────────────────────────────
 
 async function fetchRooms(): Promise<Room[]> {
-  const { data } = await roomsQuery.throwOnError();
+  const { data } = await buildRoomsQuery().throwOnError();
   return (data ?? []).map(mapRoom);
 }
 

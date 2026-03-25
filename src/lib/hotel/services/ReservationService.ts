@@ -571,7 +571,7 @@ function mapRoomFromDB(room: any): Room {
           (rp: { pricing_seasons?: { code: string } }) => rp.pricing_seasons?.code === 'D'
         )?.base_rate ?? 100,
     },
-  };
+  } as unknown as Room;
 }
 
 function getRoomTypeCroatianName(roomType: string): string {

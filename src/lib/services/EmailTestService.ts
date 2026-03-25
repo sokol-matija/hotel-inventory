@@ -83,7 +83,7 @@ export class EmailTestService {
       is_premium: false,
       amenities: ['WiFi', 'Air Conditioning', 'Sea View'],
       is_clean: true,
-    };
+    } as unknown as Room;
 
     const tomorrow = new Date(Date.now() + 86400000);
     const fiveDaysOut = new Date(Date.now() + 5 * 86400000);

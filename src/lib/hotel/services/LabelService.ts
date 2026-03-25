@@ -115,11 +115,10 @@ export class LabelService {
       const randomColor = this.getRandomColor();
 
       const insertData = {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        hotel_id: labelData.hotelId as any,
+        hotel_id: labelData.hotel_id ?? 1,
         name: normalizedName,
         color: labelData.color || randomColor.text,
-        bg_color: labelData.bgColor || randomColor.bg,
+        bg_color: labelData.bg_color || randomColor.bg,
       };
 
       const { data, error } = await supabase
@@ -224,8 +223,8 @@ export class LabelService {
         updateData.color = updates.color;
       }
 
-      if (updates.bgColor) {
-        updateData.bg_color = updates.bgColor;
+      if (updates.bg_color) {
+        updateData.bg_color = updates.bg_color;
       }
 
       const { data, error } = await supabase
@@ -278,13 +277,13 @@ export class LabelService {
   private mapLabel(data: any): Label {
     return {
       id: data.id,
-      hotelId: data.hotel_id,
+      hotel_id: data.hotel_id,
       name: data.name,
       color: data.color || '#000000',
-      bgColor: data.bg_color || '#FFFFFF',
-      createdAt: new Date(data.created_at),
-      updatedAt: new Date(data.updated_at),
-    };
+      bg_color: data.bg_color || '#FFFFFF',
+      created_at: data.created_at,
+      updated_at: data.updated_at,
+    } as unknown as Label;
   }
 
   /**

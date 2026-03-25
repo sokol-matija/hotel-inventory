@@ -5,86 +5,32 @@ import { supabase } from '@/lib/supabase';
 import type { TablesInsert, TablesUpdate } from '@/lib/supabase';
 import { queryKeys } from '../queryKeys';
 
-// ─── Query definition ────────────────────────────────────────────────────────
+// ─── Query builder ───────────────────────────────────────────────────────────
 
-const guestsQuery = supabase.from('guests').select('*').order('last_name');
+function buildGuestsQuery() {
+  return supabase.from('guests').select('*').order('last_name');
+}
 
-// ─── Derived types ────────────────────────────────────────────────────────────
+// ─── Derived type ─────────────────────────────────────────────────────────────
+// QueryData<> stays in sync with migrations automatically — no manual interface.
+// display_name is a computed field: full_name fallback to first_name + last_name.
 
-type GuestRow = QueryData<typeof guestsQuery>[number];
-
-export interface Guest {
-  // DB columns (snake_case — same as DB)
-  id: number;
-  first_name: string;
-  last_name: string;
-  email: string | null;
-  phone: string | null;
-  nationality: string | null;
-  date_of_birth: string | null;
-  passport_number: string | null;
-  id_card_number: string | null;
-  preferred_language: string | null;
-  dietary_restrictions: string[] | null;
-  special_needs: string | null;
-  has_pets: boolean | null;
-  is_vip: boolean | null;
-  vip_level: number | null;
-  marketing_consent: boolean | null;
-  average_rating: number | null;
-  notes: string | null;
-  country_code: string | null;
-  full_name: string | null;
-  created_at: string | null;
-  updated_at: string | null;
-
-  // Computed (not in DB — derived from first_name + last_name)
+export type Guest = QueryData<ReturnType<typeof buildGuestsQuery>>[number] & {
   display_name: string;
-}
-
-// ─── Mapping helper ───────────────────────────────────────────────────────────
-
-function mapGuest(row: GuestRow): Guest {
-  return {
-    id: row.id,
-    first_name: row.first_name,
-    last_name: row.last_name,
-    email: row.email,
-    phone: row.phone,
-    nationality: row.nationality,
-    date_of_birth: row.date_of_birth,
-    passport_number: row.passport_number,
-    id_card_number: row.id_card_number,
-    preferred_language: row.preferred_language,
-    dietary_restrictions: row.dietary_restrictions,
-    special_needs: row.special_needs,
-    has_pets: row.has_pets,
-    is_vip: row.is_vip,
-    vip_level: row.vip_level,
-    marketing_consent: row.marketing_consent,
-    average_rating: row.average_rating,
-    notes: row.notes,
-    country_code: row.country_code,
-    full_name: row.full_name,
-    created_at: row.created_at,
-    updated_at: row.updated_at,
-    display_name: row.full_name || `${row.first_name} ${row.last_name}`.trim(),
-  };
-}
-
-// ─── Service function ─────────────────────────────────────────────────────────
-
-async function fetchGuests(): Promise<Guest[]> {
-  const { data } = await guestsQuery.throwOnError();
-  return (data ?? []).map(mapGuest);
-}
+};
 
 // ─── Hooks ─────────────────────────────────────────────────────────────────────
 
 export function useGuests() {
   return useQuery({
     queryKey: queryKeys.guests.all(),
-    queryFn: fetchGuests,
+    queryFn: async () => {
+      const { data } = await buildGuestsQuery().throwOnError();
+      return (data ?? []).map((row) => ({
+        ...row,
+        display_name: row.full_name || `${row.first_name} ${row.last_name}`.trim(),
+      }));
+    },
   });
 }
 

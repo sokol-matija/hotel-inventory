@@ -153,7 +153,7 @@ function createRoom(
     name_english: roomTypeInfo.nameEnglish,
     name_croatian: roomTypeInfo.nameCroatian,
     seasonal_rates: roomTypeInfo.rates,
-  };
+  } as unknown as Room;
 }
 
 // Export the complete room configuration

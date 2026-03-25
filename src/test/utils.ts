@@ -166,7 +166,7 @@ export function buildRoom(overrides: Partial<Room> = {}): Room {
     amenities: [],
     is_clean: true,
     ...overrides,
-  };
+  } as unknown as Room;
 }
 
 export function buildGuest(overrides: Partial<Guest> = {}): Guest {
@@ -242,12 +242,12 @@ export function buildLabel(overrides: Partial<Label> = {}): Label {
   _id++;
   return {
     id: `label-${_id}`,
-    hotelId: 'hotel-1',
+    hotel_id: 1,
     name: `Label ${_id}`,
     color: '#ffffff',
-    bgColor: '#000000',
-    createdAt: new Date('2026-01-01'),
-    updatedAt: new Date('2026-01-01'),
+    bg_color: '#000000',
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-01T00:00:00Z',
     ...overrides,
-  };
+  } as unknown as Label;
 }
