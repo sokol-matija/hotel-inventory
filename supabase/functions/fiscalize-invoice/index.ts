@@ -7,6 +7,12 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 // These will be loaded from Deno's npm compatibility layer
 import forge from 'npm:node-forge@1.3.1';
 import { SignedXml } from 'npm:xml-crypto@6.1.2';
+import {
+  formatZKIDateTime,
+  formatXMLDateTime,
+  normalizeVatRate,
+  parseResponse,
+} from './_pure.ts';
 
 interface FiscalizationRequest {
   invoiceNumber: string;
@@ -37,8 +43,6 @@ const CONFIG = {
   TEST_PORT: 8449,
   TEST_PATH: '/FiskalizacijaServiceTest',
 };
-
-const ALLOWED_VAT_RATES = [25, 13, 5, 0] as const;
 
 /**
  * Generate ZKI (Croatian security code) using P12 certificate
@@ -85,34 +89,6 @@ async function generateZKI(
 }
 
 /**
- * Format datetime for ZKI generation
- */
-function formatZKIDateTime(date: Date): string {
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const year = date.getFullYear();
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  const seconds = String(date.getSeconds()).padStart(2, '0');
-
-  return `${day}.${month}.${year} ${hours}:${minutes}:${seconds}`;
-}
-
-/**
- * Format datetime for XML
- */
-function formatXMLDateTime(date: Date): string {
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const year = date.getFullYear();
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  const seconds = String(date.getSeconds()).padStart(2, '0');
-
-  return `${day}.${month}.${year}T${hours}:${minutes}:${seconds}`;
-}
-
-/**
  * Generate UUID v4
  */
 function generateUUID(): string {
@@ -130,25 +106,12 @@ function generateSOAPEnvelope(
   const xmlDateTime = formatXMLDateTime(new Date(fiscalData.dateTime));
   const messageId = generateUUID();
 
-  // Croatian fiscalization accepts predefined VAT rates.
-  // If incoming values imply a non-standard rate (e.g. mixed totals), fallback to 13%.
-  const incomingVatAmount = fiscalData.vatAmount;
-  const incomingBaseAmount = fiscalData.totalAmount - incomingVatAmount;
-  const inferredRate = incomingBaseAmount > 0 ? (incomingVatAmount / incomingBaseAmount) * 100 : 13;
-  const roundedInferredRate = Number(inferredRate.toFixed(2));
-
-  const hasAllowedRate = ALLOWED_VAT_RATES.some((rate) => Math.abs(rate - roundedInferredRate) < 0.01);
-  const normalizedRate = hasAllowedRate ? roundedInferredRate : 13;
-
+  // Croatian fiscalization accepts predefined VAT rates [25, 13, 5, 0].
+  // normalizeVatRate infers the rate from the gross total and falls back to 13% if non-standard.
+  const normalizedRate = normalizeVatRate(fiscalData.totalAmount, fiscalData.vatAmount);
   const baseAmount = normalizedRate > 0 ? fiscalData.totalAmount / (1 + normalizedRate / 100) : fiscalData.totalAmount;
   const vatAmount = fiscalData.totalAmount - baseAmount;
   const stopaPercent = normalizedRate.toFixed(2);
-
-  if (!hasAllowedRate) {
-    console.warn(
-      `⚠️ Invalid inferred VAT rate (${roundedInferredRate}%). Falling back to ${normalizedRate}% for fiscal XML.`
-    );
-  }
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
@@ -339,49 +302,6 @@ async function sendSOAPRequest(signedXML: string): Promise<string> {
   );
 
   return await response.text();
-}
-
-/**
- * Parse Croatian Tax Authority response
- */
-function parseResponse(responseBody: string): {
-  success: boolean;
-  jir?: string;
-  error?: string;
-} {
-  // Check for errors
-  const errorMatch =
-    responseBody.match(/<SifraGreske>(.+?)<\/SifraGreske>/) ||
-    responseBody.match(/<tns:SifraGreske>(.+?)<\/tns:SifraGreske>/);
-  const messageMatch =
-    responseBody.match(/<PorukaGreske>(.+?)<\/PorukaGreske>/) ||
-    responseBody.match(/<tns:PorukaGreske>(.+?)<\/tns:PorukaGreske>/);
-
-  if (errorMatch) {
-    const errorCode = errorMatch[1];
-    const errorMessage = messageMatch ? messageMatch[1] : 'Unknown error';
-    return {
-      success: false,
-      error: `${errorCode}: ${errorMessage}`,
-    };
-  }
-
-  // Check for JIR
-  const jirMatch =
-    responseBody.match(/<Jir>(.+?)<\/Jir>/) ||
-    responseBody.match(/<tns:Jir>(.+?)<\/tns:Jir>/);
-
-  if (jirMatch) {
-    return {
-      success: true,
-      jir: jirMatch[1],
-    };
-  }
-
-  return {
-    success: false,
-    error: 'No JIR or error found in response',
-  };
 }
 
 /**
