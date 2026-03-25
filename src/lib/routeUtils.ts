@@ -17,8 +17,7 @@ export function requireRole(allowedRoleIds: number[]) {
     requireAuth({ context });
     const roleId = context.auth.userProfile?.role_id;
     if (!roleId || !allowedRoleIds.includes(roleId)) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      throw redirect({ to: '/unauthorized' as any });
+      throw redirect({ to: '/unauthorized' });
     }
   };
 }

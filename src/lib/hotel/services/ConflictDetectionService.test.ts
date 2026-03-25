@@ -76,7 +76,7 @@ function makeReservation(id: number, checkIn: string, checkOut: string, roomId =
       vip_level: null,
     },
     labels: null,
-    // eslint_disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any as Reservation;
 }
 
@@ -101,7 +101,7 @@ function makeQueryBuilder(data: unknown[] | null, error: unknown = null) {
 // ─── Reset singleton between tests ───────────────────────────────────────────
 
 // ConflictDetectionService.instance is private; we cast to bypass TS.
-// eslint_disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const resetSingleton = () => ((ConflictDetectionService as any).instance = undefined);
 
 // ─── Tests ────────────────────────────────────────────────────────────────────

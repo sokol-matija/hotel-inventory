@@ -235,7 +235,7 @@ describe('ReservationService', () => {
     };
 
     // Reset singleton between tests
-    // eslint_disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (ReservationService as any).instance = undefined;
     service = ReservationService.getInstance();
 
