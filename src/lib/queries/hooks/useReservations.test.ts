@@ -3,15 +3,25 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { vi } from 'vitest';
 import React from 'react';
 import { createWrapper, createTestQueryClient, buildReservation } from '@/test/utils';
-import {
-  useReservations,
-  useUpdateReservationStatus,
-  useDeleteReservation,
-} from './useReservations';
+
+vi.mock('@/lib/supabase', () => {
+  const mockOrderFn = vi.fn();
+  const mockSelectFn = vi.fn().mockReturnValue({
+    order: mockOrderFn,
+  });
+  const mockFromFn = vi.fn().mockReturnValue({
+    select: mockSelectFn,
+  });
+
+  return {
+    supabase: {
+      from: mockFromFn,
+    },
+  };
+});
 
 vi.mock('@/lib/hotel/services/HotelDataService', () => ({
   hotelDataService: {
-    getReservations: vi.fn(),
     updateReservation: vi.fn(),
     deleteReservation: vi.fn(),
     createReservation: vi.fn(),
@@ -19,7 +29,13 @@ vi.mock('@/lib/hotel/services/HotelDataService', () => ({
   },
 }));
 
+import { supabase } from '@/lib/supabase';
 import { hotelDataService } from '@/lib/hotel/services/HotelDataService';
+import {
+  useReservations,
+  useUpdateReservationStatus,
+  useDeleteReservation,
+} from './useReservations';
 
 /** Wrapper that exposes the queryClient for state inspection */
 function wrapWith(queryClient: QueryClient) {
@@ -32,8 +48,82 @@ function wrapWith(queryClient: QueryClient) {
 
 describe('useReservations', () => {
   it('returns reservation list on success', async () => {
-    const reservations = [buildReservation(), buildReservation()];
-    vi.mocked(hotelDataService.getReservations).mockResolvedValue(reservations);
+    const now = new Date().toISOString();
+
+    const mockThrowOnError = vi.fn().mockResolvedValue({
+      data: [
+        {
+          id: 1,
+          room_id: 1,
+          guest_id: 1,
+          check_in_date: '2026-04-01',
+          check_out_date: '2026-04-05',
+          number_of_guests: 2,
+          adults: 2,
+          status_id: 1,
+          booking_source_id: 1,
+          special_requests: '',
+          internal_notes: '',
+          booking_date: now,
+          created_at: now,
+          updated_at: now,
+          last_modified: now,
+          number_of_nights: 4,
+          company_id: null,
+          pricing_tier_id: null,
+          has_pets: false,
+          is_r1: false,
+          checked_in_at: null,
+          checked_out_at: null,
+          label_id: null,
+          reservation_statuses: { code: 'confirmed' },
+          booking_sources: { code: 'direct' },
+          guests: null,
+          labels: null,
+        },
+        {
+          id: 2,
+          room_id: 2,
+          guest_id: 2,
+          check_in_date: '2026-04-10',
+          check_out_date: '2026-04-15',
+          number_of_guests: 3,
+          adults: 3,
+          status_id: 1,
+          booking_source_id: 1,
+          special_requests: '',
+          internal_notes: '',
+          booking_date: now,
+          created_at: now,
+          updated_at: now,
+          last_modified: now,
+          number_of_nights: 5,
+          company_id: null,
+          pricing_tier_id: null,
+          has_pets: false,
+          is_r1: false,
+          checked_in_at: null,
+          checked_out_at: null,
+          label_id: null,
+          reservation_statuses: { code: 'confirmed' },
+          booking_sources: { code: 'direct' },
+          guests: null,
+          labels: null,
+        },
+      ],
+    });
+
+    const mockOrder = vi.fn().mockReturnValue({
+      throwOnError: mockThrowOnError,
+    });
+
+    const mockSelect = vi.fn().mockReturnValue({
+      order: mockOrder,
+    });
+
+    vi.mocked(supabase.from).mockReturnValue({
+      select: mockSelect,
+    } as any);
 
     const { result } = renderHook(() => useReservations(), { wrapper: createWrapper() });
 
@@ -42,7 +132,19 @@ describe('useReservations', () => {
   });
 
   it('surfaces error state when fetch fails', async () => {
-    vi.mocked(hotelDataService.getReservations).mockRejectedValue(new Error('DB error'));
+    const mockThrowOnError = vi.fn().mockRejectedValue(new Error('DB error'));
+
+    const mockOrder = vi.fn().mockReturnValue({
+      throwOnError: mockThrowOnError,
+    });
+
+    const mockSelect = vi.fn().mockReturnValue({
+      order: mockOrder,
+    });
+
+    vi.mocked(supabase.from).mockReturnValue({
+      select: mockSelect,
+    } as any);
 
     const { result } = renderHook(() => useReservations(), { wrapper: createWrapper() });
 
@@ -51,7 +153,19 @@ describe('useReservations', () => {
   });
 
   it('starts in loading state before data resolves', () => {
-    vi.mocked(hotelDataService.getReservations).mockReturnValue(new Promise(() => {}));
+    const mockThrowOnError = vi.fn().mockReturnValue(new Promise(() => {}));
+
+    const mockOrder = vi.fn().mockReturnValue({
+      throwOnError: mockThrowOnError,
+    });
+
+    const mockSelect = vi.fn().mockReturnValue({
+      order: mockOrder,
+    });
+
+    vi.mocked(supabase.from).mockReturnValue({
+      select: mockSelect,
+    } as any);
 
     const { result } = renderHook(() => useReservations(), { wrapper: createWrapper() });
 
