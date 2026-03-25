@@ -124,3 +124,95 @@ export function useProcessRoomServiceOrder() {
     },
   });
 }
+
+// ─── Fridge Items (refrigerated inventory for room service drinks) ──────────────
+
+const fridgeItemsQuery = supabase
+  .from('items')
+  .select(
+    `
+    id, name, description, unit, price, minimum_stock, is_active,
+    category:categories(id, name, requires_expiration),
+    inventory(id, location_id, quantity, expiration_date, location:locations(id, name, is_refrigerated))
+  `
+  )
+  .eq('is_active', true);
+
+type RawFridgeItem = QueryData<typeof fridgeItemsQuery>[number];
+
+export interface FridgeInventoryItem {
+  id: number;
+  name: string;
+  description?: string | null;
+  category: { id: number; name: string; requires_expiration: boolean };
+  unit: string;
+  price: number;
+  minimum_stock: number;
+  is_active: boolean;
+  inventory: Array<{
+    id: number;
+    location_id: number;
+    quantity: number;
+    originalQuantity: number;
+    expiration_date?: string | null;
+    location: { id: number; name: string };
+  }>;
+  totalStock: number;
+  availableStock: number;
+}
+
+function mapFridgeItem(item: RawFridgeItem): FridgeInventoryItem | null {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const allInventory = (item.inventory as any[]) ?? [];
+  const fridgeInventory = allInventory.filter(
+    (inv: { location?: { is_refrigerated?: boolean }; quantity: number }) =>
+      inv.location?.is_refrigerated && inv.quantity > 0
+  );
+  if (fridgeInventory.length === 0) return null;
+  const totalStock = fridgeInventory.reduce(
+    (sum: number, inv: { quantity: number }) => sum + inv.quantity,
+    0
+  );
+  return {
+    id: item.id,
+    name: item.name,
+    description: item.description,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    category: item.category as any,
+    unit: item.unit ?? '',
+    price: item.price ?? 0,
+    minimum_stock: item.minimum_stock ?? 0,
+    is_active: item.is_active ?? false,
+    inventory: fridgeInventory.map(
+      (inv: {
+        id: number;
+        location_id: number;
+        quantity: number;
+        expiration_date?: string | null;
+        location: { id: number; name: string };
+      }) => ({
+        id: inv.id,
+        location_id: inv.location_id,
+        quantity: inv.quantity,
+        originalQuantity: inv.quantity,
+        expiration_date: inv.expiration_date,
+        location: inv.location,
+      })
+    ),
+    totalStock,
+    availableStock: totalStock,
+  };
+}
+
+export function useFridgeItems(enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.roomService.fridgeItems(),
+    queryFn: async () => {
+      const { data } = await fridgeItemsQuery.throwOnError();
+      return (data ?? [])
+        .map(mapFridgeItem)
+        .filter((item): item is FridgeInventoryItem => item !== null);
+    },
+    enabled,
+  });
+}

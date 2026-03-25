@@ -2,6 +2,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { QueryData } from '@supabase/supabase-js';
 import { supabase } from '../../supabase';
 import { queryKeys } from '../queryKeys';
+import {
+  createFullBooking,
+  type CreateFullBookingInput,
+} from '@/lib/hotel/services/BookingService';
 
 // ─── Query builder ─────────────────────────────────────────────────────────────
 
@@ -303,6 +307,22 @@ export function useDeleteReservation() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.reservations.all() });
+    },
+  });
+}
+
+// ─── Create Full Booking (multi-guest with charges and junction tables) ─────────
+
+export { type CreateFullBookingInput };
+
+export function useCreateFullBooking() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: createFullBooking,
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.reservations.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.rooms.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.guests.all() });
     },
   });
 }

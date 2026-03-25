@@ -74,12 +74,50 @@ export function useUpdateInventoryQuantity() {
       ]);
     },
     onError: (error, variables) => {
-      console.error('🔢 QUANTITY UPDATE FAILED:', {
+      console.error('QUANTITY UPDATE FAILED:', {
         error: error instanceof Error ? error.message : error,
         inventoryId: variables.inventoryId,
         newQuantity: variables.newQuantity,
         timestamp: new Date().toISOString(),
       });
+    },
+  });
+}
+
+// ─── Add Inventory ─────────────────────────────────────────────────────────────
+
+export type AddInventoryInput = {
+  item_id: number;
+  location_id: number;
+  quantity: number;
+  expiration_date: string | null;
+  cost_per_unit: number | null;
+};
+
+export function useAddInventory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: AddInventoryInput) => {
+      const { data: maxOrderData } = await supabase
+        .from('inventory')
+        .select('display_order')
+        .eq('location_id', payload.location_id)
+        .order('display_order', { ascending: false })
+        .limit(1);
+      const nextDisplayOrder =
+        maxOrderData && maxOrderData.length > 0 ? maxOrderData[0].display_order + 1 : 1;
+      await supabase
+        .from('inventory')
+        .insert([{ ...payload, display_order: nextDisplayOrder }])
+        .throwOnError();
+    },
+    onSettled: (_data, _error, variables) => {
+      return Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.locations.detail(variables.location_id),
+        }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.locations.withStats() }),
+      ]);
     },
   });
 }

@@ -63,5 +63,6 @@ export const queryKeys = {
   },
   roomService: {
     foodAndBeverage: () => ['roomService', 'foodAndBeverage'] as const,
+    fridgeItems: () => ['roomService', 'fridgeItems'] as const,
   },
 } as const;
