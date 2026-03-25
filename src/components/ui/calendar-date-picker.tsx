@@ -30,7 +30,7 @@ interface CalendarDatePickerProps {
   className?: string;
   required?: boolean;
   reservations: Reservation[];
-  roomId: string;
+  roomId: number;
   disabled?: boolean;
 }
 

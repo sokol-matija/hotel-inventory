@@ -2,7 +2,8 @@
 // Handles date navigation, room status calculations, drag operations, and reservation management
 
 import { format, addDays, startOfDay, isSameDay } from 'date-fns';
-import { CalendarEvent, Reservation, Guest, ReservationStatus } from '../types';
+import { CalendarEvent, Guest, ReservationStatus } from '../types';
+import type { Reservation } from '@/lib/queries/hooks/useReservations';
 import type { Room } from '@/lib/queries/hooks/useRooms';
 import { RESERVATION_STATUS_COLORS } from '../calendarUtils';
 
@@ -26,14 +27,14 @@ export interface DragCreatePreview {
 
 export interface RoomChangeDialog {
   show: boolean;
-  reservationId: string;
-  fromRoomId: string;
-  toRoomId: string;
+  reservationId: number;
+  fromRoomId: number;
+  toRoomId: number;
 }
 
 export interface DrinkModalState {
   show: boolean;
-  reservationId: string;
+  reservationId: number;
 }
 
 export interface OccupancyData {
@@ -124,38 +125,36 @@ export class HotelTimelineService {
 
     return reservations
       .filter((reservation) => {
-        const checkIn = startOfDay(reservation.checkIn);
-        const checkOut = startOfDay(reservation.checkOut);
+        const checkIn = startOfDay(new Date(reservation.check_in_date));
+        const checkOut = startOfDay(new Date(reservation.check_out_date));
 
         // Show reservation if it overlaps with timeline period
         return checkIn < timelineEnd && checkOut > timelineStart;
       })
       .map((reservation) => {
-        const room = rooms.find((r) => r.id.toString() === reservation.roomId);
+        const room = rooms.find((r) => r.id === reservation.room_id);
+        const status = (reservation.reservation_statuses?.code ?? 'confirmed') as ReservationStatus;
+        const guestName =
+          reservation.guests?.full_name ||
+          `${reservation.guests?.first_name ?? ''} ${reservation.guests?.last_name ?? ''}`.trim() ||
+          'Unknown Guest';
 
         return {
-          id: `${reservation.id}-${reservation.roomId}`,
-          reservationId: reservation.id,
-          roomId: reservation.roomId,
-          start: reservation.checkIn,
-          end: reservation.checkOut,
-          title: this.getReservationTitle(reservation),
+          id: `${reservation.id}-${reservation.room_id}`,
+          reservationId: String(reservation.id),
+          roomId: String(reservation.room_id),
+          start: new Date(reservation.check_in_date),
+          end: new Date(reservation.check_out_date),
+          title: guestName,
           resource: {
-            status: reservation.status,
-            guestName: reservation.guest?.display_name ?? 'Unknown Guest',
+            status,
+            guestName,
             roomNumber: room ? room.room_number : 'Unknown Room',
-            numberOfGuests: reservation.adults + reservation.children.length,
-            hasPets: reservation.hasPets ?? false,
+            numberOfGuests: reservation.adults + (reservation.children_count ?? 0),
+            hasPets: reservation.has_pets ?? false,
           },
         };
       });
-  }
-
-  /**
-   * Generate reservation title for display
-   */
-  private getReservationTitle(reservation: Reservation): string {
-    return reservation.guest?.display_name ?? 'Unknown Guest';
   }
 
   /**
@@ -171,8 +170,8 @@ export class HotelTimelineService {
     visibleEndHalfDay: number;
     reservationDays: number;
   } {
-    const checkInDate = startOfDay(reservation.checkIn);
-    const checkOutDate = startOfDay(reservation.checkOut);
+    const checkInDate = startOfDay(new Date(reservation.check_in_date));
+    const checkOutDate = startOfDay(new Date(reservation.check_out_date));
     const timelineStart = startOfDay(startDate);
 
     const startDayIndex = Math.floor(
@@ -219,14 +218,14 @@ export class HotelTimelineService {
 
     // Process reservations for the target date
     reservations.forEach((reservation) => {
-      const checkInDate = startOfDay(reservation.checkIn);
-      const checkOutDate = startOfDay(reservation.checkOut);
+      const checkInDate = startOfDay(new Date(reservation.check_in_date));
+      const checkOutDate = startOfDay(new Date(reservation.check_out_date));
+      const status = (reservation.reservation_statuses?.code ?? 'confirmed') as ReservationStatus;
 
       // Check if reservation covers the target date
       if (checkInDate <= targetDate && checkOutDate > targetDate) {
-        occupancy[reservation.roomId] = {
-          status: reservation.status, // Use the actual reservation status for color coding
-          guest: reservation.guest,
+        occupancy[String(reservation.room_id)] = {
+          status,
           reservation,
           checkInTime: isSameDay(checkInDate, targetDate) ? '15:00' : undefined,
           checkOutTime: isSameDay(checkOutDate, targetDate) ? '11:00' : undefined,
@@ -259,8 +258,9 @@ export class HotelTimelineService {
 
     // Process each reservation
     reservations.forEach((reservation) => {
-      const checkInDate = startOfDay(reservation.checkIn);
-      const checkOutDate = startOfDay(reservation.checkOut);
+      const checkInDate = startOfDay(new Date(reservation.check_in_date));
+      const checkOutDate = startOfDay(new Date(reservation.check_out_date));
+      const status = (reservation.reservation_statuses?.code ?? 'confirmed') as ReservationStatus;
 
       // Must occupy this date (>= because room is occupied until 11 AM on checkout day)
       if (!(checkInDate <= targetDate && checkOutDate >= targetDate)) {
@@ -282,9 +282,8 @@ export class HotelTimelineService {
       }
 
       if (shouldInclude) {
-        occupancy[reservation.roomId] = {
-          status: reservation.status,
-          guest: reservation.guest,
+        occupancy[String(reservation.room_id)] = {
+          status,
           reservation,
           checkInTime: isCheckingInToday ? '15:00' : undefined,
           checkOutTime: isCheckingOutToday ? '11:00' : undefined,
@@ -377,23 +376,26 @@ export class HotelTimelineService {
    */
   validateReservationMove(
     reservation: Reservation,
-    targetRoomId: string,
+    targetRoomId: number,
     existingReservations: Reservation[],
     rooms: Room[]
   ): { valid: boolean; error?: string } {
     // Check if target room exists
-    const targetRoom = rooms.find((r) => r.id.toString() === targetRoomId);
+    const targetRoom = rooms.find((r) => r.id === targetRoomId);
     if (!targetRoom) {
       return { valid: false, error: 'Target room not found' };
     }
+
+    const resCheckIn = new Date(reservation.check_in_date);
+    const resCheckOut = new Date(reservation.check_out_date);
 
     // Check for conflicts with existing reservations in target room
     const conflicts = existingReservations.filter(
       (r) =>
         r.id !== reservation.id &&
-        r.roomId === targetRoomId &&
-        r.checkIn < reservation.checkOut &&
-        r.checkOut > reservation.checkIn
+        r.room_id === targetRoomId &&
+        new Date(r.check_in_date) < resCheckOut &&
+        new Date(r.check_out_date) > resCheckIn
     );
 
     if (conflicts.length > 0) {
@@ -451,25 +453,33 @@ export class HotelTimelineService {
   } {
     const today = startOfDay(new Date());
     const timelineReservations = reservations.filter((r) => {
-      const checkIn = startOfDay(r.checkIn);
-      const checkOut = startOfDay(r.checkOut);
+      const checkIn = startOfDay(new Date(r.check_in_date));
+      const checkOut = startOfDay(new Date(r.check_out_date));
       const timelineEnd = addDays(startDate, 14);
       return checkIn < timelineEnd && checkOut > startDate;
     });
 
     const occupiedRooms = new Set(
       timelineReservations
-        .filter((r) => r.status === 'checked-in' || r.status === 'confirmed')
-        .map((r) => r.roomId)
+        .filter((r) => {
+          const status = r.reservation_statuses?.code ?? 'confirmed';
+          return status === 'checked-in' || status === 'confirmed';
+        })
+        .map((r) => r.room_id)
     ).size;
 
-    const checkInsToday = reservations.filter(
-      (r) => isSameDay(r.checkIn, today) && (r.status === 'confirmed' || r.status === 'checked-in')
-    ).length;
+    const checkInsToday = reservations.filter((r) => {
+      const status = r.reservation_statuses?.code ?? 'confirmed';
+      return (
+        isSameDay(new Date(r.check_in_date), today) &&
+        (status === 'confirmed' || status === 'checked-in')
+      );
+    }).length;
 
-    const checkOutsToday = reservations.filter(
-      (r) => isSameDay(r.checkOut, today) && r.status === 'checked-in'
-    ).length;
+    const checkOutsToday = reservations.filter((r) => {
+      const status = r.reservation_statuses?.code ?? 'confirmed';
+      return isSameDay(new Date(r.check_out_date), today) && status === 'checked-in';
+    }).length;
 
     return {
       totalReservations: timelineReservations.length,

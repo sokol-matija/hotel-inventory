@@ -23,6 +23,7 @@ import {
 import { Reservation } from '../../../../lib/hotel/types';
 import { useUpdateReservationStatus } from '../../../../lib/queries/hooks/useReservations';
 import { useRooms } from '../../../../lib/queries/hooks/useRooms';
+import { useGuests } from '../../../../lib/queries/hooks/useGuests';
 import { HotelEmailService } from '../../../../lib/emailService';
 // Removed static HOTEL_POREC_ROOMS import - now using dynamic rooms from context
 
@@ -43,9 +44,10 @@ interface CheckInStep {
 
 export default function CheckInWorkflow({ isOpen, onClose, reservation }: CheckInWorkflowProps) {
   const { data: rooms = [] } = useRooms();
+  const { data: guests = [] } = useGuests();
   const updateReservationStatusMutation = useUpdateReservationStatus();
   const isUpdating = updateReservationStatusMutation.isPending;
-  const updateReservationStatus = async (id: string, status: string) => {
+  const updateReservationStatus = async (id: number, status: string) => {
     await updateReservationStatusMutation.mutateAsync({
       id,
       status: status as import('../../../../lib/hotel/types').ReservationStatus,
@@ -63,8 +65,8 @@ export default function CheckInWorkflow({ isOpen, onClose, reservation }: CheckI
   } | null>(null);
 
   // Find associated guest and room data
-  const guest = reservation?.guest ?? null;
-  const room = reservation ? rooms.find((r) => r.id.toString() === reservation.roomId) : null;
+  const guest = reservation ? (guests?.find((g) => g.id === reservation.guest_id) ?? null) : null;
+  const room = reservation ? rooms.find((r) => r.id === reservation.room_id) : null;
 
   // Initialize check-in steps
   useEffect(() => {
@@ -82,7 +84,7 @@ export default function CheckInWorkflow({ isOpen, onClose, reservation }: CheckI
       {
         id: 'payment',
         title: 'Note Payment Status',
-        description: `Payment status: ${reservation.status === 'checked-out' ? 'Already paid' : 'Will pay at checkout'}`,
+        description: `Payment status: ${(reservation.reservation_statuses?.code ?? '') === 'checked-out' ? 'Already paid' : 'Will pay at checkout'}`,
         completed: true, // Always completed since payment is not required for check-in
         required: false, // Not required - guests can pay at checkout
         icon: CreditCard,
@@ -201,8 +203,9 @@ export default function CheckInWorkflow({ isOpen, onClose, reservation }: CheckI
 
   if (!isOpen || !reservation || !guest || !room) return null;
 
-  const isEarlyCheckIn = new Date() < reservation.checkIn;
-  const isLateCheckIn = new Date() > new Date(reservation.checkIn.getTime() + 4 * 60 * 60 * 1000); // 4 hours late
+  const checkInDate = new Date(reservation.check_in_date);
+  const isEarlyCheckIn = new Date() < checkInDate;
+  const isLateCheckIn = new Date() > new Date(checkInDate.getTime() + 4 * 60 * 60 * 1000); // 4 hours late
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -264,19 +267,21 @@ export default function CheckInWorkflow({ isOpen, onClose, reservation }: CheckI
                   </div>
                   <div className="flex items-center space-x-2">
                     <Users className="h-4 w-4 text-gray-500" />
-                    <span className="text-sm">{reservation.numberOfGuests} guests</span>
-                    {(reservation.children?.length ?? 0) > 0 && (
+                    <span className="text-sm">
+                      {reservation.number_of_guests ?? reservation.adults} guests
+                    </span>
+                    {(reservation.children_count ?? 0) > 0 && (
                       <>
                         <Baby className="h-4 w-4 text-gray-500" />
-                        <span className="text-sm">{reservation.children?.length} children</span>
+                        <span className="text-sm">{reservation.children_count} children</span>
                       </>
                     )}
                   </div>
                   <div className="flex items-center space-x-2">
                     <Calendar className="h-4 w-4 text-gray-500" />
                     <span className="text-sm">
-                      {reservation.checkIn.toLocaleDateString()} -{' '}
-                      {reservation.checkOut.toLocaleDateString()}
+                      {new Date(reservation.check_in_date).toLocaleDateString()} -{' '}
+                      {new Date(reservation.check_out_date).toLocaleDateString()}
                     </span>
                   </div>
                 </div>

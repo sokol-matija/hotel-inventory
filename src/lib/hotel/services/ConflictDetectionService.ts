@@ -24,9 +24,9 @@
  * @since August 2025
  */
 
-import { Reservation } from '../types';
+import type { Reservation } from '@/lib/queries/hooks/useReservations';
 import type { Room } from '@/lib/queries/hooks/useRooms';
-import { DatabaseAdapter } from './DatabaseAdapter';
+import { supabase } from '../../supabase';
 import { startOfDay, endOfDay } from 'date-fns';
 
 export interface ConflictResult {
@@ -64,13 +64,109 @@ export interface BookingSuggestion {
   benefitDescription?: string;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapRoomFromDB(room: any): Room {
+  const roomType = room.room_types?.code || 'double';
+  const mapping: Record<string, string> = {
+    single: 'Single Room',
+    double: 'Double Room',
+    triple: 'Triple Room',
+    family: 'Family Room',
+    apartment: 'Apartment',
+    BD: 'Big Double Room',
+    BS: 'Big Single Room',
+    D: 'Double Room',
+    T: 'Triple Room',
+    S: 'Single Room',
+    F: 'Family Room',
+    A: 'Apartment',
+    RA: '401 Rooftop Apartment',
+  };
+  const hrMapping: Record<string, string> = {
+    single: 'Jednokrevetna soba',
+    double: 'Dvokrevetna soba',
+    triple: 'Trokrevetna soba',
+    family: 'Obiteljska soba',
+    apartment: 'Apartman',
+  };
+  return {
+    id: room.id,
+    room_number: room.room_number,
+    floor_number: room.floor_number ?? 1,
+    room_types: room.room_types,
+    max_occupancy: room.max_occupancy || 2,
+    is_premium: room.is_premium || false,
+    amenities: room.amenities || [],
+    is_clean: room.is_clean ?? false,
+    name_croatian: hrMapping[roomType] || 'Dvokrevetna soba',
+    name_english:
+      mapping[roomType] || `${roomType.charAt(0).toUpperCase()}${roomType.slice(1)} Room`,
+    seasonal_rates: { A: 50, B: 60, C: 80, D: 100 },
+  };
+}
+
+async function getRooms(): Promise<Room[]> {
+  const { data, error } = await supabase
+    .from('rooms')
+    .select('*, room_types!room_type_id(code)')
+    .eq('is_active', true)
+    .order('room_number');
+  if (error || !data) return [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data as any[]).map(mapRoomFromDB);
+}
+
+async function getRoomById(roomId: number): Promise<Room | null> {
+  const { data, error } = await supabase
+    .from('rooms')
+    .select('*, room_types!room_type_id(code)')
+    .eq('id', roomId)
+    .single();
+  if (error || !data) return null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return mapRoomFromDB(data as any);
+}
+
+async function getReservationsByRoomAndDateRange(
+  roomId: number,
+  startDate: Date,
+  endDate: Date
+): Promise<Reservation[]> {
+  const { data, error } = await supabase
+    .from('reservations')
+    .select(
+      `*,
+      reservation_statuses!status_id(code),
+      booking_sources!booking_source_id(code),
+      guests!guest_id(id, first_name, last_name, full_name, email, phone, nationality, has_pets, is_vip, vip_level),
+      labels!label_id(id, name, color, bg_color)`
+    )
+    .eq('room_id', roomId)
+    .lt('check_in_date', endDate.toISOString().split('T')[0])
+    .gt('check_out_date', startDate.toISOString().split('T')[0]);
+  if (error || !data) return [];
+  return data as unknown as Reservation[];
+}
+
+async function getAllReservations(): Promise<Reservation[]> {
+  const { data, error } = await supabase
+    .from('reservations')
+    .select(
+      `*,
+      reservation_statuses!status_id(code),
+      booking_sources!booking_source_id(code),
+      guests!guest_id(id, first_name, last_name, full_name, email, phone, nationality, has_pets, is_vip, vip_level),
+      labels!label_id(id, name, color, bg_color)`
+    )
+    .order('check_in_date');
+  if (error || !data) return [];
+  return data as unknown as Reservation[];
+}
+
 export class ConflictDetectionService {
   private static instance: ConflictDetectionService;
-  private databaseAdapter: DatabaseAdapter;
 
-  private constructor() {
-    this.databaseAdapter = DatabaseAdapter.getInstance();
-  }
+  private constructor() {}
 
   public static getInstance(): ConflictDetectionService {
     if (!ConflictDetectionService.instance) {
@@ -87,7 +183,7 @@ export class ConflictDetectionService {
     checkIn: Date,
     checkOut: Date,
     guestId: string,
-    excludeReservationId?: string
+    excludeReservationId?: number
   ): Promise<ConflictResult> {
     const conflicts: BookingConflict[] = [];
     const warnings: BookingWarning[] = [];
@@ -95,8 +191,8 @@ export class ConflictDetectionService {
 
     try {
       // Get all reservations for the room in the date range
-      const existingReservations = await this.databaseAdapter.getReservationsByRoomAndDateRange(
-        roomId,
+      const existingReservations = await getReservationsByRoomAndDateRange(
+        Number(roomId),
         startOfDay(checkIn),
         endOfDay(checkOut)
       );
@@ -108,18 +204,25 @@ export class ConflictDetectionService {
 
       // Check for direct room conflicts
       for (const reservation of relevantReservations) {
-        if (this.datesOverlap(checkIn, checkOut, reservation.checkIn, reservation.checkOut)) {
+        if (
+          this.datesOverlap(
+            checkIn,
+            checkOut,
+            new Date(reservation.check_in_date),
+            new Date(reservation.check_out_date)
+          )
+        ) {
           conflicts.push({
             type: 'overlapping_reservation',
             severity: 'error',
-            message: `Room ${roomId} is already booked from ${reservation.checkIn.toLocaleDateString()} to ${reservation.checkOut.toLocaleDateString()}`,
+            message: `Room ${roomId} is already booked from ${new Date(reservation.check_in_date).toLocaleDateString()} to ${new Date(reservation.check_out_date).toLocaleDateString()}`,
             conflictingReservation: reservation,
           });
         }
       }
 
       // Check room availability and status
-      const room = await this.databaseAdapter.getRoomById(roomId);
+      const room = await getRoomById(Number(roomId));
       if (!room) {
         conflicts.push({
           type: 'room_unavailable',
@@ -162,7 +265,7 @@ export class ConflictDetectionService {
    * Check for conflicts when moving a reservation
    */
   async checkReservationMove(
-    reservationId: string,
+    reservationId: number,
     newRoomId: string,
     newCheckIn: Date,
     newCheckOut: Date
@@ -179,7 +282,7 @@ export class ConflictDetectionService {
       roomId: string;
       checkIn: Date;
       checkOut: Date;
-      reservationId?: string;
+      reservationId?: number;
       guestId?: string;
     }>
   ): Promise<{ [index: number]: ConflictResult }> {
@@ -236,7 +339,7 @@ export class ConflictDetectionService {
     checkOut: Date
   ): Promise<Room[]> {
     try {
-      const allRooms = await this.databaseAdapter.getRooms();
+      const allRooms = await getRooms();
       const originalRoom = allRooms.find((r) => r.id.toString() === originalRoomId);
 
       if (!originalRoom) return [];
@@ -345,9 +448,9 @@ export class ConflictDetectionService {
     // NOTE: We query rooms directly here instead of calling findAlternativeRooms()
     // to avoid infinite recursion: findAlternativeRooms → checkNewReservation → validateBusinessRules → findAlternativeRooms
     try {
-      const room = await this.databaseAdapter.getRoomById(roomId);
+      const room = await getRoomById(Number(roomId));
       if (room && !room.is_premium) {
-        const allRooms = await this.databaseAdapter.getRooms();
+        const allRooms = await getRooms();
         const premiumAlternatives = allRooms.filter(
           (r) => r.is_premium && r.id.toString() !== roomId
         );
@@ -370,14 +473,14 @@ export class ConflictDetectionService {
    * Real-time validation for drag operations
    */
   async validateDragOperation(
-    sourceReservationId: string,
+    sourceReservationId: number,
     targetRoomId: string,
     targetDate: Date,
     _isStartDrag: boolean = false
   ): Promise<{ valid: boolean; message?: string; conflicts?: BookingConflict[] }> {
     try {
       // Get the source reservation
-      const reservations = await this.databaseAdapter.getReservations();
+      const reservations = await getAllReservations();
       const sourceReservation = reservations.find((r) => r.id === sourceReservationId);
 
       if (!sourceReservation) {
@@ -385,8 +488,9 @@ export class ConflictDetectionService {
       }
 
       // Calculate new dates based on drag operation
-      const originalDuration =
-        sourceReservation.checkOut.getTime() - sourceReservation.checkIn.getTime();
+      const checkOut = new Date(sourceReservation.check_out_date);
+      const checkIn = new Date(sourceReservation.check_in_date);
+      const originalDuration = checkOut.getTime() - checkIn.getTime();
       const newCheckIn = new Date(targetDate);
       const newCheckOut = new Date(targetDate.getTime() + originalDuration);
 

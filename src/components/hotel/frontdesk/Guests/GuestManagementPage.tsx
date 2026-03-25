@@ -31,8 +31,8 @@ export default function GuestManagementPage({ onGuestSelect }: GuestManagementPa
   const { data: reservations = [] } = useReservations();
   const getGuestStayHistory = (guestId: number) =>
     reservations
-      .filter((r) => Number(r.guestId) === guestId)
-      .sort((a, b) => b.checkIn.getTime() - a.checkIn.getTime());
+      .filter((r) => r.guest_id === guestId)
+      .sort((a, b) => new Date(b.check_in_date).getTime() - new Date(a.check_in_date).getTime());
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGuest, setSelectedGuest] = useState<Guest | null>(null);
   const [showGuestModal, setShowGuestModal] = useState(false);
@@ -323,7 +323,10 @@ export default function GuestManagementPage({ onGuestSelect }: GuestManagementPa
                               <div className="flex items-center space-x-1">
                                 <Calendar className="h-3 w-3" />
                                 <span>
-                                  Last stay: {stayHistory[0]?.checkIn.toLocaleDateString()}
+                                  Last stay:{' '}
+                                  {stayHistory[0]
+                                    ? new Date(stayHistory[0].check_in_date).toLocaleDateString()
+                                    : ''}
                                 </span>
                               </div>
                             )}
@@ -332,7 +335,12 @@ export default function GuestManagementPage({ onGuestSelect }: GuestManagementPa
                       </div>
 
                       <div className="flex items-center space-x-2">
-                        <Button variant="ghost" size="sm" onClick={() => handleViewGuest(guest)}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          aria-label="View guest"
+                          onClick={() => handleViewGuest(guest)}
+                        >
                           <Eye className="h-4 w-4" />
                         </Button>
                         <Button variant="outline" size="sm" onClick={() => handleEditGuest(guest)}>

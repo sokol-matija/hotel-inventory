@@ -15,7 +15,7 @@ interface SmartDatePickerProps {
   className?: string;
   required?: boolean;
   reservations: Reservation[];
-  roomId: string;
+  roomId: number;
   disabled?: boolean;
 }
 

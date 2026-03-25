@@ -224,7 +224,7 @@ export default function ReservationPopup({
                 </div>
                 <div className="flex items-center space-x-2">
                   <FileText className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm text-gray-600">{reservation.specialRequests}</span>
+                  <span className="text-sm text-gray-600">{reservation.special_requests}</span>
                 </div>
               </CardContent>
             </Card>
@@ -407,15 +407,16 @@ export default function ReservationPopup({
                       <Users className="h-4 w-4 text-gray-500" />
                       <span className="text-sm text-gray-600">
                         {reservation.adults} Adults
-                        {(reservation.children?.length ?? 0) > 0 &&
-                          `, ${reservation.children?.length} Children`}
+                        {(reservation.children_count ?? 0) > 0 &&
+                          `, ${reservation.children_count} Children`}
                       </span>
                     </div>
                   </div>
                 </div>
 
                 {/* Email Actions - Only for confirmed or checked-in reservations */}
-                {(reservation.status === 'confirmed' || reservation.status === 'checked-in') && (
+                {((reservation.reservation_statuses?.code ?? '') === 'confirmed' ||
+                  (reservation.reservation_statuses?.code ?? '') === 'checked-in') && (
                   <div className="border-t pt-4">
                     <div className="flex flex-col gap-3 sm:flex-row">
                       <Button
@@ -455,7 +456,7 @@ export default function ReservationPopup({
             </Card>
 
             {/* Croatian Fiscal Invoices - Only show for checked-out reservations */}
-            {reservation.status === 'checked-out' && (
+            {(reservation.reservation_statuses?.code ?? '') === 'checked-out' && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
@@ -553,15 +554,19 @@ export default function ReservationPopup({
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <div className="text-sm text-gray-500">Check-in</div>
-                    <div className="font-medium">{reservation.checkIn.toLocaleDateString()}</div>
+                    <div className="font-medium">
+                      {new Date(reservation.check_in_date).toLocaleDateString()}
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <div className="text-sm text-gray-500">Check-out</div>
-                    <div className="font-medium">{reservation.checkOut.toLocaleDateString()}</div>
+                    <div className="font-medium">
+                      {new Date(reservation.check_out_date).toLocaleDateString()}
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <div className="text-sm text-gray-500">Nights</div>
-                    <div className="font-medium">{reservation.numberOfNights}</div>
+                    <div className="font-medium">{reservation.number_of_nights ?? 1}</div>
                   </div>
                   <div className="space-y-2">
                     <div className="text-sm text-gray-500">Room Type</div>
@@ -592,7 +597,7 @@ export default function ReservationPopup({
                       </div>
                     </div>
                   ) : (
-                    <div className="font-medium">{reservation.specialRequests || 'None'}</div>
+                    <div className="font-medium">{reservation.special_requests || 'None'}</div>
                   )}
                 </div>
               </CardContent>
@@ -611,7 +616,7 @@ export default function ReservationPopup({
                   <div>
                     <div className="text-lg font-bold">€{chargesTotalAmount.toFixed(2)}</div>
                     <div className="text-sm text-gray-500">
-                      Total Amount • {reservation.numberOfNights} nights
+                      Total Amount • {reservation.number_of_nights ?? 1} nights
                     </div>
                   </div>
                   <Button variant="outline" onClick={togglePaymentDetails}>

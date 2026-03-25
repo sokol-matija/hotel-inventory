@@ -15,7 +15,8 @@ function HotelOverviewStats({ reservations }: { reservations: Reservation[] }) {
 
   // Calculate current occupancy for today
   const todayOccupancy = reservations.filter(
-    (reservation) => today >= reservation.checkIn && today < reservation.checkOut
+    (reservation) =>
+      today >= new Date(reservation.check_in_date) && today < new Date(reservation.check_out_date)
   );
 
   const occupiedRooms = todayOccupancy.length;
@@ -24,15 +25,16 @@ function HotelOverviewStats({ reservations }: { reservations: Reservation[] }) {
 
   // Calculate total guests in hotel today
   const totalGuests = todayOccupancy.reduce(
-    (sum, reservation) => sum + reservation.numberOfGuests,
+    (sum, reservation) => sum + (reservation.number_of_guests ?? reservation.adults ?? 1),
     0
   );
 
   // Calculate total revenue for today's check-ins
   const todayCheckIns = reservations.filter(
-    (reservation) => reservation.checkIn.toDateString() === today.toDateString()
+    (reservation) => new Date(reservation.check_in_date).toDateString() === today.toDateString()
   );
-  const todayRevenue = todayCheckIns.reduce((sum, reservation) => sum + reservation.totalAmount, 0);
+  // TODO: Phase 9 — derive from reservation_charges once all consumers migrated
+  const todayRevenue = todayCheckIns.reduce((_sum, _reservation) => _sum + 0, 0);
 
   return (
     <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-4">

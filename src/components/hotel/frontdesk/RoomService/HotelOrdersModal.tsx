@@ -94,15 +94,19 @@ export default function HotelOrdersModal({
   const handleAddToRoomBill = () => {
     if (orderItems.length === 0) return;
 
-    const room = rooms.find((r) => r.id.toString() === reservation.roomId);
+    const room = rooms.find((r) => r.id === reservation.room_id);
+    const guestName =
+      reservation.guests?.full_name ||
+      `${reservation.guests?.first_name ?? ''} ${reservation.guests?.last_name ?? ''}`.trim() ||
+      'Unknown Guest';
     const totals = calculateOrderTotal();
 
     processOrder.mutate(
       {
-        roomId: reservation.roomId,
-        roomNumber: room ? formatRoomNumber(room) : reservation.roomId,
-        guestName: reservation.guest?.display_name || 'Unknown Guest',
-        reservationId: reservation.id,
+        roomId: String(reservation.room_id),
+        roomNumber: room ? formatRoomNumber(room) : String(reservation.room_id),
+        guestName,
+        reservationId: String(reservation.id),
         items: orderItems,
         subtotal: totals.subtotal,
         tax: totals.tax,
@@ -147,8 +151,11 @@ export default function HotelOrdersModal({
 
   if (!isOpen) return null;
 
-  const room = rooms.find((r) => r.id.toString() === reservation.roomId);
-  const guest = reservation.guest;
+  const room = rooms.find((r) => r.id === reservation.room_id);
+  const guestDisplayName =
+    reservation.guests?.full_name ||
+    `${reservation.guests?.first_name ?? ''} ${reservation.guests?.last_name ?? ''}`.trim() ||
+    'Unknown Guest';
 
   return (
     <div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black">
@@ -158,8 +165,8 @@ export default function HotelOrdersModal({
           <div>
             <h2 className="flex items-center text-xl font-semibold">🛎️ Room Service Order</h2>
             <p className="text-sm text-blue-100">
-              Room {room ? formatRoomNumber(room) : reservation.roomId} •{' '}
-              {guest?.display_name || 'Unknown Guest'}
+              Room {room ? formatRoomNumber(room) : String(reservation.room_id)} •{' '}
+              {guestDisplayName}
             </p>
           </div>
           <Button

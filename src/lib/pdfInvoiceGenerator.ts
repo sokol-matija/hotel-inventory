@@ -77,7 +77,7 @@ export async function generatePDFInvoice(data: InvoiceData): Promise<void> {
   doc.setTextColor(0, 0, 0);
   doc.text(`Invoice Number: ${invoiceNumber}`, 20, 70);
   doc.text(`Invoice Date: ${format(invoiceDate, 'dd.MM.yyyy')}`, 20, 76);
-  doc.text(`Booking Reference: ${reservation.id.substring(0, 8).toUpperCase()}`, 20, 82);
+  doc.text(`Booking Reference: ${String(reservation.id).substring(0, 8).toUpperCase()}`, 20, 82);
 
   // Billing Information - Show Company or Guest
   doc.setFontSize(12);
@@ -130,11 +130,11 @@ export async function generatePDFInvoice(data: InvoiceData): Promise<void> {
   doc.setFontSize(10);
   doc.setTextColor(0, 0, 0);
   doc.text(`Room: ${room.room_number} - ${room.name_english}`, 110, 105);
-  doc.text(`Check-in: ${format(reservation.checkIn, 'dd.MM.yyyy')}`, 110, 111);
-  doc.text(`Check-out: ${format(reservation.checkOut, 'dd.MM.yyyy')}`, 110, 117);
-  doc.text(`Duration: ${reservation.numberOfNights} nights`, 110, 123);
+  doc.text(`Check-in: ${format(new Date(reservation.check_in_date), 'dd.MM.yyyy')}`, 110, 111);
+  doc.text(`Check-out: ${format(new Date(reservation.check_out_date), 'dd.MM.yyyy')}`, 110, 117);
+  doc.text(`Duration: ${reservation.number_of_nights ?? 1} nights`, 110, 123);
   doc.text(
-    `Guests: ${reservation.numberOfGuests} (${reservation.adults} adults${reservation.children.length > 0 ? `, ${reservation.children.length} children` : ''})`,
+    `Guests: ${reservation.number_of_guests ?? reservation.adults} (${reservation.adults} adults${(reservation.children_count ?? 0) > 0 ? `, ${reservation.children_count} children` : ''})`,
     110,
     129
   );
@@ -162,9 +162,7 @@ export async function generatePDFInvoice(data: InvoiceData): Promise<void> {
 
   // Compute grand total from charges
   const grandTotal =
-    charges && charges.length > 0
-      ? charges.reduce((sum, c) => sum + c.total, 0)
-      : reservation.totalAmount;
+    charges && charges.length > 0 ? charges.reduce((sum, c) => sum + c.total, 0) : 0; // TODO: Phase 9 — derive from reservation_charges
 
   // Generate the table
   autoTable(doc, {
@@ -218,13 +216,14 @@ export async function generatePDFInvoice(data: InvoiceData): Promise<void> {
   doc.setFontSize(10);
   doc.setTextColor(0, 0, 0);
   doc.text('Payment Status:', 20, finalY + 20);
-  if (reservation.status === 'incomplete-payment') {
+  const reservationStatus = reservation.reservation_statuses?.code ?? '';
+  if (reservationStatus === 'incomplete-payment') {
     doc.setTextColor(220, 38, 127); // Red for pending
   } else {
     doc.setTextColor(34, 197, 94); // Green for paid
   }
   doc.text(
-    reservation.status === 'incomplete-payment' ? 'PAYMENT PENDING' : 'PAID IN FULL',
+    reservationStatus === 'incomplete-payment' ? 'PAYMENT PENDING' : 'PAID IN FULL',
     55,
     finalY + 20
   );
@@ -356,13 +355,13 @@ export async function generateThermalReceipt(
 
   receipt += `Invoice: ${invoiceNumber}\n`;
   receipt += `Date: ${format(invoiceDate, 'dd.MM.yyyy HH:mm:ss')}\n`;
-  receipt += `Booking: ${reservation.id.substring(0, 8).toUpperCase()}\n`;
+  receipt += `Booking: ${String(reservation.id).substring(0, 8).toUpperCase()}\n`;
   receipt += `Guest: ${guest.display_name}\n`;
   receipt += `Room: ${room.room_number} - ${room.name_english}\n`;
-  receipt += `Check-in: ${format(reservation.checkIn, 'dd.MM.yyyy')}\n`;
-  receipt += `Check-out: ${format(reservation.checkOut, 'dd.MM.yyyy')}\n`;
-  receipt += `Nights: ${reservation.numberOfNights}\n`;
-  receipt += `Guests: ${reservation.numberOfGuests}\n`;
+  receipt += `Check-in: ${format(new Date(reservation.check_in_date), 'dd.MM.yyyy')}\n`;
+  receipt += `Check-out: ${format(new Date(reservation.check_out_date), 'dd.MM.yyyy')}\n`;
+  receipt += `Nights: ${reservation.number_of_nights ?? 1}\n`;
+  receipt += `Guests: ${reservation.number_of_guests ?? reservation.adults}\n`;
   receipt += halfLine + '\n';
 
   // Items from charges
@@ -380,17 +379,15 @@ export async function generateThermalReceipt(
   receipt += halfLine + '\n';
 
   // Grand total from charges
-  const grandTotal =
-    charges && charges.length > 0
-      ? charges.reduce((sum, c) => sum + c.total, 0)
-      : reservation.totalAmount;
+  const grandTotal2 =
+    charges && charges.length > 0 ? charges.reduce((sum, c) => sum + c.total, 0) : 0; // TODO: Phase 9 — derive from reservation_charges
 
   receipt += line + '\n';
-  receipt += `TOTAL:           €${grandTotal.toFixed(2)}\n`;
+  receipt += `TOTAL:           €${grandTotal2.toFixed(2)}\n`;
   receipt += line + '\n';
 
   // Payment status
-  receipt += `Payment: ${reservation.status === 'incomplete-payment' ? 'PENDING' : 'PAID IN FULL'}\n`;
+  receipt += `Payment: ${(reservation.reservation_statuses?.code ?? '') === 'incomplete-payment' ? 'PENDING' : 'PAID IN FULL'}\n`;
   receipt += halfLine + '\n';
 
   // Croatian Fiscal Information
@@ -460,7 +457,7 @@ export function generateInvoiceNumber(reservation: Reservation): string {
 
   // Generate 6-digit sequential number from reservation ID
   // Extract numeric parts and ensure 6 digits for Croatian fiscal format
-  const numericId = reservation.id.replace(/[^0-9]/g, ''); // Extract only numbers
+  const numericId = String(reservation.id).replace(/[^0-9]/g, ''); // Extract only numbers
   let sequentialNumber: string;
 
   if (numericId.length >= 6) {

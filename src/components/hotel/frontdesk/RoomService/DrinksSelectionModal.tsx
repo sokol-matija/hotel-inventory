@@ -305,8 +305,11 @@ export default function DrinksSelectionModal({
 
   if (!isOpen) return null;
 
-  const room = rooms.find((r) => r.id.toString() === reservation.roomId);
-  const guest = reservation.guest;
+  const room = rooms.find((r) => r.id === reservation.room_id);
+  const guestDisplayName =
+    reservation.guests?.full_name ||
+    `${reservation.guests?.first_name ?? ''} ${reservation.guests?.last_name ?? ''}`.trim() ||
+    'Unknown Guest';
 
   return (
     <div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black">
@@ -316,8 +319,7 @@ export default function DrinksSelectionModal({
           <div>
             <h2 className="flex items-center text-xl font-semibold">🍹 Add Drinks to Room Bill</h2>
             <p className="text-sm text-green-100">
-              Room {room ? formatRoomNumber(room) : reservation.roomId} •{' '}
-              {guest?.display_name || 'Unknown Guest'}
+              Room {room ? formatRoomNumber(room) : reservation.room_id} • {guestDisplayName}
             </p>
           </div>
           <Button

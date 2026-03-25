@@ -13,8 +13,8 @@ interface ReservationContextMenuProps {
   room: Room;
   isFullscreen: boolean;
   onClose: (closedWithAction?: boolean) => void;
-  onUpdateReservationStatus?: (id: string, status: ReservationStatus) => Promise<void>;
-  onDeleteReservation?: (id: string) => Promise<void>;
+  onUpdateReservationStatus?: (id: number, status: ReservationStatus) => Promise<void>;
+  onDeleteReservation?: (id: number) => Promise<void>;
   onShowDrinksModal?: (reservation: Reservation) => void;
   onShowExpandedDailyView?: (reservation: Reservation) => void;
   /** Show "Mark Clean (NFC)" item — used in room overview panel */
@@ -57,9 +57,11 @@ export function ReservationContextMenu({
 
   const handleDelete = async () => {
     if (!onDeleteReservation) return;
-    if (
-      window.confirm(`Are you sure you want to delete the reservation for ${reservation.guestId}?`)
-    ) {
+    const guestName =
+      reservation.guests?.full_name ||
+      `${reservation.guests?.first_name ?? ''} ${reservation.guests?.last_name ?? ''}`.trim() ||
+      `Guest #${reservation.guest_id}`;
+    if (window.confirm(`Are you sure you want to delete the reservation for ${guestName}?`)) {
       try {
         await onDeleteReservation(reservation.id);
       } catch {

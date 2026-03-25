@@ -23,8 +23,8 @@ export interface DayAvailability {
 }
 
 export interface DragItem {
-  reservationId: string;
-  currentRoomId: string;
+  reservationId: number;
+  currentRoomId: number;
   currentRoomFloor: number;
   checkIn: Date;
   checkOut: Date;

@@ -85,15 +85,15 @@ const guest3 = buildGuest({
 });
 
 const reservation1 = buildReservation({
-  guestId: '1',
-  checkIn: new Date('2026-03-20'),
-  checkOut: new Date('2026-03-25'),
+  guest_id: 1,
+  check_in_date: '2026-03-20',
+  check_out_date: '2026-03-25',
 });
 
 const reservation2 = buildReservation({
-  guestId: '1',
-  checkIn: new Date('2026-02-10'),
-  checkOut: new Date('2026-02-15'),
+  guest_id: 1,
+  check_in_date: '2026-02-10',
+  check_out_date: '2026-02-15',
 });
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -213,13 +213,10 @@ describe('GuestManagementPage', () => {
   });
 
   describe('loading state', () => {
-    it('shows loading spinner while guests are loading', () => {
+    it('renders empty state while guests are loading', () => {
       setupMocks({ isLoadingGuests: true, guests: [] });
       render(<GuestManagementPage />);
-      // Component may show skeleton or spinner — check for any animate-spin element
-      const spinner = document.querySelector('[class*="animate"]');
-      // If no spinner, that's okay — component might show content with loading state on hooks
-      expect(spinner || true).toBeTruthy();
+      expect(screen.getByText(/No guests found/i)).toBeInTheDocument();
     });
   });
 
@@ -444,37 +441,19 @@ describe('GuestManagementPage', () => {
       const user = userEvent.setup();
       render(<GuestManagementPage />);
 
-      // Guest cards have Eye buttons for view, Edit buttons for edit
-      // Get all buttons and filter for the ones that are view buttons (typically earlier in the DOM)
-      const allButtons = screen.getAllByRole('button');
-      // The view button should be among the first few (before the Edit buttons)
-      let eyeButtonClicked = false;
-      for (const btn of allButtons) {
-        if (!btn.textContent?.includes('Edit') && !btn.textContent?.includes('Select')) {
-          await user.click(btn);
-          eyeButtonClicked = true;
-          break;
-        }
-      }
+      const viewButtons = screen.getAllByRole('button', { name: 'View guest' });
+      await user.click(viewButtons[0]);
 
-      if (eyeButtonClicked) {
-        const modal = screen.getByTestId('guest-profile-modal');
-        expect(modal).toBeInTheDocument();
-      }
+      const modal = screen.getByTestId('guest-profile-modal');
+      expect(modal).toBeInTheDocument();
     });
 
     it('passes selected guest to view modal', async () => {
       const user = userEvent.setup();
       render(<GuestManagementPage />);
 
-      // Click first guest's view button (Eye icon)
-      const allButtons = screen.getAllByRole('button');
-      for (const btn of allButtons) {
-        if (!btn.textContent?.includes('Edit') && !btn.textContent?.includes('Select')) {
-          await user.click(btn);
-          break;
-        }
-      }
+      const viewButtons = screen.getAllByRole('button', { name: 'View guest' });
+      await user.click(viewButtons[0]);
 
       // Just verify the modal opened
       const modal = screen.getByTestId('guest-profile-modal');

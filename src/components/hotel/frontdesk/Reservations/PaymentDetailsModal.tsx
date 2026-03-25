@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import EditChargesPanel from './EditChargesPanel';
 import { Reservation, Guest, Company } from '../../../../lib/hotel/types';
+import type { ReservationUpdateInput } from '../../../../lib/queries/hooks/useReservations';
 import type { Room } from '../../../../lib/queries/hooks/useRooms';
 import { generatePDFInvoice, generateInvoiceNumber } from '../../../../lib/pdfInvoiceGenerator';
 import { useUpdateReservation } from '../../../../lib/queries/hooks/useReservations';
@@ -45,19 +46,15 @@ export default function PaymentDetailsModal({
     console.warn('addPayment: not yet connected to DB');
   };
   const updateReservationMutation = useUpdateReservation();
-  const updateReservation = async (id: string, updates: Partial<Reservation>) => {
+  const updateReservation = async (id: number, updates: ReservationUpdateInput) => {
     await updateReservationMutation.mutateAsync({ id, updates });
   };
   const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentStatus, setPaymentStatus] = useState(reservation.status);
+  const [paymentStatus, setPaymentStatus] = useState(reservation.reservation_statuses?.code ?? '');
   const [isEditMode, setIsEditMode] = useState(false);
 
   // Fetch charges from reservation_charges table
-  const reservationId =
-    typeof reservation.id === 'string' ? parseInt(reservation.id, 10) : reservation.id;
-  const { data: charges = [], isLoading: chargesLoading } = useReservationCharges(
-    reservationId as number
-  );
+  const { data: charges = [], isLoading: chargesLoading } = useReservationCharges(reservation.id);
 
   // Derive grand total from charges
   const grandTotal = charges.reduce((sum, c) => sum + c.total, 0);
@@ -152,7 +149,7 @@ export default function PaymentDetailsModal({
 
       // Automatically generate invoice when payment is marked as paid
       try {
-        const guestIdNum = typeof guest.id === 'string' ? parseInt(guest.id, 10) : guest.id;
+        const guestIdNum = guest.id;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const reservationExt = reservation as any;
         const invoice = await createInvoiceService(reservation.id, {
@@ -238,24 +235,26 @@ export default function PaymentDetailsModal({
                 <div>
                   <div className="text-sm text-gray-500">Dates</div>
                   <div className="font-medium">
-                    {new Date(reservation.checkIn).toLocaleDateString()} -{' '}
-                    {new Date(reservation.checkOut).toLocaleDateString()}
+                    {new Date(reservation.check_in_date).toLocaleDateString()} -{' '}
+                    {new Date(reservation.check_out_date).toLocaleDateString()}
                   </div>
                 </div>
                 <div>
                   <div className="text-sm text-gray-500">Duration</div>
-                  <div className="font-medium">{reservation.numberOfNights} nights</div>
+                  <div className="font-medium">{reservation.number_of_nights ?? 1} nights</div>
                 </div>
               </div>
 
               <div className="flex items-center space-x-4 pt-2">
                 <div className="flex items-center space-x-1">
                   <Users className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm">{reservation.numberOfGuests} guests</span>
+                  <span className="text-sm">
+                    {reservation.number_of_guests ?? reservation.adults} guests
+                  </span>
                 </div>
                 <div className="flex items-center space-x-1">
                   <Calendar className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm">{reservation.numberOfNights} nights</span>
+                  <span className="text-sm">{reservation.number_of_nights ?? 1} nights</span>
                 </div>
                 {guest.has_pets && (
                   <Badge variant="outline" className="text-xs">
@@ -287,7 +286,7 @@ export default function PaymentDetailsModal({
             <CardContent>
               {isEditMode ? (
                 <EditChargesPanel
-                  reservationId={reservationId as number}
+                  reservationId={reservation.id as number}
                   onClose={() => setIsEditMode(false)}
                 />
               ) : chargesLoading ? (
@@ -355,7 +354,8 @@ export default function PaymentDetailsModal({
                       {paymentStatus === 'checked-out' ? 'Payment Complete' : 'Payment Pending'}
                     </div>
                     <div className="text-sm text-gray-500">
-                      Booking made on {new Date(reservation.bookingDate).toLocaleDateString()}
+                      Booking made on{' '}
+                      {new Date(reservation.booking_date ?? Date.now()).toLocaleDateString()}
                     </div>
                   </div>
                 </div>

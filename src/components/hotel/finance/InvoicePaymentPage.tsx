@@ -76,10 +76,8 @@ export default function InvoicePaymentPage() {
   const filteredInvoices = invoices.filter((invoice) => {
     const guest = guests.find((g) => g.id === Number(invoice.guestId));
     // Get room through reservation - use real reservations from context
-    const reservation = reservations.find((r) => r.id === invoice.reservationId);
-    const room = reservation
-      ? rooms.find((r) => r.id.toString() === reservation.roomId)
-      : undefined;
+    const reservation = reservations.find((r) => r.id === Number(invoice.reservationId));
+    const room = reservation ? rooms.find((r) => r.id === reservation.room_id) : undefined;
 
     const matchesSearch =
       !searchTerm ||
@@ -115,9 +113,9 @@ export default function InvoicePaymentPage() {
   const getRoomNumber = (invoiceId: string) => {
     const invoice = invoices.find((inv) => inv.id === invoiceId);
     if (!invoice) return 'Unknown Room';
-    const reservation = reservations.find((r) => r.id === invoice.reservationId);
+    const reservation = reservations.find((r) => r.id === Number(invoice.reservationId));
     if (!reservation) return 'Unknown Room';
-    return rooms.find((r) => r.id.toString() === reservation.roomId)?.room_number || 'Unknown Room';
+    return rooms.find((r) => r.id === reservation.room_id)?.room_number || 'Unknown Room';
   };
 
   const getInvoiceNumber = (invoiceId: string) => {
@@ -134,9 +132,7 @@ export default function InvoicePaymentPage() {
       // Use reservation data from invoice (loaded via JOIN)
       const reservation = invoice.reservation;
       const guest = invoice.guest;
-      const room = reservation
-        ? rooms.find((r) => r.id.toString() === reservation.roomId)
-        : undefined;
+      const room = reservation ? rooms.find((r) => r.id === reservation.room_id) : undefined;
 
       if (!reservation || !guest || !room) {
         hotelNotification.error(
@@ -149,11 +145,11 @@ export default function InvoicePaymentPage() {
 
       // Fetch company data if this is an R1 reservation
       let company: Company | undefined;
-      if (reservation.isR1Bill && reservation.companyId) {
+      if (reservation.is_r1 && reservation.company_id) {
         const { data: companyData, error: companyError } = await supabase
           .from('companies')
           .select('*')
-          .eq('id', Number(reservation.companyId))
+          .eq('id', Number(reservation.company_id))
           .single();
 
         if (companyData && !companyError) {

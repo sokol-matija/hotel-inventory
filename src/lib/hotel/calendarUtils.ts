@@ -1,5 +1,6 @@
 // Hotel Calendar Utilities - Convert hotel data to calendar events
-import { CalendarEvent, Reservation, ReservationStatus } from './types';
+import { CalendarEvent, ReservationStatus } from './types';
+import type { Reservation } from '@/lib/queries/hooks/useReservations';
 import type { Room } from '@/lib/queries/hooks/useRooms';
 import { addDays, isWithinInterval, startOfDay } from 'date-fns';
 
@@ -49,24 +50,33 @@ export function reservationToCalendarEvent(
   rooms: Room[] = []
 ): CalendarEvent | null {
   // Safety checks for required data
-  if (!reservation || !reservation.id || !reservation.checkIn || !reservation.checkOut) {
+  if (
+    !reservation ||
+    !reservation.id ||
+    !reservation.check_in_date ||
+    !reservation.check_out_date
+  ) {
     console.warn('Invalid reservation data:', reservation);
     return null;
   }
 
-  const room = rooms.find((r) => r.id.toString() === reservation.roomId);
+  const room = rooms.find((r) => r.id === reservation.room_id);
 
   const roomNumber = room?.room_number || 'Unknown';
-  const guestName = reservation.guest?.display_name || 'Unknown Guest';
+  const guestName =
+    reservation.guests?.full_name ||
+    `${reservation.guests?.first_name ?? ''} ${reservation.guests?.last_name ?? ''}`.trim() ||
+    'Unknown Guest';
+  const status = reservation.reservation_statuses?.code ?? 'confirmed';
 
   // Create title based on status
   let title: string;
-  if (reservation.status === 'room-closure') {
+  if (status === 'room-closure') {
     title = `🔧 Maintenance`;
   } else {
     title = `${guestName}`;
-    if (reservation.numberOfGuests && reservation.numberOfGuests > 1) {
-      title += ` (+${reservation.numberOfGuests - 1})`;
+    if (reservation.number_of_guests && reservation.number_of_guests > 1) {
+      title += ` (+${reservation.number_of_guests - 1})`;
     }
   }
 
@@ -77,17 +87,17 @@ export function reservationToCalendarEvent(
 
   return {
     id: `event-${reservation.id}`,
-    reservationId: reservation.id,
-    roomId: reservation.roomId || '',
+    reservationId: String(reservation.id),
+    roomId: String(reservation.room_id),
     title,
-    start: reservation.checkIn,
-    end: reservation.checkOut,
+    start: new Date(reservation.check_in_date),
+    end: new Date(reservation.check_out_date),
     resource: {
-      status: reservation.status || 'confirmed',
+      status: status as ReservationStatus,
       guestName,
       roomNumber,
-      numberOfGuests: reservation.numberOfGuests || 1,
-      hasPets: reservation.guest?.has_pets || false,
+      numberOfGuests: reservation.number_of_guests || 1,
+      hasPets: reservation.guests?.has_pets || false,
     },
   };
 }
@@ -114,11 +124,13 @@ export function getReservationsForDateRange(
   endDate: Date
 ): Reservation[] {
   return reservations.filter((reservation) => {
+    const checkIn = new Date(reservation.check_in_date);
+    const checkOut = new Date(reservation.check_out_date);
     // Check if reservation overlaps with the date range
     return (
-      isWithinInterval(reservation.checkIn, { start: startDate, end: endDate }) ||
-      isWithinInterval(reservation.checkOut, { start: startDate, end: endDate }) ||
-      (reservation.checkIn <= startDate && reservation.checkOut >= endDate)
+      isWithinInterval(checkIn, { start: startDate, end: endDate }) ||
+      isWithinInterval(checkOut, { start: startDate, end: endDate }) ||
+      (checkIn <= startDate && checkOut >= endDate)
     );
   });
 }
@@ -126,31 +138,35 @@ export function getReservationsForDateRange(
 // Get reservations for a specific room and date range
 export function getReservationsForRoom(
   reservations: Reservation[],
-  roomId: string,
+  roomId: number,
   startDate: Date,
   endDate: Date
 ): Reservation[] {
   return getReservationsForDateRange(reservations, startDate, endDate).filter(
-    (reservation) => reservation.roomId === roomId
+    (reservation) => reservation.room_id === roomId
   );
 }
 
 // Check if a room is available for a date range
 export function isRoomAvailable(
   reservations: Reservation[],
-  roomId: string,
+  roomId: number,
   checkIn: Date,
   checkOut: Date
 ): boolean {
   const conflictingReservations = reservations.filter((reservation) => {
-    if (reservation.roomId !== roomId) return false;
-    if (reservation.status === 'checked-out') return false; // Past reservations don't block
+    if (reservation.room_id !== roomId) return false;
+    const status = reservation.reservation_statuses?.code ?? 'confirmed';
+    if (status === 'checked-out') return false; // Past reservations don't block
+
+    const resCheckIn = new Date(reservation.check_in_date);
+    const resCheckOut = new Date(reservation.check_out_date);
 
     // Check for date overlap
     const hasOverlap =
-      (checkIn >= reservation.checkIn && checkIn < reservation.checkOut) ||
-      (checkOut > reservation.checkIn && checkOut <= reservation.checkOut) ||
-      (checkIn <= reservation.checkIn && checkOut >= reservation.checkOut);
+      (checkIn >= resCheckIn && checkIn < resCheckOut) ||
+      (checkOut > resCheckIn && checkOut <= resCheckOut) ||
+      (checkIn <= resCheckIn && checkOut >= resCheckOut);
 
     return hasOverlap;
   });
@@ -164,7 +180,7 @@ export function isRoomAvailable(
  */
 export function getRoomOccupiedDates(
   reservations: Reservation[],
-  roomId: string,
+  roomId: number,
   startDate: Date,
   endDate: Date
 ): Date[] {
@@ -172,15 +188,16 @@ export function getRoomOccupiedDates(
 
   // Get reservations for this room in the date range
   const roomReservations = reservations.filter((reservation) => {
-    if (reservation.roomId !== roomId) return false;
-    if (reservation.status === 'checked-out') return false; // Past reservations don't block
+    if (reservation.room_id !== roomId) return false;
+    const status = reservation.reservation_statuses?.code ?? 'confirmed';
+    if (status === 'checked-out') return false; // Past reservations don't block
 
-    // Check if reservation overlaps with our date range
-    const reservationStart = startOfDay(reservation.checkIn);
-    const reservationEnd = startOfDay(reservation.checkOut);
+    const reservationStart = startOfDay(new Date(reservation.check_in_date));
+    const reservationEnd = startOfDay(new Date(reservation.check_out_date));
     const rangeStart = startOfDay(startDate);
     const rangeEnd = startOfDay(endDate);
 
+    // Check if reservation overlaps with our date range
     return (
       (reservationStart >= rangeStart && reservationStart <= rangeEnd) ||
       (reservationEnd >= rangeStart && reservationEnd <= rangeEnd) ||
@@ -190,8 +207,8 @@ export function getRoomOccupiedDates(
 
   // For each reservation, add all occupied dates
   roomReservations.forEach((reservation) => {
-    const checkIn = startOfDay(reservation.checkIn);
-    const checkOut = startOfDay(reservation.checkOut);
+    const checkIn = startOfDay(new Date(reservation.check_in_date));
+    const checkOut = startOfDay(new Date(reservation.check_out_date));
 
     // Add all dates from check-in to check-out (exclusive of check-out date)
     let currentDate = new Date(checkIn);
@@ -218,7 +235,7 @@ export function getRoomOccupiedDates(
  */
 export function getMaxCheckoutDate(
   reservations: Reservation[],
-  roomId: string,
+  roomId: number,
   checkInDate: Date
 ): Date | null {
   const checkIn = startOfDay(checkInDate);
@@ -226,17 +243,18 @@ export function getMaxCheckoutDate(
   // Find the next reservation that starts after our check-in date
   const futureReservations = reservations
     .filter((reservation) => {
-      if (reservation.roomId !== roomId) return false;
-      if (reservation.status === 'checked-out') return false;
+      if (reservation.room_id !== roomId) return false;
+      const status = reservation.reservation_statuses?.code ?? 'confirmed';
+      if (status === 'checked-out') return false;
 
-      const reservationStart = startOfDay(reservation.checkIn);
+      const reservationStart = startOfDay(new Date(reservation.check_in_date));
       return reservationStart > checkIn;
     })
-    .sort((a, b) => a.checkIn.getTime() - b.checkIn.getTime());
+    .sort((a, b) => new Date(a.check_in_date).getTime() - new Date(b.check_in_date).getTime());
 
   // If there's a future reservation, the max checkout is the day before it starts
   if (futureReservations.length > 0) {
-    const nextReservationStart = startOfDay(futureReservations[0].checkIn);
+    const nextReservationStart = startOfDay(new Date(futureReservations[0].check_in_date));
     return nextReservationStart;
   }
 
@@ -250,17 +268,18 @@ export function getMaxCheckoutDate(
  */
 export function isDateAvailableForRoom(
   reservations: Reservation[],
-  roomId: string,
+  roomId: number,
   date: Date
 ): boolean {
   const targetDate = startOfDay(date);
 
   return !reservations.some((reservation) => {
-    if (reservation.roomId !== roomId) return false;
-    if (reservation.status === 'checked-out') return false;
+    if (reservation.room_id !== roomId) return false;
+    const status = reservation.reservation_statuses?.code ?? 'confirmed';
+    if (status === 'checked-out') return false;
 
-    const checkIn = startOfDay(reservation.checkIn);
-    const checkOut = startOfDay(reservation.checkOut);
+    const checkIn = startOfDay(new Date(reservation.check_in_date));
+    const checkOut = startOfDay(new Date(reservation.check_out_date));
 
     // Date is occupied if it's between check-in (inclusive) and check-out (exclusive)
     return targetDate >= checkIn && targetDate < checkOut;
@@ -275,11 +294,14 @@ export function getRoomOccupancyForDate(
   const occupancy: Record<string, { reservation: Reservation; status: ReservationStatus }> = {};
 
   for (const reservation of reservations) {
+    const checkIn = new Date(reservation.check_in_date);
+    const checkOut = new Date(reservation.check_out_date);
+    const status = (reservation.reservation_statuses?.code ?? 'confirmed') as ReservationStatus;
     // Check if reservation is active on this date
-    if (date >= reservation.checkIn && date < reservation.checkOut) {
-      occupancy[reservation.roomId] = {
+    if (date >= checkIn && date < checkOut) {
+      occupancy[String(reservation.room_id)] = {
         reservation,
-        status: reservation.status,
+        status,
       };
     }
   }
@@ -303,7 +325,8 @@ export function getCalendarStatistics(
 
   const statusBreakdown = reservationsInRange.reduce(
     (acc, reservation) => {
-      acc[reservation.status] = (acc[reservation.status] || 0) + 1;
+      const status = (reservation.reservation_statuses?.code ?? 'confirmed') as ReservationStatus;
+      acc[status] = (acc[status] || 0) + 1;
       return acc;
     },
     {} as Record<ReservationStatus, number>
@@ -313,18 +336,16 @@ export function getCalendarStatistics(
     rooms.length * Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
 
   const occupiedRoomNights = reservationsInRange.reduce((acc, reservation) => {
-    const nights = Math.ceil(
-      (reservation.checkOut.getTime() - reservation.checkIn.getTime()) / (1000 * 60 * 60 * 24)
-    );
+    const checkOut = new Date(reservation.check_out_date);
+    const checkIn = new Date(reservation.check_in_date);
+    const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
     return acc + nights;
   }, 0);
 
   const occupancyRate = totalRoomNights > 0 ? (occupiedRoomNights / totalRoomNights) * 100 : 0;
 
   // TODO: Phase 9 — derive from reservation_charges once all consumers migrated
-  const revenueProjection = reservationsInRange.reduce((acc, reservation) => {
-    return acc + (reservation.totalAmount ?? 0);
-  }, 0);
+  const revenueProjection = 0;
 
   return {
     totalReservations: reservationsInRange.length,

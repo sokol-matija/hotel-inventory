@@ -72,14 +72,17 @@ export default function HotelTimeline({
     queryClient.invalidateQueries({ queryKey: queryKeys.reservations.all() });
 
   const updateReservation = useCallback(
-    async (id: string, updates: Partial<Reservation>) => {
+    async (
+      id: number,
+      updates: import('../../../lib/queries/hooks/useReservations').ReservationUpdateInput
+    ) => {
       await updateReservationMutation.mutateAsync({ id, updates });
     },
     [updateReservationMutation]
   );
 
   const updateReservationStatus = useCallback(
-    async (id: string, status: string) => {
+    async (id: number, status: string) => {
       await updateReservationStatusMutation.mutateAsync({
         id,
         status: status as ReservationStatus,
@@ -89,7 +92,7 @@ export default function HotelTimeline({
   );
 
   const deleteReservation = useCallback(
-    async (id: string) => {
+    async (id: number) => {
       await deleteReservationMutation.mutateAsync(id);
     },
     [deleteReservationMutation]
@@ -169,9 +172,16 @@ export default function HotelTimeline({
   const [virtualRoomsWithReservations, setVirtualRoomsWithReservations] = useState<Room[]>([]);
 
   useEffect(() => {
+    let cancelled = false;
     virtualRoomService
       .getVirtualRoomsWithReservations(currentDate)
-      .then(setVirtualRoomsWithReservations);
+      .then((rooms) => {
+        if (!cancelled) setVirtualRoomsWithReservations(rooms);
+      })
+      .catch(console.error);
+    return () => {
+      cancelled = true;
+    };
   }, [currentDate, localReservations]);
 
   const calculateContextMenuPosition = (e: React.MouseEvent) =>
@@ -196,15 +206,17 @@ export default function HotelTimeline({
 
   // Keyboard shortcuts
   useEffect(() => {
+    let cancelled = false;
     let removeListener: (() => void) | undefined;
 
     const initKeyboardShortcuts = async () => {
       const { KeyboardShortcutService } =
         await import('../../../lib/hotel/services/KeyboardShortcutService');
+      if (cancelled) return;
       const shortcutService = KeyboardShortcutService.getInstance();
       shortcutService.updateContext({
         isModalOpen: showReservationPopup || showCreateBooking || roomChangeDialog.show,
-        selectedReservations: selectedReservation ? [selectedReservation.id] : [],
+        selectedReservations: selectedReservation ? [String(selectedReservation.id)] : [],
         activeMode: dragCreate.state.isEnabled
           ? 'drag_create'
           : isExpansionMode
@@ -261,7 +273,10 @@ export default function HotelTimeline({
     };
 
     initKeyboardShortcuts();
-    return () => removeListener?.();
+    return () => {
+      cancelled = true;
+      removeListener?.();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     dragCreate.state.isEnabled,
@@ -292,21 +307,26 @@ export default function HotelTimeline({
 
   const selectedEvent: CalendarEvent | null = useMemo(() => {
     if (!selectedReservation) return null;
-    const room = rooms.find((r) => r.id.toString() === selectedReservation.roomId);
-    const guest = guests.find((g) => g.id === Number(selectedReservation.guestId));
+    const room = rooms.find((r) => r.id === selectedReservation.room_id);
+    const guestName =
+      selectedReservation.guests?.full_name ||
+      `${selectedReservation.guests?.first_name ?? ''} ${selectedReservation.guests?.last_name ?? ''}`.trim() ||
+      'Guest';
+    const guest = guests.find((g) => g.id === selectedReservation.guest_id);
     return {
       id: `event-${selectedReservation.id}`,
-      reservationId: selectedReservation.id,
-      roomId: selectedReservation.roomId,
-      title: guest?.display_name || 'Guest',
-      start: selectedReservation.checkIn,
-      end: selectedReservation.checkOut,
+      reservationId: String(selectedReservation.id),
+      roomId: String(selectedReservation.room_id),
+      title: guestName,
+      start: new Date(selectedReservation.check_in_date),
+      end: new Date(selectedReservation.check_out_date),
       resource: {
-        status: selectedReservation.status,
-        guestName: guest?.display_name || 'Guest',
+        status: (selectedReservation.reservation_statuses?.code ??
+          'confirmed') as ReservationStatus,
+        guestName: guest?.display_name || guestName,
         roomNumber: room?.room_number || 'Unknown',
-        numberOfGuests: selectedReservation.numberOfGuests,
-        hasPets: guest?.has_pets || false,
+        numberOfGuests: selectedReservation.number_of_guests ?? selectedReservation.adults ?? 1,
+        hasPets: selectedReservation.has_pets || guest?.has_pets || false,
       },
     };
   }, [selectedReservation, rooms, guests]);
@@ -314,7 +334,7 @@ export default function HotelTimeline({
   const handleShowDrinksModalWrapper = (reservation: Reservation) => {
     setHotelOrdersReservation(reservation);
     setShowHotelOrdersModal(true);
-    handleShowDrinksModal(reservation.id);
+    handleShowDrinksModal(reservation.id); // number
   };
 
   const handleAvailabilityClick = (date: Date, availabilityData: DayAvailability) => {
@@ -675,10 +695,10 @@ export default function HotelTimeline({
             const reservation = localReservations.find(
               (r) => r.id === roomChangeDialog.reservationId
             );
-            const currentRoom = rooms.find((r) => r.id.toString() === roomChangeDialog.fromRoomId);
-            const targetRoom = rooms.find((r) => r.id.toString() === roomChangeDialog.toRoomId);
+            const currentRoom = rooms.find((r) => r.id === roomChangeDialog.fromRoomId);
+            const targetRoom = rooms.find((r) => r.id === roomChangeDialog.toRoomId);
             const guest = reservation
-              ? guests.find((g) => g.id === Number(reservation.guestId)) || null
+              ? guests.find((g) => g.id === reservation.guest_id) || null
               : null;
             if (!reservation || !currentRoom || !targetRoom) return null;
             return (

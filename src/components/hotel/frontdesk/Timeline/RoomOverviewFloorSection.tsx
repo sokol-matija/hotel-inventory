@@ -20,8 +20,8 @@ interface RoomOverviewFloorSectionProps {
   onToggle: () => void;
   occupancyData: OccupancyData;
   onRoomClick: (room: Room, reservation?: Reservation) => void;
-  onUpdateReservationStatus?: (id: string, status: ReservationStatus) => Promise<void>;
-  onDeleteReservation?: (id: string) => Promise<void>;
+  onUpdateReservationStatus?: (id: number, status: ReservationStatus) => Promise<void>;
+  onDeleteReservation?: (id: number) => Promise<void>;
   onShowDrinksModal?: (reservation: Reservation) => void;
 }
 
@@ -137,12 +137,11 @@ export function RoomOverviewFloorSection({
               const statusColors = status
                 ? RESERVATION_STATUS_COLORS[status as ReservationStatus]
                 : null;
-              const guest = reservation
-                ? guests.find((g) => g.id === Number(reservation.guestId))
-                : null;
+              const guest = reservation ? guests.find((g) => g.id === reservation.guest_id) : null;
               const daysLeft = reservation
                 ? Math.ceil(
-                    (reservation.checkOut.getTime() - new Date().getTime()) / (24 * 60 * 60 * 1000)
+                    (new Date(reservation.check_out_date).getTime() - new Date().getTime()) /
+                      (24 * 60 * 60 * 1000)
                   )
                 : 0;
 
@@ -185,10 +184,10 @@ export function RoomOverviewFloorSection({
                       : `Create new booking for ${formatRoomNumber(room)}`
                   }
                 >
-                  {isOccupied && reservation?.label && (
+                  {isOccupied && reservation?.labels && (
                     <div className="absolute top-0 right-0 z-10">
                       <LabelBadge
-                        label={reservation.label}
+                        label={reservation.labels}
                         alwaysExpanded={showFullLabelText}
                         expandDirection="left"
                         semiCircle={true}
@@ -210,13 +209,13 @@ export function RoomOverviewFloorSection({
                             <Users className="h-2.5 w-2.5" />
                             <span>{reservation.adults}</span>
                           </div>
-                          {reservation.children.length > 0 && (
+                          {(reservation.children_count ?? 0) > 0 && (
                             <div className="flex items-center space-x-1">
                               <Baby className="h-2.5 w-2.5" />
-                              <span>{reservation.children.length}</span>
+                              <span>{reservation.children_count}</span>
                             </div>
                           )}
-                          {(reservation.hasPets || guest.has_pets) && (
+                          {(reservation.has_pets || guest.has_pets) && (
                             <Dog className="h-3 w-3 text-gray-500" />
                           )}
                         </div>
@@ -227,17 +226,15 @@ export function RoomOverviewFloorSection({
                               : 'Today'}
                           </div>
                           <div className="flex items-center gap-1.5">
-                            <div className="text-xs font-bold text-green-600">
-                              €{reservation.totalAmount}
-                            </div>
+                            <div className="text-xs font-bold text-green-600">&mdash;</div>
                             <div
                               className={`flex h-4 w-4 items-center justify-center rounded-full ${
-                                reservation.status === 'checked-out'
+                                (reservation.reservation_statuses?.code ?? '') === 'checked-out'
                                   ? 'bg-green-100 text-green-600'
                                   : 'bg-red-100 text-red-600'
                               }`}
                               title={
-                                reservation.status === 'checked-out'
+                                (reservation.reservation_statuses?.code ?? '') === 'checked-out'
                                   ? 'Payment Complete'
                                   : 'Payment Pending'
                               }
@@ -277,7 +274,7 @@ export function RoomOverviewFloorSection({
         <ReservationContextMenu
           reservation={contextMenu.reservation}
           position={{ x: contextMenu.x, y: contextMenu.y }}
-          guest={guests.find((g) => g.id === Number(contextMenu.reservation!.guestId))}
+          guest={guests.find((g) => g.id === contextMenu.reservation!.guest_id)}
           room={contextMenu.room}
           isFullscreen={false}
           onClose={handleContextMenuClose}

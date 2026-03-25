@@ -25,13 +25,13 @@ function calculateDayAvailability(
   dateEnd.setHours(23, 59, 59, 999);
 
   const occupiedReservations = reservations.filter((reservation) => {
-    const checkIn = new Date(reservation.checkIn);
-    const checkOut = new Date(reservation.checkOut);
+    const checkIn = new Date(reservation.check_in_date);
+    const checkOut = new Date(reservation.check_out_date);
     return checkIn <= dateEnd && checkOut > dateEnd;
   });
 
-  const occupiedRoomIds = new Set(occupiedReservations.map((r) => r.roomId));
-  const availableRooms = rooms.filter((room) => !occupiedRoomIds.has(room.id.toString()));
+  const occupiedRoomIds = new Set(occupiedReservations.map((r) => r.room_id));
+  const availableRooms = rooms.filter((room) => !occupiedRoomIds.has(room.id));
 
   const roomsByType = {
     standard: rooms.filter((r) => !r.is_premium && r.floor_number <= 2),

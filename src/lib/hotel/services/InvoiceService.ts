@@ -35,7 +35,7 @@ export async function createInvoice(
 
   // Generate invoice number — need a minimal Reservation-like object with an id string
   const invoiceNumber = generateInvoiceNumber({
-    id: String(reservationIdNum),
+    id: reservationIdNum,
   } as import('../types').Reservation);
 
   // 2. Create invoices row

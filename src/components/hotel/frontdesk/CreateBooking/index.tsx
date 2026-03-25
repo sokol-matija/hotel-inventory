@@ -1,3 +1,4 @@
+import { useRef, useEffect } from 'react';
 import {
   X,
   Calendar as CalendarIcon,
@@ -83,11 +84,55 @@ export default function ModernCreateBookingModal({
     onClose,
   });
 
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const card = cardRef.current;
+    if (!card) return;
+
+    const previousFocus = document.activeElement as HTMLElement | null;
+    const focusable = card.querySelectorAll<HTMLElement>(
+      'button, input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    focusable[0]?.focus();
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+      if (e.key !== 'Tab' || focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      previousFocus?.focus();
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      role="presentation"
+    >
       <Card
+        ref={cardRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="booking-modal-title"
         className="max-h-[95vh] w-full max-w-5xl overflow-y-auto"
         data-testid="create-booking-modal"
       >
@@ -95,7 +140,7 @@ export default function ModernCreateBookingModal({
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center space-x-2">
               <CalendarIcon className="h-5 w-5" />
-              <span>
+              <span id="booking-modal-title">
                 {isUnallocated
                   ? 'Create Unallocated Reservation'
                   : selectedRoom
@@ -111,7 +156,7 @@ export default function ModernCreateBookingModal({
                 </Badge>
               )}
             </CardTitle>
-            <Button variant="ghost" size="sm" onClick={onClose}>
+            <Button variant="ghost" size="sm" onClick={onClose} aria-label="Close booking modal">
               <X className="h-4 w-4" />
             </Button>
           </div>

@@ -117,32 +117,30 @@ export default function EmailTestPage() {
                 <div>
                   <div className="text-sm text-gray-500">Check-in</div>
                   <div className="font-medium">
-                    {formatDisplayDate(testData.reservation.checkIn)}
+                    {formatDisplayDate(new Date(testData.reservation.check_in_date))}
                   </div>
                 </div>
                 <div>
                   <div className="text-sm text-gray-500">Check-out</div>
                   <div className="font-medium">
-                    {formatDisplayDate(testData.reservation.checkOut)}
+                    {formatDisplayDate(new Date(testData.reservation.check_out_date))}
                   </div>
                 </div>
                 <div>
                   <div className="text-sm text-gray-500">Duration</div>
-                  <div className="font-medium">{testData.reservation.numberOfNights} nights</div>
+                  <div className="font-medium">{testData.reservation.number_of_nights} nights</div>
                 </div>
                 <div>
                   <div className="text-sm text-gray-500">Total Amount</div>
-                  <div className="text-lg font-medium text-green-600">
-                    €{testData.reservation.totalAmount.toFixed(2)}
-                  </div>
+                  <div className="text-lg font-medium text-green-600">&mdash;</div>
                 </div>
               </div>
 
-              {testData.reservation.specialRequests && (
+              {testData.reservation.special_requests && (
                 <div className="border-t pt-2">
                   <div className="text-sm text-gray-500">Special Requests</div>
                   <div className="mt-1 rounded bg-yellow-50 p-2 text-sm">
-                    {testData.reservation.specialRequests}
+                    {testData.reservation.special_requests}
                   </div>
                 </div>
               )}

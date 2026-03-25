@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { addDays } from 'date-fns';
 import { isRoomAvailable, formatRoomNumber } from '../hotel/calendarUtils';
-import { Reservation, ReservationStatus } from '../hotel/types';
+import type { Reservation, ReservationUpdateInput } from '../queries/hooks/useReservations';
 import type { Guest } from '../queries/hooks/useGuests';
 import type { Room } from '../queries/hooks/useRooms';
 import hotelNotification from '../notifications';
@@ -16,16 +16,16 @@ export interface UseReservationActionsParams {
   guests: Guest[];
   roomChangeDialog: RoomChangeDialog;
   selectedReservation: Reservation | null;
-  showRoomChangeDialog: (reservationId: string, fromRoomId: string, toRoomId: string) => void;
+  showRoomChangeDialog: (reservationId: number, fromRoomId: number, toRoomId: number) => void;
   closeRoomChangeDialog: () => void;
-  updateReservation: (id: string, updates: Partial<Reservation>) => Promise<void>;
+  updateReservation: (id: number, updates: ReservationUpdateInput) => Promise<void>;
 }
 
 export interface UseReservationActionsReturn {
   localReservations: Reservation[];
   handleMoveReservation: (
-    reservationId: string,
-    newRoomId: string,
+    reservationId: number,
+    newRoomId: number,
     newCheckIn: Date,
     newCheckOut: Date
   ) => Promise<void>;
@@ -33,7 +33,7 @@ export interface UseReservationActionsReturn {
   handleConfirmRoomChange: () => Promise<void>;
   handleFreeUpgrade: () => Promise<void>;
   handleResizeReservation: (
-    reservationId: string,
+    reservationId: number,
     side: 'start' | 'end',
     newDate: Date
   ) => Promise<void>;
@@ -49,8 +49,8 @@ interface ExecuteRoomMutationParams {
   localReservations: Reservation[];
   rooms: Room[];
   guests: Guest[];
-  updateReservationInState: (id: string, updates: Partial<Reservation>) => void;
-  updateReservation: (id: string, updates: Partial<Reservation>) => Promise<void>;
+  updateReservationInState: (id: number, updates: ReservationUpdateInput) => void;
+  updateReservation: (id: number, updates: ReservationUpdateInput) => Promise<void>;
   closeRoomChangeDialog: () => void;
 }
 
@@ -69,15 +69,15 @@ async function executeRoomMutation(
   } = params;
 
   const reservation = localReservations.find((r) => r.id === dialog.reservationId);
-  const targetRoom = rooms.find((r) => r.id.toString() === dialog.toRoomId);
-  const currentRoom = rooms.find((r) => r.id.toString() === dialog.fromRoomId);
+  const targetRoom = rooms.find((r) => r.id === dialog.toRoomId);
+  const currentRoom = rooms.find((r) => r.id === dialog.fromRoomId);
   if (!reservation || !targetRoom || !currentRoom) return;
 
   try {
-    const updatedReservationData = {
-      roomId: targetRoom.id.toString(),
-      checkIn: reservation.checkIn,
-      checkOut: reservation.checkOut,
+    const updatedReservationData: ReservationUpdateInput = {
+      room_id: targetRoom.id,
+      check_in_date: reservation.check_in_date,
+      check_out_date: reservation.check_out_date,
     };
 
     const optimisticService = OptimisticUpdateService.getInstance();
@@ -92,7 +92,7 @@ async function executeRoomMutation(
     );
 
     if (result.success) {
-      const guest = guests.find((g) => g.id === Number(reservation.guestId));
+      const guest = guests.find((g) => g.id === reservation.guest_id);
       if (variant === 'standard') {
         hotelNotification.success(
           'Room Change Successful!',
@@ -113,7 +113,6 @@ async function executeRoomMutation(
           (variant === 'standard' ? 'Failed to move reservation' : 'Failed to apply free upgrade'),
         5
       );
-      return;
     }
     closeRoomChangeDialog();
   } catch {
@@ -124,6 +123,7 @@ async function executeRoomMutation(
         : 'Unable to complete the free upgrade. Please try again.',
       5
     );
+    closeRoomChangeDialog();
   }
 }
 
@@ -141,9 +141,9 @@ export function useReservationActions(
     updateReservation,
   } = params;
 
-  const [optimisticOverrides, setOptimisticOverrides] = useState<Map<string, Partial<Reservation>>>(
-    new Map()
-  );
+  const [optimisticOverrides, setOptimisticOverrides] = useState<
+    Map<number, ReservationUpdateInput>
+  >(new Map());
 
   const localReservations = useMemo(
     () =>
@@ -154,18 +154,18 @@ export function useReservationActions(
     [reservations, optimisticOverrides]
   );
 
-  const updateReservationInState = useCallback((id: string, updates: Partial<Reservation>) => {
+  const updateReservationInState = useCallback((id: number, updates: ReservationUpdateInput) => {
     setOptimisticOverrides((prev) => new Map(prev).set(id, { ...prev.get(id), ...updates }));
   }, []);
 
   const handleMoveReservation = useCallback(
-    async (reservationId: string, newRoomId: string, newCheckIn: Date, newCheckOut: Date) => {
+    async (reservationId: number, newRoomId: number, newCheckIn: Date, newCheckOut: Date) => {
       try {
         const reservation = localReservations.find((r) => r.id === reservationId);
         if (!reservation) throw new Error('Reservation not found');
 
-        const oldRoom = rooms.find((r) => r.id.toString() === reservation.roomId);
-        const newRoom = rooms.find((r) => r.id.toString() === newRoomId);
+        const oldRoom = rooms.find((r) => r.id === reservation.room_id);
+        const newRoom = rooms.find((r) => r.id === newRoomId);
         if (!oldRoom || !newRoom) throw new Error('Room not found');
 
         const isVirtualToReal =
@@ -174,7 +174,7 @@ export function useReservationActions(
         let allocationGuestData: Partial<Guest> | undefined;
 
         if (isVirtualToReal) {
-          const guest = guests.find((g) => g.id === Number(reservation.guestId));
+          const guest = guests.find((g) => g.id === reservation.guest_id);
           if (!guest) {
             hotelNotification.error('Allocation Failed', 'Guest not found for reservation');
             return;
@@ -206,16 +206,16 @@ export function useReservationActions(
           return;
         }
 
-        const guest = guests.find((g) => g.id === Number(reservation.guestId));
+        const guest = guests.find((g) => g.id === reservation.guest_id);
         const isRoomTypeChange = oldRoom.room_types?.code !== newRoom.room_types?.code;
-        const updatedReservationData: Partial<Reservation> = {
-          roomId: newRoomId,
-          checkIn: newCheckIn,
-          checkOut: newCheckOut,
+        const updatedReservationData: ReservationUpdateInput = {
+          room_id: newRoomId,
+          check_in_date: newCheckIn.toISOString().split('T')[0],
+          check_out_date: newCheckOut.toISOString().split('T')[0],
         };
 
         if (isRoomTypeChange) {
-          showRoomChangeDialog(reservationId, reservation.roomId, newRoomId);
+          showRoomChangeDialog(reservationId, reservation.room_id, newRoomId);
           return;
         }
 
@@ -227,16 +227,16 @@ export function useReservationActions(
             reservationId,
             reservation,
             {
-              roomId: newRoomId,
-              checkIn: newCheckIn,
-              checkOut: newCheckOut,
-              status: 'confirmed' as ReservationStatus,
+              room_id: newRoomId,
+              check_in_date: newCheckIn.toISOString().split('T')[0],
+              check_out_date: newCheckOut.toISOString().split('T')[0],
+              status: 'confirmed',
             },
             updateReservationInState,
             async () => {
               const allocationResult = await virtualRoomService.convertToRealReservation(
-                reservationId,
-                newRoomId,
+                String(reservationId),
+                String(newRoomId),
                 allocationGuestData!
               );
               if (!allocationResult.success)
@@ -319,9 +319,9 @@ export function useReservationActions(
       const daysToMove = direction === 'left' ? -1 : 1;
       await handleMoveReservation(
         reservation.id,
-        reservation.roomId,
-        addDays(reservation.checkIn, daysToMove),
-        addDays(reservation.checkOut, daysToMove)
+        reservation.room_id,
+        addDays(new Date(reservation.check_in_date), daysToMove),
+        addDays(new Date(reservation.check_out_date), daysToMove)
       );
     },
     [selectedReservation, localReservations, handleMoveReservation]
@@ -376,15 +376,15 @@ export function useReservationActions(
   ]);
 
   const handleResizeReservation = useCallback(
-    async (reservationId: string, side: 'start' | 'end', newDate: Date) => {
+    async (reservationId: number, side: 'start' | 'end', newDate: Date) => {
       try {
         const reservation = localReservations.find((r) => r.id === reservationId);
         if (!reservation) throw new Error('Reservation not found');
 
-        const room = rooms.find((r) => r.id.toString() === reservation.roomId);
-        const guest = guests.find((g) => g.id === Number(reservation.guestId));
-        const newCheckIn = side === 'start' ? newDate : reservation.checkIn;
-        const newCheckOut = side === 'end' ? newDate : reservation.checkOut;
+        const room = rooms.find((r) => r.id === reservation.room_id);
+        const guest = guests.find((g) => g.id === reservation.guest_id);
+        const newCheckIn = side === 'start' ? newDate : new Date(reservation.check_in_date);
+        const newCheckOut = side === 'end' ? newDate : new Date(reservation.check_out_date);
         const daysDiff = Math.ceil(
           (newCheckOut.getTime() - newCheckIn.getTime()) / (24 * 60 * 60 * 1000)
         );
@@ -394,14 +394,19 @@ export function useReservationActions(
           return;
         }
 
-        const hasConflict = localReservations.some(
-          (r) =>
+        const hasConflict = localReservations.some((r) => {
+          const status = r.reservation_statuses?.code ?? 'confirmed';
+          return (
             r.id !== reservationId &&
-            r.roomId === reservation.roomId &&
-            ((newCheckIn >= r.checkIn && newCheckIn < r.checkOut) ||
-              (newCheckOut > r.checkIn && newCheckOut <= r.checkOut) ||
-              (newCheckIn <= r.checkIn && newCheckOut >= r.checkOut))
-        );
+            r.room_id === reservation.room_id &&
+            status !== 'checked-out' &&
+            ((newCheckIn >= new Date(r.check_in_date) && newCheckIn < new Date(r.check_out_date)) ||
+              (newCheckOut > new Date(r.check_in_date) &&
+                newCheckOut <= new Date(r.check_out_date)) ||
+              (newCheckIn <= new Date(r.check_in_date) &&
+                newCheckOut >= new Date(r.check_out_date)))
+          );
+        });
 
         if (hasConflict) {
           hotelNotification.error(
@@ -412,10 +417,9 @@ export function useReservationActions(
           return;
         }
 
-        const updatedData = {
-          checkIn: newCheckIn,
-          checkOut: newCheckOut,
-          numberOfNights: daysDiff,
+        const updatedData: ReservationUpdateInput = {
+          check_in_date: newCheckIn.toISOString().split('T')[0],
+          check_out_date: newCheckOut.toISOString().split('T')[0],
         };
 
         const optimisticService = OptimisticUpdateService.getInstance();
@@ -456,16 +460,16 @@ export function useReservationActions(
   const handleDrinksOrderComplete = useCallback(
     async (reservation: Reservation, orderItems: OrderItem[], orderTotal: number) => {
       try {
-        const room = rooms.find((r) => r.id.toString() === reservation.roomId);
-        const updatedReservation = {
-          notes:
-            (reservation.notes || '') +
+        const room = rooms.find((r) => r.id === reservation.room_id);
+        const updatedReservation: ReservationUpdateInput = {
+          internal_notes:
+            (reservation.internal_notes || '') +
             `\nRoom Service ordered (${new Date().toLocaleDateString()}): ${orderItems.map((item) => `${item.quantity}x ${item.itemName}`).join(', ')} - Total: €${orderTotal.toFixed(2)}`,
         };
         await updateReservation(reservation.id, updatedReservation);
         hotelNotification.success(
           'Room Service Added to Bill',
-          `€${orderTotal.toFixed(2)} in charges added to Room ${room ? formatRoomNumber(room) : reservation.roomId} bill`,
+          `€${orderTotal.toFixed(2)} in charges added to Room ${room ? formatRoomNumber(room) : reservation.room_id} bill`,
           4
         );
       } catch {

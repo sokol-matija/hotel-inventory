@@ -28,8 +28,8 @@ interface ReservationsTableProps {
   reservations: Reservation[];
   sortState: SortState;
   onSort: (column: SortState['sortBy']) => void;
-  selectedIds: Set<string>;
-  onToggleSelection: (id: string) => void;
+  selectedIds: Set<number>;
+  onToggleSelection: (id: number) => void;
   onToggleSelectAll: () => void;
   onViewDetails: (reservation: Reservation) => void;
   onEdit?: (reservation: Reservation) => void;
@@ -119,7 +119,7 @@ function getPaymentBadge(status?: string) {
   );
 }
 
-function formatDate(date: Date) {
+function formatDate(date: Date | string) {
   try {
     return format(new Date(date), 'MMM dd, yyyy');
   } catch {
@@ -127,17 +127,10 @@ function formatDate(date: Date) {
   }
 }
 
-function formatCurrency(amount: number) {
-  return new Intl.NumberFormat('hr-HR', {
-    style: 'currency',
-    currency: 'EUR',
-  }).format(amount);
-}
-
 interface MobileCardProps {
   reservation: Reservation;
-  selectedIds: Set<string>;
-  onToggleSelection: (id: string) => void;
+  selectedIds: Set<number>;
+  onToggleSelection: (id: number) => void;
   onViewDetails: (reservation: Reservation) => void;
   onEdit?: (reservation: Reservation) => void;
 }
@@ -162,32 +155,32 @@ function MobileCard({
           />
           <div>
             <h3 className="font-semibold text-gray-900">
-              {reservation.guest?.first_name} {reservation.guest?.last_name}
+              {reservation.guests?.first_name} {reservation.guests?.last_name}
             </h3>
             <p className="text-sm text-gray-600">
-              Room {reservation.roomId} • {formatDate(reservation.checkIn)}
+              Room {reservation.room_id} • {formatDate(reservation.check_in_date)}
             </p>
           </div>
         </div>
-        {getStatusBadge(reservation.status)}
+        {getStatusBadge(reservation.reservation_statuses?.code ?? 'confirmed')}
       </div>
 
       <div className="mb-3 grid grid-cols-2 gap-2 text-sm">
         <div>
           <span className="text-gray-600">{t('reservationsList.columns.checkIn')}:</span>
-          <p className="font-medium">{formatDate(reservation.checkIn)}</p>
+          <p className="font-medium">{formatDate(reservation.check_in_date)}</p>
         </div>
         <div>
           <span className="text-gray-600">{t('reservationsList.columns.checkOut')}:</span>
-          <p className="font-medium">{formatDate(reservation.checkOut)}</p>
+          <p className="font-medium">{formatDate(reservation.check_out_date)}</p>
         </div>
         <div>
           <span className="text-gray-600">{t('reservationsList.columns.totalAmount')}:</span>
-          <p className="font-medium">{formatCurrency(reservation.totalAmount)}</p>
+          <p className="font-medium">&mdash;</p>
         </div>
         <div>
           <span className="text-gray-600">{t('reservationsList.columns.paymentStatus')}:</span>
-          <div>{getPaymentBadge(reservation.paymentStatus)}</div>
+          <div>{getPaymentBadge(reservation.reservation_statuses?.code ?? '')}</div>
         </div>
       </div>
 
@@ -342,27 +335,31 @@ export default function ReservationsTable({
                 </td>
                 <td className="px-4 py-4">
                   <div className="font-medium text-gray-900">
-                    {reservation.guest?.first_name} {reservation.guest?.last_name}
+                    {reservation.guests?.first_name} {reservation.guests?.last_name}
                   </div>
-                  {reservation.guest?.email && (
-                    <div className="text-sm text-gray-600">{reservation.guest.email}</div>
+                  {reservation.guests?.email && (
+                    <div className="text-sm text-gray-600">{reservation.guests.email}</div>
                   )}
                 </td>
-                <td className="px-4 py-4 text-gray-900">Room {reservation.roomId}</td>
-                <td className="px-4 py-4 text-gray-900">{formatDate(reservation.checkIn)}</td>
-                <td className="px-4 py-4 text-gray-900">{formatDate(reservation.checkOut)}</td>
-                <td className="px-4 py-4">{getStatusBadge(reservation.status)}</td>
-                <td className="px-4 py-4 text-gray-900">{reservation.bookingSource}</td>
-                <td className="px-4 py-4 font-semibold text-gray-900">
-                  {formatCurrency(reservation.totalAmount)}
-                </td>
-                <td className="px-4 py-4">{getPaymentBadge(reservation.paymentStatus)}</td>
+                <td className="px-4 py-4 text-gray-900">Room {reservation.room_id}</td>
+                <td className="px-4 py-4 text-gray-900">{formatDate(reservation.check_in_date)}</td>
                 <td className="px-4 py-4 text-gray-900">
-                  {reservation.numberOfGuests || reservation.adults}{' '}
+                  {formatDate(reservation.check_out_date)}
+                </td>
+                <td className="px-4 py-4">
+                  {getStatusBadge(reservation.reservation_statuses?.code ?? 'confirmed')}
+                </td>
+                <td className="px-4 py-4 text-gray-900">{reservation.booking_sources?.code}</td>
+                <td className="px-4 py-4 font-semibold text-gray-900">&mdash;</td>
+                <td className="px-4 py-4">
+                  {getPaymentBadge(reservation.reservation_statuses?.code ?? '')}
+                </td>
+                <td className="px-4 py-4 text-gray-900">
+                  {reservation.number_of_guests || reservation.adults}{' '}
                   {t('reservationsList.columns.guests')}
                 </td>
                 <td className="px-4 py-4 text-sm text-gray-600">
-                  {formatDate(reservation.bookingDate)}
+                  {formatDate(reservation.booking_date ?? '')}
                 </td>
                 <td className="px-4 py-4">
                   <div className="flex items-center justify-end gap-1">

@@ -64,10 +64,8 @@ export default function InvoiceHistoryPage() {
   const filteredInvoices = invoices.filter((invoice) => {
     const guest = guests.find((g) => g.id === Number(invoice.guestId));
     // Get room through reservation since invoice no longer has direct roomId
-    const reservation = reservations.find((r) => r.id === invoice.reservationId);
-    const room = reservation
-      ? rooms.find((r) => r.id.toString() === reservation.roomId)
-      : undefined;
+    const reservation = reservations.find((r) => r.id === Number(invoice.reservationId));
+    const room = reservation ? rooms.find((r) => r.id === reservation.room_id) : undefined;
 
     const matchesSearch =
       !searchTerm ||
@@ -98,9 +96,9 @@ export default function InvoiceHistoryPage() {
   };
 
   const getRoomNumber = (invoice: Invoice) => {
-    const reservation = reservations.find((r) => r.id === invoice.reservationId);
+    const reservation = reservations.find((r) => r.id === Number(invoice.reservationId));
     if (!reservation) return 'Unknown Room';
-    return rooms.find((r) => r.id.toString() === reservation.roomId)?.room_number || 'Unknown Room';
+    return rooms.find((r) => r.id === reservation.room_id)?.room_number || 'Unknown Room';
   };
 
   const handleViewInvoice = (invoice: Invoice) => {
@@ -111,11 +109,9 @@ export default function InvoiceHistoryPage() {
   const handleDownloadPDF = async (invoice: Invoice) => {
     try {
       // Find related reservation
-      const reservation = reservations.find((r) => r.id === invoice.reservationId);
+      const reservation = reservations.find((r) => r.id === Number(invoice.reservationId));
       const guest = guests.find((g) => g.id === Number(invoice.guestId));
-      const room = reservation
-        ? rooms.find((r) => r.id.toString() === reservation.roomId)
-        : undefined;
+      const room = reservation ? rooms.find((r) => r.id === reservation.room_id) : undefined;
 
       if (!reservation || !guest || !room) {
         hotelNotification.error(
@@ -128,11 +124,11 @@ export default function InvoiceHistoryPage() {
 
       // Fetch company data if this is an R1 reservation
       let company: Company | undefined;
-      if (reservation.isR1Bill && reservation.companyId) {
+      if (reservation.is_r1 && reservation.company_id) {
         const { data: companyData, error: companyError } = await supabase
           .from('companies')
           .select('*')
-          .eq('id', Number(reservation.companyId))
+          .eq('id', Number(reservation.company_id))
           .single();
 
         if (companyData && !companyError) {
@@ -189,7 +185,7 @@ export default function InvoiceHistoryPage() {
   };
 
   const getReservationDetails = (invoice: Invoice) => {
-    return reservations.find((r) => r.id === invoice.reservationId);
+    return reservations.find((r) => r.id === Number(invoice.reservationId));
   };
 
   return (
@@ -439,20 +435,21 @@ export default function InvoiceHistoryPage() {
                           <div className="flex justify-between">
                             <span className="text-gray-600">Check-in:</span>
                             <span className="font-medium">
-                              {format(reservation.checkIn, 'MMM dd, yyyy')}
+                              {format(new Date(reservation.check_in_date), 'MMM dd, yyyy')}
                             </span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-gray-600">Check-out:</span>
                             <span className="font-medium">
-                              {format(reservation.checkOut, 'MMM dd, yyyy')}
+                              {format(new Date(reservation.check_out_date), 'MMM dd, yyyy')}
                             </span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-gray-600">Nights:</span>
                             <span className="font-medium">
                               {Math.ceil(
-                                (reservation.checkOut.getTime() - reservation.checkIn.getTime()) /
+                                (new Date(reservation.check_out_date).getTime() -
+                                  new Date(reservation.check_in_date).getTime()) /
                                   (1000 * 60 * 60 * 24)
                               )}
                             </span>

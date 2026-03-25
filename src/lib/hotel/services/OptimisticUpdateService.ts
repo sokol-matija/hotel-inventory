@@ -27,7 +27,7 @@
  * @since August 2025
  */
 
-import { Reservation } from '../types';
+import type { Reservation, ReservationUpdateInput } from '@/lib/queries/hooks/useReservations';
 
 export interface OptimisticOperation {
   id: string;
@@ -129,29 +129,29 @@ export class OptimisticUpdateService {
    * Execute optimistic reservation move
    */
   async optimisticMoveReservation(
-    reservationId: string,
+    reservationId: number,
     originalReservation: Reservation,
-    newRoomId: string,
+    newRoomId: number,
     newCheckIn: Date,
     newCheckOut: Date,
-    updateReservationInState: (id: string, updates: Partial<Reservation>) => void,
+    updateReservationInState: (id: number, updates: ReservationUpdateInput) => void,
     serverUpdate: () => Promise<void>
   ): Promise<{ success: boolean; error?: string }> {
     const operationId = `move-${reservationId}-${Date.now()}`;
 
-    const newData = {
-      roomId: newRoomId,
-      checkIn: newCheckIn,
-      checkOut: newCheckOut,
+    const newData: ReservationUpdateInput = {
+      room_id: newRoomId,
+      check_in_date: newCheckIn.toISOString().split('T')[0],
+      check_out_date: newCheckOut.toISOString().split('T')[0],
     };
 
     return this.executeOptimisticUpdate(operationId, {
       type: 'move',
       entity: 'reservation',
       originalData: {
-        roomId: originalReservation.roomId,
-        checkIn: originalReservation.checkIn,
-        checkOut: originalReservation.checkOut,
+        room_id: originalReservation.room_id,
+        check_in_date: originalReservation.check_in_date,
+        check_out_date: originalReservation.check_out_date,
       },
       newData,
       optimisticUpdate: () => {
@@ -161,9 +161,9 @@ export class OptimisticUpdateService {
       rollbackUpdate: () => {
         // Restore original values
         updateReservationInState(reservationId, {
-          roomId: originalReservation.roomId,
-          checkIn: originalReservation.checkIn,
-          checkOut: originalReservation.checkOut,
+          room_id: originalReservation.room_id,
+          check_in_date: originalReservation.check_in_date,
+          check_out_date: originalReservation.check_out_date,
         });
       },
       serverUpdate: serverUpdate,
@@ -174,10 +174,10 @@ export class OptimisticUpdateService {
    * Execute optimistic reservation update
    */
   async optimisticUpdateReservation(
-    reservationId: string,
+    reservationId: number,
     originalReservation: Reservation,
-    updates: Partial<Reservation>,
-    updateReservationInState: (id: string, updates: Partial<Reservation>) => void,
+    updates: ReservationUpdateInput,
+    updateReservationInState: (id: number, updates: ReservationUpdateInput) => void,
     serverUpdate: () => Promise<void>
   ): Promise<{ success: boolean; error?: string }> {
     const operationId = `update-${reservationId}-${Date.now()}`;
@@ -191,8 +191,16 @@ export class OptimisticUpdateService {
         updateReservationInState(reservationId, updates);
       },
       rollbackUpdate: () => {
-        // Restore original reservation
-        updateReservationInState(reservationId, originalReservation);
+        // Restore original reservation fields
+        updateReservationInState(reservationId, {
+          room_id: originalReservation.room_id,
+          check_in_date: originalReservation.check_in_date,
+          check_out_date: originalReservation.check_out_date,
+          adults: originalReservation.adults,
+          special_requests: originalReservation.special_requests ?? undefined,
+          internal_notes: originalReservation.internal_notes ?? undefined,
+          has_pets: originalReservation.has_pets ?? undefined,
+        });
       },
       serverUpdate: serverUpdate,
     });
@@ -204,7 +212,7 @@ export class OptimisticUpdateService {
   async optimisticCreateReservation(
     tempReservation: Reservation,
     addReservationToState: (reservation: Reservation) => void,
-    removeReservationFromState: (id: string) => void,
+    removeReservationFromState: (id: number) => void,
     serverCreate: () => Promise<Reservation>
   ): Promise<{ success: boolean; data?: Reservation; error?: string }> {
     const operationId = `create-${tempReservation.id}-${Date.now()}`;
@@ -228,7 +236,7 @@ export class OptimisticUpdateService {
    */
   async optimisticDeleteReservation(
     reservation: Reservation,
-    removeReservationFromState: (id: string) => void,
+    removeReservationFromState: (id: number) => void,
     addReservationToState: (reservation: Reservation) => void,
     serverDelete: () => Promise<void>
   ): Promise<{ success: boolean; error?: string }> {

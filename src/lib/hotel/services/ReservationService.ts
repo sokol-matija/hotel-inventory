@@ -1,7 +1,9 @@
 // ReservationService - Business logic for reservation management
 // Handles email operations, fiscal invoice generation, and reservation state management
 
-import { CalendarEvent, Reservation, Guest, Company } from '../types';
+import { CalendarEvent, Company } from '../types';
+import type { Reservation } from '@/lib/queries/hooks/useReservations';
+import type { Guest } from '@/lib/queries/hooks/useGuests';
 import type { Room } from '@/lib/queries/hooks/useRooms';
 import { RESERVATION_STATUS_COLORS } from '../calendarUtils';
 import { HotelEmailService } from '../../emailService';
@@ -12,7 +14,6 @@ import {
   generateInvoiceNumber,
 } from '../../pdfInvoiceGenerator';
 import { FiscalizationService } from '../../fiscalization/FiscalizationService';
-import { hotelDataService } from './HotelDataService';
 import { supabase } from '../../supabase';
 
 export interface ReservationData {
@@ -63,23 +64,38 @@ export class ReservationService {
   ): Promise<ReservationData | null> {
     if (!event) return null;
 
-    const reservation = reservations.find((r) => r.id === event.reservationId);
+    const reservation = reservations.find((r) => r.id === Number(event.reservationId));
     if (!reservation) return null;
 
-    // Fetch guest and room data from database
-    const [guests, room] = await Promise.all([
-      hotelDataService.getGuests(),
-      hotelDataService.getRoomById(event.roomId),
-    ]);
+    // Fetch room data from database
+    const { data: roomData, error: roomError } = await supabase
+      .from('rooms')
+      .select(
+        '*, room_types!room_type_id(code), room_pricing(base_rate, pricing_seasons(code, year_pattern))'
+      )
+      .eq('id', Number(event.roomId))
+      .single();
 
-    const guest = guests.find((g) => g.id === Number(reservation.guestId));
+    if (roomError || !roomData) return null;
 
-    if (!guest || !room) {
-      return null;
-    }
+    // Use guest from join (display_name not in SELECT — derive it from first/last name)
+    const guestJoin = reservation.guests;
+    if (!guestJoin) return null;
+    const guest: Guest = {
+      ...(guestJoin as unknown as Guest),
+      display_name:
+        (guestJoin as unknown as { full_name?: string }).full_name ||
+        `${(guestJoin as unknown as { first_name?: string }).first_name ?? ''} ${(guestJoin as unknown as { last_name?: string }).last_name ?? ''}`.trim(),
+    };
 
-    const statusColors = RESERVATION_STATUS_COLORS[reservation.status];
-    const isMaintenanceReservation = reservation.guestId === 'system-maintenance';
+    // Map room to Room type
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const room = mapRoomFromDB(roomData as any);
+
+    const status = reservation.reservation_statuses?.code ?? 'confirmed';
+    const statusColors =
+      RESERVATION_STATUS_COLORS[status as keyof typeof RESERVATION_STATUS_COLORS];
+    const isMaintenanceReservation = false;
 
     return {
       reservation,
@@ -100,7 +116,7 @@ export class ReservationService {
   ): Promise<EmailResult> {
     try {
       // Use provided room or fetch from database
-      const roomData = room || (await hotelDataService.getRoomById(reservation.roomId));
+      const roomData = room || (await this.getRoomById(reservation.room_id));
       const result = await HotelEmailService.sendWelcomeEmail(
         reservation,
         guest,
@@ -135,7 +151,7 @@ export class ReservationService {
   ): Promise<EmailResult> {
     try {
       // Use provided room or fetch from database
-      const roomData = room || (await hotelDataService.getRoomById(reservation.roomId));
+      const roomData = room || (await this.getRoomById(reservation.room_id));
       const result = await HotelEmailService.sendReminderEmail(
         reservation,
         guest,
@@ -174,11 +190,11 @@ export class ReservationService {
 
       // Fetch company data if this is an R1 reservation
       let company: Company | undefined;
-      if (reservation.isR1Bill && reservation.companyId) {
+      if (reservation.is_r1 && reservation.company_id) {
         const { data: companyData, error: companyError } = await supabase
           .from('companies')
           .select('*')
-          .eq('id', Number(reservation.companyId))
+          .eq('id', Number(reservation.company_id))
           .single();
 
         if (companyData && !companyError) {
@@ -208,19 +224,23 @@ export class ReservationService {
         }
       }
 
+      // TODO: Phase 9 — derive totalAmount/vatAmount from reservation_charges
+      const totalAmount = 0;
+      const vatAmount = 0;
+
       // Prepare fiscal invoice data
       const fiscalInvoiceData = {
         invoiceNumber,
         dateTime: new Date(),
-        totalAmount: reservation.totalAmount,
-        vatAmount: reservation.vatAmount,
+        totalAmount,
+        vatAmount,
         items: [
           {
             name: `Room ${room.room_number} - ${room.name_english}`,
-            quantity: reservation.numberOfNights,
-            unitPrice: reservation.baseRoomRate,
+            quantity: reservation.number_of_nights ?? 1,
+            unitPrice: 0, // Phase 9 migration
             vatRate: 13, // Croatian accommodation VAT rate (since 2018)
-            totalAmount: reservation.totalAmount,
+            totalAmount,
           },
         ],
         paymentMethod: 'CARD' as const,
@@ -235,7 +255,7 @@ export class ReservationService {
           zki: fiscalResponse.zki, // Real ZKI from fiscalization response
           qrCodeData:
             fiscalResponse.qrCodeData ||
-            fiscalizationService.generateFiscalQRData(fiscalResponse.jir, reservation.totalAmount),
+            fiscalizationService.generateFiscalQRData(fiscalResponse.jir, totalAmount),
         };
 
         // Save fiscal data to database
@@ -246,7 +266,7 @@ export class ReservationService {
             fiscalData.jir!,
             fiscalData.zki!,
             fiscalData.qrCodeData!,
-            reservation.totalAmount,
+            totalAmount,
             typeof guest.id === 'string' ? parseInt(guest.id) : guest.id // Add guest_id to satisfy database constraint
           );
         } catch (dbError) {
@@ -389,8 +409,9 @@ export class ReservationService {
     variant: 'default' | 'outline' | 'destructive';
   }> {
     const actions = [];
+    const status = reservation.reservation_statuses?.code ?? 'confirmed';
 
-    switch (reservation.status) {
+    switch (status) {
       case 'confirmed':
         actions.push({
           status: 'checked-in',
@@ -427,29 +448,48 @@ export class ReservationService {
    * Determine if check-in workflow should be shown
    */
   shouldShowCheckInWorkflow(reservation: Reservation): boolean {
-    return reservation.status === 'confirmed';
+    return (reservation.reservation_statuses?.code ?? 'confirmed') === 'confirmed';
   }
 
   /**
    * Determine if check-out workflow should be shown
    */
   shouldShowCheckOutWorkflow(reservation: Reservation): boolean {
-    return reservation.status === 'checked-in';
+    return (reservation.reservation_statuses?.code ?? 'confirmed') === 'checked-in';
   }
 
   /**
    * Format reservation dates for display
    */
   formatReservationDates(reservation: Reservation): string {
-    return `${reservation.checkIn.toLocaleDateString()} - ${reservation.checkOut.toLocaleDateString()}`;
+    return `${new Date(reservation.check_in_date).toLocaleDateString()} - ${new Date(reservation.check_out_date).toLocaleDateString()}`;
   }
 
   /**
    * Calculate total nights for reservation
    */
   calculateNights(reservation: Reservation): number {
-    const diffTime = reservation.checkOut.getTime() - reservation.checkIn.getTime();
+    const checkOut = new Date(reservation.check_out_date);
+    const checkIn = new Date(reservation.check_in_date);
+    const diffTime = checkOut.getTime() - checkIn.getTime();
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  }
+
+  /**
+   * Fetch room by ID from DB
+   */
+  private async getRoomById(roomId: number): Promise<Room | null> {
+    const { data, error } = await supabase
+      .from('rooms')
+      .select(
+        '*, room_types!room_type_id(code), room_pricing(base_rate, pricing_seasons(code, year_pattern))'
+      )
+      .eq('id', roomId)
+      .single();
+
+    if (error || !data) return null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return mapRoomFromDB(data as any);
   }
 
   /**
@@ -516,4 +556,79 @@ export class ReservationService {
 
     if (fiscalError) throw fiscalError;
   }
+}
+
+// ─── Private helper ────────────────────────────────────────────────────────────
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapRoomFromDB(room: any): Room {
+  const roomType = room.room_types?.code || 'double';
+  return {
+    id: room.id,
+    room_number: room.room_number,
+    floor_number: room.floor_number,
+    room_types: room.room_types,
+    max_occupancy: room.max_occupancy || 2,
+    is_premium: room.is_premium || false,
+    amenities: room.amenities || [],
+    is_clean: room.is_clean ?? false,
+    name_croatian: getRoomTypeCroatianName(roomType),
+    name_english: getRoomTypeEnglishName(roomType),
+    seasonal_rates: {
+      A:
+        room.room_pricing?.find(
+          (rp: { pricing_seasons?: { code: string } }) => rp.pricing_seasons?.code === 'A'
+        )?.base_rate ?? 50,
+      B:
+        room.room_pricing?.find(
+          (rp: { pricing_seasons?: { code: string } }) => rp.pricing_seasons?.code === 'B'
+        )?.base_rate ?? 60,
+      C:
+        room.room_pricing?.find(
+          (rp: { pricing_seasons?: { code: string } }) => rp.pricing_seasons?.code === 'C'
+        )?.base_rate ?? 80,
+      D:
+        room.room_pricing?.find(
+          (rp: { pricing_seasons?: { code: string } }) => rp.pricing_seasons?.code === 'D'
+        )?.base_rate ?? 100,
+    },
+  };
+}
+
+function getRoomTypeCroatianName(roomType: string): string {
+  const mapping: Record<string, string> = {
+    BD: 'Velika dvokrevetna soba',
+    BS: 'Velika jednokrevetna soba',
+    D: 'Dvokrevetna soba',
+    T: 'Trokrevetna soba',
+    S: 'Jednokrevetna soba',
+    F: 'Obiteljska soba',
+    A: 'Apartman',
+    RA: '401 ROOFTOP APARTMAN',
+    single: 'Jednokrevetna soba',
+    double: 'Dvokrevetna soba',
+    triple: 'Trokrevetna soba',
+    family: 'Obiteljska soba',
+    apartment: 'Apartman',
+  };
+  return mapping[roomType] || 'Dvokrevetna soba';
+}
+
+function getRoomTypeEnglishName(roomType: string): string {
+  const mapping: Record<string, string> = {
+    BD: 'Big Double Room',
+    BS: 'Big Single Room',
+    D: 'Double Room',
+    T: 'Triple Room',
+    S: 'Single Room',
+    F: 'Family Room',
+    A: 'Apartment',
+    RA: '401 Rooftop Apartment',
+    single: 'Single Room',
+    double: 'Double Room',
+    triple: 'Triple Room',
+    family: 'Family Room',
+    apartment: 'Apartment',
+  };
+  return mapping[roomType] || `${roomType.charAt(0).toUpperCase()}${roomType.slice(1)} Room`;
 }

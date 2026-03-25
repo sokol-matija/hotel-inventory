@@ -3,7 +3,8 @@ import { format, addDays, startOfDay } from 'date-fns';
 import { useDrag } from 'react-dnd';
 import { gsap } from 'gsap';
 import { Users, Baby, Dog, Move, Plus } from 'lucide-react';
-import { Reservation, ReservationStatus } from '../../../../lib/hotel/types';
+import { ReservationStatus } from '../../../../lib/hotel/types';
+import type { Reservation } from '../../../../lib/queries/hooks/useReservations';
 import type { Guest } from '../../../../lib/queries/hooks/useGuests';
 import type { Room } from '../../../../lib/queries/hooks/useRooms';
 import { RESERVATION_STATUS_COLORS } from '../../../../lib/hotel/calendarUtils';
@@ -19,17 +20,17 @@ interface ReservationBlockProps {
   startDate: Date;
   onReservationClick: (reservation: Reservation) => void;
   onMoveReservation?: (
-    reservationId: string,
-    newRoomId: string,
+    reservationId: number,
+    newRoomId: number,
     newCheckIn: Date,
     newCheckOut: Date
   ) => void;
   isFullscreen?: boolean;
-  onUpdateReservationStatus?: (id: string, status: ReservationStatus) => Promise<void>;
-  onDeleteReservation?: (id: string) => Promise<void>;
+  onUpdateReservationStatus?: (id: number, status: ReservationStatus) => Promise<void>;
+  onDeleteReservation?: (id: number) => Promise<void>;
   isExpansionMode?: boolean;
   isMoveMode?: boolean;
-  onResizeReservation?: (reservationId: string, side: 'start' | 'end', newDate: Date) => void;
+  onResizeReservation?: (reservationId: number, side: 'start' | 'end', newDate: Date) => void;
   onShowDrinksModal?: (reservation: Reservation) => void;
   calculateContextMenuPosition?: (
     e: React.MouseEvent,
@@ -76,6 +77,10 @@ export function ReservationBlock({
   const [isClosingContextMenu, setIsClosingContextMenu] = useState(false);
   const blockRef = useRef<HTMLDivElement>(null);
 
+  const checkInDate = startOfDay(new Date(reservation.check_in_date));
+  const checkOutDate = startOfDay(new Date(reservation.check_out_date));
+  const timelineStart = startOfDay(startDate);
+
   const [{ isDragging }, drag, dragPreview] = useDrag(
     () => ({
       type: ItemTypes.RESERVATION,
@@ -83,22 +88,18 @@ export function ReservationBlock({
         reservationId: reservation.id,
         currentRoomId: room.id,
         currentRoomFloor: room.floor_number,
-        checkIn: reservation.checkIn,
-        checkOut: reservation.checkOut,
+        checkIn: checkInDate,
+        checkOut: checkOutDate,
         guestName: guest?.display_name || 'Guest',
         reservation,
       },
       canDrag: () => isMoveMode,
       collect: (monitor) => ({ isDragging: !!monitor.isDragging() }),
     }),
-    [reservation, room, guest, isMoveMode]
+    [reservation, room, guest, isMoveMode, checkInDate, checkOutDate]
   );
 
   const dragHandleRef = useRef<HTMLDivElement>(null);
-
-  const checkInDate = startOfDay(reservation.checkIn);
-  const checkOutDate = startOfDay(reservation.checkOut);
-  const timelineStart = startOfDay(startDate);
 
   const startDayIndex = Math.floor(
     (checkInDate.getTime() - timelineStart.getTime()) / (24 * 60 * 60 * 1000)
@@ -114,9 +115,8 @@ export function ReservationBlock({
   const gridColumnStart = visibleStartHalfDay + 2;
   const gridColumnEnd = visibleEndHalfDay + 3;
 
-  const statusColors =
-    RESERVATION_STATUS_COLORS[reservation.status as ReservationStatus] ||
-    RESERVATION_STATUS_COLORS.confirmed;
+  const status = (reservation.reservation_statuses?.code ?? 'confirmed') as ReservationStatus;
+  const statusColors = RESERVATION_STATUS_COLORS[status] || RESERVATION_STATUS_COLORS.confirmed;
   const flag = getCountryFlag(guest?.nationality || '');
 
   const reservationDays = Math.ceil(
@@ -124,8 +124,8 @@ export function ReservationBlock({
   );
   const isShortReservation = reservationDays <= 2;
 
-  const checkInTime = reservation.checkIn.getTime();
-  const checkOutTime = reservation.checkOut.getTime();
+  const checkInTime = checkInDate.getTime();
+  const checkOutTime = checkOutDate.getTime();
 
   useEffect(() => {
     if (blockRef.current && !isDragging) {
@@ -173,6 +173,15 @@ export function ReservationBlock({
     setContextMenu({ show: false, x: 0, y: 0 });
   };
 
+  const guestDisplayName =
+    guest?.display_name ||
+    reservation.guests?.full_name ||
+    `${reservation.guests?.first_name ?? ''} ${reservation.guests?.last_name ?? ''}`.trim() ||
+    'Guest';
+  const numberOfGuests = reservation.number_of_guests ?? reservation.adults ?? 1;
+  const childrenCount = reservation.children_count ?? 0;
+  const hasPets = reservation.has_pets || guest?.has_pets;
+
   return (
     <div
       ref={(el) => {
@@ -207,12 +216,12 @@ export function ReservationBlock({
         }
       }}
       onContextMenu={handleContextMenu}
-      title={`${guest?.display_name || 'Guest'} - ${reservation.numberOfGuests} guests ${isDragging ? '(Dragging...)' : '(Click for details)'}`}
+      title={`${guestDisplayName} - ${numberOfGuests} guests ${isDragging ? '(Dragging...)' : '(Click for details)'}`}
     >
       {/* Label Badge */}
-      {reservation.label && (
+      {reservation.labels && (
         <div className="absolute top-1 left-1 z-10">
-          <LabelBadge label={reservation.label} />
+          <LabelBadge label={reservation.labels} />
         </div>
       )}
 
@@ -223,10 +232,10 @@ export function ReservationBlock({
 
         <div className="flex min-w-0 flex-1 items-center space-x-1">
           <div className="flex min-w-0 flex-1 flex-col">
-            <span className="truncate text-xs font-medium">{guest?.display_name || 'Guest'}</span>
+            <span className="truncate text-xs font-medium">{guestDisplayName}</span>
             {(() => {
               const daysLeft = Math.ceil(
-                (reservation.checkOut.getTime() - new Date().getTime()) / (24 * 60 * 60 * 1000)
+                (checkOutDate.getTime() - new Date().getTime()) / (24 * 60 * 60 * 1000)
               );
               return (
                 <span className="text-xs font-medium text-white">
@@ -252,13 +261,13 @@ export function ReservationBlock({
                 <span className="ml-0.5 text-xs">{reservation.adults}</span>
               </div>
             )}
-            {reservation.children.length > 0 && (
+            {childrenCount > 0 && (
               <div className="flex items-center">
                 <Baby className="h-2.5 w-2.5" />
-                <span className="ml-0.5 text-xs">{reservation.children.length}</span>
+                <span className="ml-0.5 text-xs">{childrenCount}</span>
               </div>
             )}
-            {(reservation.hasPets || guest?.has_pets) && <Dog className="h-3 w-3 text-white" />}
+            {hasPets && <Dog className="h-3 w-3 text-white" />}
           </div>
         </div>
 
@@ -300,9 +309,9 @@ export function ReservationBlock({
               if (onMoveReservation && startDayIndex > 0) {
                 onMoveReservation(
                   reservation.id,
-                  room.id.toString(),
-                  addDays(reservation.checkIn, -1),
-                  addDays(reservation.checkOut, -1)
+                  room.id,
+                  addDays(checkInDate, -1),
+                  addDays(checkOutDate, -1)
                 );
               }
             }}
@@ -318,9 +327,9 @@ export function ReservationBlock({
               if (onMoveReservation && endDayIndex < 13) {
                 onMoveReservation(
                   reservation.id,
-                  room.id.toString(),
-                  addDays(reservation.checkIn, 1),
-                  addDays(reservation.checkOut, 1)
+                  room.id,
+                  addDays(checkInDate, 1),
+                  addDays(checkOutDate, 1)
                 );
               }
             }}
@@ -332,8 +341,8 @@ export function ReservationBlock({
 
       {/* Hover tooltip */}
       <div className="pointer-events-none absolute top-full left-0 z-20 mt-1 rounded bg-gray-900 px-2 py-1 text-xs whitespace-nowrap text-white opacity-0 group-hover:opacity-100">
-        {guest?.display_name} • {reservation.numberOfGuests} guests •{' '}
-        {format(reservation.checkIn, 'MMM dd')} - {format(reservation.checkOut, 'MMM dd')}
+        {guestDisplayName} • {numberOfGuests} guests • {format(checkInDate, 'MMM dd')} -{' '}
+        {format(checkOutDate, 'MMM dd')}
       </div>
 
       {/* Context Menu */}
@@ -364,7 +373,7 @@ export function ReservationBlock({
                 e.preventDefault();
                 e.stopPropagation();
                 if (onResizeReservation && startDayIndex > 0) {
-                  const d = addDays(reservation.checkIn, -1);
+                  const d = addDays(checkInDate, -1);
                   d.setHours(15, 0, 0, 0);
                   onResizeReservation(reservation.id, 'start', d);
                   if (blockRef.current)
@@ -386,7 +395,7 @@ export function ReservationBlock({
                 e.preventDefault();
                 e.stopPropagation();
                 if (onResizeReservation && reservationDays > 1) {
-                  const d = addDays(reservation.checkIn, 1);
+                  const d = addDays(checkInDate, 1);
                   d.setHours(15, 0, 0, 0);
                   onResizeReservation(reservation.id, 'start', d);
                   if (blockRef.current)
@@ -411,7 +420,7 @@ export function ReservationBlock({
                 e.preventDefault();
                 e.stopPropagation();
                 if (onResizeReservation && endDayIndex < 13) {
-                  const d = addDays(reservation.checkOut, 1);
+                  const d = addDays(checkOutDate, 1);
                   d.setHours(11, 0, 0, 0);
                   onResizeReservation(reservation.id, 'end', d);
                   if (blockRef.current)
@@ -433,7 +442,7 @@ export function ReservationBlock({
                 e.preventDefault();
                 e.stopPropagation();
                 if (onResizeReservation && reservationDays > 1) {
-                  const d = addDays(reservation.checkOut, -1);
+                  const d = addDays(checkOutDate, -1);
                   d.setHours(11, 0, 0, 0);
                   onResizeReservation(reservation.id, 'end', d);
                   if (blockRef.current)

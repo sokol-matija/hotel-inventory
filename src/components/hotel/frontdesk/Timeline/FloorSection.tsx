@@ -17,14 +17,14 @@ interface FloorSectionProps {
   onToggle: () => void;
   onReservationClick: (reservation: Reservation) => void;
   onMoveReservation: (
-    reservationId: string,
-    newRoomId: string,
+    reservationId: number,
+    newRoomId: number,
     newCheckIn: Date,
     newCheckOut: Date
   ) => void;
   isFullscreen?: boolean;
-  onUpdateReservationStatus?: (id: string, status: ReservationStatus) => Promise<void>;
-  onDeleteReservation?: (id: string) => Promise<void>;
+  onUpdateReservationStatus?: (id: number, status: ReservationStatus) => Promise<void>;
+  onDeleteReservation?: (id: number) => Promise<void>;
   isDragCreateMode?: boolean;
   isDragCreating?: boolean;
   dragCreateStart?: { roomId: string; dayIndex: number } | null;
@@ -34,7 +34,7 @@ interface FloorSectionProps {
   onDragCreateMove?: (roomId: string, halfDayIndex: number) => void;
   onDragCreateEnd?: (roomId: string, halfDayIndex: number) => void;
   isExpansionMode?: boolean;
-  onResizeReservation?: (reservationId: string, side: 'start' | 'end', newDate: Date) => void;
+  onResizeReservation?: (reservationId: number, side: 'start' | 'end', newDate: Date) => void;
   onShowDrinksModal?: (reservation: Reservation) => void;
   calculateContextMenuPosition?: (
     e: React.MouseEvent,
@@ -86,9 +86,9 @@ export function FloorSection({
   const occupiedRooms = rooms.filter((room) =>
     reservations.some(
       (r) =>
-        r.roomId === room.id.toString() &&
-        startOfDay(today) >= startOfDay(r.checkIn) &&
-        startOfDay(today) < startOfDay(r.checkOut)
+        r.room_id === room.id &&
+        startOfDay(today) >= startOfDay(new Date(r.check_in_date)) &&
+        startOfDay(today) < startOfDay(new Date(r.check_out_date))
     )
   );
   const occupancyRate = rooms.length > 0 ? (occupiedRooms.length / rooms.length) * 100 : 0;

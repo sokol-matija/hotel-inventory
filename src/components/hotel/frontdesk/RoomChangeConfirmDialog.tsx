@@ -56,7 +56,7 @@ export default function RoomChangeConfirmDialog({
             Confirm Room Change
           </CardTitle>
           <p className="text-sm text-gray-600">
-            {guest?.display_name || 'Guest'} • Reservation #{reservation.id.slice(-8)}
+            {guest?.display_name || 'Guest'} • Reservation #{String(reservation.id).slice(-8)}
           </p>
         </CardHeader>
 
@@ -117,7 +117,8 @@ export default function RoomChangeConfirmDialog({
 
             {isUpgrade && (
               <div className="mt-2 text-xs text-gray-600">
-                Total increase: €{priceDifference * reservation.numberOfNights} for this stay
+                Total increase: €{priceDifference * (reservation.number_of_nights ?? 1)} for this
+                stay
               </div>
             )}
           </div>

@@ -4,7 +4,6 @@ import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import React from 'react';
 import { ReservationBlock } from './ReservationBlock';
 import { buildReservation, buildGuest, buildRoom } from '@/test/utils';
-import { ReservationStatus } from '@/lib/hotel/types';
 
 // ── Module mocks ──────────────────────────────────────────────────────────────
 
@@ -59,12 +58,12 @@ describe('ReservationBlock', () => {
   let mockOnResize: ReturnType<typeof vi.fn>;
 
   const baseReservation = buildReservation({
-    checkIn: new Date('2026-04-01T15:00:00'),
-    checkOut: new Date('2026-04-05T11:00:00'),
-    numberOfGuests: 2,
+    check_in_date: '2026-04-01',
+    check_out_date: '2026-04-05',
+    number_of_guests: 2,
     adults: 2,
-    children: [],
-    status: 'confirmed' as ReservationStatus,
+    children_count: 0,
+    reservation_statuses: { code: 'confirmed' },
   });
 
   const baseGuest = buildGuest({
@@ -136,7 +135,7 @@ describe('ReservationBlock', () => {
     it('renders children count icon when children array is not empty', () => {
       const reservationWithChildren = buildReservation({
         ...baseReservation,
-        children: [{ name: 'Child', age: 5 }],
+        children_count: 1,
       });
 
       render(
@@ -175,7 +174,7 @@ describe('ReservationBlock', () => {
     it('renders dog icon when reservation has pets flag', () => {
       const reservationWithPets = buildReservation({
         ...baseReservation,
-        hasPets: true,
+        has_pets: true,
       });
 
       render(
@@ -209,7 +208,15 @@ describe('ReservationBlock', () => {
     it('renders label badge when reservation has label', () => {
       const reservationWithLabel = buildReservation({
         ...baseReservation,
-        label: 'VIP',
+        labels: {
+          id: 'label-1',
+          name: 'VIP',
+          color: '#fff',
+          bg_color: '#000',
+          hotel_id: '1',
+          created_at: null,
+          updated_at: null,
+        },
       });
 
       render(
@@ -227,8 +234,8 @@ describe('ReservationBlock', () => {
 
     it('does not render when reservation is completely outside the 14-day window', () => {
       const futureReservation = buildReservation({
-        checkIn: new Date('2026-04-20T15:00:00'),
-        checkOut: new Date('2026-04-25T11:00:00'),
+        check_in_date: '2026-04-20',
+        check_out_date: '2026-04-25',
       });
 
       const { container } = render(
@@ -343,8 +350,8 @@ describe('ReservationBlock', () => {
 
     it('renders plus icon for drag handle when reservation is short (≤2 days)', () => {
       const shortReservation = buildReservation({
-        checkIn: new Date('2026-04-01T15:00:00'),
-        checkOut: new Date('2026-04-02T11:00:00'),
+        check_in_date: '2026-04-01',
+        check_out_date: '2026-04-02',
       });
 
       render(
@@ -417,10 +424,19 @@ describe('ReservationBlock', () => {
 
     it('calls onResizeReservation when left expand button is clicked', async () => {
       const user = userEvent.setup();
+      // Reservation starts on day 2 of the timeline so the left-expand button is not disabled
+      const midReservation = buildReservation({
+        check_in_date: '2026-04-03',
+        check_out_date: '2026-04-07',
+        number_of_guests: 2,
+        adults: 2,
+        children_count: 0,
+        reservation_statuses: { code: 'confirmed' },
+      });
 
       render(
         <ReservationBlock
-          reservation={baseReservation}
+          reservation={midReservation}
           guest={baseGuest}
           room={baseRoom}
           startDate={timelineStart}
@@ -431,13 +447,10 @@ describe('ReservationBlock', () => {
       );
 
       const buttons = screen.getAllByRole('button');
-      // First button in expansion mode should be a resize button
-      if (buttons.length > 0) {
-        await user.click(buttons[0]);
-        // Might or might not be called depending on state, but it's the handler
-        // Just verify the function is defined
-        expect(mockOnResize).toBeDefined();
-      }
+      // buttons[0] is the main reservation block (role="button"); buttons[1] is the left expand control
+      expect(buttons.length).toBeGreaterThan(1);
+      await user.click(buttons[1]);
+      expect(mockOnResize).toHaveBeenCalled();
     });
   });
 
@@ -463,7 +476,7 @@ describe('ReservationBlock', () => {
     it('applies confirmed status styles', () => {
       const confirmedRes = buildReservation({
         ...baseReservation,
-        status: 'confirmed' as ReservationStatus,
+        reservation_statuses: { code: 'confirmed' },
       });
 
       const { container } = render(
@@ -484,7 +497,7 @@ describe('ReservationBlock', () => {
     it('applies checked-in status when reservation status is checked_in', () => {
       const checkedInRes = buildReservation({
         ...baseReservation,
-        status: 'checked_in' as ReservationStatus,
+        reservation_statuses: { code: 'checked-in' },
       });
 
       const { container } = render(
@@ -541,11 +554,9 @@ describe('ReservationBlock', () => {
     it('renders days remaining text until checkout', () => {
       // Create a reservation within the timeline window (2026-04-01)
       // that checks out in 3 days from the timeline start
-      const checkOutDate = new Date('2026-04-04T11:00:00');
-
       const futureRes = buildReservation({
-        checkIn: new Date('2026-04-01T15:00:00'),
-        checkOut: checkOutDate,
+        check_in_date: '2026-04-01',
+        check_out_date: '2026-04-04',
       });
 
       render(

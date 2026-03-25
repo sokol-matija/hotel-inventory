@@ -85,45 +85,31 @@ export class EmailTestService {
       is_clean: true,
     };
 
+    const tomorrow = new Date(Date.now() + 86400000);
+    const fiveDaysOut = new Date(Date.now() + 5 * 86400000);
     const testReservation: Reservation = {
-      id: 'test-reservation-001',
-      roomId: testRoom.id.toString(),
-      guestId: String(testGuest.id),
-      checkIn: new Date(Date.now() + 86400000), // Tomorrow
-      checkOut: new Date(Date.now() + 5 * 86400000), // 5 days from now
-      numberOfGuests: 2,
+      id: 1,
+      room_id: testRoom.id,
+      guest_id: testGuest.id,
+      check_in_date: tomorrow.toISOString().split('T')[0],
+      check_out_date: fiveDaysOut.toISOString().split('T')[0],
+      number_of_guests: 2,
       adults: 2,
-      children: [
-        {
-          name: 'Ana Sokol',
-          dateOfBirth: new Date('2015-06-20'),
-          age: 8,
-        },
-      ],
-      status: 'confirmed',
-      bookingSource: 'direct',
-      specialRequests: 'Sea view preferred, early check-in requested',
-
-      // Pricing details
-      seasonalPeriod: 'C',
-      baseRoomRate: 180,
-      numberOfNights: 4,
-      subtotal: 720,
-      childrenDiscounts: 0,
-      tourismTax: 8.8,
-      vatAmount: 180,
-      petFee: 20,
-      parkingFee: 28,
-      shortStaySuplement: 0,
-      additionalCharges: 0,
-      roomServiceItems: [],
-      totalAmount: 956.8,
-
-      // Metadata
-      bookingDate: new Date(),
-      lastModified: new Date(),
+      children_count: 1,
+      reservation_statuses: { code: 'confirmed' },
+      booking_sources: { code: 'direct' },
+      special_requests: 'Sea view preferred, early check-in requested',
+      number_of_nights: 4,
+      booking_date: new Date().toISOString().split('T')[0],
       notes: 'Test reservation for email system',
-    };
+      guests: testGuest,
+      // Required fields with defaults
+      booking_reference: null,
+      company_id: null,
+      has_pets: false,
+      is_r1: false,
+      labels: null,
+    } as unknown as Reservation;
 
     return {
       guest: testGuest,
@@ -194,13 +180,13 @@ export class EmailTestService {
       const notificationData: BookingNotificationData = {
         roomNumber: '401',
         guestName: testData.guest.display_name,
-        checkIn: this.formatDateForNotification(testData.reservation.checkIn),
-        checkOut: this.formatDateForNotification(testData.reservation.checkOut),
-        nights: testData.reservation.numberOfNights,
+        checkIn: this.formatDateForNotification(new Date(testData.reservation.check_in_date)),
+        checkOut: this.formatDateForNotification(new Date(testData.reservation.check_out_date)),
+        nights: testData.reservation.number_of_nights ?? 1,
         adults: testData.reservation.adults,
-        children: testData.reservation.children.length,
-        bookingSource: testData.reservation.bookingSource,
-        totalAmount: testData.reservation.totalAmount,
+        children: testData.reservation.children_count ?? 0,
+        bookingSource: testData.reservation.booking_sources?.code ?? 'direct',
+        totalAmount: 0, // TODO Phase 9: derive from reservation_charges
       };
 
       const success = await ntfyService.sendRoom401BookingNotification(notificationData);

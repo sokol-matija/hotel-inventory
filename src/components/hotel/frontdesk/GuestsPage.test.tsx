@@ -154,8 +154,7 @@ describe('GuestsPage', () => {
 
       const bobRow = screen.getByText('Bob Smith').closest('div');
       const vipBadgeInRow = bobRow?.querySelector('[class*="yellow"]');
-      // Check specifically that Bob's row doesn't have a VIP badge
-      expect(bobRow).toBeInTheDocument();
+      expect(vipBadgeInRow).toBeNull();
     });
   });
 

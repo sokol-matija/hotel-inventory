@@ -13,8 +13,19 @@ import React, { useRef, useEffect } from 'react';
 import { gsap } from 'gsap';
 import { Label } from '../../../lib/hotel/types';
 
+// Accept either the full Label DTO (camelCase) or a DB join shape (snake_case)
+type LabelLike =
+  | Label
+  | {
+      id: string | number;
+      name: string;
+      color?: string | null;
+      bg_color?: string | null;
+      bgColor?: string | null;
+    };
+
 interface LabelBadgeProps {
-  label: Label;
+  label: LabelLike;
   className?: string;
   alwaysExpanded?: boolean;
   expandDirection?: 'left' | 'right'; // Direction to expand: left (for top-right positioning) or right (default)
@@ -169,7 +180,7 @@ const LabelBadge: React.FC<LabelBadgeProps> = ({
       ref={badgeRef}
       className={`inline-flex cursor-pointer items-center overflow-hidden shadow-md transition-shadow duration-300 hover:shadow-lg ${expandDirection === 'left' ? 'justify-end' : 'justify-start'} ${className} `}
       style={{
-        backgroundColor: label.bgColor || '#3B82F6',
+        backgroundColor: ('bgColor' in label ? label.bgColor : label.bg_color) || '#3B82F6',
       }}
       title={`Group: ${label.name}`}
     >

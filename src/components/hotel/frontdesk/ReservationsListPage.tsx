@@ -48,19 +48,24 @@ export default function ReservationsListPage() {
 
   // Convert Reservation to CalendarEvent for the popup
   const handleViewDetails = (reservation: Reservation) => {
+    const guestName =
+      reservation.guests?.full_name ||
+      `${reservation.guests?.first_name ?? ''} ${reservation.guests?.last_name ?? ''}`.trim() ||
+      'Guest';
     const event: CalendarEvent = {
-      id: reservation.id,
-      reservationId: reservation.id,
-      roomId: reservation.roomId,
-      title: `${reservation.guest?.first_name} ${reservation.guest?.last_name}`,
-      start: new Date(reservation.checkIn),
-      end: new Date(reservation.checkOut),
+      id: String(reservation.id),
+      reservationId: String(reservation.id),
+      roomId: String(reservation.room_id),
+      title: guestName,
+      start: new Date(reservation.check_in_date),
+      end: new Date(reservation.check_out_date),
       resource: {
-        status: reservation.status,
-        guestName: `${reservation.guest?.first_name} ${reservation.guest?.last_name}`,
-        roomNumber: reservation.roomId,
-        numberOfGuests: reservation.numberOfGuests || reservation.adults,
-        hasPets: reservation.hasPets || false,
+        status: (reservation.reservation_statuses?.code ??
+          'confirmed') as import('../../../lib/hotel/types').ReservationStatus,
+        guestName,
+        roomNumber: String(reservation.room_id),
+        numberOfGuests: reservation.number_of_guests ?? reservation.adults ?? 1,
+        hasPets: reservation.has_pets || false,
       },
     };
     setSelectedReservation(event);

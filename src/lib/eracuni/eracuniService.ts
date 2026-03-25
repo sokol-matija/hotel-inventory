@@ -227,11 +227,13 @@ export class HotelEracuniService {
   }
 
   private calculateNights(invoice: Invoice): number {
-    if (invoice.reservation?.numberOfNights && invoice.reservation.numberOfNights > 0) {
-      return invoice.reservation.numberOfNights;
+    if (invoice.reservation?.number_of_nights && invoice.reservation.number_of_nights > 0) {
+      return invoice.reservation.number_of_nights;
     }
-    if (invoice.reservation?.checkIn && invoice.reservation?.checkOut) {
-      const ms = invoice.reservation.checkOut.getTime() - invoice.reservation.checkIn.getTime();
+    if (invoice.reservation?.check_in_date && invoice.reservation?.check_out_date) {
+      const ms =
+        new Date(invoice.reservation.check_out_date).getTime() -
+        new Date(invoice.reservation.check_in_date).getTime();
       return Math.max(1, Math.round(ms / (1000 * 60 * 60 * 24)));
     }
     // Fallback: derive from tourism tax if available (tourismTax = nights × guests × rate)

@@ -37,7 +37,7 @@ import {
 import { useReservations } from '../../../../lib/queries/hooks/useReservations';
 import { printReceipt as printBixolonReceipt } from '../../../../lib/printers/bixolonPrinter';
 import { HOTEL_POREC } from '../../../../lib/hotel/hotelData';
-import { useAuth } from '../../../../stores/authStore';
+import { useAuth } from '../../../../components/auth/AuthProvider';
 
 export default function RoomServiceOrders() {
   const { user } = useAuth();
@@ -120,11 +120,11 @@ export default function RoomServiceOrders() {
     if (!selectedRoom || orderItems.length === 0 || !validationResult?.isValid) return;
 
     const activeReservation = reservations.find(
-      (r) => r.roomId === selectedRoom.id.toString() && r.status === 'checked-in'
+      (r) => r.room_id === selectedRoom.id && (r.reservation_statuses?.code ?? '') === 'checked-in'
     );
     const guestName =
-      activeReservation?.guest?.display_name ||
-      guests.find((g) => g.id === Number(activeReservation?.guestId))?.display_name ||
+      activeReservation?.guests?.full_name ||
+      guests.find((g) => g.id === activeReservation?.guest_id)?.display_name ||
       'Unknown Guest';
     const totals = calculateOrderTotal(orderItems);
 

@@ -16,14 +16,14 @@ interface RoomRowProps {
   startDate: Date;
   onReservationClick: (reservation: Reservation) => void;
   onMoveReservation: (
-    reservationId: string,
-    newRoomId: string,
+    reservationId: number,
+    newRoomId: number,
     newCheckIn: Date,
     newCheckOut: Date
   ) => void;
   isFullscreen?: boolean;
-  onUpdateReservationStatus?: (id: string, status: ReservationStatus) => Promise<void>;
-  onDeleteReservation?: (id: string) => Promise<void>;
+  onUpdateReservationStatus?: (id: number, status: ReservationStatus) => Promise<void>;
+  onDeleteReservation?: (id: number) => Promise<void>;
   isDragCreateMode?: boolean;
   isDragCreating?: boolean;
   dragCreateStart?: { roomId: string; dayIndex: number } | null;
@@ -33,7 +33,7 @@ interface RoomRowProps {
   onDragCreateMove?: (roomId: string, halfDayIndex: number) => void;
   onDragCreateEnd?: (roomId: string, halfDayIndex: number) => void;
   isExpansionMode?: boolean;
-  onResizeReservation?: (reservationId: string, side: 'start' | 'end', newDate: Date) => void;
+  onResizeReservation?: (reservationId: number, side: 'start' | 'end', newDate: Date) => void;
   onShowDrinksModal?: (reservation: Reservation) => void;
   calculateContextMenuPosition?: (
     e: React.MouseEvent,
@@ -77,7 +77,7 @@ export function RoomRow({
   onShowExpandedDailyView,
   cellRefs,
 }: RoomRowProps) {
-  const roomReservations = reservations.filter((r) => r.roomId === room.id.toString());
+  const roomReservations = reservations.filter((r) => r.room_id === room.id);
 
   return (
     <div className="relative border-b border-gray-100 hover:bg-gray-50">
@@ -136,7 +136,7 @@ export function RoomRow({
         }`}
       >
         {roomReservations.map((reservation) => {
-          const guest = guests.find((g) => g.id === Number(reservation.guestId));
+          const guest = guests.find((g) => g.id === reservation.guest_id);
           return (
             <ReservationBlock
               key={reservation.id}

@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { Reservation } from '../../../../lib/hotel/types';
 import { useRooms } from '../../../../lib/queries/hooks/useRooms';
+import { useGuests } from '../../../../lib/queries/hooks/useGuests';
 import {
   useUpdateReservation,
   useUpdateReservationStatus,
@@ -46,6 +47,7 @@ interface CheckOutStep {
 
 export default function CheckOutWorkflow({ isOpen, onClose, reservation }: CheckOutWorkflowProps) {
   const { data: rooms = [] } = useRooms();
+  const { data: guests = [] } = useGuests();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const addPayment = async (_payment: any) => {
     // Payment management not yet implemented — payments table integration pending
@@ -55,7 +57,7 @@ export default function CheckOutWorkflow({ isOpen, onClose, reservation }: Check
   const updateReservationStatusMutation = useUpdateReservationStatus();
   const isUpdating =
     updateReservationMutation.isPending || updateReservationStatusMutation.isPending;
-  const updateReservationStatus = async (id: string, status: string) => {
+  const updateReservationStatus = async (id: number, status: string) => {
     await updateReservationStatusMutation.mutateAsync({
       id,
       status: status as import('../../../../lib/hotel/types').ReservationStatus,
@@ -69,21 +71,17 @@ export default function CheckOutWorkflow({ isOpen, onClose, reservation }: Check
   const [guestSatisfaction, setGuestSatisfaction] = useState<number>(5);
   const [generateInvoice, setGenerateInvoice] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<string>(
-    reservation?.status || 'incomplete-payment'
+    reservation?.reservation_statuses?.code ?? 'incomplete-payment'
   );
 
   // Fetch charges from reservation_charges table
-  const numericReservationId = reservation
-    ? typeof reservation.id === 'string'
-      ? parseInt(reservation.id, 10)
-      : reservation.id
-    : undefined;
+  const numericReservationId = reservation ? reservation.id : undefined;
   const { data: charges = [] } = useReservationCharges(numericReservationId as number | undefined);
   const chargesTotalAmount = charges.reduce((sum, c) => sum + c.total, 0);
 
   // Find associated guest and room data
-  const guest = reservation?.guest ?? null;
-  const room = reservation ? rooms.find((r) => r.id.toString() === reservation.roomId) : null;
+  const guest = reservation ? (guests?.find((g) => g.id === reservation.guest_id) ?? null) : null;
+  const room = reservation ? rooms.find((r) => r.id === reservation.room_id) : null;
 
   // Initialize check-out steps
   useEffect(() => {
@@ -248,11 +246,7 @@ export default function CheckOutWorkflow({ isOpen, onClose, reservation }: Check
       if (generateInvoice) {
         try {
           const invoice = await createInvoiceService(reservation.id, {
-            guestId: guest
-              ? typeof guest.id === 'string'
-                ? parseInt(guest.id, 10)
-                : guest.id
-              : undefined,
+            guestId: guest?.id,
           });
 
           // Show success notification - invoice created but payment still pending
@@ -294,8 +288,9 @@ export default function CheckOutWorkflow({ isOpen, onClose, reservation }: Check
 
   if (!isOpen || !reservation || !guest || !room) return null;
 
-  const isEarlyCheckOut = new Date() < reservation.checkOut;
-  const isLateCheckOut = new Date() > new Date(reservation.checkOut.getTime() + 2 * 60 * 60 * 1000); // 2 hours late
+  const checkOutDate = new Date(reservation.check_out_date);
+  const isEarlyCheckOut = new Date() < checkOutDate;
+  const isLateCheckOut = new Date() > new Date(checkOutDate.getTime() + 2 * 60 * 60 * 1000); // 2 hours late
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -348,11 +343,12 @@ export default function CheckOutWorkflow({ isOpen, onClose, reservation }: Check
                       Room {room.room_number} • {room.name_english}
                     </div>
                     <div>
-                      {reservation.numberOfGuests} guests • {reservation.numberOfNights} nights
+                      {reservation.number_of_guests ?? reservation.adults} guests •{' '}
+                      {reservation.number_of_nights ?? 1} nights
                     </div>
                     <div>
-                      {reservation.checkIn.toLocaleDateString()} -{' '}
-                      {reservation.checkOut.toLocaleDateString()}
+                      {new Date(reservation.check_in_date).toLocaleDateString()} -{' '}
+                      {new Date(reservation.check_out_date).toLocaleDateString()}
                     </div>
                   </div>
                 </CardContent>

@@ -2,242 +2,124 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { QueryData } from '@supabase/supabase-js';
 import { supabase } from '../../supabase';
 import { queryKeys } from '../queryKeys';
-import { hotelDataService } from '../../hotel/services/HotelDataService';
-import type { Guest } from './useGuests';
-import type {
-  Label,
-  ReservationStatus,
-  BookingSource,
-  SeasonalPeriod,
-  GuestChild,
-  RoomServiceItem,
-} from '../../hotel/types';
 
-// ─── Query builder function ──────────────────────────────────────────────────
+// ─── Query builder ─────────────────────────────────────────────────────────────
 
 function buildReservationsQuery() {
   return supabase
     .from('reservations')
     .select(
-      `
-      *,
+      `*,
       reservation_statuses!status_id(code),
       booking_sources!booking_source_id(code),
       guests!guest_id(id, first_name, last_name, full_name, email, phone, nationality, has_pets, is_vip, vip_level),
-      labels!label_id(id, name, color, bg_color)
-    `
+      labels!label_id(id, name, color, bg_color)`
     )
     .order('check_in_date');
 }
 
-// ─── Derived row type ────────────────────────────────────────────────────────
+// ─── Derived type ───────────────────────────────────────────────────────────────
+// QueryData<> stays in sync with migrations automatically — no manual interface.
 
-type ReservationRow = QueryData<ReturnType<typeof buildReservationsQuery>>[number];
+export type Reservation = QueryData<ReturnType<typeof buildReservationsQuery>>[number];
 
-// ─── Reservation interface ────────────────────────────────────────────────────
+// ─── Input type for creating a reservation ─────────────────────────────────────
 
-export interface Reservation {
-  id: string;
-  roomId: string;
-  guestId: string;
-  guest?: Guest;
-  checkIn: Date;
-  checkOut: Date;
-  numberOfGuests: number;
+export interface NewReservationInput {
+  room_id: number;
+  guest_id: number;
+  check_in_date: string; // YYYY-MM-DD
+  check_out_date: string;
   adults: number;
-  children: GuestChild[];
-  status: ReservationStatus;
-  bookingSource: BookingSource;
-  specialRequests: string;
-  isR1Bill?: boolean;
-  companyId?: string;
-  pricingTierId?: string;
-  numberOfNights: number;
-  /** @deprecated Use ReservationCharge rows instead */
-  pricing?: {
-    subtotal: number;
-    tourismTax: number;
-    vatRate: number;
-    vatAmount: number;
-    roomRate: number;
-    seasonalPeriod: SeasonalPeriod;
-    discounts: number;
-    additionalCharges: number;
-    total: number;
-  };
-  /** @deprecated Use ReservationCharge rows instead */
-  seasonalPeriod: SeasonalPeriod;
-  /** @deprecated Use ReservationCharge rows instead */
-  baseRoomRate: number;
-  /** @deprecated Use ReservationCharge rows instead */
-  subtotal: number;
-  /** @deprecated Use ReservationCharge rows instead */
-  childrenDiscounts: number;
-  /** @deprecated Use ReservationCharge rows instead */
-  tourismTax: number;
-  /** @deprecated Use ReservationCharge rows instead */
-  vatAmount: number;
-  /** @deprecated Use ReservationCharge rows instead */
-  petFee: number;
-  /** @deprecated Use ReservationCharge rows instead */
-  parkingFee: number;
-  /** @deprecated Use ReservationCharge rows instead */
-  shortStaySuplement: number;
-  /** @deprecated Use ReservationCharge rows instead */
-  additionalCharges: number;
-  /** @deprecated Use ReservationCharge rows instead */
-  roomServiceItems: RoomServiceItem[];
-  /** @deprecated Use ReservationCharge rows instead */
-  totalAmount: number;
-  /** @deprecated Use ReservationCharge rows instead */
-  paymentStatus?: string;
-  hasPets?: boolean;
-  checkedInAt?: Date;
-  checkedOutAt?: Date;
-  bookingDate: Date;
-  lastModified: Date;
-  notes: string;
-  labelId?: string;
-  label?: Label;
-}
-
-// ─── Input type ────────────────────────────────────────────────────────────
-
-/** Input shape for creating a new reservation via useCreateReservation */
-export type NewReservationInput = Omit<Reservation, 'id' | 'bookingDate' | 'lastModified'> & {
-  /** When true, a new guest will be created from the `guest` field before booking */
+  children_count?: number;
+  number_of_guests?: number;
+  /** Status code e.g. 'confirmed'. Defaults to 'confirmed'. */
+  status?: string;
+  /** Booking source code e.g. 'direct'. Defaults to 'direct'. */
+  booking_source?: string;
+  special_requests?: string;
+  has_pets?: boolean;
+  parking_required?: boolean;
+  company_id?: number;
+  pricing_tier_id?: number;
+  label_id?: string;
+  is_r1?: boolean;
+  /** When true, creates a guest from guestData before booking. */
   isNewGuest?: boolean;
-  /** Guest data used when isNewGuest is true */
-  guest?: Partial<Guest>;
-};
-
-// ─── Mapper function ────────────────────────────────────────────────────────
-
-function mapReservationFromRow(row: ReservationRow): Reservation {
-  // Map guest if present in join
-  const guest: Guest | undefined = row.guests
-    ? {
-        id: row.guests.id,
-        first_name: row.guests.first_name,
-        last_name: row.guests.last_name,
-        full_name: row.guests.full_name,
-        email: row.guests.email,
-        phone: row.guests.phone,
-        nationality: row.guests.nationality,
-        date_of_birth: null,
-        passport_number: null,
-        id_card_number: null,
-        preferred_language: null,
-        dietary_restrictions: null,
-        special_needs: null,
-        has_pets: row.guests.has_pets,
-        is_vip: row.guests.is_vip,
-        vip_level: row.guests.vip_level,
-        marketing_consent: null,
-        average_rating: null,
-        notes: null,
-        country_code: null,
-        created_at: null,
-        updated_at: null,
-        display_name:
-          row.guests.full_name || `${row.guests.first_name} ${row.guests.last_name}`.trim(),
-      }
-    : undefined;
-
-  // Map label if present in join
-  const label: Label | undefined = row.labels
-    ? {
-        id: row.labels.id,
-        hotelId: '',
-        name: row.labels.name,
-        color: row.labels.color ?? '#000000',
-        bgColor: row.labels.bg_color ?? '#FFFFFF',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
-    : undefined;
-
-  return {
-    id: row.id.toString(),
-    roomId: row.room_id.toString(),
-    guestId: row.guest_id.toString(),
-    guest,
-    checkIn: new Date(row.check_in_date),
-    checkOut: new Date(row.check_out_date),
-    numberOfGuests: row.number_of_guests,
-    adults: row.adults,
-    children: [],
-    status: (row.reservation_statuses?.code ?? 'confirmed') as ReservationStatus,
-    bookingSource: (row.booking_sources?.code ?? 'direct') as BookingSource,
-    specialRequests: row.special_requests ?? '',
-    isR1Bill: row.is_r1 ?? false,
-    companyId: row.company_id != null ? row.company_id.toString() : undefined,
-    pricingTierId: row.pricing_tier_id != null ? row.pricing_tier_id.toString() : undefined,
-    numberOfNights: row.number_of_nights ?? 1,
-    // Deprecated pricing fields — all zeros/defaults
-    seasonalPeriod: 'A' as SeasonalPeriod,
-    baseRoomRate: 0,
-    subtotal: 0,
-    childrenDiscounts: 0,
-    tourismTax: 0,
-    vatAmount: 0,
-    petFee: 0,
-    parkingFee: 0,
-    shortStaySuplement: 0,
-    additionalCharges: 0,
-    roomServiceItems: [],
-    totalAmount: 0,
-    paymentStatus: undefined,
-    pricing: undefined,
-    hasPets: row.has_pets ?? false,
-    checkedInAt: row.checked_in_at ? new Date(row.checked_in_at) : undefined,
-    checkedOutAt: row.checked_out_at ? new Date(row.checked_out_at) : undefined,
-    bookingDate: new Date(row.booking_date ?? row.created_at ?? new Date().toISOString()),
-    lastModified: new Date(row.last_modified ?? row.updated_at ?? new Date().toISOString()),
-    notes: row.internal_notes ?? '',
-    labelId: row.label_id ?? undefined,
-    label,
+  guestData?: {
+    first_name: string;
+    last_name: string;
+    email?: string | null;
+    phone?: string | null;
+    nationality?: string | null;
+    date_of_birth?: string | null;
   };
 }
 
-// ─── Service function ──────────────────────────────────────────────────────
+// ─── Update input ───────────────────────────────────────────────────────────────
 
-async function fetchReservations(): Promise<Reservation[]> {
-  const reservationsQuery = buildReservationsQuery();
-  const { data } = await reservationsQuery.throwOnError();
-  return (data ?? []).map(mapReservationFromRow);
+export interface ReservationUpdateInput {
+  check_in_date?: string;
+  check_out_date?: string;
+  room_id?: number;
+  adults?: number;
+  children_count?: number;
+  number_of_guests?: number;
+  special_requests?: string;
+  internal_notes?: string;
+  label_id?: string | null;
+  is_r1?: boolean;
+  company_id?: number | null;
+  pricing_tier_id?: number | null;
+  has_pets?: boolean;
+  parking_required?: boolean;
+  checked_in_at?: string | null;
+  checked_out_at?: string | null;
+  /** Status code e.g. 'confirmed', 'checked_in'. Triggers status_id lookup. */
+  status?: string;
 }
 
-// ─── Query ────────────────────────────────────────────────────────────────────
+// ─── Query ─────────────────────────────────────────────────────────────────────
 
 export function useReservations() {
   return useQuery({
     queryKey: queryKeys.reservations.all(),
-    queryFn: fetchReservations,
+    queryFn: async () => {
+      const { data } = await buildReservationsQuery().throwOnError();
+      return data ?? [];
+    },
   });
 }
 
-// ─── Mutations ────────────────────────────────────────────────────────────────
+// ─── Mutations ─────────────────────────────────────────────────────────────────
 
 export function useUpdateReservationStatus() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, status }: { id: string; status: ReservationStatus }) =>
-      hotelDataService.updateReservation(id, { status }),
+    mutationFn: async ({ id, status }: { id: number; status: string }) => {
+      const { data: statusRow } = await supabase
+        .from('reservation_statuses')
+        .select('id')
+        .eq('code', status)
+        .single();
+      const { error } = await supabase
+        .from('reservations')
+        .update({ status_id: statusRow?.id })
+        .eq('id', id);
+      if (error) throw error;
+    },
 
-    // Optimistic update
     onMutate: async ({ id, status }) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.reservations.all() });
       const previous = queryClient.getQueryData<Reservation[]>(queryKeys.reservations.all());
       queryClient.setQueryData<Reservation[]>(queryKeys.reservations.all(), (old = []) =>
-        old.map((r) => (r.id === id ? { ...r, status } : r))
+        old.map((r) => (r.id === id ? { ...r, reservation_statuses: { code: status } } : r))
       );
       return { previous };
     },
     onError: (_err, _vars, context) => {
-      if (context?.previous) {
+      if (context?.previous)
         queryClient.setQueryData(queryKeys.reservations.all(), context.previous);
-      }
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.reservations.all() });
@@ -249,21 +131,62 @@ export function useUpdateReservationStatus() {
 export function useUpdateReservation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: Partial<Reservation> }) =>
-      hotelDataService.updateReservation(id, updates),
+    mutationFn: async ({ id, updates }: { id: number; updates: ReservationUpdateInput }) => {
+      const dbUpdates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+
+      if (updates.check_in_date !== undefined) dbUpdates.check_in_date = updates.check_in_date;
+      if (updates.check_out_date !== undefined) dbUpdates.check_out_date = updates.check_out_date;
+      if (updates.room_id !== undefined) dbUpdates.room_id = updates.room_id;
+      if (updates.adults !== undefined) dbUpdates.adults = updates.adults;
+      if (updates.children_count !== undefined) dbUpdates.children_count = updates.children_count;
+      if (updates.number_of_guests !== undefined)
+        dbUpdates.number_of_guests = updates.number_of_guests;
+      if (updates.special_requests !== undefined)
+        dbUpdates.special_requests = updates.special_requests;
+      if (updates.internal_notes !== undefined) dbUpdates.internal_notes = updates.internal_notes;
+      if (updates.label_id !== undefined) dbUpdates.label_id = updates.label_id ?? null;
+      if (updates.is_r1 !== undefined) dbUpdates.is_r1 = updates.is_r1;
+      if (updates.company_id !== undefined) dbUpdates.company_id = updates.company_id ?? null;
+      if (updates.pricing_tier_id !== undefined)
+        dbUpdates.pricing_tier_id = updates.pricing_tier_id ?? null;
+      if (updates.has_pets !== undefined) dbUpdates.has_pets = updates.has_pets;
+      if (updates.parking_required !== undefined)
+        dbUpdates.parking_required = updates.parking_required;
+      if (updates.checked_in_at !== undefined) dbUpdates.checked_in_at = updates.checked_in_at;
+      if (updates.checked_out_at !== undefined) dbUpdates.checked_out_at = updates.checked_out_at;
+
+      if (updates.status) {
+        const { data: statusRow } = await supabase
+          .from('reservation_statuses')
+          .select('id')
+          .eq('code', updates.status)
+          .single();
+        if (statusRow) dbUpdates.status_id = statusRow.id;
+      }
+
+      const { error } = await supabase.from('reservations').update(dbUpdates).eq('id', id);
+      if (error) throw error;
+    },
 
     onMutate: async ({ id, updates }) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.reservations.all() });
       const previous = queryClient.getQueryData<Reservation[]>(queryKeys.reservations.all());
       queryClient.setQueryData<Reservation[]>(queryKeys.reservations.all(), (old = []) =>
-        old.map((r) => (r.id === id ? { ...r, ...updates } : r))
+        old.map((r) =>
+          r.id === id
+            ? {
+                ...r,
+                ...updates,
+                ...(updates.status ? { reservation_statuses: { code: updates.status } } : {}),
+              }
+            : r
+        )
       );
       return { previous };
     },
     onError: (_err, _vars, context) => {
-      if (context?.previous) {
+      if (context?.previous)
         queryClient.setQueryData(queryKeys.reservations.all(), context.previous);
-      }
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.reservations.all() });
@@ -275,8 +198,13 @@ export function useUpdateReservation() {
 export function useUpdateReservationNotes() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, notes }: { id: string; notes: string }) =>
-      hotelDataService.updateReservation(id, { specialRequests: notes }),
+    mutationFn: async ({ id, notes }: { id: number; notes: string }) => {
+      await supabase
+        .from('reservations')
+        .update({ internal_notes: notes })
+        .eq('id', id)
+        .throwOnError();
+    },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.reservations.all() });
     },
@@ -286,39 +214,66 @@ export function useUpdateReservationNotes() {
 export function useCreateReservation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (reservationData: NewReservationInput): Promise<Reservation> => {
-      let guestId = reservationData.guestId;
+    mutationFn: async (input: NewReservationInput): Promise<Reservation> => {
+      let guestId = input.guest_id;
 
-      // Inline guest creation when booking a new guest
-      if (reservationData.isNewGuest && reservationData.guest) {
-        const g = reservationData.guest;
-        const newGuest = await hotelDataService.createGuest({
-          first_name: g.first_name ?? '',
-          last_name: g.last_name ?? '',
-          full_name: g.full_name ?? `${g.first_name ?? ''} ${g.last_name ?? ''}`.trim(),
-          email: g.email ?? null,
-          phone: g.phone ?? null,
-          nationality: g.nationality ?? null,
-          preferred_language: g.preferred_language ?? 'en',
-          dietary_restrictions: null,
-          has_pets: g.has_pets ?? null,
-          is_vip: null,
-          vip_level: null,
-          date_of_birth: null,
-          passport_number: null,
-          id_card_number: null,
-          special_needs: null,
-          marketing_consent: null,
-          average_rating: null,
-          notes: null,
-          country_code: null,
-          created_at: null,
-          updated_at: null,
-        });
-        guestId = String(newGuest.id);
+      if (input.isNewGuest && input.guestData) {
+        const { data: newGuest, error: guestError } = await supabase
+          .from('guests')
+          .insert({
+            first_name: input.guestData.first_name,
+            last_name: input.guestData.last_name,
+            email: input.guestData.email ?? null,
+            phone: input.guestData.phone ?? null,
+            nationality: input.guestData.nationality ?? null,
+            date_of_birth: input.guestData.date_of_birth ?? null,
+          })
+          .select('id')
+          .single();
+        if (guestError) throw guestError;
+        guestId = newGuest.id;
       }
 
-      return hotelDataService.createReservation({ ...reservationData, guestId });
+      const { data: statusRow } = await supabase
+        .from('reservation_statuses')
+        .select('id')
+        .eq('code', input.status ?? 'confirmed')
+        .single();
+      const { data: sourceRow } = await supabase
+        .from('booking_sources')
+        .select('id')
+        .eq('code', input.booking_source ?? 'direct')
+        .single();
+
+      const { data: created, error } = await supabase
+        .from('reservations')
+        .insert({
+          guest_id: guestId,
+          room_id: input.room_id,
+          check_in_date: input.check_in_date,
+          check_out_date: input.check_out_date,
+          adults: input.adults,
+          children_count: input.children_count ?? 0,
+          number_of_guests: input.number_of_guests ?? input.adults + (input.children_count ?? 0),
+          status_id: statusRow?.id,
+          booking_source_id: sourceRow?.id,
+          special_requests: input.special_requests ?? null,
+          has_pets: input.has_pets ?? false,
+          parking_required: input.parking_required ?? false,
+          company_id: input.company_id ?? null,
+          pricing_tier_id: input.pricing_tier_id ?? null,
+          is_r1: input.is_r1 ?? false,
+          label_id: input.label_id ?? null,
+        })
+        .select('id')
+        .single();
+      if (error) throw error;
+
+      const { data: full, error: fetchError } = await buildReservationsQuery()
+        .eq('id', created.id)
+        .single();
+      if (fetchError) throw fetchError;
+      return full;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.reservations.all() });
@@ -330,7 +285,9 @@ export function useCreateReservation() {
 export function useDeleteReservation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => hotelDataService.deleteReservation(id),
+    mutationFn: async (id: number) => {
+      await supabase.from('reservations').delete().eq('id', id).throwOnError();
+    },
 
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.reservations.all() });
@@ -341,9 +298,8 @@ export function useDeleteReservation() {
       return { previous };
     },
     onError: (_err, _id, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(queryKeys.reservations.all(), context.previous);
-      }
+      const ctx = context as { previous?: Reservation[] } | undefined;
+      if (ctx?.previous) queryClient.setQueryData(queryKeys.reservations.all(), ctx.previous);
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.reservations.all() });

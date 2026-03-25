@@ -13,8 +13,8 @@ interface DroppableDateCellProps {
   isSecondHalf: boolean;
   date: Date;
   onMoveReservation: (
-    reservationId: string,
-    newRoomId: string,
+    reservationId: number,
+    newRoomId: number,
     newCheckIn: Date,
     newCheckOut: Date
   ) => void;
@@ -51,8 +51,8 @@ export function DroppableDateCell({
   const isWeekend = date.getDay() === 0 || date.getDay() === 6;
 
   const hasExistingReservation = existingReservations.some((res) => {
-    const resCheckInDate = startOfDay(res.checkIn);
-    const resCheckOutDate = startOfDay(res.checkOut);
+    const resCheckInDate = startOfDay(new Date(res.check_in_date));
+    const resCheckOutDate = startOfDay(new Date(res.check_out_date));
     const resStartDay = Math.floor(
       (resCheckInDate.getTime() - startOfDay(date).getTime()) / (24 * 60 * 60 * 1000)
     );
@@ -60,7 +60,7 @@ export function DroppableDateCell({
       (resCheckOutDate.getTime() - startOfDay(date).getTime()) / (24 * 60 * 60 * 1000)
     );
 
-    if (res.roomId === room.id.toString() && resStartDay <= dayIndex && resEndDay > dayIndex) {
+    if (res.room_id === room.id && resStartDay <= dayIndex && resEndDay > dayIndex) {
       if (dayIndex === resStartDay && isSecondHalf) return true;
       if (dayIndex === resEndDay && !isSecondHalf) return true;
       if (dayIndex > resStartDay && dayIndex < resEndDay) return true;
@@ -83,7 +83,7 @@ export function DroppableDateCell({
         const isAllocationFromFloor5 = item.currentRoomFloor === 5;
 
         if (isAllocationFromFloor5) {
-          onMoveReservation(item.reservationId, room.id.toString(), item.checkIn, item.checkOut);
+          onMoveReservation(item.reservationId, room.id, item.checkIn, item.checkOut);
         } else {
           const originalDuration = Math.ceil(
             (item.checkOut.getTime() - item.checkIn.getTime()) / (24 * 60 * 60 * 1000)
@@ -95,20 +95,20 @@ export function DroppableDateCell({
             const newCheckOut = new Date(newCheckIn);
             newCheckOut.setDate(newCheckOut.getDate() + originalDuration);
             newCheckOut.setHours(11, 0, 0, 0);
-            onMoveReservation(item.reservationId, room.id.toString(), newCheckIn, newCheckOut);
+            onMoveReservation(item.reservationId, room.id, newCheckIn, newCheckOut);
           } else {
             const newCheckOut = new Date(date);
             newCheckOut.setHours(11, 0, 0, 0);
             const newCheckIn = new Date(newCheckOut);
             newCheckIn.setDate(newCheckIn.getDate() - originalDuration);
             newCheckIn.setHours(15, 0, 0, 0);
-            onMoveReservation(item.reservationId, room.id.toString(), newCheckIn, newCheckOut);
+            onMoveReservation(item.reservationId, room.id, newCheckIn, newCheckOut);
           }
         }
       },
       canDrop: (item: DragItem) => {
         const isSamePosition =
-          item.currentRoomId === room.id.toString() &&
+          item.currentRoomId === room.id &&
           new Date(item.checkIn).toDateString() === date.toDateString() &&
           ((isSecondHalf && new Date(item.checkIn).getHours() >= 12) ||
             (!isSecondHalf && new Date(item.checkIn).getHours() < 12));

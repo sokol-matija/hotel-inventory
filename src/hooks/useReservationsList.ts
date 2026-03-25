@@ -4,8 +4,8 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Reservation } from '../lib/hotel/types';
-import { databaseAdapter } from '../lib/hotel/services/DatabaseAdapter';
+import type { Reservation } from '../lib/queries/hooks/useReservations';
+import { supabase } from '../lib/supabase';
 import { queryKeys } from '../lib/queries/queryKeys';
 
 export interface ReservationsFilters {
@@ -77,10 +77,180 @@ export interface UseReservationsListReturn {
   refetch: () => void;
 
   // Selection
-  selectedIds: Set<string>;
-  toggleSelection: (id: string) => void;
+  selectedIds: Set<number>;
+  toggleSelection: (id: number) => void;
   toggleSelectAll: () => void;
   clearSelection: () => void;
+}
+
+interface QueryParams {
+  searchQuery?: string;
+  statuses?: string[];
+  bookingSources?: string[];
+  paymentStatuses?: string[];
+  roomTypes?: string[];
+  nationalities?: string[];
+  vipOnly?: boolean;
+  hasSpecialRequests?: boolean;
+  checkInFrom?: Date;
+  checkInTo?: Date;
+  checkOutFrom?: Date;
+  checkOutTo?: Date;
+  bookingDateFrom?: Date;
+  bookingDateTo?: Date;
+  page: number;
+  pageSize: number;
+  sortBy: SortState['sortBy'];
+  sortOrder: 'asc' | 'desc';
+}
+
+async function fetchReservationsWithFilters(params: QueryParams): Promise<{
+  reservations: Reservation[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}> {
+  const {
+    searchQuery,
+    statuses,
+    bookingSources,
+    nationalities,
+    vipOnly,
+    hasSpecialRequests,
+    checkInFrom,
+    checkInTo,
+    checkOutFrom,
+    checkOutTo,
+    bookingDateFrom,
+    bookingDateTo,
+    page = 1,
+    pageSize = 25,
+    sortBy = 'check_in_date',
+    sortOrder = 'desc',
+  } = params;
+
+  let query = supabase.from('reservations').select(
+    `*,
+      reservation_statuses!status_id(code),
+      booking_sources!booking_source_id(code),
+      guests!guest_id(id, first_name, last_name, full_name, display_name, email, phone, nationality, has_pets, is_vip, vip_level),
+      labels!label_id(id, name, color, bg_color),
+      rooms!room_id(id, room_number, room_types!room_type_id(code))`,
+    { count: 'exact' }
+  );
+
+  // Status filter — join via reservation_statuses code
+  if (statuses && statuses.length > 0) {
+    const { data: statusRows } = await supabase
+      .from('reservation_statuses')
+      .select('id')
+      .in('code', statuses);
+    if (statusRows && statusRows.length > 0) {
+      query = query.in(
+        'status_id',
+        statusRows.map((s) => s.id)
+      );
+    }
+  }
+
+  // Booking source filter
+  if (bookingSources && bookingSources.length > 0) {
+    const { data: sourceRows } = await supabase
+      .from('booking_sources')
+      .select('id')
+      .in('code', bookingSources);
+    if (sourceRows && sourceRows.length > 0) {
+      query = query.in(
+        'booking_source_id',
+        sourceRows.map((s) => s.id)
+      );
+    }
+  }
+
+  // Date range filters
+  if (checkInFrom) {
+    query = query.gte('check_in_date', checkInFrom.toISOString().split('T')[0]);
+  }
+  if (checkInTo) {
+    query = query.lte('check_in_date', checkInTo.toISOString().split('T')[0]);
+  }
+  if (checkOutFrom) {
+    query = query.gte('check_out_date', checkOutFrom.toISOString().split('T')[0]);
+  }
+  if (checkOutTo) {
+    query = query.lte('check_out_date', checkOutTo.toISOString().split('T')[0]);
+  }
+  if (bookingDateFrom) {
+    query = query.gte('booking_date', bookingDateFrom.toISOString());
+  }
+  if (bookingDateTo) {
+    query = query.lte('booking_date', bookingDateTo.toISOString());
+  }
+
+  if (hasSpecialRequests) {
+    query = query.not('special_requests', 'is', null);
+    query = query.neq('special_requests', '');
+  }
+
+  // Guest-level filters via foreign table filter syntax
+  if (nationalities && nationalities.length > 0) {
+    query = query.in('guests.nationality', nationalities);
+  }
+  if (vipOnly) {
+    query = query.eq('guests.is_vip', true);
+  }
+
+  // Sorting
+  const orderColumn = sortBy === 'guest_name' ? 'guests(last_name)' : sortBy;
+  query = query.order(orderColumn, { ascending: sortOrder === 'asc' });
+
+  // Pagination
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+  query = query.range(from, to);
+
+  const { data, error, count } = await query;
+
+  if (error) throw error;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let rows = (data as any[]) ?? [];
+
+  // Client-side search filter
+  if (searchQuery) {
+    const searchLower = searchQuery.toLowerCase();
+    rows = rows.filter((row) => {
+      const guest = row.guests;
+      const room = row.rooms;
+      return (
+        guest?.first_name?.toLowerCase().includes(searchLower) ||
+        guest?.last_name?.toLowerCase().includes(searchLower) ||
+        guest?.display_name?.toLowerCase().includes(searchLower) ||
+        String(row.id).includes(searchLower) ||
+        room?.room_number?.toLowerCase().includes(searchLower)
+      );
+    });
+  }
+
+  // Client-side room type filter (params.roomTypes)
+  if (params.roomTypes && params.roomTypes.length > 0) {
+    rows = rows.filter((row) => {
+      const roomTypeCode = row.rooms?.room_types?.code ?? 'double';
+      return params.roomTypes!.includes(roomTypeCode);
+    });
+  }
+
+  const totalCount = count ?? 0;
+  const totalPages = Math.ceil(totalCount / pageSize);
+
+  return {
+    reservations: rows as Reservation[],
+    totalCount,
+    page,
+    pageSize,
+    totalPages,
+  };
 }
 
 const initialFilters: ReservationsFilters = {
@@ -106,7 +276,7 @@ export function useReservationsList(): UseReservationsListReturn {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSizeState] = useState(25);
   const [sort, setSort] = useState<SortState>(initialSort);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
   // Debounce search query
   useEffect(() => {
@@ -146,7 +316,7 @@ export function useReservationsList(): UseReservationsListReturn {
     refetch,
   } = useQuery({
     queryKey: queryKeys.reservations.list(queryParams),
-    queryFn: () => databaseAdapter.getReservationsWithFilters(queryParams),
+    queryFn: () => fetchReservationsWithFilters(queryParams),
     placeholderData: (prev) => prev, // keep previous data while fetching next page
   });
 
@@ -198,7 +368,7 @@ export function useReservationsList(): UseReservationsListReturn {
   }, []);
 
   // Selection management
-  const toggleSelection = useCallback((id: string) => {
+  const toggleSelection = useCallback((id: number) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) {

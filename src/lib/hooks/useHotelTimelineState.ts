@@ -77,9 +77,9 @@ export interface HotelTimelineActions {
   handleRoomClick: (room: Room) => void;
   closeReservationPopup: () => void;
   closeCreateBooking: () => void;
-  showRoomChangeDialog: (reservationId: string, fromRoomId: string, toRoomId: string) => void;
+  showRoomChangeDialog: (reservationId: number, fromRoomId: number, toRoomId: number) => void;
   closeRoomChangeDialog: () => void;
-  handleShowDrinksModal: (reservationId: string) => void;
+  handleShowDrinksModal: (reservationId: number) => void;
   closeDrinksModal: () => void;
 
   // Mode toggles
@@ -98,8 +98,8 @@ export interface HotelTimelineActions {
   positionContextMenu: (x: number, y: number) => { x: number; y: number };
   validateReservationMove: (
     reservation: Reservation,
-    targetRoomId: string
-  ) => { valid: boolean; error?: string };
+    targetRoomId: number
+  ) => { valid: boolean; error?: string | undefined };
 }
 
 export function useHotelTimelineState(): HotelTimelineState & HotelTimelineActions {
@@ -134,14 +134,14 @@ export function useHotelTimelineState(): HotelTimelineState & HotelTimelineActio
 
   const [roomChangeDialog, setRoomChangeDialog] = useState<RoomChangeDialog>({
     show: false,
-    reservationId: '',
-    fromRoomId: '',
-    toRoomId: '',
+    reservationId: 0,
+    fromRoomId: 0,
+    toRoomId: 0,
   });
 
   const [drinkModal, setDrinkModal] = useState<DrinkModalState>({
     show: false,
-    reservationId: '',
+    reservationId: 0,
   });
 
   // Drag create mode states
@@ -250,7 +250,7 @@ export function useHotelTimelineState(): HotelTimelineState & HotelTimelineActio
   }, []);
 
   const showRoomChangeDialog = useCallback(
-    (reservationId: string, fromRoomId: string, toRoomId: string) => {
+    (reservationId: number, fromRoomId: number, toRoomId: number) => {
       setRoomChangeDialog({
         show: true,
         reservationId,
@@ -264,13 +264,13 @@ export function useHotelTimelineState(): HotelTimelineState & HotelTimelineActio
   const closeRoomChangeDialog = useCallback(() => {
     setRoomChangeDialog({
       show: false,
-      reservationId: '',
-      fromRoomId: '',
-      toRoomId: '',
+      reservationId: 0,
+      fromRoomId: 0,
+      toRoomId: 0,
     });
   }, []);
 
-  const handleShowDrinksModal = useCallback((reservationId: string) => {
+  const handleShowDrinksModal = useCallback((reservationId: number) => {
     setDrinkModal({
       show: true,
       reservationId,
@@ -280,7 +280,7 @@ export function useHotelTimelineState(): HotelTimelineState & HotelTimelineActio
   const closeDrinksModal = useCallback(() => {
     setDrinkModal({
       show: false,
-      reservationId: '',
+      reservationId: 0,
     });
   }, []);
 
@@ -417,7 +417,7 @@ export function useHotelTimelineState(): HotelTimelineState & HotelTimelineActio
   );
 
   const validateReservationMove = useCallback(
-    (reservation: Reservation, targetRoomId: string) => {
+    (reservation: Reservation, targetRoomId: number) => {
       return timelineService.validateReservationMove(
         reservation,
         targetRoomId,

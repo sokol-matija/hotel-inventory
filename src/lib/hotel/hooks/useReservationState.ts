@@ -90,10 +90,10 @@ export function useReservationState(
     if (state.isEditing) {
       updateState({ editedNotes: '', isEditing: false });
     } else {
-      const currentNotes = reservationData?.reservation.specialRequests || '';
+      const currentNotes = reservationData?.reservation.special_requests || '';
       updateState({ editedNotes: currentNotes, isEditing: true });
     }
-  }, [state.isEditing, reservationData?.reservation.specialRequests, updateState]);
+  }, [state.isEditing, reservationData?.reservation.special_requests, updateState]);
 
   const handleSaveEdit = useCallback(async () => {
     if (!reservationData?.reservation) return;
@@ -130,7 +130,7 @@ export function useReservationState(
 
         // Call original callback if provided
         if (onStatusChange) {
-          onStatusChange(reservationData.reservation.id, newStatus);
+          onStatusChange(String(reservationData.reservation.id), newStatus);
         }
 
         // Close popup after successful status change

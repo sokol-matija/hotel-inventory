@@ -66,9 +66,9 @@ vi.mock('@/lib/notifications', () => ({
 
 const CLOSED_DIALOG: RoomChangeDialog = {
   show: false,
-  reservationId: '',
-  fromRoomId: '',
-  toRoomId: '',
+  reservationId: 0,
+  fromRoomId: 0,
+  toRoomId: 0,
 };
 
 function makeParams(
@@ -98,8 +98,8 @@ beforeEach(() => {
 
 describe('localReservations', () => {
   it('returns TQ data unchanged when no overrides exist', () => {
-    const r1 = buildReservation({ id: 'res-1' });
-    const r2 = buildReservation({ id: 'res-2' });
+    const r1 = buildReservation({ id: 1 });
+    const r2 = buildReservation({ id: 2 });
     const { result } = renderHook(() =>
       useReservationActions(makeParams({ reservations: [r1, r2] }))
     );
@@ -109,19 +109,19 @@ describe('localReservations', () => {
   it('applies optimistic overrides after a successful move', async () => {
     const room1 = buildRoom({ id: 1 });
     const room2 = buildRoom({ id: 2 });
-    const reservation = buildReservation({ id: 'res-1', roomId: '1' });
+    const reservation = buildReservation({ id: 1, room_id: 1 });
 
     // Mock optimisticMoveReservation to call the updateFn immediately
     mocks.optimisticMoveReservation.mockImplementation(
       async (
-        _id: string,
+        _id: number,
         _orig: unknown,
-        _roomId: string,
+        _roomId: number,
         _ci: Date,
         _co: Date,
-        updateFn: (id: string, updates: object) => void
+        updateFn: (id: number, updates: object) => void
       ) => {
-        updateFn('res-1', { roomId: '2' });
+        updateFn(1, { room_id: 2 });
         return { success: true };
       }
     );
@@ -131,14 +131,14 @@ describe('localReservations', () => {
 
     await act(async () => {
       await result.current.handleMoveReservation(
-        'res-1',
-        '2',
+        1,
+        2,
         new Date('2026-04-01'),
         new Date('2026-04-05')
       );
     });
 
-    expect(result.current.localReservations[0].roomId).toBe('2');
+    expect(result.current.localReservations[0].room_id).toBe(2);
   });
 });
 
@@ -148,13 +148,13 @@ describe('handleMoveReservation', () => {
     const room2 = buildRoom({ id: 2 });
     // Blocker occupies room2 during the same dates
     const blocker = buildReservation({
-      id: 'res-blocker',
-      roomId: '2',
-      checkIn: new Date('2026-04-01'),
-      checkOut: new Date('2026-04-05'),
-      status: 'confirmed',
+      id: 2,
+      room_id: 2,
+      check_in_date: '2026-04-01',
+      check_out_date: '2026-04-05',
+      reservation_statuses: { code: 'confirmed' },
     });
-    const reservation = buildReservation({ id: 'res-1', roomId: '1' });
+    const reservation = buildReservation({ id: 1, room_id: 1 });
 
     const { result } = renderHook(() =>
       useReservationActions(
@@ -164,8 +164,8 @@ describe('handleMoveReservation', () => {
 
     await act(async () => {
       await result.current.handleMoveReservation(
-        'res-1',
-        '2',
+        1,
+        2,
         new Date('2026-04-01'),
         new Date('2026-04-05')
       );
@@ -178,7 +178,7 @@ describe('handleMoveReservation', () => {
   it('calls showRoomChangeDialog when room type changes (no optimistic call)', async () => {
     const room1 = buildRoom({ id: 1, room_types: { code: 'double' } });
     const room2 = buildRoom({ id: 2, room_types: { code: 'suite' } });
-    const reservation = buildReservation({ id: 'res-1', roomId: '1' });
+    const reservation = buildReservation({ id: 1, room_id: 1 });
     const showRoomChangeDialog = vi.fn();
 
     const { result } = renderHook(() =>
@@ -193,14 +193,14 @@ describe('handleMoveReservation', () => {
 
     await act(async () => {
       await result.current.handleMoveReservation(
-        'res-1',
-        '2',
+        1,
+        2,
         new Date('2026-04-10'),
         new Date('2026-04-15')
       );
     });
 
-    expect(showRoomChangeDialog).toHaveBeenCalledWith('res-1', '1', '2');
+    expect(showRoomChangeDialog).toHaveBeenCalledWith(1, 1, 2);
     expect(mocks.optimisticMoveReservation).not.toHaveBeenCalled();
   });
 
@@ -208,7 +208,7 @@ describe('handleMoveReservation', () => {
     const room1 = buildRoom({ id: 1, room_types: { code: 'double' } });
     const room2 = buildRoom({ id: 2, room_types: { code: 'double' } });
     const guest = buildGuest({ id: 10, display_name: 'Jane Doe' });
-    const reservation = buildReservation({ id: 'res-1', roomId: '1', guestId: '10' });
+    const reservation = buildReservation({ id: 1, room_id: 1, guest_id: 10 });
 
     const { result } = renderHook(() =>
       useReservationActions(
@@ -222,17 +222,17 @@ describe('handleMoveReservation', () => {
 
     await act(async () => {
       await result.current.handleMoveReservation(
-        'res-1',
-        '2',
+        1,
+        2,
         new Date('2026-04-10'),
         new Date('2026-04-15')
       );
     });
 
     expect(mocks.optimisticMoveReservation).toHaveBeenCalledWith(
-      'res-1',
+      1,
       reservation,
-      '2',
+      2,
       expect.any(Date),
       expect.any(Date),
       expect.any(Function),
@@ -251,7 +251,7 @@ describe('handleMoveReservation', () => {
     const virtualRoom = buildRoom({ id: 1, room_types: { code: 'double' } });
     const realRoom = buildRoom({ id: 2, room_types: { code: 'double' } });
     const guest = buildGuest({ id: 10 });
-    const reservation = buildReservation({ id: 'res-1', roomId: '1', guestId: '10' });
+    const reservation = buildReservation({ id: 1, room_id: 1, guest_id: 10 });
 
     // First call returns true (virtualRoom), second returns false (realRoom)
     mocks.isVirtualRoom.mockImplementation((room: { id: number }) => room.id === 1);
@@ -268,17 +268,17 @@ describe('handleMoveReservation', () => {
 
     await act(async () => {
       await result.current.handleMoveReservation(
-        'res-1',
-        '2',
+        1,
+        2,
         new Date('2026-04-10'),
         new Date('2026-04-15')
       );
     });
 
     expect(mocks.optimisticUpdateReservation).toHaveBeenCalledWith(
-      'res-1',
+      1,
       reservation,
-      expect.objectContaining({ status: 'confirmed', roomId: '2' }),
+      expect.objectContaining({ status: 'confirmed', room_id: 2 }),
       expect.any(Function),
       expect.any(Function)
     );
@@ -289,7 +289,7 @@ describe('handleMoveReservation', () => {
 
     const room1 = buildRoom({ id: 1, room_types: { code: 'double' } });
     const room2 = buildRoom({ id: 2, room_types: { code: 'double' } });
-    const reservation = buildReservation({ id: 'res-1', roomId: '1' });
+    const reservation = buildReservation({ id: 1, room_id: 1 });
 
     const { result } = renderHook(() =>
       useReservationActions(makeParams({ reservations: [reservation], rooms: [room1, room2] }))
@@ -297,8 +297,8 @@ describe('handleMoveReservation', () => {
 
     await act(async () => {
       await result.current.handleMoveReservation(
-        'res-1',
-        '2',
+        1,
+        2,
         new Date('2026-04-10'),
         new Date('2026-04-15')
       );
@@ -312,8 +312,8 @@ describe('handleMoveReservation', () => {
 
     await act(async () => {
       await result.current.handleMoveReservation(
-        'nonexistent',
-        '2',
+        999,
+        2,
         new Date('2026-04-10'),
         new Date('2026-04-15')
       );
@@ -343,9 +343,12 @@ describe('handleMoveReservationArrow', () => {
 
   it('delegates with date −1 day for left and +1 day for right', async () => {
     const room = buildRoom({ id: 1, room_types: { code: 'double' } });
-    const checkIn = new Date('2026-04-05');
-    const checkOut = new Date('2026-04-10');
-    const reservation = buildReservation({ id: 'res-1', roomId: '1', checkIn, checkOut });
+    const reservation = buildReservation({
+      id: 1,
+      room_id: 1,
+      check_in_date: '2026-04-05',
+      check_out_date: '2026-04-10',
+    });
 
     const { result } = renderHook(() =>
       useReservationActions(
@@ -362,9 +365,9 @@ describe('handleMoveReservationArrow', () => {
     });
 
     expect(mocks.optimisticMoveReservation).toHaveBeenCalledWith(
-      'res-1',
+      1,
       reservation,
-      '1',
+      1,
       new Date('2026-04-06'),
       new Date('2026-04-11'),
       expect.any(Function),
@@ -379,9 +382,9 @@ describe('handleMoveReservationArrow', () => {
     });
 
     expect(mocks.optimisticMoveReservation).toHaveBeenCalledWith(
-      'res-1',
+      1,
       reservation,
-      '1',
+      1,
       new Date('2026-04-04'),
       new Date('2026-04-09'),
       expect.any(Function),
@@ -407,14 +410,14 @@ describe('handleConfirmRoomChange', () => {
     const room1 = buildRoom({ id: 1 });
     const room2 = buildRoom({ id: 2 });
     const guest = buildGuest({ id: 10, display_name: 'John' });
-    const reservation = buildReservation({ id: 'res-1', roomId: '1', guestId: '10' });
+    const reservation = buildReservation({ id: 1, room_id: 1, guest_id: 10 });
     const closeRoomChangeDialog = vi.fn();
 
     const dialog: RoomChangeDialog = {
       show: true,
-      reservationId: 'res-1',
-      fromRoomId: '1',
-      toRoomId: '2',
+      reservationId: 1,
+      fromRoomId: 1,
+      toRoomId: 2,
     };
 
     const { result } = renderHook(() =>
@@ -449,12 +452,12 @@ describe('handleConfirmRoomChange', () => {
 
     const room1 = buildRoom({ id: 1 });
     const room2 = buildRoom({ id: 2 });
-    const reservation = buildReservation({ id: 'res-1', roomId: '1' });
+    const reservation = buildReservation({ id: 1, room_id: 1 });
     const dialog: RoomChangeDialog = {
       show: true,
-      reservationId: 'res-1',
-      fromRoomId: '1',
-      toRoomId: '2',
+      reservationId: 1,
+      fromRoomId: 1,
+      toRoomId: 2,
     };
 
     const { result } = renderHook(() =>
@@ -492,14 +495,14 @@ describe('handleFreeUpgrade', () => {
     const room1 = buildRoom({ id: 1 });
     const room2 = buildRoom({ id: 2 });
     const guest = buildGuest({ id: 10, display_name: 'Maria' });
-    const reservation = buildReservation({ id: 'res-1', roomId: '1', guestId: '10' });
+    const reservation = buildReservation({ id: 1, room_id: 1, guest_id: 10 });
     const closeRoomChangeDialog = vi.fn();
 
     const dialog: RoomChangeDialog = {
       show: true,
-      reservationId: 'res-1',
-      fromRoomId: '1',
-      toRoomId: '2',
+      reservationId: 1,
+      fromRoomId: 1,
+      toRoomId: 2,
     };
 
     const { result } = renderHook(() =>
@@ -530,10 +533,10 @@ describe('handleFreeUpgrade', () => {
 describe('handleResizeReservation', () => {
   it('shows error when resulting duration is less than 1 day', async () => {
     const reservation = buildReservation({
-      id: 'res-1',
-      roomId: '1',
-      checkIn: new Date('2026-04-05'),
-      checkOut: new Date('2026-04-06'),
+      id: 1,
+      room_id: 1,
+      check_in_date: '2026-04-05',
+      check_out_date: '2026-04-06',
     });
 
     const { result } = renderHook(() =>
@@ -542,7 +545,7 @@ describe('handleResizeReservation', () => {
 
     // Shrink end to same as start → 0 days
     await act(async () => {
-      await result.current.handleResizeReservation('res-1', 'end', new Date('2026-04-05'));
+      await result.current.handleResizeReservation(1, 'end', new Date('2026-04-05'));
     });
 
     expect(mocks.notifyError).toHaveBeenCalledWith(
@@ -555,16 +558,16 @@ describe('handleResizeReservation', () => {
 
   it('shows error when resized dates conflict with another reservation in the same room', async () => {
     const reservation = buildReservation({
-      id: 'res-1',
-      roomId: '1',
-      checkIn: new Date('2026-04-01'),
-      checkOut: new Date('2026-04-05'),
+      id: 1,
+      room_id: 1,
+      check_in_date: '2026-04-01',
+      check_out_date: '2026-04-05',
     });
     const blocker = buildReservation({
-      id: 'res-2',
-      roomId: '1',
-      checkIn: new Date('2026-04-08'),
-      checkOut: new Date('2026-04-12'),
+      id: 2,
+      room_id: 1,
+      check_in_date: '2026-04-08',
+      check_out_date: '2026-04-12',
     });
 
     const { result } = renderHook(() =>
@@ -573,7 +576,7 @@ describe('handleResizeReservation', () => {
 
     // Extend end to overlap blocker
     await act(async () => {
-      await result.current.handleResizeReservation('res-1', 'end', new Date('2026-04-10'));
+      await result.current.handleResizeReservation(1, 'end', new Date('2026-04-10'));
     });
 
     expect(mocks.notifyError).toHaveBeenCalledWith('Booking Conflict', expect.any(String), 4);
@@ -584,11 +587,11 @@ describe('handleResizeReservation', () => {
     const room = buildRoom({ id: 1 });
     const guest = buildGuest({ id: 10, display_name: 'Ana' });
     const reservation = buildReservation({
-      id: 'res-1',
-      roomId: '1',
-      guestId: '10',
-      checkIn: new Date('2026-04-01'),
-      checkOut: new Date('2026-04-05'),
+      id: 1,
+      room_id: 1,
+      guest_id: 10,
+      check_in_date: '2026-04-01',
+      check_out_date: '2026-04-05',
     });
 
     const { result } = renderHook(() =>
@@ -598,16 +601,15 @@ describe('handleResizeReservation', () => {
     );
 
     await act(async () => {
-      await result.current.handleResizeReservation('res-1', 'end', new Date('2026-04-08'));
+      await result.current.handleResizeReservation(1, 'end', new Date('2026-04-08'));
     });
 
     expect(mocks.optimisticUpdateReservation).toHaveBeenCalledWith(
-      'res-1',
+      1,
       reservation,
       expect.objectContaining({
-        checkIn: new Date('2026-04-01'),
-        checkOut: new Date('2026-04-08'),
-        numberOfNights: 7,
+        check_in_date: '2026-04-01',
+        check_out_date: '2026-04-08',
       }),
       expect.any(Function),
       expect.any(Function)
@@ -619,7 +621,7 @@ describe('handleResizeReservation', () => {
 describe('handleDrinksOrderComplete', () => {
   it('calls updateReservation with notes string containing item names and total', async () => {
     const updateReservation = vi.fn().mockResolvedValue(undefined);
-    const reservation = buildReservation({ id: 'res-1', roomId: '1', notes: '' });
+    const reservation = buildReservation({ id: 1, room_id: 1, internal_notes: '' });
     const orderItems = [
       { quantity: 2, itemName: 'Cola', id: 1, price: 3, unit: 'pcs' },
       { quantity: 1, itemName: 'Beer', id: 2, price: 5, unit: 'pcs' },
@@ -634,15 +636,15 @@ describe('handleDrinksOrderComplete', () => {
     });
 
     expect(updateReservation).toHaveBeenCalledWith(
-      'res-1',
+      1,
       expect.objectContaining({
-        notes: expect.stringContaining('Cola'),
+        internal_notes: expect.stringContaining('Cola'),
       })
     );
     expect(updateReservation).toHaveBeenCalledWith(
-      'res-1',
+      1,
       expect.objectContaining({
-        notes: expect.stringContaining('€11.00'),
+        internal_notes: expect.stringContaining('€11.00'),
       })
     );
     expect(mocks.notifySuccess).toHaveBeenCalledWith(
@@ -654,7 +656,7 @@ describe('handleDrinksOrderComplete', () => {
 
   it('shows error notification when updateReservation throws', async () => {
     const updateReservation = vi.fn().mockRejectedValue(new Error('DB error'));
-    const reservation = buildReservation({ id: 'res-1', roomId: '1' });
+    const reservation = buildReservation({ id: 1, room_id: 1 });
 
     const { result } = renderHook(() => useReservationActions(makeParams({ updateReservation })));
 

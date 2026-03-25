@@ -234,10 +234,12 @@ export class HotelEmailService {
     language: EmailLanguage = 'en'
   ): EmailTemplate {
     const { guest, reservation, room } = data;
-    const checkInDate = format(reservation.checkIn, 'EEEE, MMMM do, yyyy');
-    const checkOutDate = format(reservation.checkOut, 'EEEE, MMMM do, yyyy');
+    const checkInDate = format(new Date(reservation.check_in_date), 'EEEE, MMMM do, yyyy');
+    const checkOutDate = format(new Date(reservation.check_out_date), 'EEEE, MMMM do, yyyy');
     const nights = Math.ceil(
-      (reservation.checkOut.getTime() - reservation.checkIn.getTime()) / (24 * 60 * 60 * 1000)
+      (new Date(reservation.check_out_date).getTime() -
+        new Date(reservation.check_in_date).getTime()) /
+        (24 * 60 * 60 * 1000)
     );
 
     const t = this.translations[language].welcome;
@@ -275,7 +277,7 @@ ${this.getEmailStyles()}
                     </div>
                     <div class="info-item">
                         <div class="info-label">Guests</div>
-                        <div class="info-value">${reservation.numberOfGuests} guest${reservation.numberOfGuests > 1 ? 's' : ''}</div>
+                        <div class="info-value">${reservation.number_of_guests ?? reservation.adults} guest${(reservation.number_of_guests ?? reservation.adults) > 1 ? 's' : ''}</div>
                     </div>
                     <div class="info-item">
                         <div class="info-label">Check-in</div>
@@ -291,7 +293,7 @@ ${this.getEmailStyles()}
                     </div>
                     <div class="info-item">
                         <div class="info-label">Total Amount</div>
-                        <div class="info-value">€${reservation.totalAmount.toFixed(2)}</div>
+                        <div class="info-value">&mdash;</div>
                     </div>
                 </div>
             </div>
@@ -307,7 +309,7 @@ ${this.getEmailStyles()}
                 </ul>
                 
                 ${
-                  reservation.checkIn.getHours() < 14
+                  new Date(reservation.check_in_date).getHours() < 14
                     ? '<div class="highlight">🕐 Early Check-in Notice: Your check-in is scheduled before 2:00 PM. Please contact us to confirm room availability.</div>'
                     : ''
                 }
@@ -440,8 +442,8 @@ ${this.getEmailStyles()}
             
             <div class="section" style="background: rgba(236, 253, 245, 0.9); border-left-color: #10B981;">
                 <h3>🌟 Your Stay Summary</h3>
-                <p>You stayed with us from <strong>${format(reservation.checkIn, 'MMMM do')} to ${format(reservation.checkOut, 'MMMM do, yyyy')}</strong> in room <strong>${formatRoomNumber(room)}</strong>.</p>
-                <p>We hope you enjoyed your ${Math.ceil((reservation.checkOut.getTime() - reservation.checkIn.getTime()) / (24 * 60 * 60 * 1000))} nights with us!</p>
+                <p>You stayed with us from <strong>${format(new Date(reservation.check_in_date), 'MMMM do')} to ${format(new Date(reservation.check_out_date), 'MMMM do, yyyy')}</strong> in room <strong>${formatRoomNumber(room)}</strong>.</p>
+                <p>We hope you enjoyed your ${Math.ceil((new Date(reservation.check_out_date).getTime() - new Date(reservation.check_in_date).getTime()) / (24 * 60 * 60 * 1000))} nights with us!</p>
             </div>
 
             <div class="section" style="background: rgba(254, 243, 199, 0.9); border-left-color: #F59E0B;">
@@ -605,9 +607,9 @@ ${this.getEmailStyles()}
    */
   static generateReminderEmail(data: HotelInfoEmailData): EmailTemplate {
     const { guest, reservation, room } = data;
-    const checkInDate = format(reservation.checkIn, 'EEEE, MMMM do, yyyy');
+    const checkInDate = format(new Date(reservation.check_in_date), 'EEEE, MMMM do, yyyy');
     const daysUntilCheckIn = Math.ceil(
-      (reservation.checkIn.getTime() - new Date().getTime()) / (24 * 60 * 60 * 1000)
+      (new Date(reservation.check_in_date).getTime() - new Date().getTime()) / (24 * 60 * 60 * 1000)
     );
 
     const subject = `Your stay at Hotel Porec is in ${daysUntilCheckIn} day${daysUntilCheckIn > 1 ? 's' : ''} - ${checkInDate}`;
@@ -642,7 +644,7 @@ ${this.getEmailStyles()}
                 <h3>📅 Your Booking Details</h3>
                 <p><strong>Room:</strong> ${formatRoomNumber(room)}<br>
                 <strong>Check-in:</strong> ${checkInDate} at 2:00 PM<br>
-                <strong>Guests:</strong> ${reservation.numberOfGuests} guest${reservation.numberOfGuests > 1 ? 's' : ''}</p>
+                <strong>Guests:</strong> ${reservation.number_of_guests ?? reservation.adults} guest${(reservation.number_of_guests ?? reservation.adults) > 1 ? 's' : ''}</p>
             </div>
 
             <div class="section">
@@ -753,10 +755,9 @@ ${this.getEmailStyles()}
     language?: EmailLanguage
   ): Promise<{ success: boolean; message: string }> {
     try {
-      // Try to get guest and room from parameters, fallback to sample data
-      const guestData = guest || reservation.guest;
-      const roomData =
-        room || HOTEL_POREC_ROOMS.find((r) => r.id.toString() === reservation.roomId);
+      // Try to get guest and room from parameters, fallback to join data
+      const guestData = (guest || reservation.guests) as Guest | undefined;
+      const roomData = room || HOTEL_POREC_ROOMS.find((r) => r.id === reservation.room_id);
 
       if (!guestData || !roomData) {
         throw new Error('Guest or room not found');
@@ -769,7 +770,11 @@ ${this.getEmailStyles()}
         { guest: guestData, reservation, room: roomData },
         emailLanguage
       );
-      return await this.sendEmail(guestData.email || '', template, guestData.display_name);
+      return await this.sendEmail(
+        guestData.email || '',
+        template,
+        guestData.display_name ?? guestData.full_name ?? ''
+      );
     } catch (error) {
       console.error('Error sending welcome email:', error);
       return {
@@ -788,10 +793,9 @@ ${this.getEmailStyles()}
     room?: Room
   ): Promise<{ success: boolean; message: string }> {
     try {
-      // Try to get guest and room from parameters, fallback to sample data
-      const guestData = guest || reservation.guest;
-      const roomData =
-        room || HOTEL_POREC_ROOMS.find((r) => r.id.toString() === reservation.roomId);
+      // Try to get guest and room from parameters, fallback to join data
+      const guestData = (guest || reservation.guests) as Guest | undefined;
+      const roomData = room || HOTEL_POREC_ROOMS.find((r) => r.id === reservation.room_id);
 
       if (!guestData || !roomData) {
         throw new Error('Guest or room not found');
@@ -802,7 +806,11 @@ ${this.getEmailStyles()}
         reservation,
         room: roomData,
       });
-      return await this.sendEmail(guestData.email || '', template, guestData.display_name);
+      return await this.sendEmail(
+        guestData.email || '',
+        template,
+        guestData.display_name ?? guestData.full_name ?? ''
+      );
     } catch (error) {
       console.error('Error sending reminder email:', error);
       return {
@@ -821,10 +829,9 @@ ${this.getEmailStyles()}
     room?: Room
   ): Promise<{ success: boolean; message: string }> {
     try {
-      // Try to get guest and room from parameters, fallback to sample data
-      const guestData = guest || reservation.guest;
-      const roomData =
-        room || HOTEL_POREC_ROOMS.find((r) => r.id.toString() === reservation.roomId);
+      // Try to get guest and room from parameters, fallback to join data
+      const guestData = (guest || reservation.guests) as Guest | undefined;
+      const roomData = room || HOTEL_POREC_ROOMS.find((r) => r.id === reservation.room_id);
 
       if (!guestData || !roomData) {
         throw new Error('Guest or room not found');
@@ -835,7 +842,11 @@ ${this.getEmailStyles()}
         reservation,
         room: roomData,
       });
-      return await this.sendEmail(guestData.email || '', template, guestData.display_name);
+      return await this.sendEmail(
+        guestData.email || '',
+        template,
+        guestData.display_name ?? guestData.full_name ?? ''
+      );
     } catch (error) {
       console.error('Error sending thank you email:', error);
       return {
