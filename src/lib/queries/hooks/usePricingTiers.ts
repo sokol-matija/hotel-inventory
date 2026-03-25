@@ -1,13 +1,24 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { QueryData } from '@supabase/supabase-js';
 import { queryKeys } from '../queryKeys';
-import { supabase, Database } from '../../supabase';
+import { supabase } from '../../supabase';
 import { PricingTier } from '../../hotel/types';
+
+// ─── Query definition ──────────────────────────────────────────────────────────
+
+const pricingTiersQuery = supabase
+  .from('pricing_tiers')
+  .select('*')
+  .eq('is_active', true)
+  .order('is_default', { ascending: false });
+
+// ─── Derived types ──────────────────────────────────────────────────────────────
+
+export type PricingTierRow = QueryData<typeof pricingTiersQuery>[number];
 
 // ─── Mapping helpers ──────────────────────────────────────────────────────────
 
-function mapPricingTierFromDB(
-  row: Database['public']['Tables']['pricing_tiers']['Row']
-): PricingTier {
+function mapPricingTierFromDB(row: PricingTierRow): PricingTier {
   return {
     id: row.id.toString(),
     name: row.name,
@@ -26,19 +37,14 @@ function mapPricingTierFromDB(
 // ─── Service functions (queryFn targets) ──────────────────────────────────────
 
 async function fetchPricingTiers(): Promise<PricingTier[]> {
-  const { data, error } = await supabase
-    .from('pricing_tiers')
-    .select('*')
-    .eq('is_active', true)
-    .order('is_default', { ascending: false });
-  if (error) throw error;
+  const { data } = await pricingTiersQuery.throwOnError();
   return (data ?? []).map(mapPricingTierFromDB);
 }
 
 async function createPricingTierInDB(
   tier: Omit<PricingTier, 'id' | 'createdAt' | 'updatedAt'>
 ): Promise<PricingTier> {
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from('pricing_tiers')
     .insert({
       name: tier.name,
@@ -52,8 +58,8 @@ async function createPricingTierInDB(
       is_default: tier.isDefault || false,
     })
     .select()
-    .single();
-  if (error) throw error;
+    .single()
+    .throwOnError();
   return mapPricingTierFromDB(data);
 }
 
@@ -61,7 +67,7 @@ async function updatePricingTierInDB(
   id: string,
   updates: Partial<PricingTier>
 ): Promise<PricingTier> {
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from('pricing_tiers')
     .update({
       name: updates.name,
@@ -76,17 +82,17 @@ async function updatePricingTierInDB(
     })
     .eq('id', parseInt(id))
     .select()
-    .single();
-  if (error) throw error;
+    .single()
+    .throwOnError();
   return mapPricingTierFromDB(data);
 }
 
 async function deletePricingTierInDB(id: string): Promise<void> {
-  const { error } = await supabase
+  await supabase
     .from('pricing_tiers')
     .update({ is_active: false })
-    .eq('id', parseInt(id));
-  if (error) throw error;
+    .eq('id', parseInt(id))
+    .throwOnError();
 }
 
 // ─── Hooks ────────────────────────────────────────────────────────────────────
@@ -102,8 +108,8 @@ export function useCreatePricingTier() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: createPricingTierInDB,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.pricingTiers.all() });
+    onSettled: () => {
+      return queryClient.invalidateQueries({ queryKey: queryKeys.pricingTiers.all() });
     },
   });
 }
@@ -113,8 +119,8 @@ export function useUpdatePricingTier() {
   return useMutation({
     mutationFn: ({ id, updates }: { id: string; updates: Partial<PricingTier> }) =>
       updatePricingTierInDB(id, updates),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.pricingTiers.all() });
+    onSettled: () => {
+      return queryClient.invalidateQueries({ queryKey: queryKeys.pricingTiers.all() });
     },
   });
 }
@@ -137,7 +143,7 @@ export function useDeletePricingTier() {
       }
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.pricingTiers.all() });
+      return queryClient.invalidateQueries({ queryKey: queryKeys.pricingTiers.all() });
     },
   });
 }

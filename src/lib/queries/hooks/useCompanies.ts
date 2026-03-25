@@ -1,11 +1,21 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { QueryData } from '@supabase/supabase-js';
 import { queryKeys } from '../queryKeys';
-import { supabase, Database, TablesUpdate } from '../../supabase';
+import { supabase } from '../../supabase';
+import type { TablesUpdate } from '../../supabase';
 import { Company } from '../../hotel/types';
+
+// ─── Query definition ──────────────────────────────────────────────────────────
+
+const companiesQuery = supabase.from('companies').select('*').eq('is_active', true).order('name');
+
+// ─── Derived types ──────────────────────────────────────────────────────────────
+
+export type CompanyRow = QueryData<typeof companiesQuery>[number];
 
 // ─── Mapping helpers ──────────────────────────────────────────────────────────
 
-function mapCompanyFromDB(row: Database['public']['Tables']['companies']['Row']): Company {
+function mapCompanyFromDB(row: CompanyRow): Company {
   return {
     id: row.id.toString(),
     name: row.name,
@@ -34,19 +44,14 @@ function mapCompanyFromDB(row: Database['public']['Tables']['companies']['Row'])
 // ─── Service functions (queryFn targets) ──────────────────────────────────────
 
 async function fetchCompanies(): Promise<Company[]> {
-  const { data, error } = await supabase
-    .from('companies')
-    .select('*')
-    .eq('is_active', true)
-    .order('name');
-  if (error) throw error;
+  const { data } = await companiesQuery.throwOnError();
   return (data ?? []).map(mapCompanyFromDB);
 }
 
 async function createCompanyInDB(
   company: Omit<Company, 'id' | 'createdAt' | 'updatedAt'>
 ): Promise<Company> {
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from('companies')
     .insert({
       name: company.name,
@@ -62,8 +67,8 @@ async function createCompanyInDB(
       is_active: true,
     })
     .select()
-    .single();
-  if (error) throw error;
+    .single()
+    .throwOnError();
   return mapCompanyFromDB(data);
 }
 
@@ -83,22 +88,22 @@ async function updateCompanyInDB(id: string, updates: Partial<Company>): Promise
   if (updates.fax !== undefined) updateData.fax = updates.fax;
   updateData.updated_at = new Date().toISOString();
 
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from('companies')
     .update(updateData)
     .eq('id', parseInt(id))
     .select()
-    .single();
-  if (error) throw error;
+    .single()
+    .throwOnError();
   return mapCompanyFromDB(data);
 }
 
 async function deleteCompanyInDB(id: string): Promise<void> {
-  const { error } = await supabase
+  await supabase
     .from('companies')
     .update({ is_active: false })
-    .eq('id', parseInt(id));
-  if (error) throw error;
+    .eq('id', parseInt(id))
+    .throwOnError();
 }
 
 // ─── Hooks ────────────────────────────────────────────────────────────────────
@@ -114,8 +119,8 @@ export function useCreateCompany() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: createCompanyInDB,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.companies.all() });
+    onSettled: () => {
+      return queryClient.invalidateQueries({ queryKey: queryKeys.companies.all() });
     },
   });
 }
@@ -125,8 +130,8 @@ export function useUpdateCompany() {
   return useMutation({
     mutationFn: ({ id, updates }: { id: string; updates: Partial<Company> }) =>
       updateCompanyInDB(id, updates),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.companies.all() });
+    onSettled: () => {
+      return queryClient.invalidateQueries({ queryKey: queryKeys.companies.all() });
     },
   });
 }
@@ -149,7 +154,7 @@ export function useDeleteCompany() {
       }
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.companies.all() });
+      return queryClient.invalidateQueries({ queryKey: queryKeys.companies.all() });
     },
   });
 }
