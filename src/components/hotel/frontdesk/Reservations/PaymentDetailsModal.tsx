@@ -23,7 +23,7 @@ import { generatePDFInvoice, generateInvoiceNumber } from '../../../../lib/pdfIn
 import { useUpdateReservation } from '../../../../lib/queries/hooks/useReservations';
 import { useReservationCharges } from '../../../../lib/queries/hooks/useReservationCharges';
 import hotelNotification from '../../../../lib/notifications';
-import { supabase } from '../../../../lib/supabase';
+import { useCompanies } from '../../../../lib/queries/hooks/useCompanies';
 import { createInvoice as createInvoiceService } from '../../../../lib/hotel/services/InvoiceService';
 
 interface PaymentDetailsModalProps {
@@ -55,6 +55,7 @@ export default function PaymentDetailsModal({
 
   // Fetch charges from reservation_charges table
   const { data: charges = [], isLoading: chargesLoading } = useReservationCharges(reservation.id);
+  const { data: companies = [] } = useCompanies();
 
   // Derive grand total from charges
   const grandTotal = charges.reduce((sum, c) => sum + c.total, 0);
@@ -67,28 +68,13 @@ export default function PaymentDetailsModal({
       const invoiceNumber = generateInvoiceNumber(reservation);
       const invoiceDate = new Date();
 
-      // Fetch company data if this is an R1 reservation
-      let company: Company | undefined;
+      // Resolve company from TQ cache (no extra fetch needed)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const reservationExt = reservation as any;
-      if (reservationExt.is_r1 && reservationExt.company_id) {
-        const { data: companyData, error: companyError } = await supabase
-          .from('companies')
-          .select('*')
-          .eq('id', reservationExt.company_id)
-          .single();
-
-        if (companyError) {
-          console.error('Error fetching company data:', companyError);
-          hotelNotification.error(
-            'Company Data Error',
-            'Could not fetch company information for R1 invoice.'
-          );
-        } else if (companyData) {
-          // Company type is now the DB row type directly
-          company = companyData;
-        }
-      }
+      const company: Company | undefined =
+        reservationExt.is_r1 && reservationExt.company_id
+          ? companies.find((c) => c.id === Number(reservationExt.company_id))
+          : undefined;
 
       // Generate PDF invoice with charges
       generatePDFInvoice({

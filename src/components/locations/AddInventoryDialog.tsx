@@ -3,12 +3,10 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { supabase } from '@/lib/supabase';
 import { X, Package, Hash, Calendar, DollarSign, AlertCircle, Type } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActiveItems } from '@/lib/queries/hooks/useItems';
-import { queryKeys } from '@/lib/queries/queryKeys';
+import { useAddInventory } from '@/lib/queries/hooks/useInventory';
 
 interface AddInventoryDialogProps {
   isOpen: boolean;
@@ -24,7 +22,6 @@ export default function AddInventoryDialog({
   locationId,
 }: AddInventoryDialogProps) {
   const { t } = useTranslation();
-  const queryClient = useQueryClient();
 
   const [formData, setFormData] = useState({
     item_id: '',
@@ -122,40 +119,7 @@ export default function AddInventoryDialog({
     return Object.keys(newErrors).length === 0;
   };
 
-  const addInventoryMutation = useMutation({
-    mutationFn: async (payload: {
-      item_id: number;
-      location_id: number;
-      quantity: number;
-      expiration_date: string | null;
-      cost_per_unit: number | null;
-    }) => {
-      const { data: maxOrderData } = await supabase
-        .from('inventory')
-        .select('display_order')
-        .eq('location_id', locationId)
-        .order('display_order', { ascending: false })
-        .limit(1);
-      const nextDisplayOrder =
-        maxOrderData && maxOrderData.length > 0 ? maxOrderData[0].display_order + 1 : 1;
-
-      const { error } = await supabase
-        .from('inventory')
-        .insert([{ ...payload, display_order: nextDisplayOrder }]);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.locations.detail(locationId),
-      });
-      queryClient.invalidateQueries({ queryKey: queryKeys.locations.withStats() });
-      onInventoryAdded();
-      onClose();
-    },
-    onError: () => {
-      setErrors({ submit: t('addInventory.addError') });
-    },
-  });
+  const addInventoryMutation = useAddInventory();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -166,13 +130,24 @@ export default function AddInventoryDialog({
       expirationDate = formatDateForDatabase(formData.expiration_date);
     }
 
-    addInventoryMutation.mutate({
-      item_id: parseInt(formData.item_id),
-      location_id: locationId,
-      quantity: parseInt(formData.quantity),
-      expiration_date: expirationDate || null,
-      cost_per_unit: formData.cost_per_unit ? parseFloat(formData.cost_per_unit) : null,
-    });
+    addInventoryMutation.mutate(
+      {
+        item_id: parseInt(formData.item_id),
+        location_id: locationId,
+        quantity: parseInt(formData.quantity),
+        expiration_date: expirationDate || null,
+        cost_per_unit: formData.cost_per_unit ? parseFloat(formData.cost_per_unit) : null,
+      },
+      {
+        onSuccess: () => {
+          onInventoryAdded();
+          onClose();
+        },
+        onError: () => {
+          setErrors({ submit: t('addInventory.addError') });
+        },
+      }
+    );
   };
 
   const handleInputChange = (field: string, value: string) => {

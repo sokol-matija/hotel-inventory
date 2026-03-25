@@ -1,7 +1,7 @@
 // ReservationPopup - Simplified UI-only component using services and hooks
 // Reduced from 810 lines to ~400 lines with clean architecture
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
 import { Button } from '../../../ui/button';
@@ -34,7 +34,7 @@ import { useReservationCharges } from '../../../../lib/queries/hooks/useReservat
 import PaymentDetailsModal from './PaymentDetailsModal';
 import CheckInWorkflow from '../CheckInOut/CheckInWorkflow';
 import CheckOutWorkflow from '../CheckInOut/CheckOutWorkflow';
-import { supabase } from '../../../../lib/supabase';
+import { useCompanies } from '../../../../lib/queries/hooks/useCompanies';
 import { convertToDisplayName } from '../../../../lib/hotel/countryCodeUtils';
 
 interface StatusActionsProps {
@@ -122,41 +122,13 @@ export default function ReservationPopup({
   const { data: charges = [] } = useReservationCharges(numericReservationId as number | undefined);
   const chargesTotalAmount = charges.reduce((sum, c) => sum + c.total, 0);
 
-  // State for company data (R1 billing)
-  const [company, setCompany] = useState<Company | null>(null);
-  const [, setLoadingCompany] = useState(false);
-
-  // Fetch company data if this is an R1 reservation
-  useEffect(() => {
-    const fetchCompanyData = async () => {
-      if (!reservationData) return;
-
-      const res = reservationData.reservation as unknown as Record<string, unknown>;
-      if (res.is_r1 && res.company_id) {
-        setLoadingCompany(true);
-        try {
-          const { data: companyData, error } = await supabase
-            .from('companies')
-            .select('*')
-            .eq('id', Number(res.company_id))
-            .single();
-
-          if (error) {
-            console.error('Error fetching company:', error);
-          } else if (companyData) {
-            // Company type is now the DB row type directly
-            setCompany(companyData);
-          }
-        } catch (error) {
-          console.error('Error loading company data:', error);
-        } finally {
-          setLoadingCompany(false);
-        }
-      }
-    };
-
-    fetchCompanyData();
-  }, [reservationData]);
+  // Company data for R1 billing — resolved from TQ cache
+  const { data: companies = [] } = useCompanies();
+  const res = reservationData?.reservation as unknown as Record<string, unknown> | undefined;
+  const company: Company | null =
+    res?.is_r1 && res?.company_id
+      ? (companies.find((c) => c.id === Number(res.company_id)) ?? null)
+      : null;
 
   if (!event) return null;
 

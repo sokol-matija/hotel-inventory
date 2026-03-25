@@ -1,55 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { supabase } from '@/lib/supabase';
+import { useLocationsWithStats, useUpdateLocation } from '@/lib/queries/hooks/useLocations';
 import { useAuth } from '../auth/AuthProvider';
 import { useTranslation } from 'react-i18next';
-import { formatDate } from '@/lib/dateUtils';
 import { Edit, Save, X, Refrigerator, Warehouse } from 'lucide-react';
-
-interface Location {
-  id: number;
-  name: string;
-  type: string;
-  description: string | null;
-  is_refrigerated: boolean;
-  created_at: string;
-}
 
 export default function LocationManagement() {
   const { user } = useAuth();
   const { t } = useTranslation();
-  const [locations, setLocations] = useState<Location[]>([]);
+  const { data: locations = [], isLoading } = useLocationsWithStats();
+  const updateLocationMutation = useUpdateLocation();
+
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchLocations();
-  }, []);
-
-  const fetchLocations = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('locations')
-        .select('*')
-        .order('type', { ascending: true })
-        .order('name', { ascending: true });
-
-      if (error) throw error;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setLocations((data || []) as any);
-    } catch (error) {
-      console.error('Error fetching locations:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const startEdit = (location: Location) => {
+  const startEdit = (location: { id: number; name: string; description: string | null }) => {
     setEditingId(location.id);
     setEditName(location.name);
     setEditDescription(location.description || '');
@@ -63,17 +32,10 @@ export default function LocationManagement() {
 
   const saveEdit = async (id: number) => {
     try {
-      const { error } = await supabase
-        .from('locations')
-        .update({
-          name: editName,
-          description: editDescription,
-        })
-        .eq('id', id);
-
-      if (error) throw error;
-
-      await fetchLocations();
+      await updateLocationMutation.mutateAsync({
+        id,
+        updates: { name: editName, description: editDescription },
+      });
       setEditingId(null);
       setEditName('');
       setEditDescription('');
@@ -82,7 +44,6 @@ export default function LocationManagement() {
     }
   };
 
-  // Allow all authenticated users access
   if (!user) {
     return (
       <div className="py-8 text-center">
@@ -91,7 +52,7 @@ export default function LocationManagement() {
     );
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
         <div className="mr-3 h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
@@ -158,8 +119,7 @@ export default function LocationManagement() {
                         {location.description || t('admin.noDescription')}
                       </p>
                       <p className="mt-1 text-xs text-gray-500">
-                        {t('common.type')}: {t(`locationTypes.${location.type.toLowerCase()}`)} •{' '}
-                        {t('admin.created')}: {formatDate(location.created_at)}
+                        {t('common.type')}: {t(`locationTypes.${location.type.toLowerCase()}`)}
                       </p>
                     </div>
                   )}
@@ -238,8 +198,7 @@ export default function LocationManagement() {
                           {location.description || t('admin.noDescription')}
                         </p>
                         <p className="mt-1 text-xs text-gray-500">
-                          {t('common.type')}: {t(`locationTypes.${location.type.toLowerCase()}`)} •{' '}
-                          {t('admin.created')}: {formatDate(location.created_at)}
+                          {t('common.type')}: {t(`locationTypes.${location.type.toLowerCase()}`)}
                         </p>
                       </div>
                     )}

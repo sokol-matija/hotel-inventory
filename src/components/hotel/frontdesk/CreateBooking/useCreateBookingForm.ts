@@ -4,9 +4,7 @@ import { useRooms } from '@/lib/queries/hooks/useRooms';
 import type { Company } from '@/lib/queries/hooks/useCompanies';
 import { useCompanies } from '@/lib/queries/hooks/useCompanies';
 import type { Guest } from '@/lib/queries/hooks/useGuests';
-import { useQueryClient } from '@tanstack/react-query';
-import { queryKeys } from '@/lib/queries/queryKeys';
-import { supabase } from '@/lib/supabase';
+import { useCreateFullBooking } from '@/lib/queries/hooks/useReservations';
 import { unifiedPricingService } from '@/lib/hotel/services/UnifiedPricingService';
 import { HOTEL_ID } from '@/lib/hotel/constants';
 import { ntfyService, type BookingNotificationData } from '@/lib/ntfyService';
@@ -113,13 +111,7 @@ export function useCreateBookingForm({
 }: UseCreateBookingFormParams): UseCreateBookingFormReturn {
   const { data: rooms = [] } = useRooms();
   const { data: companies = [] } = useCompanies();
-  const queryClient = useQueryClient();
-
-  const refreshData = () => {
-    queryClient.invalidateQueries({ queryKey: queryKeys.reservations.all() });
-    queryClient.invalidateQueries({ queryKey: queryKeys.rooms.all() });
-    queryClient.invalidateQueries({ queryKey: queryKeys.guests.all() });
-  };
+  const createBookingMutation = useCreateFullBooking();
 
   const hotelId = HOTEL_ID;
 
@@ -431,7 +423,6 @@ export function useCreateBookingForm({
             'Unallocated Reservation Created',
             `Reservation for ${temporaryName} has been created and placed in unallocated queue.`
           );
-          await refreshData();
           onClose();
         } else {
           hotelNotification.error('Creation Failed', result.error || 'Unknown error');
@@ -450,154 +441,40 @@ export function useCreateBookingForm({
       setIsSubmitting(true);
 
       const primaryGuest = bookingGuests[0];
-      let primaryGuestId: number;
 
-      if (primaryGuest.isExisting && primaryGuest.existingGuestId) {
-        primaryGuestId = primaryGuest.existingGuestId;
-      } else {
-        const { data: createdGuest, error: guestError } = await supabase
-          .from('guests')
-          .insert({
-            first_name: primaryGuest.firstName,
-            last_name: primaryGuest.lastName,
-            email: primaryGuest.email?.trim() || `guest_${Date.now()}@placeholder.local`,
-            phone: primaryGuest.phone || null,
-            nationality: primaryGuest.nationality || null,
-            date_of_birth: primaryGuest.dateOfBirth || null,
-          })
-          .select()
-          .single();
-
-        if (guestError) throw guestError;
-        primaryGuestId = createdGuest.id;
-      }
-
-      const { data: statusRow } = await supabase
-        .from('reservation_statuses')
-        .select('id')
-        .eq('code', 'confirmed')
-        .single();
-      const { data: sourceRow } = await supabase
-        .from('booking_sources')
-        .select('id')
-        .eq('code', 'direct')
-        .single();
-
-      const reservationData = {
-        guest_id: primaryGuestId,
-        room_id: selectedRoom!.id,
-        check_in_date: checkInDate.toISOString().split('T')[0],
-        check_out_date: checkOutDate.toISOString().split('T')[0],
-        adults: adultsCount,
-        children_count: childrenCount,
-        number_of_guests: adultsCount + childrenCount,
-        status_id: statusRow?.id,
-        booking_source_id: sourceRow?.id,
-        special_requests: bookingServices.specialRequests || null,
-        has_pets: bookingServices.hasPets,
-        parking_required: bookingServices.needsParking,
-        is_r1: isCompanyBilling,
-        company_id: isCompanyBilling && selectedCompanyId ? parseInt(selectedCompanyId) : null,
-        label_id: selectedLabelId,
-      };
-
-      const { data: reservation, error: reservationError } = await supabase
-        .from('reservations')
-        .insert(reservationData)
-        .select()
-        .single();
-
-      if (reservationError) {
-        console.error('Reservation creation failed:', {
-          error: reservationError,
-          sentData: reservationData,
-        });
-        throw reservationError;
-      }
-
-      if (previewCharges.length > 0) {
-        const { error: chargesError } = await supabase.from('reservation_charges').insert(
-          previewCharges.map((c) => ({
-            reservation_id: reservation.id,
-            charge_type: c.chargeType,
-            description: c.description,
-            quantity: c.quantity,
-            unit_price: c.unitPrice,
-            total: c.total,
-            vat_rate: c.vatRate,
-            sort_order: c.sortOrder,
-          }))
-        );
-
-        if (chargesError) {
-          console.error('Failed to insert reservation charges:', chargesError);
-          // Non-fatal: reservation exists, charges can be regenerated
-        }
-      }
-
-      for (let i = 0; i < bookingGuests.length; i++) {
-        const guest = bookingGuests[i];
-        let guestId: number;
-
-        if (i === 0) {
-          guestId = primaryGuestId;
-        } else if (guest.isExisting && guest.existingGuestId) {
-          guestId = guest.existingGuestId;
-        } else {
-          const email = guest.email?.trim() || `guest_${Date.now()}_${i}@placeholder.local`;
-
-          const { data: additionalGuest, error: addGuestError } = await supabase
-            .from('guests')
-            .insert({
-              first_name: guest.firstName,
-              last_name: guest.lastName,
-              email,
-              phone: guest.phone || null,
-              nationality: guest.nationality || null,
-              date_of_birth: guest.dateOfBirth || null,
-            })
-            .select()
-            .single();
-
-          if (addGuestError) throw addGuestError;
-          guestId = additionalGuest.id;
-        }
-
-        await supabase.from('reservation_guests').insert({
-          reservation_id: reservation.id,
-          guest_id: guestId,
-        });
-
-        await supabase.from('guest_stays').insert({
-          reservation_id: reservation.id,
-          guest_id: guestId,
-          check_in: checkInDate.toISOString(),
-          check_out: checkOutDate.toISOString(),
-        });
-
-        if (guest.type === 'child' && guest.age !== undefined) {
-          let dateOfBirth: string;
-          if (guest.dateOfBirth) {
-            dateOfBirth = new Date(guest.dateOfBirth).toISOString().split('T')[0];
-          } else {
-            const today = new Date();
-            const dob = new Date(
-              today.getFullYear() - guest.age,
-              today.getMonth(),
-              today.getDate()
-            );
-            dateOfBirth = dob.toISOString().split('T')[0];
-          }
-
-          await supabase.from('guest_children').insert({
-            reservation_id: reservation.id,
-            guest_id: guestId,
-            name: `${guest.firstName} ${guest.lastName}`,
-            age: guest.age,
-            date_of_birth: dateOfBirth,
-          });
-        }
-      }
+      await createBookingMutation.mutateAsync({
+        roomId: selectedRoom!.id,
+        checkInDate,
+        checkOutDate,
+        adultsCount,
+        childrenCount,
+        guests: bookingGuests.map((g) => ({
+          firstName: g.firstName,
+          lastName: g.lastName,
+          email: g.email,
+          phone: g.phone,
+          nationality: g.nationality,
+          dateOfBirth: g.dateOfBirth,
+          type: g.type,
+          age: g.age,
+          existingGuestId: g.isExisting ? g.existingGuestId : undefined,
+        })),
+        specialRequests: bookingServices.specialRequests,
+        hasPets: bookingServices.hasPets,
+        parkingRequired: bookingServices.needsParking,
+        isR1: isCompanyBilling,
+        companyId: isCompanyBilling && selectedCompanyId ? parseInt(selectedCompanyId) : null,
+        labelId: selectedLabelId,
+        charges: previewCharges.map((c) => ({
+          chargeType: c.chargeType,
+          description: c.description,
+          quantity: c.quantity,
+          unitPrice: c.unitPrice,
+          total: c.total,
+          vatRate: c.vatRate ?? 0,
+          sortOrder: c.sortOrder ?? 0,
+        })),
+      });
 
       hotelNotification.success(
         'Booking Created Successfully!',
@@ -638,7 +515,6 @@ export function useCreateBookingForm({
         }
       }
 
-      refreshData();
       onClose();
     } catch (error: unknown) {
       console.error('Booking creation failed:', error);

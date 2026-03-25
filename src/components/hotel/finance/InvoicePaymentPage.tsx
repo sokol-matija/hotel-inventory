@@ -28,7 +28,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { Invoice, Company, Payment } from '../../../lib/hotel/types';
 import { generatePDFInvoice } from '../../../lib/pdfInvoiceGenerator';
 import hotelNotification from '../../../lib/notifications';
-import { supabase } from '../../../lib/supabase';
+import { useCompanies } from '../../../lib/queries/hooks/useCompanies';
 
 export default function InvoicePaymentPage() {
   const { data: invoices = [], isLoading: invoicesLoading, isError: invoicesError } = useInvoices();
@@ -39,6 +39,7 @@ export default function InvoicePaymentPage() {
     isLoading: reservationsLoading,
     isError: reservationsError,
   } = useReservations();
+  const { data: companies = [] } = useCompanies();
   const payments: Payment[] = []; // payments not loaded from DB
 
   const isLoading = invoicesLoading || guestsLoading || roomsLoading || reservationsLoading;
@@ -150,20 +151,11 @@ export default function InvoicePaymentPage() {
         return;
       }
 
-      // Fetch company data if this is an R1 reservation
-      let company: Company | undefined;
-      if (reservation.is_r1 && reservation.company_id) {
-        const { data: companyData, error: companyError } = await supabase
-          .from('companies')
-          .select('*')
-          .eq('id', Number(reservation.company_id))
-          .single();
-
-        if (companyData && !companyError) {
-          // Company type is now the DB row type directly
-          company = companyData;
-        }
-      }
+      // Resolve company from TQ cache (no extra fetch needed)
+      const company: Company | undefined =
+        reservation.is_r1 && reservation.company_id
+          ? companies.find((c) => c.id === Number(reservation.company_id))
+          : undefined;
 
       // Generate PDF with EXISTING fiscal data (never regenerate JIR/ZKI)
       generatePDFInvoice({

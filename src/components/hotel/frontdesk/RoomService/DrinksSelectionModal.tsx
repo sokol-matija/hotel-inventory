@@ -9,45 +9,19 @@ import {
   calculateOrderTotal,
   formatCurrency,
 } from '../../../../lib/hotel/orderService';
-import { supabase } from '../../../../lib/supabase';
 import { Reservation } from '../../../../lib/hotel/types';
 import { formatRoomNumber } from '../../../../lib/hotel/calendarUtils';
 import { useRooms } from '../../../../lib/queries/hooks/useRooms';
+import {
+  useFridgeItems,
+  type FridgeInventoryItem,
+} from '../../../../lib/queries/hooks/useRoomService';
 
 interface DrinksSelectionModalProps {
   reservation: Reservation;
   isOpen: boolean;
   onClose: () => void;
   onOrderComplete: (orderItems: OrderItem[], totalAmount: number) => void;
-}
-
-// Enhanced inventory item with live stock and location info
-interface FridgeInventoryItem {
-  id: number;
-  name: string;
-  description?: string;
-  category: {
-    id: number;
-    name: string;
-    requires_expiration: boolean;
-  };
-  unit: string;
-  price: number;
-  minimum_stock: number;
-  is_active: boolean;
-  inventory: Array<{
-    id: number;
-    location_id: number;
-    quantity: number;
-    originalQuantity: number; // Track original quantity for basket calculations
-    expiration_date?: string;
-    location: {
-      id: number;
-      name: string;
-    };
-  }>;
-  totalStock: number;
-  availableStock: number; // Stock minus basket quantities
 }
 
 export default function DrinksSelectionModal({
@@ -57,21 +31,25 @@ export default function DrinksSelectionModal({
   onOrderComplete,
 }: DrinksSelectionModalProps) {
   const { data: rooms = [] } = useRooms();
+  const { data: fridgeItemsData = [], isLoading } = useFridgeItems(isOpen);
   const [availableItems, setAvailableItems] = useState<FridgeInventoryItem[]>([]);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [validationResult, setValidationResult] = useState<OrderValidationResult | null>(null);
 
   // Basket state to track quantity changes before committing
   const [basketQuantities, setBasketQuantities] = useState<Record<number, number>>({});
 
-  // Load drinks when modal opens
+  // Initialize/reset available items when modal opens or fresh data arrives
   useEffect(() => {
     if (isOpen) {
-      loadDrinksItems();
+      setAvailableItems(fridgeItemsData);
+      setBasketQuantities({});
+      setOrderItems([]);
+      setValidationResult(null);
+      setSearchTerm('');
     }
-  }, [isOpen]);
+  }, [isOpen, fridgeItemsData]);
 
   // Validate order whenever items change
   useEffect(() => {
@@ -81,99 +59,6 @@ export default function DrinksSelectionModal({
       setValidationResult(null);
     }
   }, [orderItems]);
-
-  const loadDrinksItems = async () => {
-    try {
-      setIsLoading(true);
-
-      // Fetch beverages from fridge locations (refrigerated locations)
-      const { data: items, error } = await supabase
-        .from('items')
-        .select(
-          `
-          id,
-          name,
-          description,
-          unit,
-          price,
-          minimum_stock,
-          is_active,
-          category:categories(id, name, requires_expiration),
-          inventory(
-            id,
-            location_id,
-            quantity,
-            expiration_date,
-            location:locations(id, name, is_refrigerated)
-          )
-        `
-        )
-        .eq('is_active', true)
-        .in('categories.name', [
-          'Beverage',
-          'Drinks',
-          'Bar',
-          'Restaurant',
-          'Alcohol',
-          'Coffee',
-          'Tea',
-          'Cocktails',
-        ]);
-
-      if (error) throw error;
-
-      // Process and filter items from refrigerated locations only
-      const fridgeItems: FridgeInventoryItem[] = items
-        ?.map((item) => {
-          // Only include inventory from refrigerated locations
-          const fridgeInventory =
-            item.inventory?.filter((inv) => {
-              const loc = inv.location as unknown as Record<string, unknown> | null;
-              return loc?.is_refrigerated && inv.quantity > 0;
-            }) || [];
-
-          if (fridgeInventory.length === 0) return null;
-
-          const totalStock = fridgeInventory.reduce((sum, inv) => sum + (inv.quantity || 0), 0);
-
-          return {
-            id: item.id,
-            name: item.name,
-            description: item.description,
-            category: {
-              id: (item.category as unknown as Record<string, unknown>).id as number,
-              name: (item.category as unknown as Record<string, unknown>).name as string,
-              requires_expiration: (item.category as unknown as Record<string, unknown>)
-                .requires_expiration as boolean,
-            },
-            unit: item.unit,
-            price: item.price || 0,
-            minimum_stock: item.minimum_stock,
-            is_active: item.is_active,
-            inventory: fridgeInventory.map((inv) => ({
-              id: inv.id,
-              location_id: inv.location_id,
-              quantity: inv.quantity,
-              originalQuantity: inv.quantity,
-              expiration_date: inv.expiration_date,
-              location: {
-                id: (inv.location as unknown as Record<string, unknown>).id as number,
-                name: (inv.location as unknown as Record<string, unknown>).name as string,
-              },
-            })),
-            totalStock,
-            availableStock: totalStock,
-          };
-        })
-        .filter((item) => item !== null) as FridgeInventoryItem[];
-
-      setAvailableItems(fridgeItems);
-    } catch (error) {
-      console.error('Error loading drinks from fridge:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const filteredItems = availableItems.filter(
     (item) =>
