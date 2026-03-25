@@ -11,6 +11,13 @@ import { Button } from '../../../ui/button';
 import LabelBadge from '../../shared/LabelBadge';
 import { ReservationContextMenu } from './ReservationContextMenu';
 import { OccupancyData } from '../../../../lib/hotel/services/HotelTimelineService';
+import { useReservationCharges } from '../../../../lib/queries/hooks/useReservationCharges';
+
+function ReservationTotal({ reservationId }: { reservationId: number }) {
+  const { data: charges = [] } = useReservationCharges(reservationId);
+  const total = charges.reduce((sum, c) => sum + c.total, 0);
+  return <span className="text-xs font-bold text-green-600">€{total.toFixed(0)}</span>;
+}
 
 interface RoomOverviewFloorSectionProps {
   floor: number;
@@ -226,7 +233,7 @@ export function RoomOverviewFloorSection({
                               : 'Today'}
                           </div>
                           <div className="flex items-center gap-1.5">
-                            <div className="text-xs font-bold text-green-600">&mdash;</div>
+                            <ReservationTotal reservationId={reservation.id} />
                             <div
                               className={`flex h-4 w-4 items-center justify-center rounded-full ${
                                 (reservation.reservation_statuses?.code ?? '') === 'checked-out'

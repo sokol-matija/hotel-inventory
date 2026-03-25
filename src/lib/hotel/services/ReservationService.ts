@@ -203,9 +203,17 @@ export class ReservationService {
         }
       }
 
-      // TODO: Phase 9 — derive totalAmount/vatAmount from reservation_charges
-      const totalAmount = 0;
-      const vatAmount = 0;
+      // Derive totalAmount/vatAmount from reservation_charges
+      const { data: charges } = await supabase
+        .from('reservation_charges')
+        .select('total, vat_rate')
+        .eq('reservation_id', reservation.id);
+
+      const totalAmount = (charges ?? []).reduce((sum, c) => sum + c.total, 0);
+      const vatAmount = (charges ?? []).reduce((sum, c) => {
+        const rate = c.vat_rate ?? 13;
+        return sum + c.total - c.total / (1 + rate / 100);
+      }, 0);
 
       // Prepare fiscal invoice data
       const fiscalInvoiceData = {

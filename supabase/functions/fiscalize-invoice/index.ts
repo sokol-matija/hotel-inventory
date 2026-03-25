@@ -386,7 +386,7 @@ serve(async (req) => {
       const qrCodeData = [
         'https://porezna-uprava.gov.hr/rn',
         result.jir,
-        formatXMLDateTime(new Date(fiscalRequest.dateTime)),
+        formatZKIDateTime(new Date(fiscalRequest.dateTime)),
         fiscalRequest.totalAmount.toFixed(2),
       ].join('|');
 
