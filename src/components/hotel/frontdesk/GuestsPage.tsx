@@ -28,7 +28,7 @@ export default function GuestsPage() {
     ? guests.filter((g) => {
         const q = searchQuery.toLowerCase();
         return (
-          g.fullName.toLowerCase().includes(q) ||
+          g.display_name.toLowerCase().includes(q) ||
           (g.email ?? '').toLowerCase().includes(q) ||
           (g.phone ?? '').includes(q)
         );
@@ -42,12 +42,12 @@ export default function GuestsPage() {
 
   // Calculate stats
   const totalGuests = guests.length;
-  const vipGuests = guests.filter((guest) => guest.isVip);
-  const guestsWithPets = guests.filter((guest) => guest.hasPets);
+  const vipGuests = guests.filter((guest) => guest.is_vip);
+  const guestsWithPets = guests.filter((guest) => guest.has_pets);
 
-  const getAgeDisplay = (dateOfBirth: Date | undefined) => {
+  const getAgeDisplay = (dateOfBirth: string | null | undefined) => {
     if (!dateOfBirth) return 'N/A';
-    const age = new Date().getFullYear() - dateOfBirth.getFullYear();
+    const age = new Date().getFullYear() - new Date(dateOfBirth).getFullYear();
     return `${age} years`;
   };
 
@@ -113,9 +113,7 @@ export default function GuestsPage() {
                 <Baby className="h-5 w-5 text-green-500" />
                 <div>
                   <p className="text-sm font-medium text-gray-600">With Children</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {filteredGuests.filter((g) => g.children.length > 0).length}
-                  </p>
+                  <p className="text-2xl font-bold text-gray-900">-</p>
                 </div>
               </div>
             </CardContent>
@@ -187,23 +185,16 @@ export default function GuestsPage() {
                     <div className="flex items-center space-x-4">
                       <div className="flex-1">
                         <div className="mb-1 flex items-center space-x-2">
-                          <h3 className="font-medium text-gray-900">{guest.fullName}</h3>
-                          {guest.isVip && (
+                          <h3 className="font-medium text-gray-900">{guest.display_name}</h3>
+                          {guest.is_vip && (
                             <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
                               VIP
                             </Badge>
                           )}
-                          {guest.hasPets && (
+                          {guest.has_pets && (
                             <Badge variant="secondary" className="bg-red-100 text-red-800">
                               <Heart className="mr-1 h-3 w-3" />
                               Pets
-                            </Badge>
-                          )}
-                          {guest.children.length > 0 && (
-                            <Badge variant="secondary" className="bg-green-100 text-green-800">
-                              <Baby className="mr-1 h-3 w-3" />
-                              {guest.children.length} child
-                              {guest.children.length !== 1 ? 'ren' : ''}
                             </Badge>
                           )}
                         </div>
@@ -226,7 +217,7 @@ export default function GuestsPage() {
                               <span>{guest.nationality}</span>
                             </div>
                           )}
-                          <span>Age: {getAgeDisplay(guest.dateOfBirth)}</span>
+                          <span>Age: {getAgeDisplay(guest.date_of_birth)}</span>
                         </div>
                       </div>
                     </div>

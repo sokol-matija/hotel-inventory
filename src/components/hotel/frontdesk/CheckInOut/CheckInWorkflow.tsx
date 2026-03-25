@@ -122,7 +122,7 @@ export default function CheckInWorkflow({ isOpen, onClose, reservation }: CheckI
     ];
 
     // Add parking step if guest has children (likely to have car) or is VIP
-    if (guest.children.length > 0 || guest.isVip) {
+    if (guest.is_vip) {
       steps.push({
         id: 'parking',
         title: 'Assign Parking',
@@ -246,14 +246,14 @@ export default function CheckInWorkflow({ isOpen, onClose, reservation }: CheckI
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <div className="flex items-center space-x-2">
-                    <span className="font-medium">{guest.fullName}</span>
-                    {guest.isVip && <Badge variant="secondary">VIP</Badge>}
+                    <span className="font-medium">{guest.display_name}</span>
+                    {guest.is_vip && <Badge variant="secondary">VIP</Badge>}
                   </div>
                   <div className="text-sm text-gray-600">
                     {guest.email} • {guest.phone}
                   </div>
                   <div className="text-sm text-gray-600">
-                    🌍 {guest.nationality} • {guest.preferredLanguage.toUpperCase()}
+                    🌍 {guest.nationality} • {(guest.preferred_language ?? 'en').toUpperCase()}
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -265,10 +265,10 @@ export default function CheckInWorkflow({ isOpen, onClose, reservation }: CheckI
                   <div className="flex items-center space-x-2">
                     <Users className="h-4 w-4 text-gray-500" />
                     <span className="text-sm">{reservation.numberOfGuests} guests</span>
-                    {guest.children.length > 0 && (
+                    {(reservation.children?.length ?? 0) > 0 && (
                       <>
                         <Baby className="h-4 w-4 text-gray-500" />
-                        <span className="text-sm">{guest.children.length} children</span>
+                        <span className="text-sm">{reservation.children?.length} children</span>
                       </>
                     )}
                   </div>

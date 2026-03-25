@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { BarChart3 } from 'lucide-react';
-import { Reservation, ReservationStatus, Guest } from '../../../../lib/hotel/types';
+import { Reservation, ReservationStatus } from '../../../../lib/hotel/types';
+import type { Guest } from '../../../../lib/queries/hooks/useGuests';
 import type { Room } from '../../../../lib/queries/hooks/useRooms';
 import { HotelEmailService } from '../../../../lib/emailService';
 

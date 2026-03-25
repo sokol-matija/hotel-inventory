@@ -101,7 +101,7 @@ export default function HotelOrdersModal({
       {
         roomId: reservation.roomId,
         roomNumber: room ? formatRoomNumber(room) : reservation.roomId,
-        guestName: reservation.guest?.fullName || 'Unknown Guest',
+        guestName: reservation.guest?.display_name || 'Unknown Guest',
         reservationId: reservation.id,
         items: orderItems,
         subtotal: totals.subtotal,
@@ -159,7 +159,7 @@ export default function HotelOrdersModal({
             <h2 className="flex items-center text-xl font-semibold">🛎️ Room Service Order</h2>
             <p className="text-sm text-blue-100">
               Room {room ? formatRoomNumber(room) : reservation.roomId} •{' '}
-              {guest?.fullName || 'Unknown Guest'}
+              {guest?.display_name || 'Unknown Guest'}
             </p>
           </div>
           <Button

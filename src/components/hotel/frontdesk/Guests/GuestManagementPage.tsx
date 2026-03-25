@@ -17,7 +17,7 @@ import {
   Download,
   Eye,
 } from 'lucide-react';
-import { Guest } from '../../../../lib/hotel/types';
+import { Guest } from '../../../../lib/queries/hooks/useGuests';
 import { useGuests } from '../../../../lib/queries/hooks/useGuests';
 import { useReservations } from '../../../../lib/queries/hooks/useReservations';
 import GuestProfileModal from './GuestProfileModal';
@@ -29,9 +29,9 @@ interface GuestManagementPageProps {
 export default function GuestManagementPage({ onGuestSelect }: GuestManagementPageProps) {
   const { data: guests = [] } = useGuests();
   const { data: reservations = [] } = useReservations();
-  const getGuestStayHistory = (guestId: string) =>
+  const getGuestStayHistory = (guestId: number) =>
     reservations
-      .filter((r) => r.guestId === guestId)
+      .filter((r) => Number(r.guestId) === guestId)
       .sort((a, b) => b.checkIn.getTime() - a.checkIn.getTime());
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGuest, setSelectedGuest] = useState<Guest | null>(null);
@@ -39,7 +39,7 @@ export default function GuestManagementPage({ onGuestSelect }: GuestManagementPa
   const [modalMode, setModalMode] = useState<'view' | 'edit' | 'create'>('view');
   const [filterNationality, setFilterNationality] = useState<string>('');
   const [filterVipOnly, setFilterVipOnly] = useState(false);
-  const [sortBy, setSortBy] = useState<'name' | 'totalStays' | 'lastStay'>('name');
+  const [sortBy, setSortBy] = useState<'name' | 'lastStay'>('name');
 
   // Filter and sort guests
   const filteredGuests = useMemo(() => {
@@ -50,7 +50,7 @@ export default function GuestManagementPage({ onGuestSelect }: GuestManagementPa
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
         (guest) =>
-          guest.fullName.toLowerCase().includes(query) ||
+          guest.display_name.toLowerCase().includes(query) ||
           guest.email?.toLowerCase().includes(query) ||
           guest.phone?.toLowerCase().includes(query) ||
           guest.nationality?.toLowerCase().includes(query)
@@ -64,28 +64,23 @@ export default function GuestManagementPage({ onGuestSelect }: GuestManagementPa
 
     // Apply VIP filter
     if (filterVipOnly) {
-      filtered = filtered.filter((guest) => guest.isVip);
+      filtered = filtered.filter((guest) => guest.is_vip);
     }
 
     // Sort guests
     return filtered.sort((a, b) => {
       switch (sortBy) {
-        case 'totalStays':
-          return b.totalStays - a.totalStays;
-        case 'lastStay':
-          // This would require reservation data - simplified for now
-          return b.totalStays - a.totalStays;
         case 'name':
         default:
-          return a.fullName.localeCompare(b.fullName);
+          return a.display_name.localeCompare(b.display_name);
       }
     });
   }, [guests, searchQuery, filterNationality, filterVipOnly, sortBy]);
 
   // Get unique nationalities for filter
   const nationalities = useMemo(() => {
-    const unique = new Set(guests.map((guest) => guest.nationality));
-    return Array.from(unique).sort();
+    const unique = new Set(guests.map((guest) => guest.nationality).filter(Boolean));
+    return Array.from(unique).sort() as string[];
   }, [guests]);
 
   const handleGuestSelect = (guest: Guest) => {
@@ -119,11 +114,10 @@ export default function GuestManagementPage({ onGuestSelect }: GuestManagementPa
 
   const getGuestStats = () => {
     const totalGuests = guests.length;
-    const vipGuests = guests.filter((g) => g.isVip).length;
-    const guestsWithChildren = guests.filter((g) => g.children.length > 0).length;
-    const guestsWithPets = guests.filter((g) => g.hasPets).length;
+    const vipGuests = guests.filter((g) => g.is_vip).length;
+    const guestsWithPets = guests.filter((g) => g.has_pets).length;
 
-    return { totalGuests, vipGuests, guestsWithChildren, guestsWithPets };
+    return { totalGuests, vipGuests, guestsWithPets };
   };
 
   const stats = getGuestStats();
@@ -173,7 +167,7 @@ export default function GuestManagementPage({ onGuestSelect }: GuestManagementPa
             <div className="flex items-center space-x-2">
               <Baby className="h-5 w-5 text-green-600" />
               <div>
-                <p className="text-2xl font-bold">{stats.guestsWithChildren}</p>
+                <p className="text-2xl font-bold">-</p>
                 <p className="text-sm text-gray-600">With Children</p>
               </div>
             </div>
@@ -249,10 +243,9 @@ export default function GuestManagementPage({ onGuestSelect }: GuestManagementPa
               <select
                 className="rounded-md border border-gray-300 px-3 py-1 text-sm"
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as 'name' | 'totalStays' | 'lastStay')}
+                onChange={(e) => setSortBy(e.target.value as 'name' | 'lastStay')}
               >
                 <option value="name">Name</option>
-                <option value="totalStays">Total Stays</option>
                 <option value="lastStay">Last Stay</option>
               </select>
             </div>
@@ -298,14 +291,14 @@ export default function GuestManagementPage({ onGuestSelect }: GuestManagementPa
 
                         <div className="flex-1">
                           <div className="mb-1 flex items-center space-x-2">
-                            <h4 className="text-lg font-semibold">{guest.fullName}</h4>
-                            {guest.isVip && (
+                            <h4 className="text-lg font-semibold">{guest.display_name}</h4>
+                            {guest.is_vip && (
                               <Badge variant="secondary">
                                 <Star className="mr-1 h-3 w-3" />
                                 VIP
                               </Badge>
                             )}
-                            {guest.hasPets && <span className="text-sm">🐕</span>}
+                            {guest.has_pets && <span className="text-sm">🐕</span>}
                           </div>
 
                           <div className="flex items-center space-x-4 text-sm text-gray-600">
@@ -326,18 +319,13 @@ export default function GuestManagementPage({ onGuestSelect }: GuestManagementPa
                           </div>
 
                           <div className="mt-1 flex items-center space-x-4 text-sm text-gray-500">
-                            <div className="flex items-center space-x-1">
-                              <Calendar className="h-3 w-3" />
-                              <span>{guest.totalStays} stays</span>
-                            </div>
-                            {guest.children.length > 0 && (
-                              <div className="flex items-center space-x-1">
-                                <Baby className="h-3 w-3" />
-                                <span>{guest.children.length} children</span>
-                              </div>
-                            )}
                             {stayHistory.length > 0 && (
-                              <span>Last stay: {stayHistory[0]?.checkIn.toLocaleDateString()}</span>
+                              <div className="flex items-center space-x-1">
+                                <Calendar className="h-3 w-3" />
+                                <span>
+                                  Last stay: {stayHistory[0]?.checkIn.toLocaleDateString()}
+                                </span>
+                              </div>
                             )}
                           </div>
                         </div>

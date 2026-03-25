@@ -123,8 +123,8 @@ export default function RoomServiceOrders() {
       (r) => r.roomId === selectedRoom.id.toString() && r.status === 'checked-in'
     );
     const guestName =
-      activeReservation?.guest?.fullName ||
-      guests.find((g) => g.id === activeReservation?.guestId)?.fullName ||
+      activeReservation?.guest?.display_name ||
+      guests.find((g) => g.id === Number(activeReservation?.guestId))?.display_name ||
       'Unknown Guest';
     const totals = calculateOrderTotal(orderItems);
 

@@ -3,7 +3,8 @@ import { format, addDays, startOfDay } from 'date-fns';
 import { useDrag } from 'react-dnd';
 import { gsap } from 'gsap';
 import { Users, Baby, Dog, Move, Plus } from 'lucide-react';
-import { Reservation, ReservationStatus, Guest } from '../../../../lib/hotel/types';
+import { Reservation, ReservationStatus } from '../../../../lib/hotel/types';
+import type { Guest } from '../../../../lib/queries/hooks/useGuests';
 import type { Room } from '../../../../lib/queries/hooks/useRooms';
 import { RESERVATION_STATUS_COLORS } from '../../../../lib/hotel/calendarUtils';
 import { getCountryFlag } from '../../../../lib/hotel/countryFlags';
@@ -84,7 +85,7 @@ export function ReservationBlock({
         currentRoomFloor: room.floor_number,
         checkIn: reservation.checkIn,
         checkOut: reservation.checkOut,
-        guestName: guest?.fullName || 'Guest',
+        guestName: guest?.display_name || 'Guest',
         reservation,
       },
       canDrag: () => isMoveMode,
@@ -206,7 +207,7 @@ export function ReservationBlock({
         }
       }}
       onContextMenu={handleContextMenu}
-      title={`${guest?.fullName || 'Guest'} - ${reservation.numberOfGuests} guests ${isDragging ? '(Dragging...)' : '(Click for details)'}`}
+      title={`${guest?.display_name || 'Guest'} - ${reservation.numberOfGuests} guests ${isDragging ? '(Dragging...)' : '(Click for details)'}`}
     >
       {/* Label Badge */}
       {reservation.label && (
@@ -222,7 +223,7 @@ export function ReservationBlock({
 
         <div className="flex min-w-0 flex-1 items-center space-x-1">
           <div className="flex min-w-0 flex-1 flex-col">
-            <span className="truncate text-xs font-medium">{guest?.fullName || 'Guest'}</span>
+            <span className="truncate text-xs font-medium">{guest?.display_name || 'Guest'}</span>
             {(() => {
               const daysLeft = Math.ceil(
                 (reservation.checkOut.getTime() - new Date().getTime()) / (24 * 60 * 60 * 1000)
@@ -257,7 +258,7 @@ export function ReservationBlock({
                 <span className="ml-0.5 text-xs">{reservation.children.length}</span>
               </div>
             )}
-            {(reservation.hasPets || guest?.hasPets) && <Dog className="h-3 w-3 text-white" />}
+            {(reservation.hasPets || guest?.has_pets) && <Dog className="h-3 w-3 text-white" />}
           </div>
         </div>
 
@@ -331,7 +332,7 @@ export function ReservationBlock({
 
       {/* Hover tooltip */}
       <div className="pointer-events-none absolute top-full left-0 z-20 mt-1 rounded bg-gray-900 px-2 py-1 text-xs whitespace-nowrap text-white opacity-0 group-hover:opacity-100">
-        {guest?.fullName} • {reservation.numberOfGuests} guests •{' '}
+        {guest?.display_name} • {reservation.numberOfGuests} guests •{' '}
         {format(reservation.checkIn, 'MMM dd')} - {format(reservation.checkOut, 'MMM dd')}
       </div>
 

@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Search, User, Phone, Mail, Globe, Users, X } from 'lucide-react';
+import { Search, User, Phone, Mail, Globe, X } from 'lucide-react';
 import { Badge } from '../../../ui/badge';
 import { Button } from '../../../ui/button';
 import { Card, CardContent } from '../../../ui/card';
-import { Guest } from '../../../../lib/hotel/types';
+import { Guest } from '../../../../lib/queries/hooks/useGuests';
 import { useGuests } from '../../../../lib/queries/hooks/useGuests';
 
 interface GuestAutocompleteProps {
@@ -35,7 +35,7 @@ export default function GuestAutocomplete({
     return guests
       .filter(
         (guest) =>
-          guest.fullName.toLowerCase().includes(query) ||
+          guest.display_name.toLowerCase().includes(query) ||
           (guest.email && guest.email.toLowerCase().includes(query)) ||
           (guest.phone && guest.phone.toLowerCase().includes(query)) ||
           (guest.nationality && guest.nationality.toLowerCase().includes(query))
@@ -73,7 +73,7 @@ export default function GuestAutocomplete({
 
   const handleGuestSelect = (guest: Guest) => {
     onGuestSelect(guest);
-    setSearchQuery(guest.fullName);
+    setSearchQuery(guest.display_name);
     setIsOpen(false);
     setHighlightedIndex(-1);
   };
@@ -115,8 +115,8 @@ export default function GuestAutocomplete({
                 </div>
                 <div>
                   <div className="flex items-center space-x-2">
-                    <h4 className="font-semibold">{selectedGuest.fullName}</h4>
-                    {selectedGuest.isVip && (
+                    <h4 className="font-semibold">{selectedGuest.display_name}</h4>
+                    {selectedGuest.is_vip && (
                       <Badge variant="secondary" className="text-xs">
                         VIP
                       </Badge>
@@ -138,12 +138,6 @@ export default function GuestAutocomplete({
                       <span>{selectedGuest.nationality}</span>
                     </div>
                   </div>
-                  {selectedGuest.children.length > 0 && (
-                    <div className="mt-1 flex items-center space-x-1 text-sm text-gray-600">
-                      <Users className="h-3 w-3" />
-                      <span>{selectedGuest.children.length} children</span>
-                    </div>
-                  )}
                 </div>
               </div>
               <Button variant="ghost" size="sm" onClick={handleClearSelection}>
@@ -204,24 +198,18 @@ export default function GuestAutocomplete({
                       </div>
                       <div>
                         <div className="flex items-center space-x-2">
-                          <span className="font-medium">{guest.fullName}</span>
-                          {guest.isVip && (
+                          <span className="font-medium">{guest.display_name}</span>
+                          {guest.is_vip && (
                             <Badge variant="secondary" className="text-xs">
                               VIP
                             </Badge>
                           )}
-                          {guest.hasPets && <span className="text-xs">🐕</span>}
+                          {guest.has_pets && <span className="text-xs">🐕</span>}
                         </div>
                         <div className="mt-1 flex items-center space-x-3 text-xs text-gray-600">
                           <span>{guest.email}</span>
                           <span>{guest.phone ? formatPhoneNumber(guest.phone) : 'No phone'}</span>
                           <span>🌍 {guest.nationality}</span>
-                        </div>
-                        <div className="mt-1 flex items-center space-x-3 text-xs text-gray-500">
-                          <span>{guest.totalStays} stays</span>
-                          {guest.children.length > 0 && (
-                            <span>{guest.children.length} children</span>
-                          )}
                         </div>
                       </div>
                     </div>

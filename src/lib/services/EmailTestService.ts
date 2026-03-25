@@ -41,31 +41,29 @@ export class EmailTestService {
    */
   getTestData(): EmailTestData {
     const testGuest: Guest = {
-      id: 'test-guest-001',
-      firstName: 'Matija',
-      lastName: 'Sokol',
-      fullName: 'Matija Sokol',
+      id: 1,
+      first_name: 'Matija',
+      last_name: 'Sokol',
+      full_name: 'Matija Sokol',
       email: 'sokol.matija@gmail.com',
       phone: '+385 98 123 456',
-      emergencyContactName: 'Emergency Contact',
-      emergencyContactPhone: '+385 98 987 654',
       nationality: 'Croatia',
-      preferredLanguage: 'English',
-      dietaryRestrictions: [],
-      hasPets: true,
-      isVip: true,
-      vipLevel: 1,
-      dateOfBirth: new Date('1985-03-15'),
-      children: [
-        {
-          name: 'Ana Sokol',
-          dateOfBirth: new Date('2015-06-20'),
-          age: 8,
-        },
-      ],
-      totalStays: 3,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      preferred_language: 'en',
+      dietary_restrictions: null,
+      has_pets: true,
+      is_vip: true,
+      vip_level: 1,
+      date_of_birth: '1985-03-15',
+      passport_number: null,
+      id_card_number: null,
+      special_needs: null,
+      marketing_consent: null,
+      average_rating: null,
+      notes: null,
+      country_code: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      display_name: 'Matija Sokol',
     };
 
     const testRoom: Room = {
@@ -90,7 +88,7 @@ export class EmailTestService {
     const testReservation: Reservation = {
       id: 'test-reservation-001',
       roomId: testRoom.id.toString(),
-      guestId: testGuest.id,
+      guestId: String(testGuest.id),
       checkIn: new Date(Date.now() + 86400000), // Tomorrow
       checkOut: new Date(Date.now() + 5 * 86400000), // 5 days from now
       numberOfGuests: 2,
@@ -163,7 +161,7 @@ export class EmailTestService {
       const result = await HotelEmailService.sendEmail(
         config.emailAddress,
         template,
-        testData.guest.fullName
+        testData.guest.display_name
       );
 
       if (result.success) {
@@ -195,7 +193,7 @@ export class EmailTestService {
       // Create notification data for Room 401
       const notificationData: BookingNotificationData = {
         roomNumber: '401',
-        guestName: testData.guest.fullName,
+        guestName: testData.guest.display_name,
         checkIn: this.formatDateForNotification(testData.reservation.checkIn),
         checkOut: this.formatDateForNotification(testData.reservation.checkOut),
         nights: testData.reservation.numberOfNights,
@@ -314,21 +312,15 @@ export class EmailTestService {
   ): Array<{ type: 'pet' | 'vip' | 'children'; label: string; icon: string }> {
     const badges: Array<{ type: 'pet' | 'vip' | 'children'; label: string; icon: string }> = [];
 
-    if (guest.hasPets) {
+    if (guest.has_pets) {
       badges.push({ type: 'pet', label: 'Has Pet', icon: '❤️' });
     }
 
-    if (guest.isVip) {
+    if (guest.is_vip) {
       badges.push({ type: 'vip', label: 'VIP Guest', icon: '⭐' });
     }
 
-    if (guest.children.length > 0) {
-      badges.push({
-        type: 'children',
-        label: `${guest.children.length} Child${guest.children.length > 1 ? 'ren' : ''}`,
-        icon: '👶',
-      });
-    }
+    // Note: children are stored in guest_children table, not directly on Guest
 
     return badges;
   }

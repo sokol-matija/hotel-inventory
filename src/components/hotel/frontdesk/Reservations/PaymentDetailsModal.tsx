@@ -129,7 +129,7 @@ export default function PaymentDetailsModal({
       const invoiceType = company ? 'R1 Company Invoice' : 'Invoice';
       hotelNotification.success(
         `${invoiceType} Generated`,
-        `PDF invoice saved as Hotel_Porec_Invoice_${invoiceNumber}_${guest.fullName.replace(/\s+/g, '_')}.pdf`
+        `PDF invoice saved as Hotel_Porec_Invoice_${invoiceNumber}_${guest.display_name.replace(/\s+/g, '_')}.pdf`
       );
     } catch (error) {
       console.error('Error generating PDF invoice:', error);
@@ -171,20 +171,20 @@ export default function PaymentDetailsModal({
           receivedDate: new Date(),
           processedDate: new Date(),
           processedBy: 'Front Desk Staff',
-          notes: `Payment processed via payment breakdown - ${guest.fullName}`,
+          notes: `Payment processed via payment breakdown - ${guest.display_name}`,
           referenceNumber: `PAYMENT-${Date.now()}`,
         });
 
         hotelNotification.success(
           'Payment Processed & Invoice Created',
-          `Payment marked as paid for ${guest.fullName}. Invoice ${invoice.invoiceNumber} created and available in Finance module.`,
+          `Payment marked as paid for ${guest.display_name}. Invoice ${invoice.invoiceNumber} created and available in Finance module.`,
           5000
         );
       } catch (invoiceError) {
         console.error('Failed to generate invoice:', invoiceError);
         hotelNotification.warning(
           'Payment Marked but Invoice Failed',
-          `Payment marked as paid for ${guest.fullName}, but invoice generation failed. Please create manually from Finance module.`,
+          `Payment marked as paid for ${guest.display_name}, but invoice generation failed. Please create manually from Finance module.`,
           4000
         );
       }
@@ -227,7 +227,7 @@ export default function PaymentDetailsModal({
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                   <div className="text-sm text-gray-500">Guest</div>
-                  <div className="font-medium">{guest.fullName}</div>
+                  <div className="font-medium">{guest.display_name}</div>
                 </div>
                 <div>
                   <div className="text-sm text-gray-500">Room</div>
@@ -257,7 +257,7 @@ export default function PaymentDetailsModal({
                   <Calendar className="h-4 w-4 text-gray-500" />
                   <span className="text-sm">{reservation.numberOfNights} nights</span>
                 </div>
-                {guest.hasPets && (
+                {guest.has_pets && (
                   <Badge variant="outline" className="text-xs">
                     Pet
                   </Badge>

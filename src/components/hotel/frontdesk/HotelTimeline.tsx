@@ -26,7 +26,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../../../lib/queries/queryKeys';
 import { format } from 'date-fns';
 import { formatRoomNumber } from '../../../lib/hotel/calendarUtils';
-import { CalendarEvent, ReservationStatus, Reservation, Guest } from '../../../lib/hotel/types';
+import { CalendarEvent, ReservationStatus, Reservation } from '../../../lib/hotel/types';
+import type { Guest } from '../../../lib/queries/hooks/useGuests';
 import type { Room } from '../../../lib/queries/hooks/useRooms';
 import ReservationPopup from './Reservations/ReservationPopup';
 import ModernCreateBookingModal from './ModernCreateBookingModal';
@@ -313,11 +314,11 @@ export default function HotelTimeline({
       const existingCheckIn = new Date(reservation.checkIn).getTime();
       const existingCheckOut = new Date(reservation.checkOut).getTime();
       if (!(checkOutTime <= existingCheckIn || checkInTime >= existingCheckOut)) {
-        const guest = guests.find((g) => g.id === reservation.guestId);
+        const guest = guests.find((g) => g.id === Number(reservation.guestId));
         conflicts.push({
           type: 'overlapping_reservation',
           severity: 'error',
-          message: `Room ${roomId} is already booked by ${guest?.fullName || 'Guest'} from ${new Date(existingCheckIn).toLocaleDateString()} to ${new Date(existingCheckOut).toLocaleDateString()}`,
+          message: `Room ${roomId} is already booked by ${guest?.display_name || 'Guest'} from ${new Date(existingCheckIn).toLocaleDateString()} to ${new Date(existingCheckOut).toLocaleDateString()}`,
         });
       }
     }
@@ -350,22 +351,18 @@ export default function HotelTimeline({
       let allocationGuestData: Partial<Guest> | undefined;
 
       if (isVirtualToReal) {
-        const guest = guests.find((g) => g.id === reservation.guestId);
+        const guest = guests.find((g) => g.id === Number(reservation.guestId));
         if (!guest) {
           hotelNotification.error('Allocation Failed', 'Guest not found for reservation');
           return;
         }
-        const actualName = guest.lastName;
-        const nameParts = actualName.trim().split(/\s+/);
-        const actualFirstName = nameParts[0] || 'Guest';
-        const actualLastName = nameParts.slice(1).join(' ') || actualFirstName;
         allocationGuestData = {
-          firstName: actualFirstName,
-          lastName: actualLastName,
-          email: guest.email || undefined,
-          phone: guest.phone || undefined,
-          nationality: guest.nationality || undefined,
-          dateOfBirth: guest.dateOfBirth ? new Date(guest.dateOfBirth) : undefined,
+          first_name: guest.first_name,
+          last_name: guest.last_name,
+          email: guest.email,
+          phone: guest.phone,
+          nationality: guest.nationality,
+          date_of_birth: guest.date_of_birth,
         };
       }
 
@@ -401,7 +398,7 @@ export default function HotelTimeline({
         );
       }
 
-      const guest = guests.find((g) => g.id === reservation.guestId);
+      const guest = guests.find((g) => g.id === Number(reservation.guestId));
       const isRoomTypeChange = oldRoom.room_types?.code !== newRoom.room_types?.code;
       const updatedReservationData: Partial<Reservation> = {
         roomId: newRoomId,
@@ -464,13 +461,13 @@ export default function HotelTimeline({
       if (isVirtualToReal) {
         hotelNotification.success(
           'Reservation Allocated!',
-          `${guest?.fullName || 'Guest'} allocated to ${formatRoomNumber(newRoom)} • ${newCheckIn.toLocaleDateString()} - ${newCheckOut.toLocaleDateString()}`,
+          `${guest?.display_name || 'Guest'} allocated to ${formatRoomNumber(newRoom)} • ${newCheckIn.toLocaleDateString()} - ${newCheckOut.toLocaleDateString()}`,
           5
         );
       } else {
         hotelNotification.success(
           'Reservation Moved Successfully!',
-          `${guest?.fullName || 'Guest'} moved from ${formatRoomNumber(oldRoom)} to ${formatRoomNumber(newRoom)} • ${newCheckIn.toLocaleDateString()} - ${newCheckOut.toLocaleDateString()}`,
+          `${guest?.display_name || 'Guest'} moved from ${formatRoomNumber(oldRoom)} to ${formatRoomNumber(newRoom)} • ${newCheckIn.toLocaleDateString()} - ${newCheckOut.toLocaleDateString()}`,
           5
         );
       }
@@ -537,10 +534,10 @@ export default function HotelTimeline({
       );
 
       if (result.success) {
-        const guest = guests.find((g) => g.id === reservation.guestId);
+        const guest = guests.find((g) => g.id === Number(reservation.guestId));
         hotelNotification.success(
           'Room Change Successful!',
-          `${guest?.fullName || 'Guest'} moved from ${formatRoomNumber(currentRoom)} to ${formatRoomNumber(targetRoom)} with updated pricing`,
+          `${guest?.display_name || 'Guest'} moved from ${formatRoomNumber(currentRoom)} to ${formatRoomNumber(targetRoom)} with updated pricing`,
           5
         );
       } else {
@@ -582,10 +579,10 @@ export default function HotelTimeline({
       );
 
       if (result.success) {
-        const guest = guests.find((g) => g.id === reservation.guestId);
+        const guest = guests.find((g) => g.id === Number(reservation.guestId));
         hotelNotification.success(
           'Free Upgrade Applied!',
-          `${guest?.fullName || 'Guest'} received a FREE UPGRADE from ${formatRoomNumber(currentRoom)} to ${formatRoomNumber(targetRoom)}!`,
+          `${guest?.display_name || 'Guest'} received a FREE UPGRADE from ${formatRoomNumber(currentRoom)} to ${formatRoomNumber(targetRoom)}!`,
           7
         );
       } else {
@@ -616,7 +613,7 @@ export default function HotelTimeline({
       if (!reservation) throw new Error('Reservation not found');
 
       const room = rooms.find((r) => r.id.toString() === reservation.roomId);
-      const guest = guests.find((g) => g.id === reservation.guestId);
+      const guest = guests.find((g) => g.id === Number(reservation.guestId));
       const newCheckIn = side === 'start' ? newDate : reservation.checkIn;
       const newCheckOut = side === 'end' ? newDate : reservation.checkOut;
       const daysDiff = Math.ceil(
@@ -667,7 +664,7 @@ export default function HotelTimeline({
       if (result.success) {
         hotelNotification.success(
           'Reservation Updated!',
-          `${guest?.fullName || 'Guest'} • ${room ? formatRoomNumber(room) : 'Room'} • ${newCheckIn.toLocaleDateString()} - ${newCheckOut.toLocaleDateString()}`,
+          `${guest?.display_name || 'Guest'} • ${room ? formatRoomNumber(room) : 'Room'} • ${newCheckIn.toLocaleDateString()} - ${newCheckOut.toLocaleDateString()}`,
           6
         );
       } else {
@@ -689,20 +686,20 @@ export default function HotelTimeline({
   const selectedEvent: CalendarEvent | null = useMemo(() => {
     if (!selectedReservation) return null;
     const room = rooms.find((r) => r.id.toString() === selectedReservation.roomId);
-    const guest = guests.find((g) => g.id === selectedReservation.guestId);
+    const guest = guests.find((g) => g.id === Number(selectedReservation.guestId));
     return {
       id: `event-${selectedReservation.id}`,
       reservationId: selectedReservation.id,
       roomId: selectedReservation.roomId,
-      title: guest?.fullName || 'Guest',
+      title: guest?.display_name || 'Guest',
       start: selectedReservation.checkIn,
       end: selectedReservation.checkOut,
       resource: {
         status: selectedReservation.status,
-        guestName: guest?.fullName || 'Guest',
+        guestName: guest?.display_name || 'Guest',
         roomNumber: room?.room_number || 'Unknown',
         numberOfGuests: selectedReservation.numberOfGuests,
-        hasPets: guest?.hasPets || false,
+        hasPets: guest?.has_pets || false,
       },
     };
   }, [selectedReservation, rooms, guests]);
@@ -1103,7 +1100,7 @@ export default function HotelTimeline({
             const currentRoom = rooms.find((r) => r.id.toString() === roomChangeDialog.fromRoomId);
             const targetRoom = rooms.find((r) => r.id.toString() === roomChangeDialog.toRoomId);
             const guest = reservation
-              ? guests.find((g) => g.id === reservation.guestId) || null
+              ? guests.find((g) => g.id === Number(reservation.guestId)) || null
               : null;
             if (!reservation || !currentRoom || !targetRoom) return null;
             return (

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Maximize2, Minimize2, Users, Baby, Dog, DollarSign } from 'lucide-react';
-import { Reservation, ReservationStatus, Guest } from '../../../../lib/hotel/types';
+import { Reservation, ReservationStatus } from '../../../../lib/hotel/types';
+import type { Guest } from '../../../../lib/queries/hooks/useGuests';
 import type { Room } from '../../../../lib/queries/hooks/useRooms';
 import { RESERVATION_STATUS_COLORS } from '../../../../lib/hotel/calendarUtils';
 import { formatRoomNumber, getRoomTypeDisplay } from '../../../../lib/hotel/calendarUtils';
@@ -136,7 +137,9 @@ export function RoomOverviewFloorSection({
               const statusColors = status
                 ? RESERVATION_STATUS_COLORS[status as ReservationStatus]
                 : null;
-              const guest = reservation ? guests.find((g) => g.id === reservation.guestId) : null;
+              const guest = reservation
+                ? guests.find((g) => g.id === Number(reservation.guestId))
+                : null;
               const daysLeft = reservation
                 ? Math.ceil(
                     (reservation.checkOut.getTime() - new Date().getTime()) / (24 * 60 * 60 * 1000)
@@ -178,7 +181,7 @@ export function RoomOverviewFloorSection({
                   }}
                   title={
                     isOccupied
-                      ? `View reservation details for ${guest?.fullName || 'Guest'} (Right-click for options)`
+                      ? `View reservation details for ${guest?.display_name || 'Guest'} (Right-click for options)`
                       : `Create new booking for ${formatRoomNumber(room)}`
                   }
                 >
@@ -201,7 +204,7 @@ export function RoomOverviewFloorSection({
 
                     {isOccupied && reservation && guest ? (
                       <div className="mt-2 space-y-1 text-xs">
-                        <div className="font-medium">{guest.fullName}</div>
+                        <div className="font-medium">{guest.display_name}</div>
                         <div className="flex items-center space-x-2 text-gray-500">
                           <div className="flex items-center space-x-1">
                             <Users className="h-2.5 w-2.5" />
@@ -213,7 +216,7 @@ export function RoomOverviewFloorSection({
                               <span>{reservation.children.length}</span>
                             </div>
                           )}
-                          {(reservation.hasPets || guest.hasPets) && (
+                          {(reservation.hasPets || guest.has_pets) && (
                             <Dog className="h-3 w-3 text-gray-500" />
                           )}
                         </div>
@@ -274,7 +277,7 @@ export function RoomOverviewFloorSection({
         <ReservationContextMenu
           reservation={contextMenu.reservation}
           position={{ x: contextMenu.x, y: contextMenu.y }}
-          guest={guests.find((g) => g.id === contextMenu.reservation!.guestId)}
+          guest={guests.find((g) => g.id === Number(contextMenu.reservation!.guestId))}
           room={contextMenu.room}
           isFullscreen={false}
           onClose={handleContextMenuClose}

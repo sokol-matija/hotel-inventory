@@ -1,6 +1,7 @@
 import { startOfDay } from 'date-fns';
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import { Reservation, ReservationStatus, Guest } from '../../../../lib/hotel/types';
+import { Reservation, ReservationStatus } from '../../../../lib/hotel/types';
+import type { Guest } from '../../../../lib/queries/hooks/useGuests';
 import type { Room } from '../../../../lib/queries/hooks/useRooms';
 import { Badge } from '../../../ui/badge';
 import { RoomRow } from './RoomRow';

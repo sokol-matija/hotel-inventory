@@ -40,7 +40,7 @@ export class HotelDataService {
     return await databaseAdapter.getGuests();
   }
 
-  async createGuest(guestData: Omit<Guest, 'id' | 'totalStays' | 'isVip'>): Promise<Guest> {
+  async createGuest(guestData: Omit<Guest, 'id' | 'display_name'>): Promise<Guest> {
     return await databaseAdapter.createGuest(guestData);
   }
 
@@ -50,11 +50,10 @@ export class HotelDataService {
     if (updates.email !== undefined) updateData.email = updates.email;
     if (updates.phone !== undefined) updateData.phone = updates.phone;
     if (updates.nationality !== undefined) updateData.nationality = updates.nationality;
-    if (updates.preferredLanguage !== undefined)
-      updateData.preferred_language = updates.preferredLanguage;
-    if (updates.hasPets !== undefined) updateData.has_pets = updates.hasPets;
-    if (updates.dateOfBirth !== undefined)
-      updateData.date_of_birth = updates.dateOfBirth?.toISOString();
+    if (updates.preferred_language !== undefined)
+      updateData.preferred_language = updates.preferred_language;
+    if (updates.has_pets !== undefined) updateData.has_pets = updates.has_pets;
+    if (updates.date_of_birth !== undefined) updateData.date_of_birth = updates.date_of_birth;
 
     const { data, error } = await supabase
       .from('guests')
@@ -196,22 +195,29 @@ export class HotelDataService {
           : undefined,
         guest: row.guests
           ? ({
-              id: row.guests.id.toString(),
-              firstName: row.guests.first_name,
-              lastName: row.guests.last_name,
-              fullName: `${row.guests.first_name} ${row.guests.last_name}`,
+              id: row.guests.id,
+              first_name: row.guests.first_name,
+              last_name: row.guests.last_name,
+              full_name: `${row.guests.first_name} ${row.guests.last_name}`,
               email: row.guests.email,
               phone: row.guests.phone,
-              nationality: '',
-              preferredLanguage: 'en',
-              dietaryRestrictions: [],
-              hasPets: false,
-              isVip: false,
-              vipLevel: 0,
-              children: [],
-              totalStays: 0,
-              createdAt: new Date(),
-              updatedAt: new Date(),
+              nationality: null,
+              preferred_language: 'en',
+              dietary_restrictions: null,
+              has_pets: null,
+              is_vip: null,
+              vip_level: null,
+              marketing_consent: null,
+              average_rating: null,
+              notes: null,
+              country_code: null,
+              date_of_birth: null,
+              passport_number: null,
+              id_card_number: null,
+              special_needs: null,
+              created_at: null,
+              updated_at: null,
+              display_name: `${row.guests.first_name} ${row.guests.last_name}`.trim(),
             } as Guest)
           : undefined,
         reservation: row.reservations
@@ -222,24 +228,32 @@ export class HotelDataService {
   }
 
   private mapGuestFromDB(guestRow: GuestRow): Guest {
+    const fn = String(guestRow.first_name || '');
+    const ln = String(guestRow.last_name || '');
     return {
-      id: String(guestRow.id),
-      firstName: String(guestRow.first_name || ''),
-      lastName: String(guestRow.last_name || ''),
-      fullName: `${guestRow.first_name || ''} ${guestRow.last_name || ''}`.trim(),
-      email: String(guestRow.email || ''),
-      phone: String(guestRow.phone || ''),
-      dateOfBirth: guestRow.date_of_birth ? new Date(String(guestRow.date_of_birth)) : undefined,
-      nationality: String(guestRow.nationality || ''),
-      preferredLanguage: String(guestRow.preferred_language || 'en'),
-      dietaryRestrictions: [],
-      hasPets: Boolean(guestRow.has_pets),
-      isVip: Boolean(guestRow.is_vip),
-      vipLevel: 0,
-      children: [],
-      totalStays: 0,
-      createdAt: guestRow.created_at ? new Date(String(guestRow.created_at)) : new Date(),
-      updatedAt: guestRow.updated_at ? new Date(String(guestRow.updated_at)) : new Date(),
+      id: Number(guestRow.id),
+      first_name: fn,
+      last_name: ln,
+      full_name: String(guestRow.full_name || `${fn} ${ln}`.trim()),
+      email: guestRow.email ? String(guestRow.email) : null,
+      phone: guestRow.phone ? String(guestRow.phone) : null,
+      date_of_birth: guestRow.date_of_birth ? String(guestRow.date_of_birth) : null,
+      nationality: guestRow.nationality ? String(guestRow.nationality) : null,
+      passport_number: guestRow.passport_number ? String(guestRow.passport_number) : null,
+      id_card_number: guestRow.id_card_number ? String(guestRow.id_card_number) : null,
+      preferred_language: guestRow.preferred_language ? String(guestRow.preferred_language) : null,
+      dietary_restrictions: (guestRow.dietary_restrictions as string[] | null) ?? null,
+      special_needs: guestRow.special_needs ? String(guestRow.special_needs) : null,
+      has_pets: guestRow.has_pets ? Boolean(guestRow.has_pets) : null,
+      is_vip: guestRow.is_vip ? Boolean(guestRow.is_vip) : null,
+      vip_level: guestRow.vip_level ? Number(guestRow.vip_level) : null,
+      marketing_consent: null,
+      average_rating: null,
+      notes: guestRow.notes ? String(guestRow.notes) : null,
+      country_code: null,
+      created_at: guestRow.created_at ? String(guestRow.created_at) : null,
+      updated_at: guestRow.updated_at ? String(guestRow.updated_at) : null,
+      display_name: `${fn} ${ln}`.trim(),
     };
   }
 }

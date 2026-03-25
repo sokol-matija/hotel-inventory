@@ -475,20 +475,20 @@ export class DatabaseAdapter {
   /**
    * Create guest - adapt to current schema
    */
-  async createGuest(guestData: Omit<Guest, 'id' | 'totalStays' | 'isVip'>): Promise<Guest> {
+  async createGuest(guestData: Omit<Guest, 'id' | 'display_name'>): Promise<Guest> {
     try {
       const { data, error } = await supabase
         .from('guests')
         .insert({
-          first_name: guestData.firstName,
-          last_name: guestData.lastName,
+          first_name: guestData.first_name,
+          last_name: guestData.last_name,
           email: guestData.email || null,
           phone: guestData.phone || null,
           nationality: guestData.nationality || null,
-          preferred_language: guestData.preferredLanguage || 'en',
-          has_pets: guestData.hasPets || false,
-          date_of_birth: guestData.dateOfBirth?.toISOString().split('T')[0] || null,
-          is_vip: false,
+          preferred_language: guestData.preferred_language || 'en',
+          has_pets: guestData.has_pets || false,
+          date_of_birth: guestData.date_of_birth || null,
+          is_vip: guestData.is_vip ?? false,
         })
         .select()
         .single();
@@ -529,28 +529,29 @@ export class DatabaseAdapter {
 
   private mapGuestFromCurrentDB(guest: CurrentDBGuest): Guest {
     return {
-      id: guest.id.toString(),
-      firstName: guest.first_name || '',
-      lastName: guest.last_name || '',
-      fullName: guest.full_name || `${guest.first_name} ${guest.last_name}`,
-      email: guest.email || '',
-      phone: guest.phone || '',
-      dateOfBirth: guest.date_of_birth ? new Date(guest.date_of_birth) : undefined,
-      nationality: guest.nationality || '',
-      passportNumber: guest.passport_number || undefined,
-      idCardNumber: guest.id_card_number || undefined,
-      preferredLanguage: guest.preferred_language || 'en',
-      dietaryRestrictions: guest.dietary_restrictions || [],
-      specialNeeds: guest.special_needs || undefined,
-      hasPets: guest.has_pets || false,
-      isVip: guest.is_vip || false,
-      vipLevel: guest.vip_level || 0,
-      children: [], // TODO: Load from guest_children table if needed
-      totalStays: 0,
-      emergencyContactName: undefined,
-      emergencyContactPhone: undefined,
-      createdAt: new Date(guest.created_at),
-      updatedAt: new Date(guest.updated_at),
+      id: guest.id,
+      first_name: guest.first_name || '',
+      last_name: guest.last_name || '',
+      full_name: guest.full_name || `${guest.first_name} ${guest.last_name}`,
+      email: guest.email,
+      phone: guest.phone,
+      date_of_birth: guest.date_of_birth,
+      nationality: guest.nationality,
+      passport_number: guest.passport_number,
+      id_card_number: guest.id_card_number,
+      preferred_language: guest.preferred_language,
+      dietary_restrictions: guest.dietary_restrictions,
+      special_needs: guest.special_needs,
+      has_pets: guest.has_pets,
+      is_vip: guest.is_vip,
+      vip_level: guest.vip_level,
+      marketing_consent: guest.marketing_consent,
+      average_rating: guest.average_rating,
+      notes: guest.notes,
+      country_code: guest.country_code,
+      created_at: guest.created_at,
+      updated_at: guest.updated_at,
+      display_name: guest.full_name || `${guest.first_name} ${guest.last_name}`.trim(),
     };
   }
 
@@ -851,9 +852,9 @@ export class DatabaseAdapter {
           const room = roomLookup.get(Number(res.roomId));
 
           return (
-            guest?.firstName?.toLowerCase().includes(searchLower) ||
-            guest?.lastName?.toLowerCase().includes(searchLower) ||
-            guest?.fullName?.toLowerCase().includes(searchLower) ||
+            guest?.first_name?.toLowerCase().includes(searchLower) ||
+            guest?.last_name?.toLowerCase().includes(searchLower) ||
+            guest?.display_name?.toLowerCase().includes(searchLower) ||
             res.id?.toString().includes(searchLower) ||
             room?.room_number?.toLowerCase().includes(searchLower)
           );

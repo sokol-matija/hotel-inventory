@@ -262,7 +262,7 @@ ${this.getEmailStyles()}
         </div>
         
         <div class="content">
-            <p style="font-size: 18px; margin-bottom: 25px;">${t.greeting} ${guest.fullName},</p>
+            <p style="font-size: 18px; margin-bottom: 25px;">${t.greeting} ${guest.display_name},</p>
             
             <p>${t.welcomeText}</p>
             
@@ -369,7 +369,7 @@ ${this.getEmailStyles()}
             </div>
 
             ${
-              guest.hasPets
+              guest.has_pets
                 ? `
             <div class="section" style="background: rgba(254, 243, 199, 0.9); border-left-color: #F59E0B;">
                 <h3>🐕 ${t.petFriendly}</h3>
@@ -434,7 +434,7 @@ ${this.getEmailStyles()}
         </div>
         
         <div class="content">
-            <p style="font-size: 18px; margin-bottom: 25px;">Dear ${guest.fullName},</p>
+            <p style="font-size: 18px; margin-bottom: 25px;">Dear ${guest.display_name},</p>
             
             <p>Thank you for choosing Hotel Porec for your recent stay! We hope you had a wonderful time exploring beautiful Poreč and enjoying our hospitality.</p>
             
@@ -526,7 +526,7 @@ ${this.getEmailStyles()}
         </div>
         
         <div class="content">
-            <p style="font-size: 18px; margin-bottom: 25px;">Dear ${guest.fullName},</p>
+            <p style="font-size: 18px; margin-bottom: 25px;">Dear ${guest.display_name},</p>
             
             <p>We loved having you as our guest last year, and summer is just around the corner! Poreč is getting ready for another beautiful season, and we'd love to welcome you back to Hotel Porec.</p>
             
@@ -634,7 +634,7 @@ ${this.getEmailStyles()}
         </div>
         
         <div class="content">
-            <p>Dear ${guest.fullName},</p>
+            <p>Dear ${guest.display_name},</p>
             
             <p>Just a friendly reminder that your stay at Hotel Porec is coming up in <strong>${daysUntilCheckIn} day${daysUntilCheckIn > 1 ? 's' : ''}</strong>!</p>
             
@@ -650,7 +650,7 @@ ${this.getEmailStyles()}
                 <ul>
                     <li>Valid ID/Passport for all guests</li>
                     <li>Confirmation number: ${reservation.id}</li>
-                    ${guest.hasPets ? '<li>Pet vaccination certificates</li>' : ''}
+                    ${guest.has_pets ? '<li>Pet vaccination certificates</li>' : ''}
                 </ul>
             </div>
 
@@ -763,13 +763,13 @@ ${this.getEmailStyles()}
       }
 
       // Use provided language, or guest's preferred language, or default to 'en'
-      const emailLanguage = language || (guestData.preferredLanguage as EmailLanguage) || 'en';
+      const emailLanguage = language || (guestData.preferred_language as EmailLanguage) || 'en';
 
       const template = this.generateWelcomeEmail(
         { guest: guestData, reservation, room: roomData },
         emailLanguage
       );
-      return await this.sendEmail(guestData.email || '', template, guestData.fullName);
+      return await this.sendEmail(guestData.email || '', template, guestData.display_name);
     } catch (error) {
       console.error('Error sending welcome email:', error);
       return {
@@ -802,7 +802,7 @@ ${this.getEmailStyles()}
         reservation,
         room: roomData,
       });
-      return await this.sendEmail(guestData.email || '', template, guestData.fullName);
+      return await this.sendEmail(guestData.email || '', template, guestData.display_name);
     } catch (error) {
       console.error('Error sending reminder email:', error);
       return {
@@ -835,7 +835,7 @@ ${this.getEmailStyles()}
         reservation,
         room: roomData,
       });
-      return await this.sendEmail(guestData.email || '', template, guestData.fullName);
+      return await this.sendEmail(guestData.email || '', template, guestData.display_name);
     } catch (error) {
       console.error('Error sending thank you email:', error);
       return {

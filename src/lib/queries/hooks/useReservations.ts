@@ -96,24 +96,29 @@ export function useCreateReservation() {
       if (reservationData.isNewGuest && reservationData.guest) {
         const g = reservationData.guest;
         const newGuest = await hotelDataService.createGuest({
-          firstName: g.firstName,
-          lastName: g.lastName || '',
-          fullName: `${g.firstName} ${g.lastName || ''}`.trim(),
-          email: g.email,
-          phone: g.phone,
-          nationality: g.nationality,
-          preferredLanguage: g.preferredLanguage || 'en',
-          dietaryRestrictions: [],
-          hasPets: g.hasPets || false,
-          vipLevel: 0,
-          dateOfBirth: undefined,
-          children: [],
-          emergencyContactName: undefined,
-          emergencyContactPhone: undefined,
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          first_name: g.first_name ?? '',
+          last_name: g.last_name ?? '',
+          full_name: g.full_name ?? `${g.first_name ?? ''} ${g.last_name ?? ''}`.trim(),
+          email: g.email ?? null,
+          phone: g.phone ?? null,
+          nationality: g.nationality ?? null,
+          preferred_language: g.preferred_language ?? 'en',
+          dietary_restrictions: null,
+          has_pets: g.has_pets ?? null,
+          is_vip: null,
+          vip_level: null,
+          date_of_birth: null,
+          passport_number: null,
+          id_card_number: null,
+          special_needs: null,
+          marketing_consent: null,
+          average_rating: null,
+          notes: null,
+          country_code: null,
+          created_at: null,
+          updated_at: null,
         });
-        guestId = newGuest.id;
+        guestId = String(newGuest.id);
       }
 
       return hotelDataService.createReservation({ ...reservationData, guestId });

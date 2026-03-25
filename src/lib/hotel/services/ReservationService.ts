@@ -72,7 +72,7 @@ export class ReservationService {
       hotelDataService.getRoomById(event.roomId),
     ]);
 
-    const guest = guests.find((g) => g.id === reservation.guestId);
+    const guest = guests.find((g) => g.id === Number(reservation.guestId));
 
     if (!guest || !room) {
       return null;

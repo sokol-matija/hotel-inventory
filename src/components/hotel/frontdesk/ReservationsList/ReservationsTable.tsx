@@ -162,7 +162,7 @@ function MobileCard({
           />
           <div>
             <h3 className="font-semibold text-gray-900">
-              {reservation.guest?.firstName} {reservation.guest?.lastName}
+              {reservation.guest?.first_name} {reservation.guest?.last_name}
             </h3>
             <p className="text-sm text-gray-600">
               Room {reservation.roomId} • {formatDate(reservation.checkIn)}
@@ -342,7 +342,7 @@ export default function ReservationsTable({
                 </td>
                 <td className="px-4 py-4">
                   <div className="font-medium text-gray-900">
-                    {reservation.guest?.firstName} {reservation.guest?.lastName}
+                    {reservation.guest?.first_name} {reservation.guest?.last_name}
                   </div>
                   {reservation.guest?.email && (
                     <div className="text-sm text-gray-600">{reservation.guest.email}</div>

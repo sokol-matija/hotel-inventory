@@ -3,6 +3,7 @@ import { render, type RenderOptions } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import type { Reservation } from '@/lib/hotel/types';
+import type { Guest } from '@/lib/queries/hooks/useGuests';
 import type { Room } from '@/lib/queries/hooks/useRooms';
 import type { ItemWithCategory, Category, ActiveItem } from '@/lib/queries/hooks/useItems';
 import type { LocationWithStats } from '@/lib/queries/hooks/useLocations';
@@ -163,6 +164,36 @@ export function buildRoom(overrides: Partial<Room> = {}): Room {
     is_premium: false,
     amenities: [],
     is_clean: true,
+    ...overrides,
+  };
+}
+
+export function buildGuest(overrides: Partial<Guest> = {}): Guest {
+  _id++;
+  return {
+    id: _id,
+    first_name: `First${_id}`,
+    last_name: `Last${_id}`,
+    full_name: `First${_id} Last${_id}`,
+    display_name: `First${_id} Last${_id}`,
+    email: `guest${_id}@example.com`,
+    phone: null,
+    nationality: null,
+    preferred_language: 'en',
+    dietary_restrictions: null,
+    has_pets: null,
+    is_vip: null,
+    vip_level: null,
+    date_of_birth: null,
+    passport_number: null,
+    id_card_number: null,
+    special_needs: null,
+    marketing_consent: null,
+    average_rating: null,
+    notes: null,
+    country_code: null,
+    created_at: null,
+    updated_at: null,
     ...overrides,
   };
 }

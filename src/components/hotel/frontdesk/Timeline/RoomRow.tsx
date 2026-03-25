@@ -1,5 +1,6 @@
 import { addDays } from 'date-fns';
-import { Reservation, ReservationStatus, Guest } from '../../../../lib/hotel/types';
+import { Reservation, ReservationStatus } from '../../../../lib/hotel/types';
+import type { Guest } from '../../../../lib/queries/hooks/useGuests';
 import type { Room } from '../../../../lib/queries/hooks/useRooms';
 import { formatRoomNumber, getRoomTypeDisplay } from '../../../../lib/hotel/calendarUtils';
 import { Badge } from '../../../ui/badge';
@@ -135,7 +136,7 @@ export function RoomRow({
         }`}
       >
         {roomReservations.map((reservation) => {
-          const guest = guests.find((g) => g.id === reservation.guestId);
+          const guest = guests.find((g) => g.id === Number(reservation.guestId));
           return (
             <ReservationBlock
               key={reservation.id}

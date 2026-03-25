@@ -333,17 +333,17 @@ export class VirtualRoomService {
       };
 
       // If guest data provided, create/update guest
-      if (guestData && guestData.firstName && guestData.lastName) {
+      if (guestData && guestData.first_name && guestData.last_name) {
         const { data: newGuest, error: guestError } = await supabase
           .from('guests')
           .insert({
-            first_name: guestData.firstName,
-            last_name: guestData.lastName,
-            full_name: `${guestData.firstName} ${guestData.lastName}`,
+            first_name: guestData.first_name,
+            last_name: guestData.last_name,
+            full_name: `${guestData.first_name} ${guestData.last_name}`,
             email: guestData.email || null,
             phone: guestData.phone || null,
             nationality: guestData.nationality || null,
-            preferred_language: guestData.preferredLanguage || 'en',
+            preferred_language: guestData.preferred_language || 'en',
           })
           .select('id')
           .single();

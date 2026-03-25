@@ -142,7 +142,7 @@ export class HotelTimelineService {
           title: this.getReservationTitle(reservation),
           resource: {
             status: reservation.status,
-            guestName: reservation.guest?.fullName ?? 'Unknown Guest',
+            guestName: reservation.guest?.display_name ?? 'Unknown Guest',
             roomNumber: room ? room.room_number : 'Unknown Room',
             numberOfGuests: reservation.adults + reservation.children.length,
             hasPets: reservation.hasPets ?? false,
@@ -155,7 +155,7 @@ export class HotelTimelineService {
    * Generate reservation title for display
    */
   private getReservationTitle(reservation: Reservation): string {
-    return reservation.guest?.fullName ?? 'Unknown Guest';
+    return reservation.guest?.display_name ?? 'Unknown Guest';
   }
 
   /**

@@ -95,7 +95,7 @@ describe('useInvoices', () => {
     expect(result.current.data).toHaveLength(1);
     expect(result.current.data?.[0].invoiceNumber).toBe('INV-2026-001');
     expect(result.current.data?.[0].status).toBe('paid');
-    expect(result.current.data?.[0].guest?.firstName).toBe('Ana');
+    expect(result.current.data?.[0].guest?.first_name).toBe('Ana');
     expect(result.current.data?.[0].issueDate).toBeInstanceOf(Date);
   });
 

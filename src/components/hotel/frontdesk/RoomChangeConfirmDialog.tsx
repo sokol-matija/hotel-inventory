@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import { Button } from '../../ui/button';
 import { Badge } from '../../ui/badge';
 import { formatRoomNumber, getRoomTypeDisplay } from '../../../lib/hotel/calendarUtils';
-import { Reservation, Guest } from '../../../lib/hotel/types';
+import { Reservation } from '../../../lib/hotel/types';
+import type { Guest } from '../../../lib/queries/hooks/useGuests';
 import type { Room } from '../../../lib/queries/hooks/useRooms';
 import { ArrowRight, Gift, DollarSign, X } from 'lucide-react';
 
@@ -55,7 +56,7 @@ export default function RoomChangeConfirmDialog({
             Confirm Room Change
           </CardTitle>
           <p className="text-sm text-gray-600">
-            {guest?.fullName || 'Guest'} • Reservation #{reservation.id.slice(-8)}
+            {guest?.display_name || 'Guest'} • Reservation #{reservation.id.slice(-8)}
           </p>
         </CardHeader>
 

@@ -57,7 +57,7 @@ export function reservationToCalendarEvent(
   const room = rooms.find((r) => r.id.toString() === reservation.roomId);
 
   const roomNumber = room?.room_number || 'Unknown';
-  const guestName = reservation.guest?.fullName || 'Unknown Guest';
+  const guestName = reservation.guest?.display_name || 'Unknown Guest';
 
   // Create title based on status
   let title: string;
@@ -87,7 +87,7 @@ export function reservationToCalendarEvent(
       guestName,
       roomNumber,
       numberOfGuests: reservation.numberOfGuests || 1,
-      hasPets: reservation.guest?.hasPets || false,
+      hasPets: reservation.guest?.has_pets || false,
     },
   };
 }

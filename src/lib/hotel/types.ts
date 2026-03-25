@@ -46,36 +46,17 @@ export interface Hotel {
 // Room interface moved to src/lib/queries/hooks/useRooms.ts (TQ v5 pattern).
 // Import Room from '@/lib/queries/hooks/useRooms' — NOT from here.
 
+/** @deprecated Children are stored in guest_children table, not in Guest object. */
 export interface GuestChild {
   name: string;
   dateOfBirth: Date;
   age: number; // Calculated for discount purposes
 }
 
-export interface Guest {
-  id: string;
-  firstName: string;
-  lastName: string;
-  fullName: string;
-  email?: string;
-  phone?: string;
-  dateOfBirth?: Date;
-  nationality?: string;
-  passportNumber?: string;
-  idCardNumber?: string;
-  preferredLanguage: string;
-  dietaryRestrictions: string[];
-  specialNeeds?: string;
-  hasPets: boolean;
-  isVip: boolean;
-  vipLevel: number;
-  children: GuestChild[];
-  totalStays: number;
-  emergencyContactName?: string;
-  emergencyContactPhone?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
+// Guest interface moved to src/lib/queries/hooks/useGuests.ts (TQ v5 pattern).
+// Re-exported here for backward compatibility.
+import type { Guest } from '@/lib/queries/hooks/useGuests';
+export type { Guest };
 
 // ─── Charge model ──────────────────────────────────────────────────────────────
 

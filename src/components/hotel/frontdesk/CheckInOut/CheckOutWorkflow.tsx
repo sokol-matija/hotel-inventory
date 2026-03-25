@@ -178,11 +178,7 @@ export default function CheckOutWorkflow({ isOpen, onClose, reservation }: Check
       // Automatically generate invoice when payment is marked as paid
       try {
         const invoice = await createInvoiceService(reservation.id, {
-          guestId: guest
-            ? typeof guest.id === 'string'
-              ? parseInt(guest.id, 10)
-              : guest.id
-            : undefined,
+          guestId: guest?.id,
         });
 
         // Process payment for the full amount
@@ -195,20 +191,20 @@ export default function CheckOutWorkflow({ isOpen, onClose, reservation }: Check
           receivedDate: new Date(),
           processedDate: new Date(),
           processedBy: 'Front Desk Staff',
-          notes: `Payment processed during stay - ${guest?.fullName}`,
+          notes: `Payment processed during stay - ${guest?.display_name}`,
           referenceNumber: `PAYMENT-${Date.now()}`,
         });
 
         hotelNotification.success(
           'Payment Processed & Invoice Created',
-          `Payment marked as paid for ${guest?.fullName}. Invoice ${invoice.invoiceNumber} created and available in Finance module.`,
+          `Payment marked as paid for ${guest?.display_name}. Invoice ${invoice.invoiceNumber} created and available in Finance module.`,
           5000
         );
       } catch (invoiceError) {
         console.error('Failed to generate invoice:', invoiceError);
         hotelNotification.warning(
           'Payment Marked but Invoice Failed',
-          `Payment marked as paid for ${guest?.fullName}, but invoice generation failed. Please create manually from Finance module.`,
+          `Payment marked as paid for ${guest?.display_name}, but invoice generation failed. Please create manually from Finance module.`,
           4000
         );
       }
@@ -262,7 +258,7 @@ export default function CheckOutWorkflow({ isOpen, onClose, reservation }: Check
           // Show success notification - invoice created but payment still pending
           hotelNotification.success(
             'Invoice Generated',
-            `Invoice ${invoice.invoiceNumber} created for ${guest?.fullName}. Payment can be processed using "Mark as Paid" button after POS transaction.`,
+            `Invoice ${invoice.invoiceNumber} created for ${guest?.display_name}. Payment can be processed using "Mark as Paid" button after POS transaction.`,
             6000
           );
         } catch (error) {
@@ -344,8 +340,8 @@ export default function CheckOutWorkflow({ isOpen, onClose, reservation }: Check
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex items-center space-x-2">
-                    <span className="font-medium">{guest.fullName}</span>
-                    {guest.isVip && <Badge variant="secondary">VIP</Badge>}
+                    <span className="font-medium">{guest.display_name}</span>
+                    {guest.is_vip && <Badge variant="secondary">VIP</Badge>}
                   </div>
                   <div className="space-y-1 text-sm text-gray-600">
                     <div>
