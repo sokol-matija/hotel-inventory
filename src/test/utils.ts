@@ -8,6 +8,7 @@ import type { Room } from '@/lib/queries/hooks/useRooms';
 import type { ItemWithCategory, Category, ActiveItem } from '@/lib/queries/hooks/useItems';
 import type { LocationWithStats } from '@/lib/queries/hooks/useLocations';
 import type { InventoryWithDetails } from '@/lib/queries/hooks/useInventory';
+import type { Label } from '@/lib/queries/hooks/useLabels';
 
 // ── TanStack Query ────────────────────────────────────────────────────────────
 
@@ -224,4 +225,18 @@ export function buildReservation(overrides: Partial<Reservation> = {}): Reservat
     shortStaySuplement: 0,
     ...overrides,
   } as Reservation;
+}
+
+export function buildLabel(overrides: Partial<Label> = {}): Label {
+  _id++;
+  return {
+    id: `label-${_id}`,
+    hotelId: 'hotel-1',
+    name: `Label ${_id}`,
+    color: '#ffffff',
+    bgColor: '#000000',
+    createdAt: new Date('2026-01-01'),
+    updatedAt: new Date('2026-01-01'),
+    ...overrides,
+  };
 }
