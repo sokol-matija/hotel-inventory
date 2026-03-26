@@ -1,17 +1,19 @@
-import { useState, useEffect } from 'react';
-import type { Room } from '@/lib/queries/hooks/useRooms';
-import { useRooms } from '@/lib/queries/hooks/useRooms';
+import { useState } from 'react';
 import type { Company } from '@/lib/queries/hooks/useCompanies';
 import { useCompanies } from '@/lib/queries/hooks/useCompanies';
 import type { Guest } from '@/lib/queries/hooks/useGuests';
 import { useCreateFullBooking } from '@/lib/queries/hooks/useReservations';
-import { unifiedPricingService } from '@/lib/hotel/services/UnifiedPricingService';
-import { HOTEL_ID } from '@/lib/hotel/constants';
-import { ntfyService, type BookingNotificationData } from '@/lib/ntfyService';
+import { sendRoom401BookingNotification, type BookingNotificationData } from '@/lib/ntfy';
 import { virtualRoomService } from '@/lib/hotel/services/VirtualRoomService';
 import hotelNotification from '@/lib/notifications';
 import type { ReservationCharge } from '@/lib/hotel/types';
+import type { Room } from '@/lib/queries/hooks/useRooms';
 import type { BookingGuest, BookingServices } from './types';
+import { useBookingRoomSelection } from './useBookingRoomSelection';
+import { useBookingDates } from './useBookingDates';
+import { useBookingGuests } from './useBookingGuests';
+import { useBookingServices } from './useBookingServices';
+import { useBookingPricing } from './useBookingPricing';
 
 export type { Company };
 
@@ -77,31 +79,6 @@ export interface UseCreateBookingFormReturn {
   validateForm: () => string[];
 }
 
-function createEmptyGuest(type: 'adult' | 'child'): BookingGuest {
-  return {
-    id: `new-${Date.now()}-${Math.random()}`,
-    firstName: '',
-    lastName: '',
-    fullName: '',
-    email: '',
-    phone: '',
-    nationality: '',
-    dateOfBirth: '',
-    type,
-    age: type === 'child' ? 12 : undefined,
-    isExisting: false,
-    preferredLanguage: 'en',
-    dietaryRestrictions: [],
-    hasPets: false,
-    isVip: false,
-    vipLevel: 0,
-    children: [],
-    totalStays: 0,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
-}
-
 export function useCreateBookingForm({
   room,
   currentDate,
@@ -109,43 +86,14 @@ export function useCreateBookingForm({
   unallocatedMode = false,
   onClose,
 }: UseCreateBookingFormParams): UseCreateBookingFormReturn {
-  const { data: rooms = [] } = useRooms();
   const { data: companies = [] } = useCompanies();
   const createBookingMutation = useCreateFullBooking();
 
-  const hotelId = HOTEL_ID;
-
-  // ── Room ───────────────────────────────────────────────────────────────────
-  const [selectedRoom, setSelectedRoom] = useState<Room | null>(room);
-  const [isUnallocated, setIsUnallocated] = useState(unallocatedMode);
-
-  // ── Dates ──────────────────────────────────────────────────────────────────
-  const [checkInDate, setCheckInDate] = useState(
-    preSelectedDates?.checkIn || currentDate || new Date()
-  );
-  const [checkOutDate, setCheckOutDate] = useState(
-    preSelectedDates?.checkOut ||
-      new Date((currentDate || new Date()).getTime() + 2 * 24 * 60 * 60 * 1000)
-  );
-
-  // ── Guests ─────────────────────────────────────────────────────────────────
-  const [bookingGuests, setBookingGuests] = useState<BookingGuest[]>([]);
-
-  useEffect(() => {
-    if (bookingGuests.length === 0) {
-      setBookingGuests([createEmptyGuest('adult')]);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // ── Services ───────────────────────────────────────────────────────────────
-  const [bookingServices, setBookingServices] = useState<BookingServices>({
-    needsParking: false,
-    parkingSpots: 0,
-    hasPets: false,
-    petCount: 0,
-    specialRequests: '',
-  });
+  // ── Sub-hooks ──────────────────────────────────────────────────────────────
+  const roomSelection = useBookingRoomSelection({ room, unallocatedMode });
+  const dates = useBookingDates({ currentDate, preSelectedDates });
+  const guests = useBookingGuests({ selectedRoom: roomSelection.selectedRoom });
+  const services = useBookingServices();
 
   // ── Company billing ────────────────────────────────────────────────────────
   const [isCompanyBilling, setIsCompanyBilling] = useState(false);
@@ -154,174 +102,28 @@ export function useCreateBookingForm({
   // ── Label ──────────────────────────────────────────────────────────────────
   const [selectedLabelId, setSelectedLabelId] = useState<string | null>(null);
 
-  // ── Pricing preview ────────────────────────────────────────────────────────
-  const [previewCharges, setPreviewCharges] = useState<ReservationCharge[]>([]);
-  const [chargesLoading, setChargesLoading] = useState(false);
-
+  // ── Submission state ───────────────────────────────────────────────────────
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Generate charge line items whenever pricing dependencies change
-  useEffect(() => {
-    if (isUnallocated || !selectedRoom) {
-      setPreviewCharges([]);
-      return;
-    }
-
-    const hasGuest = bookingGuests.some((g) => g.firstName.trim() || g.lastName.trim());
-    if (!hasGuest) {
-      setPreviewCharges([]);
-      return;
-    }
-
-    const guests = bookingGuests.map((g) => ({
-      name: `${g.firstName} ${g.lastName}`.trim() || (g.type === 'child' ? 'Child' : 'Guest'),
-      type: g.type as 'adult' | 'child',
-      age: g.age,
-    }));
-
-    const primaryGuest = bookingGuests[0];
-    const guestId =
-      primaryGuest?.isExisting && primaryGuest?.existingGuestId
-        ? String(primaryGuest.existingGuestId)
-        : undefined;
-
-    const selectedCompany =
-      isCompanyBilling && selectedCompanyId
-        ? companies.find((c) => String(c.id) === selectedCompanyId)
-        : undefined;
-    const pricingTierId = selectedCompany?.pricing_tier_id?.toString() ?? undefined;
-
-    let cancelled = false;
-    setChargesLoading(true);
-
-    unifiedPricingService
-      .generateCharges({
-        roomId: selectedRoom.id.toString(),
-        checkIn: checkInDate,
-        checkOut: checkOutDate,
-        guests,
-        hasPets: bookingServices.hasPets,
-        parkingRequired: bookingServices.needsParking,
-        pricingTierId,
-        guestId,
-      })
-      .then((charges) => {
-        if (cancelled) return;
-        setPreviewCharges(charges);
-      })
-      .catch(() => {
-        /* keep previous charges on error */
-      })
-      .finally(() => {
-        if (!cancelled) setChargesLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    checkInDate,
-    checkOutDate,
-    bookingGuests,
-    bookingServices,
-    selectedRoom,
-    isUnallocated,
+  const pricing = useBookingPricing({
+    selectedRoom: roomSelection.selectedRoom,
+    isUnallocated: roomSelection.isUnallocated,
+    checkInDate: dates.checkInDate,
+    checkOutDate: dates.checkOutDate,
+    bookingGuests: guests.bookingGuests,
+    bookingServices: services.bookingServices,
     isCompanyBilling,
     selectedCompanyId,
     companies,
-  ]);
-
-  // ── Derived values ─────────────────────────────────────────────────────────
-  const chargeTotal = previewCharges.reduce((sum, c) => sum + c.total, 0);
-  const numberOfNights = Math.max(
-    1,
-    Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24))
-  );
-  const adultsCount = bookingGuests.filter((g) => g.type === 'adult').length;
-  const childrenCount = bookingGuests.filter((g) => g.type === 'child').length;
-  const availableRooms = rooms.filter((r) => r.floor_number !== 5);
-  const chargesByType = previewCharges.reduce<Record<string, ReservationCharge[]>>((acc, c) => {
-    const key = c.chargeType;
-    if (!acc[key]) acc[key] = [];
-    acc[key].push(c);
-    return acc;
-  }, {});
-
-  // ── Guest management ───────────────────────────────────────────────────────
-  const addAdult = () => {
-    const maxOccupancy = selectedRoom?.max_occupancy || 99;
-    if (bookingGuests.length < maxOccupancy) {
-      setBookingGuests([...bookingGuests, createEmptyGuest('adult')]);
-    }
-  };
-
-  const addChild = () => {
-    const maxOccupancy = selectedRoom?.max_occupancy || 99;
-    if (bookingGuests.length < maxOccupancy) {
-      setBookingGuests([...bookingGuests, createEmptyGuest('child')]);
-    }
-  };
-
-  const removeGuest = (guestId: string) => {
-    if (bookingGuests.length > 1) {
-      setBookingGuests(bookingGuests.filter((g) => g.id !== guestId));
-    }
-  };
-
-  const updateGuest = (guestId: string, field: string, value: string | number | boolean) => {
-    setBookingGuests(
-      bookingGuests.map((g) => {
-        if (g.id !== guestId) return g;
-        const updated = { ...g, [field]: value };
-
-        if (field === 'firstName' || field === 'lastName') {
-          updated.fullName = `${updated.firstName} ${updated.lastName}`.trim();
-        }
-
-        if (field === 'type') {
-          if (value === 'child' && !updated.age) {
-            updated.age = 12;
-          } else if (value === 'adult') {
-            updated.age = undefined;
-          }
-        }
-
-        return updated;
-      })
-    );
-  };
-
-  const handleSelectExistingGuest = (guest: Guest, guestIndex: number) => {
-    const updatedGuests = [...bookingGuests];
-    updatedGuests[guestIndex] = {
-      id: guest.id.toString(),
-      firstName: guest.first_name,
-      lastName: guest.last_name,
-      fullName: guest.display_name,
-      email: guest.email || '',
-      phone: guest.phone || '',
-      nationality: guest.nationality || '',
-      dateOfBirth: guest.date_of_birth ?? '',
-      type: 'adult' as const,
-      age: undefined,
-      isExisting: true,
-      existingGuestId: guest.id,
-      preferredLanguage: guest.preferred_language || 'en',
-      dietaryRestrictions: guest.dietary_restrictions || [],
-      hasPets: guest.has_pets || false,
-      isVip: guest.is_vip || false,
-      vipLevel: guest.vip_level || 0,
-      children: [],
-      totalStays: 0,
-      createdAt: guest.created_at ? new Date(guest.created_at) : new Date(),
-      updatedAt: guest.updated_at ? new Date(guest.updated_at) : new Date(),
-    };
-    setBookingGuests(updatedGuests);
-  };
+  });
 
   // ── Validation ─────────────────────────────────────────────────────────────
   const validateForm = (): string[] => {
     const errors: string[] = [];
+    const { checkInDate, checkOutDate } = dates;
+    const { bookingGuests } = guests;
+    const { bookingServices } = services;
+    const { selectedRoom, isUnallocated } = roomSelection;
 
     if (checkOutDate <= checkInDate) {
       errors.push('Check-out date must be after check-in date');
@@ -401,6 +203,12 @@ export function useCreateBookingForm({
       hotelNotification.error('Validation Failed', errors.join(', '));
       return;
     }
+
+    const { checkInDate, checkOutDate, numberOfNights } = dates;
+    const { bookingGuests, adultsCount, childrenCount } = guests;
+    const { bookingServices } = services;
+    const { selectedRoom, isUnallocated } = roomSelection;
+    const { previewCharges, chargeTotal } = pricing;
 
     // Unallocated path
     if (isUnallocated) {
@@ -505,8 +313,7 @@ export function useCreateBookingForm({
             bookingSource: 'Front Desk - Modern Modal',
             totalAmount: chargeTotal,
           };
-          const notificationSent =
-            await ntfyService.sendRoom401BookingNotification(notificationData);
+          const notificationSent = await sendRoom401BookingNotification(notificationData);
           if (!notificationSent) {
             console.error('Failed to send ntfy notification for room 401');
           }
@@ -533,38 +340,26 @@ export function useCreateBookingForm({
   };
 
   return {
-    selectedRoom,
-    setSelectedRoom,
-    isUnallocated,
-    setIsUnallocated,
-    availableRooms,
-    hotelId,
-    checkInDate,
-    setCheckInDate,
-    checkOutDate,
-    setCheckOutDate,
-    numberOfNights,
-    bookingGuests,
-    addAdult,
-    addChild,
-    removeGuest,
-    updateGuest,
-    handleSelectExistingGuest,
-    adultsCount,
-    childrenCount,
-    bookingServices,
-    setBookingServices,
+    // Room
+    ...roomSelection,
+    // Dates
+    ...dates,
+    // Guests
+    ...guests,
+    // Services
+    ...services,
+    // Company billing
     isCompanyBilling,
     setIsCompanyBilling,
     selectedCompanyId,
     setSelectedCompanyId,
     companies,
+    // Label
     selectedLabelId,
     setSelectedLabelId,
-    previewCharges,
-    chargesLoading,
-    chargeTotal,
-    chargesByType,
+    // Pricing
+    ...pricing,
+    // Submission
     isSubmitting,
     handleSubmit,
     validateForm,
