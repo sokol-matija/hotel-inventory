@@ -1,0 +1,558 @@
+/**
+ * HTML template generators for reservation-related emails.
+ * Pure functions — no network calls, no side effects.
+ * Supports languages: en (English), de (German), it (Italian).
+ */
+
+import { Reservation, Guest } from '@/lib/hotel/types';
+import type { Room } from '@/lib/queries/hooks/useRooms';
+import { format } from 'date-fns';
+import { formatRoomNumber } from '@/lib/hotel/calendarUtils';
+import { getEmailStyles } from '@/lib/email/emailStyles';
+
+export interface EmailTemplate {
+  subject: string;
+  body: string;
+}
+
+export type EmailLanguage = 'en' | 'de' | 'it';
+export type EmailType = 'welcome' | 'thankyou' | 'reminder';
+
+export interface HotelInfoEmailData {
+  guest: Guest;
+  reservation: Reservation;
+  room: Room;
+}
+
+// ---------------------------------------------------------------------------
+// Translation strings
+// ---------------------------------------------------------------------------
+
+const translations = {
+  en: {
+    welcome: {
+      subject: 'Welcome to Hotel Porec - Your Stay Information',
+      greeting: 'Dear',
+      welcomeText:
+        "We're delighted to welcome you to Hotel Porec! Your reservation is confirmed and we're looking forward to hosting you. Here's everything you need to know for a comfortable stay.",
+      bookingDetails: 'Your Booking Details',
+      importantInfo: 'Important Check-in Information',
+      dining: 'Dining & Amenities',
+      explore: 'Explore Beautiful Poreč',
+      contact: 'Contact Information',
+      petFriendly: 'Pet-Friendly Stay',
+      assistance: 'Need Assistance?',
+      checkInTime: 'Check-in time: 2:00 PM - 11:00 PM',
+      checkOutTime: 'Check-out time: Until 10:00 AM',
+      breakfastHours: 'Breakfast: 7:00 AM - 10:30 AM (Continental buffet)',
+      parking: 'Parking: €7/night (limited spaces)',
+    },
+  },
+  de: {
+    welcome: {
+      subject: 'Willkommen im Hotel Porec - Ihre Aufenthaltsinformationen',
+      greeting: 'Liebe/r',
+      welcomeText:
+        'Wir freuen uns sehr, Sie im Hotel Porec begrüßen zu dürfen! Ihre Reservierung ist bestätigt und wir freuen uns darauf, Sie zu beherbergen. Hier ist alles, was Sie für einen komfortablen Aufenthalt wissen müssen.',
+      bookingDetails: 'Ihre Buchungsdetails',
+      importantInfo: 'Wichtige Check-in Informationen',
+      dining: 'Gastronomie & Ausstattung',
+      explore: 'Entdecken Sie das wunderschöne Poreč',
+      contact: 'Kontaktinformationen',
+      petFriendly: 'Haustierfreundlicher Aufenthalt',
+      assistance: 'Benötigen Sie Hilfe?',
+      checkInTime: 'Check-in Zeit: 14:00 - 23:00 Uhr',
+      checkOutTime: 'Check-out Zeit: Bis 10:00 Uhr',
+      breakfastHours: 'Frühstück: 7:00 - 10:30 Uhr (Kontinentales Buffet)',
+      parking: 'Parkplatz: €7/Nacht (begrenzte Plätze)',
+    },
+  },
+  it: {
+    welcome: {
+      subject: "Benvenuti all'Hotel Porec - Informazioni sul Soggiorno",
+      greeting: 'Gentile',
+      welcomeText:
+        "Siamo lieti di darvi il benvenuto all'Hotel Porec! La vostra prenotazione è confermata e non vediamo l'ora di ospitarvi. Ecco tutto quello che dovete sapere per un soggiorno confortevole.",
+      bookingDetails: 'Dettagli della Prenotazione',
+      importantInfo: 'Informazioni Importanti per il Check-in',
+      dining: 'Ristorazione e Servizi',
+      explore: 'Scoprite la Bellissima Poreč',
+      contact: 'Informazioni di Contatto',
+      petFriendly: 'Soggiorno Pet-Friendly',
+      assistance: 'Avete Bisogno di Assistenza?',
+      checkInTime: 'Orario check-in: 14:00 - 23:00',
+      checkOutTime: 'Orario check-out: Fino alle 10:00',
+      breakfastHours: 'Colazione: 7:00 - 10:30 (Buffet continentale)',
+      parking: 'Parcheggio: €7/notte (posti limitati)',
+    },
+  },
+} as const;
+
+// ---------------------------------------------------------------------------
+// Template generators
+// ---------------------------------------------------------------------------
+
+/**
+ * Generate welcome email with hotel information for guest.
+ */
+export function generateWelcomeEmail(
+  data: HotelInfoEmailData,
+  language: EmailLanguage = 'en'
+): EmailTemplate {
+  const { guest, reservation, room } = data;
+  const checkInDate = format(new Date(reservation.check_in_date), 'EEEE, MMMM do, yyyy');
+  const checkOutDate = format(new Date(reservation.check_out_date), 'EEEE, MMMM do, yyyy');
+  const nights = Math.ceil(
+    (new Date(reservation.check_out_date).getTime() -
+      new Date(reservation.check_in_date).getTime()) /
+      (24 * 60 * 60 * 1000)
+  );
+
+  const t = translations[language].welcome;
+  const subject = `${t.subject} (${checkInDate})`;
+
+  const guestCount = reservation.number_of_guests ?? reservation.adults;
+
+  const body = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${t.subject}</title>
+    <style>
+${getEmailStyles()}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="https://gkbpthurkucotikjefra.supabase.co/storage/v1/object/public/hotel-assets/LOGO1-hires.png" alt="Hotel Porec Logo" class="logo" />
+            <p style="margin: 10px 0 0 0; opacity: 0.9; font-size: 16px;">Welcome to your home away from home in beautiful Poreč, Istria</p>
+        </div>
+
+        <div class="content">
+            <p style="font-size: 18px; margin-bottom: 25px;">${t.greeting} ${guest.display_name},</p>
+
+            <p>${t.welcomeText}</p>
+
+            <div class="section booking-details">
+                <h3>📋 ${t.bookingDetails}</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">Room</div>
+                        <div class="info-value">${formatRoomNumber(room)} - ${room.name_english}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Guests</div>
+                        <div class="info-value">${guestCount} guest${guestCount > 1 ? 's' : ''}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Check-in</div>
+                        <div class="info-value">${checkInDate}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Check-out</div>
+                        <div class="info-value">${checkOutDate}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Duration</div>
+                        <div class="info-value">${nights} night${nights > 1 ? 's' : ''}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Total Amount</div>
+                        <div class="info-value">&mdash;</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section important-info">
+                <h3>⏰ ${t.importantInfo}</h3>
+                <ul>
+                    <li><strong>${t.checkInTime}</strong></li>
+                    <li><strong>${t.checkOutTime}</strong></li>
+                    <li><strong>Early/Late arrivals:</strong> Please contact us in advance</li>
+                    <li><strong>Required documents:</strong> Valid ID/Passport for all guests</li>
+                    <li><strong>Key cards:</strong> Will be provided at check-in</li>
+                </ul>
+
+                ${
+                  new Date(reservation.check_in_date).getHours() < 14
+                    ? '<div class="highlight">🕐 Early Check-in Notice: Your check-in is scheduled before 2:00 PM. Please contact us to confirm room availability.</div>'
+                    : ''
+                }
+            </div>
+
+            <div class="section amenities">
+                <h3>🍽️ ${t.dining}</h3>
+
+                <h4 style="color: #059669; margin: 15px 0 10px 0;">Breakfast Service</h4>
+                <ul>
+                    <li><strong>${t.breakfastHours}</strong></li>
+                    <li><strong>Location:</strong> Main dining room (Ground floor)</li>
+                    <li><strong>Style:</strong> Continental buffet with fresh local products</li>
+                    <li><strong>Special diets:</strong> Please inform us in advance</li>
+                </ul>
+
+                <h4 style="color: #059669; margin: 15px 0 10px 0;">Hotel Facilities</h4>
+                <ul>
+                    <li><strong>Free WiFi:</strong> Available throughout the hotel</li>
+                    <li><strong>Reception:</strong> 24-hour front desk service</li>
+                    <li><strong>${t.parking}</strong></li>
+                    <li><strong>Luggage storage:</strong> Available before check-in and after check-out</li>
+                    <li><strong>Concierge:</strong> Local tours and restaurant recommendations</li>
+                </ul>
+            </div>
+
+            <div class="section">
+                <h3>🏖️ ${t.explore}</h3>
+                <p>Poreč is a stunning Istrian coastal town with rich history and beautiful beaches. Here are our top recommendations:</p>
+                <ul>
+                    <li><strong>Euphrasian Basilica:</strong> UNESCO World Heritage site (5 min walk)</li>
+                    <li><strong>Old Town:</strong> Roman streets and Venetian architecture (3 min walk)</li>
+                    <li><strong>Beaches:</strong> Plava Laguna and Zelena Laguna (10 min by bus)</li>
+                    <li><strong>Restaurants:</strong> Ask our concierge for the best local taverns</li>
+                    <li><strong>Day trips:</strong> Rovinj, Motovun, or wine tasting in Istrian hills</li>
+                </ul>
+            </div>
+
+            <div class="section contact">
+                <h3>📞 ${t.contact}</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">Hotel Phone</div>
+                        <div class="info-value">+385 (0)52 451 611</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Email</div>
+                        <div class="info-value">hotelporec@pu.t-com.hr</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Address</div>
+                        <div class="info-value">R Konoba 1, 52440 Poreč, Croatia</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Emergency</div>
+                        <div class="info-value">24/7 front desk service</div>
+                    </div>
+                </div>
+            </div>
+
+            ${
+              guest.has_pets
+                ? `
+            <div class="section" style="background: rgba(254, 243, 199, 0.9); border-left-color: #F59E0B;">
+                <h3>🐕 ${t.petFriendly}</h3>
+                <p>We're happy to welcome your furry friend! Please note:</p>
+                <ul>
+                    <li>Pet fee: €20 per stay (already included in your booking)</li>
+                    <li>Pets must be kept on leash in common areas</li>
+                    <li>Please clean up after your pet</li>
+                    <li>Let us know if you need pet beds or bowls</li>
+                </ul>
+            </div>
+            `
+                : ''
+            }
+
+            <div class="section">
+                <h3>❓ ${t.assistance}</h3>
+                <p>Our friendly staff is here to help make your stay memorable. Don't hesitate to contact us with any questions or special requests.</p>
+
+                <div style="text-align: center; margin-top: 20px;">
+                    <a href="tel:+385524516111" class="cta-button">📞 Call Hotel</a>
+                    <a href="mailto:hotelporec@pu.t-com.hr" class="cta-button">✉️ Email Us</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p><strong>Hotel Porec</strong> | R Konoba 1, 52440 Poreč, Croatia | www.hotelporec.com</p>
+            <p style="margin-top: 15px; font-size: 12px;">This email was sent regarding your upcoming stay. We look forward to welcoming you!</p>
+        </div>
+    </div>
+</body>
+</html>`;
+
+  return { subject, body };
+}
+
+/**
+ * Generate thank-you email after guest stay.
+ */
+export function generateThankYouEmail(data: HotelInfoEmailData): EmailTemplate {
+  const { guest, reservation, room } = data;
+  const subject = `Thank you for staying with us at Hotel Porec!`;
+
+  const body = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thank You - Hotel Porec</title>
+    <style>
+${getEmailStyles()}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="https://gkbpthurkucotikjefra.supabase.co/storage/v1/object/public/hotel-assets/LOGO1-hires.png" alt="Hotel Porec Logo" class="logo" />
+            <h1>Thank You!</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9; font-size: 16px;">We hope you had a wonderful stay in Poreč</p>
+        </div>
+
+        <div class="content">
+            <p style="font-size: 18px; margin-bottom: 25px;">Dear ${guest.display_name},</p>
+
+            <p>Thank you for choosing Hotel Porec for your recent stay! We hope you had a wonderful time exploring beautiful Poreč and enjoying our hospitality.</p>
+
+            <div class="section" style="background: rgba(236, 253, 245, 0.9); border-left-color: #10B981;">
+                <h3>🌟 Your Stay Summary</h3>
+                <p>You stayed with us from <strong>${format(new Date(reservation.check_in_date), 'MMMM do')} to ${format(new Date(reservation.check_out_date), 'MMMM do, yyyy')}</strong> in room <strong>${formatRoomNumber(room)}</strong>.</p>
+                <p>We hope you enjoyed your ${Math.ceil((new Date(reservation.check_out_date).getTime() - new Date(reservation.check_in_date).getTime()) / (24 * 60 * 60 * 1000))} nights with us!</p>
+            </div>
+
+            <div class="section" style="background: rgba(254, 243, 199, 0.9); border-left-color: #F59E0B;">
+                <h3>🎉 Special Offer for Your Next Visit</h3>
+                <p><strong>Book your next stay for 2025 and save 15%!</strong></p>
+                <p>As a valued returning guest, we're offering you an exclusive 15% discount on your next booking for the 2025 season. Use promo code: <strong>RETURN2025</strong></p>
+
+                <div style="text-align: center; margin: 20px 0;">
+                    <a href="mailto:hotelporec@pu.t-com.hr?subject=Returning Guest Booking - 15% Discount" class="cta-button">Book Your Next Stay</a>
+                </div>
+
+                <p style="font-size: 14px; color: #92400e;">*Offer valid until March 31st, 2025. Cannot be combined with other offers. Subject to availability.</p>
+            </div>
+
+            <div class="section">
+                <h3>📝 Help Us Improve</h3>
+                <p>Your feedback is incredibly valuable to us. If you have a moment, we'd love to hear about your experience:</p>
+                <ul>
+                    <li>Leave us a review on Google or TripAdvisor</li>
+                    <li>Share your photos on social media and tag us</li>
+                    <li>Tell us directly what we could improve</li>
+                </ul>
+            </div>
+
+            <div class="section contact">
+                <h3>🏖️ Poreč Memories</h3>
+                <p>We hope you were able to experience some of Poreč's highlights during your stay:</p>
+                <ul>
+                    <li>The stunning Euphrasian Basilica</li>
+                    <li>Beautiful beaches along the Istrian coast</li>
+                    <li>Delicious local cuisine and wine</li>
+                    <li>The charming old town atmosphere</li>
+                </ul>
+                <p>We'd love to see your photos and memories from your trip!</p>
+            </div>
+
+            <div class="section">
+                <h3>💌 Stay Connected</h3>
+                <p>Follow us for updates, special offers, and beautiful Poreč photography:</p>
+                <div style="text-align: center; margin-top: 20px;">
+                    <a href="mailto:hotelporec@pu.t-com.hr" class="cta-button">✉️ Email Us</a>
+                    <a href="tel:+385524516111" class="cta-button">📞 Call Us</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p><strong>Hotel Porec</strong> | R Konoba 1, 52440 Poreč, Croatia | www.hotelporec.com</p>
+            <p style="margin-top: 15px; font-size: 12px;">Thank you for being our guest. We can't wait to welcome you back!</p>
+        </div>
+    </div>
+</body>
+</html>`;
+
+  return { subject, body };
+}
+
+/**
+ * Generate summer season reminder email (marketing / re-engagement).
+ */
+export function generateSeasonReminderEmail(data: { guest: Guest }): EmailTemplate {
+  const { guest } = data;
+  const subject = `Summer in Poreč is calling! Special rates for returning guests`;
+
+  const body = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Summer Reminder - Hotel Porec</title>
+    <style>
+${getEmailStyles()}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="https://gkbpthurkucotikjefra.supabase.co/storage/v1/object/public/hotel-assets/LOGO1-hires.png" alt="Hotel Porec Logo" class="logo" />
+            <h1>🌞 Summer in Poreč</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9; font-size: 16px;">The sunny season is approaching - book your perfect getaway!</p>
+        </div>
+
+        <div class="content">
+            <p style="font-size: 18px; margin-bottom: 25px;">Dear ${guest.display_name},</p>
+
+            <p>We loved having you as our guest last year, and summer is just around the corner! Poreč is getting ready for another beautiful season, and we'd love to welcome you back to Hotel Porec.</p>
+
+            <div class="section" style="background: rgba(254, 243, 199, 0.9); border-left-color: #F59E0B;">
+                <h3>🎯 Early Bird Special - Limited Time!</h3>
+                <p><strong>Book now for summer 2025 and save up to 20%!</strong></p>
+                <ul>
+                    <li><strong>20% off</strong> - Book before February 28th</li>
+                    <li><strong>15% off</strong> - Book before March 31st</li>
+                    <li><strong>10% off</strong> - Book before April 30th</li>
+                </ul>
+                <p>As a returning guest, you get an additional 5% discount on top of these rates!</p>
+
+                <div style="text-align: center; margin: 20px 0;">
+                    <a href="mailto:hotelporec@pu.t-com.hr?subject=Summer 2025 Booking - Early Bird Special" class="cta-button">Book Your Summer Stay</a>
+                </div>
+            </div>
+
+            <div class="section amenities">
+                <h3>🏖️ What Awaits You This Summer</h3>
+                <p>Experience the magic of Poreč in summer:</p>
+                <ul>
+                    <li><strong>Perfect Weather:</strong> Sunny days and warm Mediterranean evenings</li>
+                    <li><strong>Crystal Clear Waters:</strong> Swimming and water sports at nearby beaches</li>
+                    <li><strong>Local Festivals:</strong> Summer events and cultural celebrations</li>
+                    <li><strong>Fresh Seafood:</strong> Seasonal specialties at local restaurants</li>
+                    <li><strong>Extended Hours:</strong> More time to explore with longer daylight</li>
+                </ul>
+            </div>
+
+            <div class="section">
+                <h3>🗓️ Best Time to Visit</h3>
+                <p>Based on last year's experience, here are our recommendations:</p>
+                <ul>
+                    <li><strong>June:</strong> Perfect weather, fewer crowds, wildflowers in bloom</li>
+                    <li><strong>July:</strong> Peak summer, vibrant nightlife, all attractions open</li>
+                    <li><strong>August:</strong> Warmest weather, ideal for beach lovers</li>
+                    <li><strong>September:</strong> Mild temperatures, wine harvest season</li>
+                </ul>
+            </div>
+
+            <div class="section contact">
+                <h3>📞 Ready to Book?</h3>
+                <p>Don't wait too long - the best dates fill up quickly! Contact us today:</p>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">Phone</div>
+                        <div class="info-value">+385 (0)52 451 611</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Email</div>
+                        <div class="info-value">hotelporec@pu.t-com.hr</div>
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin-top: 20px;">
+                    <a href="tel:+385524516111" class="cta-button">📞 Call Now</a>
+                    <a href="mailto:hotelporec@pu.t-com.hr" class="cta-button">✉️ Email Us</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p><strong>Hotel Porec</strong> | R Konoba 1, 52440 Poreč, Croatia | www.hotelporec.com</p>
+            <p style="margin-top: 15px; font-size: 12px;">We can't wait to welcome you back to beautiful Poreč!</p>
+        </div>
+    </div>
+</body>
+</html>`;
+
+  return { subject, body };
+}
+
+/**
+ * Generate stay-reminder email for an upcoming reservation.
+ */
+export function generateReminderEmail(data: HotelInfoEmailData): EmailTemplate {
+  const { guest, reservation, room } = data;
+  const checkInDate = format(new Date(reservation.check_in_date), 'EEEE, MMMM do, yyyy');
+  const daysUntilCheckIn = Math.ceil(
+    (new Date(reservation.check_in_date).getTime() - new Date().getTime()) / (24 * 60 * 60 * 1000)
+  );
+
+  const subject = `Your stay at Hotel Porec is in ${daysUntilCheckIn} day${daysUntilCheckIn > 1 ? 's' : ''} - ${checkInDate}`;
+
+  const guestCount = reservation.number_of_guests ?? reservation.adults;
+
+  const body = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; }
+        .container { background: white; margin: 20px; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header { background: #3B82F6; color: white; padding: 20px; text-align: center; }
+        .content { padding: 25px; }
+        .section { margin-bottom: 20px; padding: 15px; background: #f8fafc; border-radius: 6px; }
+        .highlight { background: #FEE2E2; color: #DC2626; padding: 10px; border-radius: 4px; font-weight: 500; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏨 Hotel Porec</h1>
+            <p>Your stay reminder</p>
+        </div>
+
+        <div class="content">
+            <p>Dear ${guest.display_name},</p>
+
+            <p>Just a friendly reminder that your stay at Hotel Porec is coming up in <strong>${daysUntilCheckIn} day${daysUntilCheckIn > 1 ? 's' : ''}</strong>!</p>
+
+            <div class="section">
+                <h3>📅 Your Booking Details</h3>
+                <p><strong>Room:</strong> ${formatRoomNumber(room)}<br>
+                <strong>Check-in:</strong> ${checkInDate} at 2:00 PM<br>
+                <strong>Guests:</strong> ${guestCount} guest${guestCount > 1 ? 's' : ''}</p>
+            </div>
+
+            <div class="section">
+                <h3>📋 What to Bring</h3>
+                <ul>
+                    <li>Valid ID/Passport for all guests</li>
+                    <li>Confirmation number: ${reservation.id}</li>
+                    ${guest.has_pets ? '<li>Pet vaccination certificates</li>' : ''}
+                </ul>
+            </div>
+
+            <p>We're excited to welcome you to beautiful Poreč! If you have any questions, please don't hesitate to contact us.</p>
+
+            <p>Best regards,<br>The Hotel Porec Team</p>
+        </div>
+    </div>
+</body>
+</html>`;
+
+  return { subject, body };
+}
+
+/**
+ * Dispatch helper: generate the right template by EmailType.
+ */
+export function generateEmailByType(
+  type: EmailType,
+  data: HotelInfoEmailData | { guest: Guest },
+  language: EmailLanguage = 'en'
+): EmailTemplate {
+  switch (type) {
+    case 'welcome':
+      return generateWelcomeEmail(data as HotelInfoEmailData, language);
+    case 'thankyou':
+      return generateThankYouEmail(data as HotelInfoEmailData);
+    case 'reminder':
+      return generateSeasonReminderEmail(data as { guest: Guest });
+    default:
+      throw new Error(`Unknown email type: ${type}`);
+  }
+}
