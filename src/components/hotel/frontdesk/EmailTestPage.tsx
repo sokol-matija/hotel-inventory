@@ -15,7 +15,7 @@ import {
   Phone,
 } from 'lucide-react';
 import { useEmailTestState } from '../../../lib/hooks/useEmailTestState';
-import { ntfyService } from '../../../lib/ntfyService';
+import { MOBILE_TOPIC } from '../../../lib/ntfy';
 
 export default function EmailTestPage() {
   const {
@@ -402,7 +402,7 @@ export default function EmailTestPage() {
                 <p className="font-medium text-blue-900">📱 Mobile Setup Required</p>
                 <p className="mt-1 text-blue-700">
                   Install the ntfy app and subscribe to:{' '}
-                  <code className="rounded bg-white px-1 font-mono">{ntfyService.getTopic()}</code>
+                  <code className="rounded bg-white px-1 font-mono">{MOBILE_TOPIC}</code>
                 </p>
               </div>
 

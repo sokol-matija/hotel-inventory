@@ -85,8 +85,8 @@ vi.mock('@/lib/notifications', () => ({
   },
 }));
 
-vi.mock('@/lib/ntfyService', () => ({
-  ntfyService: { sendRoom401BookingNotification: mocks.sendRoom401 },
+vi.mock('@/lib/ntfy', () => ({
+  sendRoom401BookingNotification: mocks.sendRoom401,
 }));
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

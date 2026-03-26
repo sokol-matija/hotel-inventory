@@ -2,7 +2,7 @@
 // Handles email configuration, sending, notification testing, and test data management
 
 import { HotelEmailService, EmailLanguage, EmailType } from '../emailService';
-import { ntfyService, BookingNotificationData } from '../ntfyService';
+import { sendRoom401BookingNotification, type BookingNotificationData } from '../ntfy';
 import { Reservation, Guest } from '../hotel/types';
 import type { Room } from '../queries/hooks/useRooms';
 import hotelNotification from '../notifications';
@@ -189,7 +189,7 @@ export class EmailTestService {
         totalAmount: 0, // TODO Phase 9: derive from reservation_charges
       };
 
-      const success = await ntfyService.sendRoom401BookingNotification(notificationData);
+      const success = await sendRoom401BookingNotification(notificationData);
 
       const result = {
         success,
