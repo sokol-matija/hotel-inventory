@@ -98,3 +98,5 @@ CLAUDE.md
 /src/routeTree.gen.ts
 
 .claude/worktrees/
+
+deno.lock
