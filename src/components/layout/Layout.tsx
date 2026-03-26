@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Outlet, useNavigate } from '@tanstack/react-router';
 import Sidebar from './Sidebar';
 import MobileNav from './MobileNav';
+import NtfyBell from './NtfyBell';
 import { useAuth } from '@/stores/authStore';
 import LanguageSwitcher from '../ui/LanguageSwitcher';
 
@@ -72,6 +73,8 @@ export default function Layout() {
           <Outlet />
         </div>
       </main>
+
+      <NtfyBell />
     </div>
   );
 }
