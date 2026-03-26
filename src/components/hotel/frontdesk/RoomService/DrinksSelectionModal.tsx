@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useReducer, useState } from 'react';
 import { X, Plus, Minus, Search, ShoppingCart, AlertTriangle } from 'lucide-react';
 import { Button } from '../../../ui/button';
 import { Input } from '../../../ui/input';
@@ -18,6 +18,44 @@ import {
   type FridgeInventoryItem,
 } from '../../../../lib/queries/hooks/useRoomService';
 
+// ── Inventory reducer ─────────────────────────────────────────────────────────
+
+type InventoryState = {
+  availableItems: FridgeInventoryItem[];
+  basketQuantities: Record<number, number>;
+};
+
+type InventoryAction =
+  | { type: 'RESET'; items: FridgeInventoryItem[] }
+  | { type: 'ADJUST'; itemId: number; delta: number }
+  | { type: 'CLEAR_ITEM'; itemId: number };
+
+function inventoryReducer(state: InventoryState, action: InventoryAction): InventoryState {
+  switch (action.type) {
+    case 'RESET':
+      return { availableItems: action.items, basketQuantities: {} };
+    case 'ADJUST': {
+      const newQty = Math.max(0, (state.basketQuantities[action.itemId] ?? 0) + action.delta);
+      return {
+        basketQuantities: { ...state.basketQuantities, [action.itemId]: newQty },
+        availableItems: state.availableItems.map((item) =>
+          item.id === action.itemId ? { ...item, availableStock: item.totalStock - newQty } : item
+        ),
+      };
+    }
+    case 'CLEAR_ITEM': {
+      return {
+        basketQuantities: { ...state.basketQuantities, [action.itemId]: 0 },
+        availableItems: state.availableItems.map((item) =>
+          item.id === action.itemId ? { ...item, availableStock: item.totalStock } : item
+        ),
+      };
+    }
+  }
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
 interface DrinksSelectionModalProps {
   reservation: Reservation;
   isOpen: boolean;
@@ -33,157 +71,113 @@ export default function DrinksSelectionModal({
 }: DrinksSelectionModalProps) {
   const { data: rooms = [] } = useRooms();
   const { data: fridgeItemsData = [], isLoading } = useFridgeItems(isOpen);
-  const [availableItems, setAvailableItems] = useState<FridgeInventoryItem[]>([]);
+
+  const [{ availableItems, basketQuantities }, dispatch] = useReducer(inventoryReducer, {
+    availableItems: [],
+    basketQuantities: {},
+  });
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [validationResult, setValidationResult] = useState<OrderValidationResult | null>(null);
 
-  // Basket state to track quantity changes before committing
-  const [basketQuantities, setBasketQuantities] = useState<Record<number, number>>({});
+  // Derived: validation (no useState/useEffect needed)
+  const validationResult = useMemo<OrderValidationResult | null>(
+    () => (orderItems.length > 0 ? validateOrder(orderItems) : null),
+    [orderItems]
+  );
 
-  // Initialize/reset available items when modal opens or fresh data arrives
+  // Derived: filtered items
+  const filteredItems = useMemo(
+    () =>
+      availableItems.filter(
+        (item) =>
+          item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.category.name.toLowerCase().includes(searchTerm.toLowerCase())
+      ),
+    [availableItems, searchTerm]
+  );
+
+  // Reset when modal opens or fresh data arrives
   useEffect(() => {
     if (isOpen) {
-      setAvailableItems(fridgeItemsData);
-      setBasketQuantities({});
+      dispatch({ type: 'RESET', items: fridgeItemsData });
       setOrderItems([]);
-      setValidationResult(null);
       setSearchTerm('');
     }
   }, [isOpen, fridgeItemsData]);
 
-  // Validate order whenever items change
-  useEffect(() => {
-    if (orderItems.length > 0) {
-      setValidationResult(validateOrder(orderItems));
-    } else {
-      setValidationResult(null);
-    }
-  }, [orderItems]);
-
-  const filteredItems = availableItems.filter(
-    (item) =>
-      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.category.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  // Update available stock calculation based on basket quantities
-  const updateAvailableStock = (newBasketQuantities: Record<number, number>) => {
-    setAvailableItems((prevItems) =>
-      prevItems.map((item) => {
-        const basketQty = newBasketQuantities[item.id] || 0;
-        return {
-          ...item,
-          availableStock: item.totalStock - basketQty,
-        };
-      })
-    );
-  };
-
   const addToOrder = (item: FridgeInventoryItem) => {
-    const existingOrderItem = orderItems.find((oi) => oi.itemId === item.id);
-    const currentBasketQty = basketQuantities[item.id] || 0;
+    const currentBasketQty = basketQuantities[item.id] ?? 0;
+    if (currentBasketQty >= item.totalStock) return;
 
-    // Check if we can add more (don't exceed available stock)
-    if (currentBasketQty >= item.totalStock) {
-      return; // Can't add more than total stock
-    }
-
-    if (existingOrderItem) {
-      // Increase quantity if item already in order
-      updateOrderItemQuantity(item.id, existingOrderItem.quantity + 1);
+    const existing = orderItems.find((oi) => oi.itemId === item.id);
+    if (existing) {
+      setOrderItems((prev) =>
+        prev.map((oi) =>
+          oi.itemId === item.id
+            ? { ...oi, quantity: oi.quantity + 1, totalPrice: oi.price * (oi.quantity + 1) }
+            : oi
+        )
+      );
     } else {
-      // Add new item to order
-      const newOrderItem: OrderItem = {
-        id: crypto.randomUUID(),
-        itemId: item.id,
-        itemName: item.name,
-        category: item.category.name,
-        price: item.price,
-        quantity: 1,
-        totalPrice: item.price,
-        unit: item.unit,
-        availableStock: item.availableStock,
-      };
-      setOrderItems([...orderItems, newOrderItem]);
+      setOrderItems((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          itemId: item.id,
+          itemName: item.name,
+          category: item.category.name,
+          price: item.price,
+          quantity: 1,
+          totalPrice: item.price,
+          unit: item.unit,
+          availableStock: item.availableStock,
+        },
+      ]);
     }
-
-    // Update basket quantities to reflect the change
-    const newBasketQuantities = { ...basketQuantities, [item.id]: currentBasketQty + 1 };
-    setBasketQuantities(newBasketQuantities);
-    updateAvailableStock(newBasketQuantities);
+    dispatch({ type: 'ADJUST', itemId: item.id, delta: 1 });
   };
 
   const updateOrderItemQuantity = (itemId: number, newQuantity: number) => {
-    const currentOrderItem = orderItems.find((item) => item.itemId === itemId);
-    if (!currentOrderItem) return;
+    const current = orderItems.find((item) => item.itemId === itemId);
+    if (!current) return;
 
-    const currentQuantityDiff = currentOrderItem.quantity;
-    const newQuantityDiff = newQuantity;
-    const quantityChange = newQuantityDiff - currentQuantityDiff;
-
-    const currentBasketQty = basketQuantities[itemId] || 0;
-    const newBasketQty = Math.max(0, currentBasketQty + quantityChange);
-
-    // Get item to check total stock
-    const item = availableItems.find((item) => item.id === itemId);
-    if (item && newBasketQty > item.totalStock) {
-      return; // Can't exceed total stock
-    }
+    const delta = newQuantity - current.quantity;
+    const newBasketQty = (basketQuantities[itemId] ?? 0) + delta;
+    const inventoryItem = availableItems.find((item) => item.id === itemId);
+    if (inventoryItem && newBasketQty > inventoryItem.totalStock) return;
 
     if (newQuantity <= 0) {
-      setOrderItems(orderItems.filter((item) => item.itemId !== itemId));
-      // Reset basket quantity for this item
-      const newBasketQuantities = { ...basketQuantities, [itemId]: 0 };
-      setBasketQuantities(newBasketQuantities);
-      updateAvailableStock(newBasketQuantities);
+      setOrderItems((prev) => prev.filter((item) => item.itemId !== itemId));
+      dispatch({ type: 'CLEAR_ITEM', itemId });
       return;
     }
 
-    setOrderItems(
-      orderItems.map((item) =>
+    setOrderItems((prev) =>
+      prev.map((item) =>
         item.itemId === itemId
           ? { ...item, quantity: newQuantity, totalPrice: item.price * newQuantity }
           : item
       )
     );
-
-    // Update basket quantities
-    const newBasketQuantities = { ...basketQuantities, [itemId]: newBasketQty };
-    setBasketQuantities(newBasketQuantities);
-    updateAvailableStock(newBasketQuantities);
+    dispatch({ type: 'ADJUST', itemId, delta });
   };
 
   const removeFromOrder = (itemId: number) => {
-    setOrderItems(orderItems.filter((item) => item.itemId !== itemId));
-    // Reset basket quantity for this item
-    const newBasketQuantities = { ...basketQuantities, [itemId]: 0 };
-    setBasketQuantities(newBasketQuantities);
-    updateAvailableStock(newBasketQuantities);
+    setOrderItems((prev) => prev.filter((item) => item.itemId !== itemId));
+    dispatch({ type: 'CLEAR_ITEM', itemId });
   };
 
   const handleAddToRoomBill = () => {
     if (orderItems.length === 0 || !validationResult?.isValid) return;
-
     const totals = calculateOrderTotal(orderItems);
     onOrderComplete(orderItems, totals.total);
-
-    // Reset everything and close
-    resetModal();
     onClose();
   };
 
-  // Reset modal state
-  const resetModal = () => {
+  const handleClose = () => {
     setOrderItems([]);
     setSearchTerm('');
-    setBasketQuantities({});
-    setValidationResult(null);
-  };
-
-  // Reset when modal closes
-  const handleClose = () => {
-    resetModal();
+    dispatch({ type: 'RESET', items: fridgeItemsData });
     onClose();
   };
 
@@ -221,7 +215,6 @@ export default function DrinksSelectionModal({
         <div className="flex h-full max-h-[calc(90vh-80px)]">
           {/* Left Column - Drinks Menu */}
           <div className="flex-1 overflow-y-auto border-r p-6">
-            {/* Search */}
             <div className="mb-4">
               <div className="flex items-center space-x-2">
                 <Search className="h-4 w-4 text-gray-500" />
@@ -234,7 +227,6 @@ export default function DrinksSelectionModal({
               </div>
             </div>
 
-            {/* Drinks Grid */}
             {isLoading ? (
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 {Array.from({ length: 6 }).map((_, i) => (
@@ -298,7 +290,6 @@ export default function DrinksSelectionModal({
               <div className="py-8 text-center text-gray-500">No drinks selected</div>
             ) : (
               <div className="space-y-4">
-                {/* Order Items */}
                 <div className="max-h-64 space-y-3 overflow-y-auto">
                   {orderItems.map((item) => (
                     <div
@@ -345,7 +336,6 @@ export default function DrinksSelectionModal({
                   ))}
                 </div>
 
-                {/* Validation Messages */}
                 {validationResult && validationResult.errors.length > 0 && (
                   <div className="rounded border border-red-200 bg-red-50 p-2 text-sm">
                     <div className="flex items-center space-x-1 text-red-700">
@@ -374,7 +364,6 @@ export default function DrinksSelectionModal({
                   </div>
                 )}
 
-                {/* Totals */}
                 <div className="space-y-2 border-t pt-3">
                   <div className="flex justify-between text-sm">
                     <span>Subtotal:</span>
@@ -390,7 +379,6 @@ export default function DrinksSelectionModal({
                   </div>
                 </div>
 
-                {/* Add to Bill Button */}
                 <Button
                   onClick={handleAddToRoomBill}
                   disabled={!validationResult?.isValid || isLoading}
