@@ -1,5 +1,4 @@
-// ReservationPopup - Simplified UI-only component using services and hooks
-// Reduced from 810 lines to ~400 lines with clean architecture
+// ReservationPopup - UI-only component; all logic delegated to useReservationPopup
 
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../ui/dialog';
@@ -29,13 +28,20 @@ import {
   Building2,
 } from 'lucide-react';
 import { CalendarEvent, Company } from '../../../../lib/hotel/types';
-import { useReservationState } from '../../../../lib/hotel/hooks/useReservationState';
-import { useReservationCharges } from '../../../../lib/queries/hooks/useReservationCharges';
+import type { Reservation } from '../../../../lib/queries/hooks/useReservations';
+import type { Guest } from '../../../../lib/queries/hooks/useGuests';
+import type { Room } from '../../../../lib/queries/hooks/useRooms';
+import { useReservationPopup } from './useReservationPopup';
+import { ReservationState } from '../../../../lib/hotel/hooks/useReservationState';
+import { FiscalData } from '../../../../lib/hotel/services/ReservationService';
 import PaymentDetailsModal from './PaymentDetailsModal';
 import CheckInWorkflow from '../CheckInOut/CheckInWorkflow';
 import CheckOutWorkflow from '../CheckInOut/CheckOutWorkflow';
-import { useCompanies } from '../../../../lib/queries/hooks/useCompanies';
 import { convertToDisplayName } from '../../../../lib/hotel/countryCodeUtils';
+
+// ---------------------------------------------------------------------------
+// Sub-components
+// ---------------------------------------------------------------------------
 
 interface StatusActionsProps {
   statusActions: Array<{
@@ -48,34 +54,408 @@ interface StatusActionsProps {
   onStatusUpdate: (status: string) => void;
 }
 
-const StatusActions = ({ statusActions, isUpdating, onStatusUpdate }: StatusActionsProps) => {
-  return (
-    <>
-      {statusActions.map((action) => (
-        <Button
-          key={action.status}
-          variant={action.variant}
-          size="sm"
-          onClick={() => onStatusUpdate(action.status)}
-          disabled={isUpdating}
-        >
-          {action.icon === 'log-in' && <LogIn className="mr-1 h-4 w-4" />}
-          {action.icon === 'log-out' && <LogOut className="mr-1 h-4 w-4" />}
-          {action.icon === 'check' && <Check className="mr-1 h-4 w-4" />}
-          {action.icon === 'x' && <X className="mr-1 h-4 w-4" />}
-          {action.label}
-        </Button>
-      ))}
-    </>
-  );
-};
+const StatusActions = ({ statusActions, isUpdating, onStatusUpdate }: StatusActionsProps) => (
+  <>
+    {statusActions.map((action) => (
+      <Button
+        key={action.status}
+        variant={action.variant}
+        size="sm"
+        onClick={() => onStatusUpdate(action.status)}
+        disabled={isUpdating}
+      >
+        {action.icon === 'log-in' && <LogIn className="mr-1 h-4 w-4" />}
+        {action.icon === 'log-out' && <LogOut className="mr-1 h-4 w-4" />}
+        {action.icon === 'check' && <Check className="mr-1 h-4 w-4" />}
+        {action.icon === 'x' && <X className="mr-1 h-4 w-4" />}
+        {action.label}
+      </Button>
+    ))}
+  </>
+);
 
-interface ReservationPopupProps {
+interface CompanyCardProps {
+  company: Company;
+}
+
+const CompanyCard = ({ company }: CompanyCardProps) => (
+  <Card className="border-blue-200 bg-blue-50/30">
+    <CardHeader>
+      <CardTitle className="flex items-center space-x-2">
+        <Building2 className="h-5 w-5 text-blue-600" />
+        <span>Company Billing (R1)</span>
+        <Badge variant="outline" className="ml-2 border-blue-300 bg-blue-100 text-blue-800">
+          Corporate
+        </Badge>
+      </CardTitle>
+    </CardHeader>
+    <CardContent className="space-y-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="space-y-3">
+          <div className="flex items-start space-x-2">
+            <Building2 className="mt-0.5 h-4 w-4 text-blue-600" />
+            <div>
+              <p className="font-semibold text-gray-900">{company.name}</p>
+              <p className="text-xs text-gray-500">Company Name</p>
+            </div>
+          </div>
+          <div className="flex items-start space-x-2">
+            <FileText className="mt-0.5 h-4 w-4 text-blue-600" />
+            <div>
+              <p className="font-medium text-gray-900">{company.oib}</p>
+              <p className="text-xs text-gray-500">OIB (Tax Number)</p>
+            </div>
+          </div>
+          <div className="flex items-start space-x-2">
+            <MapPin className="mt-0.5 h-4 w-4 text-blue-600" />
+            <div>
+              <p className="text-sm text-gray-700">{company.address}</p>
+              <p className="text-sm text-gray-700">
+                {company.postal_code} {company.city}
+              </p>
+              <p className="text-sm text-gray-700">{convertToDisplayName(company.country ?? '')}</p>
+              <p className="text-xs text-gray-500">Address</p>
+            </div>
+          </div>
+        </div>
+        <div className="space-y-3">
+          {company.contact_person && (
+            <div className="flex items-start space-x-2">
+              <User className="mt-0.5 h-4 w-4 text-blue-600" />
+              <div>
+                <p className="text-sm text-gray-700">{company.contact_person}</p>
+                <p className="text-xs text-gray-500">Contact Person</p>
+              </div>
+            </div>
+          )}
+          {company.email && (
+            <div className="flex items-start space-x-2">
+              <Mail className="mt-0.5 h-4 w-4 text-blue-600" />
+              <div>
+                <p className="text-sm text-gray-700">{company.email}</p>
+                <p className="text-xs text-gray-500">Email</p>
+              </div>
+            </div>
+          )}
+          {company.phone && (
+            <div className="flex items-start space-x-2">
+              <Phone className="mt-0.5 h-4 w-4 text-blue-600" />
+              <div>
+                <p className="text-sm text-gray-700">{company.phone}</p>
+                <p className="text-xs text-gray-500">Phone</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+);
+
+interface GuestCardProps {
+  guest: Guest;
+  reservation: Reservation;
+  reservationStatusCode: string;
+  isSendingEmail: boolean;
+  onSendWelcome: () => void;
+  onSendReminder: () => void;
+}
+
+const GuestCard = ({
+  guest,
+  reservation,
+  reservationStatusCode,
+  isSendingEmail,
+  onSendWelcome,
+  onSendReminder,
+}: GuestCardProps) => (
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center space-x-2">
+        <User className="h-5 w-5" />
+        <span>Guest Information</span>
+      </CardTitle>
+    </CardHeader>
+    <CardContent className="space-y-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="space-y-3">
+          <div className="flex items-center space-x-2">
+            <User className="h-4 w-4 text-gray-500" />
+            <span className="font-medium">{guest.display_name}</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Mail className="h-4 w-4 text-gray-500" />
+            <span className="text-sm text-gray-600">{guest.email}</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Phone className="h-4 w-4 text-gray-500" />
+            <span className="text-sm text-gray-600">{guest.phone}</span>
+          </div>
+        </div>
+        <div className="space-y-3">
+          <div className="flex items-center space-x-2">
+            <MapPin className="h-4 w-4 text-gray-500" />
+            <span className="text-sm text-gray-600">{guest.nationality}</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Users className="h-4 w-4 text-gray-500" />
+            <span className="text-sm text-gray-600">
+              {reservation.adults} Adults
+              {(reservation.children_count ?? 0) > 0 && `, ${reservation.children_count} Children`}
+            </span>
+          </div>
+        </div>
+      </div>
+      {(reservationStatusCode === 'confirmed' || reservationStatusCode === 'checked-in') && (
+        <div className="border-t pt-4">
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button
+              onClick={onSendWelcome}
+              disabled={isSendingEmail || !guest.email}
+              variant="outline"
+              className="border-blue-200 text-blue-700 hover:bg-blue-50"
+            >
+              {isSendingEmail ? (
+                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-blue-600" />
+              ) : (
+                <Send className="mr-2 h-4 w-4" />
+              )}
+              Send Welcome Email
+            </Button>
+            <Button
+              onClick={onSendReminder}
+              disabled={isSendingEmail || !guest.email}
+              variant="outline"
+              className="border-orange-200 text-orange-700 hover:bg-orange-50"
+            >
+              {isSendingEmail ? (
+                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-orange-600" />
+              ) : (
+                <Mail className="mr-2 h-4 w-4" />
+              )}
+              Send Reminder
+            </Button>
+          </div>
+          {!guest.email && <p className="mt-2 text-sm text-red-600">⚠️ No email address on file</p>}
+        </div>
+      )}
+    </CardContent>
+  </Card>
+);
+
+interface FiscalCardProps {
+  fiscalData: FiscalData | null;
+  isFiscalizing: boolean;
+  isSendingEmail: boolean;
+  guestEmail: string | null | undefined;
+  onGenerateInvoice: () => void;
+  onPrintReceipt: () => void;
+  onEmailReceipt: () => void;
+}
+
+const FiscalCard = ({
+  fiscalData,
+  isFiscalizing,
+  isSendingEmail,
+  guestEmail,
+  onGenerateInvoice,
+  onPrintReceipt,
+  onEmailReceipt,
+}: FiscalCardProps) => (
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center space-x-2">
+        <Receipt className="h-5 w-5" />
+        <span>Croatian Fiscal Invoices</span>
+        {fiscalData && (
+          <Badge variant="secondary" className="ml-2 bg-green-100 text-green-800">
+            Fiscalized
+          </Badge>
+        )}
+      </CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <Button
+          onClick={onGenerateInvoice}
+          disabled={isFiscalizing}
+          className="bg-indigo-600 text-white hover:bg-indigo-700"
+        >
+          {isFiscalizing ? (
+            <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white" />
+          ) : (
+            <Download className="mr-2 h-4 w-4" />
+          )}
+          Generate Fiscal Invoice
+        </Button>
+        <Button
+          onClick={onPrintReceipt}
+          disabled={isFiscalizing}
+          variant="outline"
+          className="border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+        >
+          {isFiscalizing ? (
+            <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-indigo-600" />
+          ) : (
+            <Printer className="mr-2 h-4 w-4" />
+          )}
+          Print Thermal Receipt
+        </Button>
+        <Button
+          onClick={onEmailReceipt}
+          disabled={isSendingEmail || isFiscalizing || !guestEmail}
+          variant="outline"
+          className="border-green-200 text-green-700 hover:bg-green-50"
+        >
+          {isSendingEmail || isFiscalizing ? (
+            <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-green-600" />
+          ) : (
+            <Mail className="mr-2 h-4 w-4" />
+          )}
+          Email Fiscal Receipt
+        </Button>
+      </div>
+      <div className="mt-3 text-sm text-gray-600">
+        <p>
+          🧾 <strong>Fiscal Invoice:</strong> Croatian Tax Authority compliant PDF with QR code and
+          JIR
+        </p>
+        <p className="mt-1">
+          🖨️ <strong>Thermal Receipt:</strong> 80mm format for receipt printers with fiscal data
+        </p>
+        <p className="mt-1">
+          📧 <strong>Email Receipt:</strong> Send professional fiscal invoice to guest automatically
+        </p>
+        {fiscalData && (
+          <div className="mt-2 rounded-lg bg-green-50 p-2">
+            <p className="font-medium text-green-800">✅ Fiscalized with Croatian Tax Authority</p>
+            <p className="text-xs text-green-700">JIR: {fiscalData.jir}</p>
+          </div>
+        )}
+        {!guestEmail && <p className="mt-2 text-red-600">⚠️ No email address on file for guest</p>}
+      </div>
+    </CardContent>
+  </Card>
+);
+
+interface ReservationDetailsCardProps {
+  reservation: Reservation;
+  room: Room;
+  state: ReservationState;
+  onNoteChange: (note: string) => void;
+  onSave: () => void;
+  onCancelEdit: () => void;
+}
+
+const ReservationDetailsCard = ({
+  reservation,
+  room,
+  state,
+  onNoteChange,
+  onSave,
+  onCancelEdit,
+}: ReservationDetailsCardProps) => (
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center space-x-2">
+        <Calendar className="h-5 w-5" />
+        <span>Reservation Details</span>
+      </CardTitle>
+    </CardHeader>
+    <CardContent className="space-y-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="space-y-2">
+          <div className="text-sm text-gray-500">Check-in</div>
+          <div className="font-medium">
+            {new Date(reservation.check_in_date).toLocaleDateString()}
+          </div>
+        </div>
+        <div className="space-y-2">
+          <div className="text-sm text-gray-500">Check-out</div>
+          <div className="font-medium">
+            {new Date(reservation.check_out_date).toLocaleDateString()}
+          </div>
+        </div>
+        <div className="space-y-2">
+          <div className="text-sm text-gray-500">Nights</div>
+          <div className="font-medium">{reservation.number_of_nights ?? 1}</div>
+        </div>
+        <div className="space-y-2">
+          <div className="text-sm text-gray-500">Room Type</div>
+          <div className="font-medium">{room.name_english}</div>
+        </div>
+      </div>
+      <div className="space-y-2">
+        <div className="text-sm text-gray-500">Special Requests</div>
+        {state.isEditing ? (
+          <div className="space-y-2">
+            <Textarea
+              value={state.editedNotes}
+              onChange={(e) => onNoteChange(e.target.value)}
+              placeholder="Enter special requests..."
+              rows={3}
+            />
+            <div className="flex space-x-2">
+              <Button size="sm" onClick={onSave}>
+                <Save className="mr-1 h-4 w-4" />
+                Save
+              </Button>
+              <Button size="sm" variant="outline" onClick={onCancelEdit}>
+                <X className="mr-1 h-4 w-4" />
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="font-medium">{reservation.special_requests || 'None'}</div>
+        )}
+      </div>
+    </CardContent>
+  </Card>
+);
+
+interface PaymentCardProps {
+  chargesTotalAmount: number;
+  nights: number;
+  onViewBreakdown: () => void;
+}
+
+const PaymentCard = ({ chargesTotalAmount, nights, onViewBreakdown }: PaymentCardProps) => (
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center space-x-2">
+        <CreditCard className="h-5 w-5" />
+        <span>Payment Information</span>
+      </CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="text-lg font-bold">€{chargesTotalAmount.toFixed(2)}</div>
+          <div className="text-sm text-gray-500">Total Amount • {nights} nights</div>
+        </div>
+        <Button variant="outline" onClick={onViewBreakdown}>
+          View Breakdown
+        </Button>
+      </div>
+    </CardContent>
+  </Card>
+);
+
+// ---------------------------------------------------------------------------
+// Props
+// ---------------------------------------------------------------------------
+
+export interface ReservationPopupProps {
   isOpen: boolean;
   onClose: () => void;
   event: CalendarEvent | null;
   onStatusChange?: (reservationId: string, newStatus: string) => void;
 }
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
 
 export default function ReservationPopup({
   isOpen,
@@ -84,12 +464,9 @@ export default function ReservationPopup({
   onStatusChange,
 }: ReservationPopupProps) {
   const {
-    // State
     state,
     reservationData,
     isUpdating,
-
-    // Operations
     handleEditToggle,
     handleSaveEdit,
     handleStatusUpdate,
@@ -98,37 +475,19 @@ export default function ReservationPopup({
     handleGenerateFiscalInvoice,
     handleEmailFiscalReceipt,
     handlePrintThermalReceipt,
-
-    // Dialog management
     togglePaymentDetails,
     toggleCheckInWorkflow,
     toggleCheckOutWorkflow,
-
-    // Helpers
     clearError,
     getStatusActions,
     formatDates,
-
-    // Direct state updates
     updateState,
-  } = useReservationState(event, onClose, onStatusChange);
-
-  // Fetch charges to derive total from reservation_charges
-  const numericReservationId = reservationData?.reservation?.id;
-  const { data: charges = [] } = useReservationCharges(numericReservationId);
-  const chargesTotalAmount = charges.reduce((sum, c) => sum + c.total, 0);
-
-  // Company data for R1 billing — resolved from TQ cache
-  const { data: companies = [] } = useCompanies();
-  const res = reservationData?.reservation as unknown as Record<string, unknown> | undefined;
-  const company: Company | null =
-    res?.is_r1 && res?.company_id
-      ? (companies.find((c) => c.id === Number(res.company_id)) ?? null)
-      : null;
+    chargesTotalAmount,
+    company,
+  } = useReservationPopup(event, onClose, onStatusChange);
 
   if (!event) return null;
 
-  // Handle case where reservation data couldn't be loaded
   if (!reservationData) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
@@ -144,7 +503,6 @@ export default function ReservationPopup({
 
   const { reservation, guest, room, statusColors, isMaintenanceReservation } = reservationData;
 
-  // Handle maintenance reservations differently
   if (isMaintenanceReservation) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
@@ -179,8 +537,8 @@ export default function ReservationPopup({
     );
   }
 
-  // Get available status actions
   const statusActions = getStatusActions();
+  const reservationStatusCode = reservation.reservation_statuses?.code ?? '';
 
   return (
     <>
@@ -216,13 +574,10 @@ export default function ReservationPopup({
           </DialogHeader>
 
           <div className="space-y-6">
-            {/* Error Display */}
             {state.statusUpdateError && (
               <div className="rounded-md border border-red-200 bg-red-50 p-3">
                 <div className="flex">
-                  <div className="flex-shrink-0">
-                    <X className="h-5 w-5 text-red-400" />
-                  </div>
+                  <X className="h-5 w-5 flex-shrink-0 text-red-400" />
                   <div className="ml-3">
                     <h3 className="text-sm font-medium text-red-800">Error</h3>
                     <div className="mt-2 text-sm text-red-700">{state.statusUpdateError}</div>
@@ -239,342 +594,47 @@ export default function ReservationPopup({
               </div>
             )}
 
-            {/* Company Information (R1 Billing) */}
-            {company && (
-              <Card className="border-blue-200 bg-blue-50/30">
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Building2 className="h-5 w-5 text-blue-600" />
-                    <span>Company Billing (R1)</span>
-                    <Badge
-                      variant="outline"
-                      className="ml-2 border-blue-300 bg-blue-100 text-blue-800"
-                    >
-                      Corporate
-                    </Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div className="space-y-3">
-                      <div className="flex items-start space-x-2">
-                        <Building2 className="mt-0.5 h-4 w-4 text-blue-600" />
-                        <div>
-                          <p className="font-semibold text-gray-900">{company.name}</p>
-                          <p className="text-xs text-gray-500">Company Name</p>
-                        </div>
-                      </div>
-                      <div className="flex items-start space-x-2">
-                        <FileText className="mt-0.5 h-4 w-4 text-blue-600" />
-                        <div>
-                          <p className="font-medium text-gray-900">{company.oib}</p>
-                          <p className="text-xs text-gray-500">OIB (Tax Number)</p>
-                        </div>
-                      </div>
-                      <div className="flex items-start space-x-2">
-                        <MapPin className="mt-0.5 h-4 w-4 text-blue-600" />
-                        <div>
-                          <p className="text-sm text-gray-700">{company.address}</p>
-                          <p className="text-sm text-gray-700">
-                            {company.postal_code} {company.city}
-                          </p>
-                          <p className="text-sm text-gray-700">
-                            {convertToDisplayName(company.country ?? '')}
-                          </p>
-                          <p className="text-xs text-gray-500">Address</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="space-y-3">
-                      {company.contact_person && (
-                        <div className="flex items-start space-x-2">
-                          <User className="mt-0.5 h-4 w-4 text-blue-600" />
-                          <div>
-                            <p className="text-sm text-gray-700">{company.contact_person}</p>
-                            <p className="text-xs text-gray-500">Contact Person</p>
-                          </div>
-                        </div>
-                      )}
-                      {company.email && (
-                        <div className="flex items-start space-x-2">
-                          <Mail className="mt-0.5 h-4 w-4 text-blue-600" />
-                          <div>
-                            <p className="text-sm text-gray-700">{company.email}</p>
-                            <p className="text-xs text-gray-500">Email</p>
-                          </div>
-                        </div>
-                      )}
-                      {company.phone && (
-                        <div className="flex items-start space-x-2">
-                          <Phone className="mt-0.5 h-4 w-4 text-blue-600" />
-                          <div>
-                            <p className="text-sm text-gray-700">{company.phone}</p>
-                            <p className="text-xs text-gray-500">Phone</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+            {company && <CompanyCard company={company} />}
+
+            <GuestCard
+              guest={guest}
+              reservation={reservation}
+              reservationStatusCode={reservationStatusCode}
+              isSendingEmail={state.isSendingEmail}
+              onSendWelcome={handleSendWelcomeEmail}
+              onSendReminder={handleSendReminderEmail}
+            />
+
+            {reservationStatusCode === 'checked-out' && (
+              <FiscalCard
+                fiscalData={state.fiscalData}
+                isFiscalizing={state.isFiscalizing}
+                isSendingEmail={state.isSendingEmail}
+                guestEmail={guest.email}
+                onGenerateInvoice={handleGenerateFiscalInvoice}
+                onPrintReceipt={handlePrintThermalReceipt}
+                onEmailReceipt={handleEmailFiscalReceipt}
+              />
             )}
 
-            {/* Guest Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <User className="h-5 w-5" />
-                  <span>Guest Information</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-2">
-                      <User className="h-4 w-4 text-gray-500" />
-                      <span className="font-medium">{guest.display_name}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Mail className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm text-gray-600">{guest.email}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Phone className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm text-gray-600">{guest.phone}</span>
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-2">
-                      <MapPin className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm text-gray-600">{guest.nationality}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Users className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm text-gray-600">
-                        {reservation.adults} Adults
-                        {(reservation.children_count ?? 0) > 0 &&
-                          `, ${reservation.children_count} Children`}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+            <ReservationDetailsCard
+              reservation={reservation}
+              room={room}
+              state={state}
+              onNoteChange={(note) => updateState({ editedNotes: note })}
+              onSave={handleSaveEdit}
+              onCancelEdit={handleEditToggle}
+            />
 
-                {/* Email Actions - Only for confirmed or checked-in reservations */}
-                {((reservation.reservation_statuses?.code ?? '') === 'confirmed' ||
-                  (reservation.reservation_statuses?.code ?? '') === 'checked-in') && (
-                  <div className="border-t pt-4">
-                    <div className="flex flex-col gap-3 sm:flex-row">
-                      <Button
-                        onClick={handleSendWelcomeEmail}
-                        disabled={state.isSendingEmail || !guest.email}
-                        variant="outline"
-                        className="border-blue-200 text-blue-700 hover:bg-blue-50"
-                      >
-                        {state.isSendingEmail ? (
-                          <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-blue-600"></div>
-                        ) : (
-                          <Send className="mr-2 h-4 w-4" />
-                        )}
-                        Send Welcome Email
-                      </Button>
-
-                      <Button
-                        onClick={handleSendReminderEmail}
-                        disabled={state.isSendingEmail || !guest.email}
-                        variant="outline"
-                        className="border-orange-200 text-orange-700 hover:bg-orange-50"
-                      >
-                        {state.isSendingEmail ? (
-                          <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-orange-600"></div>
-                        ) : (
-                          <Mail className="mr-2 h-4 w-4" />
-                        )}
-                        Send Reminder
-                      </Button>
-                    </div>
-                    {!guest.email && (
-                      <p className="mt-2 text-sm text-red-600">⚠️ No email address on file</p>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Croatian Fiscal Invoices - Only show for checked-out reservations */}
-            {(reservation.reservation_statuses?.code ?? '') === 'checked-out' && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Receipt className="h-5 w-5" />
-                    <span>Croatian Fiscal Invoices</span>
-                    {state.fiscalData && (
-                      <Badge variant="secondary" className="ml-2 bg-green-100 text-green-800">
-                        Fiscalized
-                      </Badge>
-                    )}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-col gap-3 sm:flex-row">
-                    <Button
-                      onClick={handleGenerateFiscalInvoice}
-                      disabled={state.isFiscalizing}
-                      className="bg-indigo-600 text-white hover:bg-indigo-700"
-                    >
-                      {state.isFiscalizing ? (
-                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
-                      ) : (
-                        <Download className="mr-2 h-4 w-4" />
-                      )}
-                      Generate Fiscal Invoice
-                    </Button>
-
-                    <Button
-                      onClick={handlePrintThermalReceipt}
-                      disabled={state.isFiscalizing}
-                      variant="outline"
-                      className="border-indigo-200 text-indigo-700 hover:bg-indigo-50"
-                    >
-                      {state.isFiscalizing ? (
-                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-indigo-600"></div>
-                      ) : (
-                        <Printer className="mr-2 h-4 w-4" />
-                      )}
-                      Print Thermal Receipt
-                    </Button>
-
-                    <Button
-                      onClick={handleEmailFiscalReceipt}
-                      disabled={state.isSendingEmail || state.isFiscalizing || !guest?.email}
-                      variant="outline"
-                      className="border-green-200 text-green-700 hover:bg-green-50"
-                    >
-                      {state.isSendingEmail || state.isFiscalizing ? (
-                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-green-600"></div>
-                      ) : (
-                        <Mail className="mr-2 h-4 w-4" />
-                      )}
-                      Email Fiscal Receipt
-                    </Button>
-                  </div>
-
-                  <div className="mt-3 text-sm text-gray-600">
-                    <p>
-                      🧾 <strong>Fiscal Invoice:</strong> Croatian Tax Authority compliant PDF with
-                      QR code and JIR
-                    </p>
-                    <p className="mt-1">
-                      🖨️ <strong>Thermal Receipt:</strong> 80mm format for receipt printers with
-                      fiscal data
-                    </p>
-                    <p className="mt-1">
-                      📧 <strong>Email Receipt:</strong> Send professional fiscal invoice to guest
-                      automatically
-                    </p>
-                    {state.fiscalData && (
-                      <div className="mt-2 rounded-lg bg-green-50 p-2">
-                        <p className="font-medium text-green-800">
-                          ✅ Fiscalized with Croatian Tax Authority
-                        </p>
-                        <p className="text-xs text-green-700">JIR: {state.fiscalData.jir}</p>
-                      </div>
-                    )}
-                    {!guest?.email && (
-                      <p className="mt-2 text-red-600">⚠️ No email address on file for guest</p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Reservation Details */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Calendar className="h-5 w-5" />
-                  <span>Reservation Details</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <div className="text-sm text-gray-500">Check-in</div>
-                    <div className="font-medium">
-                      {new Date(reservation.check_in_date).toLocaleDateString()}
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="text-sm text-gray-500">Check-out</div>
-                    <div className="font-medium">
-                      {new Date(reservation.check_out_date).toLocaleDateString()}
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="text-sm text-gray-500">Nights</div>
-                    <div className="font-medium">{reservation.number_of_nights ?? 1}</div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="text-sm text-gray-500">Room Type</div>
-                    <div className="font-medium">{room.name_english}</div>
-                  </div>
-                </div>
-
-                {/* Special Requests */}
-                <div className="space-y-2">
-                  <div className="text-sm text-gray-500">Special Requests</div>
-                  {state.isEditing ? (
-                    <div className="space-y-2">
-                      <Textarea
-                        value={state.editedNotes}
-                        onChange={(e) => updateState({ editedNotes: e.target.value })}
-                        placeholder="Enter special requests..."
-                        rows={3}
-                      />
-                      <div className="flex space-x-2">
-                        <Button size="sm" onClick={handleSaveEdit}>
-                          <Save className="mr-1 h-4 w-4" />
-                          Save
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={handleEditToggle}>
-                          <X className="mr-1 h-4 w-4" />
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="font-medium">{reservation.special_requests || 'None'}</div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Payment Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <CreditCard className="h-5 w-5" />
-                  <span>Payment Information</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-lg font-bold">€{chargesTotalAmount.toFixed(2)}</div>
-                    <div className="text-sm text-gray-500">
-                      Total Amount • {reservation.number_of_nights ?? 1} nights
-                    </div>
-                  </div>
-                  <Button variant="outline" onClick={togglePaymentDetails}>
-                    View Breakdown
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <PaymentCard
+              chargesTotalAmount={chargesTotalAmount}
+              nights={reservation.number_of_nights ?? 1}
+              onViewBreakdown={togglePaymentDetails}
+            />
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Payment Details Modal */}
       <PaymentDetailsModal
         isOpen={state.showPaymentDetails}
         onClose={togglePaymentDetails}
@@ -583,23 +643,19 @@ export default function ReservationPopup({
         room={room}
       />
 
-      {/* Check-In Workflow */}
       <CheckInWorkflow
         isOpen={state.showCheckInWorkflow}
         onClose={() => {
           toggleCheckInWorkflow();
-          // Close the main popup after successful check-in
           setTimeout(() => onClose(), 1000);
         }}
         reservation={reservation}
       />
 
-      {/* Check-Out Workflow */}
       <CheckOutWorkflow
         isOpen={state.showCheckOutWorkflow}
         onClose={() => {
           toggleCheckOutWorkflow();
-          // Close the main popup after successful check-out
           setTimeout(() => onClose(), 1000);
         }}
         reservation={reservation}

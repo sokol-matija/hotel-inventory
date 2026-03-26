@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../ui/dialog';
-import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
-import { Button } from '../../../ui/button';
-import { Badge } from '../../../ui/badge';
+import React from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   LogOut,
   User,
@@ -11,24 +11,11 @@ import {
   CheckCircle,
   AlertCircle,
   Clock,
-  Key,
-  ShoppingBag,
-  Car,
   Star,
-  MessageSquare,
   Mail,
 } from 'lucide-react';
-import { Reservation } from '../../../../lib/hotel/types';
-import { useRooms } from '../../../../lib/queries/hooks/useRooms';
-import { useGuests } from '../../../../lib/queries/hooks/useGuests';
-import {
-  useUpdateReservation,
-  useUpdateReservationStatus,
-} from '../../../../lib/queries/hooks/useReservations';
-import { useReservationCharges } from '../../../../lib/queries/hooks/useReservationCharges';
-import hotelNotification from '../../../../lib/notifications';
-import { createInvoice as createInvoiceService } from '../../../../lib/hotel/services/InvoiceService';
-// Removed static HOTEL_POREC_ROOMS import - now using dynamic rooms from context
+import { Reservation } from '@/lib/hotel/types';
+import { useCheckOutWorkflow } from './useCheckOutWorkflow';
 
 interface CheckOutWorkflowProps {
   isOpen: boolean;
@@ -36,261 +23,35 @@ interface CheckOutWorkflowProps {
   reservation: Reservation | null;
 }
 
-interface CheckOutStep {
-  id: string;
-  title: string;
-  description: string;
-  completed: boolean;
-  required: boolean;
-  icon: React.ComponentType<{ className?: string }>;
-}
-
 export default function CheckOutWorkflow({ isOpen, onClose, reservation }: CheckOutWorkflowProps) {
-  const { data: rooms = [] } = useRooms();
-  const { data: guests = [] } = useGuests();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const addPayment = async (_payment: any) => {
-    // Payment management not yet implemented — payments table integration pending
-    console.warn('addPayment: not yet connected to DB');
-  };
-  const updateReservationMutation = useUpdateReservation();
-  const updateReservationStatusMutation = useUpdateReservationStatus();
-  const isUpdating =
-    updateReservationMutation.isPending || updateReservationStatusMutation.isPending;
-  const updateReservationStatus = async (id: number, status: string) => {
-    await updateReservationStatusMutation.mutateAsync({
-      id,
-      status: status as import('../../../../lib/hotel/types').ReservationStatus,
-    });
-  };
-  const [checkOutSteps, setCheckOutSteps] = useState<CheckOutStep[]>([]);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [checkOutNotes, setCheckOutNotes] = useState('');
-  const [roomKeyReturned, setRoomKeyReturned] = useState(false);
-  const [additionalCharges, setAdditionalCharges] = useState(0);
-  const [guestSatisfaction, setGuestSatisfaction] = useState<number>(5);
-  const [generateInvoice, setGenerateInvoice] = useState(false);
-  const [paymentStatus, setPaymentStatus] = useState<string>(
-    reservation?.reservation_statuses?.code ?? 'incomplete-payment'
-  );
-
-  // Fetch charges from reservation_charges table
-  const numericReservationId = reservation ? reservation.id : undefined;
-  const { data: charges = [] } = useReservationCharges(numericReservationId as number | undefined);
-  const chargesTotalAmount = charges.reduce((sum, c) => sum + c.total, 0);
-
-  // Find associated guest and room data
-  const guest = reservation ? (guests?.find((g) => g.id === reservation.guest_id) ?? null) : null;
-  const room = reservation ? rooms.find((r) => r.id === reservation.room_id) : null;
-
-  // Initialize check-out steps
-  useEffect(() => {
-    if (!reservation || !guest) return;
-
-    const steps: CheckOutStep[] = [
-      {
-        id: 'room-inspection',
-        title: 'Room Inspection',
-        description: 'Check room condition and note any damages',
-        completed: false,
-        required: true,
-        icon: CheckCircle,
-      },
-      {
-        id: 'minibar',
-        title: 'Minibar Check',
-        description: 'Verify minibar consumption and add charges',
-        completed: false,
-        required: true,
-        icon: ShoppingBag,
-      },
-      {
-        id: 'additional-services',
-        title: 'Additional Services',
-        description: 'Review any additional services used (spa, restaurant, etc.)',
-        completed: false,
-        required: true,
-        icon: Star,
-      },
-      {
-        id: 'key-return',
-        title: 'Room Key Return',
-        description: `Collect room key/keycard for Room ${room?.room_number}`,
-        completed: roomKeyReturned,
-        required: true,
-        icon: Key,
-      },
-      {
-        id: 'final-payment',
-        title: 'Final Payment',
-        description: 'Process any outstanding balance or additional charges',
-        completed: additionalCharges === 0,
-        required: true,
-        icon: CreditCard,
-      },
-      {
-        id: 'satisfaction-survey',
-        title: 'Guest Satisfaction',
-        description: 'Collect feedback about the stay',
-        completed: false,
-        required: false,
-        icon: MessageSquare,
-      },
-      {
-        id: 'parking',
-        title: 'Parking Settlement',
-        description: 'Handle parking fees if applicable',
-        completed: false,
-        required: false,
-        icon: Car,
-      },
-    ];
-
-    setCheckOutSteps(steps);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reservation, guest, roomKeyReturned, additionalCharges]);
-
-  const handleStepToggle = (stepId: string) => {
-    setCheckOutSteps((prev) => {
-      const updated = prev.map((step) =>
-        step.id === stepId ? { ...step, completed: !step.completed } : step
-      );
-      if (stepId === 'key-return') {
-        const keyStep = updated.find((s) => s.id === 'key-return');
-        setRoomKeyReturned(keyStep?.completed ?? false);
-      }
-      return updated;
-    });
-  };
-
-  const handleMarkAsPaid = async () => {
-    if (!reservation) return;
-
-    try {
-      setIsProcessing(true);
-
-      // Update reservation payment status
-      await updateReservationStatus(reservation.id, 'checked-out');
-      setPaymentStatus('paid');
-
-      // Automatically generate invoice when payment is marked as paid
-      try {
-        const invoice = await createInvoiceService(reservation.id, {
-          guestId: guest?.id,
-        });
-
-        // Process payment for the full amount
-        await addPayment({
-          invoiceId: invoice.id,
-          amount: chargesTotalAmount + additionalCharges,
-          currency: 'EUR',
-          method: 'card', // Default to card payment - could be made configurable
-          status: 'paid',
-          receivedDate: new Date(),
-          processedDate: new Date(),
-          processedBy: 'Front Desk Staff',
-          notes: `Payment processed during stay - ${guest?.display_name}`,
-          referenceNumber: `PAYMENT-${Date.now()}`,
-        });
-
-        hotelNotification.success(
-          'Payment Processed & Invoice Created',
-          `Payment marked as paid for ${guest?.display_name}. Invoice ${invoice.invoiceNumber} created and available in Finance module.`,
-          5000
-        );
-      } catch (invoiceError) {
-        console.error('Failed to generate invoice:', invoiceError);
-        hotelNotification.warning(
-          'Payment Marked but Invoice Failed',
-          `Payment marked as paid for ${guest?.display_name}, but invoice generation failed. Please create manually from Finance module.`,
-          4000
-        );
-      }
-    } catch (error) {
-      console.error('Failed to update payment status:', error);
-      hotelNotification.error(
-        'Failed to Update Payment',
-        'Unable to mark payment as paid. Please try again.',
-        3000
-      );
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleSendInvoiceEmail = () => {
-    // Placeholder for future email functionality
-    hotelNotification.info(
-      'Email Feature Coming Soon',
-      'PDF invoice email functionality will be available in a future update.',
-      4000
-    );
-  };
-
-  const canCompleteCheckOut = () => {
-    return checkOutSteps.filter((step) => step.required).every((step) => step.completed);
-  };
-
-  const handleCompleteCheckOut = async () => {
-    if (!reservation || !canCompleteCheckOut()) return;
-
-    try {
-      setIsProcessing(true);
-
-      // Update reservation status to checked-out
-      await updateReservationStatus(reservation.id, 'checked-out');
-
-      // Log check-out completion
-
-      // Generate invoice if requested
-      if (generateInvoice) {
-        try {
-          const invoice = await createInvoiceService(reservation.id, {
-            guestId: guest?.id,
-          });
-
-          // Show success notification - invoice created but payment still pending
-          hotelNotification.success(
-            'Invoice Generated',
-            `Invoice ${invoice.invoiceNumber} created for ${guest?.display_name}. Payment can be processed using "Mark as Paid" button after POS transaction.`,
-            6000
-          );
-        } catch (error) {
-          console.error('Failed to generate invoice:', error);
-          hotelNotification.error(
-            'Invoice Generation Failed',
-            'Failed to generate invoice. Please try again or handle manually from the Finance module.',
-            5000
-          );
-        }
-      }
-
-      // Close workflow
-      setTimeout(() => {
-        onClose();
-      }, 1500);
-    } catch (error) {
-      console.error('Failed to complete check-out:', error);
-      alert('Failed to complete check-out. Please try again.');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const getProgressPercentage = () => {
-    const completedSteps = checkOutSteps.filter((step) => step.completed).length;
-    return checkOutSteps.length > 0 ? (completedSteps / checkOutSteps.length) * 100 : 0;
-  };
-
-  const getTotalAmount = () => {
-    return reservation ? chargesTotalAmount + additionalCharges : 0;
-  };
+  const {
+    guest,
+    room,
+    checkOutSteps,
+    isProcessing,
+    isUpdating,
+    checkOutNotes,
+    additionalCharges,
+    guestSatisfaction,
+    generateInvoice,
+    paymentStatus,
+    chargesTotalAmount,
+    isEarlyCheckOut,
+    isLateCheckOut,
+    progressPercentage,
+    totalAmount,
+    canCompleteCheckOut,
+    handleStepToggle,
+    handleMarkAsPaid,
+    handleSendInvoiceEmail,
+    handleCompleteCheckOut,
+    setCheckOutNotes,
+    setAdditionalCharges,
+    setGuestSatisfaction,
+    setGenerateInvoice,
+  } = useCheckOutWorkflow(reservation, onClose);
 
   if (!isOpen || !reservation || !guest || !room) return null;
-
-  const checkOutDate = new Date(reservation.check_out_date);
-  const isEarlyCheckOut = new Date() < checkOutDate;
-  const isLateCheckOut = new Date() > new Date(checkOutDate.getTime() + 2 * 60 * 60 * 1000); // 2 hours late
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -312,12 +73,12 @@ export default function CheckOutWorkflow({ isOpen, onClose, reservation }: Check
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span>Check-out Progress</span>
-              <span>{Math.round(getProgressPercentage())}% Complete</span>
+              <span>{Math.round(progressPercentage)}% Complete</span>
             </div>
             <div className="h-2 w-full rounded-full bg-gray-200">
               <div
                 className="h-2 rounded-full bg-blue-600 transition-all duration-300"
-                style={{ width: `${getProgressPercentage()}%` }}
+                style={{ width: `${progressPercentage}%` }}
               />
             </div>
           </div>
@@ -363,7 +124,6 @@ export default function CheckOutWorkflow({ isOpen, onClose, reservation }: Check
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {/* Payment Status Display */}
                   <div className="flex items-center justify-between rounded-lg bg-gray-50 p-3">
                     <div className="flex items-center space-x-2">
                       <CreditCard className="h-4 w-4" />
@@ -384,7 +144,6 @@ export default function CheckOutWorkflow({ isOpen, onClose, reservation }: Check
                       <span>Original Booking</span>
                       <span>€{chargesTotalAmount.toFixed(2)}</span>
                     </div>
-
                     <div className="flex justify-between">
                       <span>Additional Charges</span>
                       <input
@@ -396,15 +155,13 @@ export default function CheckOutWorkflow({ isOpen, onClose, reservation }: Check
                         onChange={(e) => setAdditionalCharges(parseFloat(e.target.value) || 0)}
                       />
                     </div>
-
                     <hr />
                     <div className="flex justify-between font-bold">
                       <span>Total Amount</span>
-                      <span>€{getTotalAmount().toFixed(2)}</span>
+                      <span>€{totalAmount.toFixed(2)}</span>
                     </div>
                   </div>
 
-                  {/* Payment Actions */}
                   <div className="space-y-3 border-t pt-2">
                     {paymentStatus === 'incomplete-payment' && (
                       <Button
@@ -417,7 +174,6 @@ export default function CheckOutWorkflow({ isOpen, onClose, reservation }: Check
                         Mark as Paid (After POS Payment)
                       </Button>
                     )}
-
                     <Button
                       onClick={handleSendInvoiceEmail}
                       variant="outline"
@@ -591,13 +347,12 @@ export default function CheckOutWorkflow({ isOpen, onClose, reservation }: Check
             </Button>
 
             <div className="flex items-center space-x-3">
-              {!canCompleteCheckOut() && (
+              {!canCompleteCheckOut && (
                 <span className="text-sm text-red-600">Complete all required steps to proceed</span>
               )}
-
               <Button
                 onClick={handleCompleteCheckOut}
-                disabled={!canCompleteCheckOut() || isProcessing || isUpdating}
+                disabled={!canCompleteCheckOut || isProcessing || isUpdating}
                 className="bg-blue-600 hover:bg-blue-700"
               >
                 {isProcessing || isUpdating ? (
