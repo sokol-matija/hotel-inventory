@@ -110,6 +110,7 @@ describe('ConflictDetectionService', () => {
   let service: ConflictDetectionService;
 
   beforeEach(() => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
     resetSingleton();
     vi.clearAllMocks();
     service = ConflictDetectionService.getInstance();
@@ -117,6 +118,7 @@ describe('ConflictDetectionService', () => {
 
   afterEach(() => {
     resetSingleton();
+    vi.restoreAllMocks();
   });
 
   // ── Singleton ──────────────────────────────────────────────────────────────

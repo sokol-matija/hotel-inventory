@@ -177,10 +177,14 @@ describe('BookingService.validateBooking', () => {
 
 describe('createFullBooking', () => {
   beforeEach(() => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.mocked(supabase.from).mockImplementation(makeTableMock());
   });
 
-  afterEach(() => vi.clearAllMocks());
+  afterEach(() => {
+    vi.clearAllMocks();
+    vi.restoreAllMocks();
+  });
 
   it('returns reservationId on success with a new primary guest', async () => {
     const result = await createFullBooking(baseInput);

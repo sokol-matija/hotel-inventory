@@ -125,11 +125,13 @@ describe('useInventoryWithDetails', () => {
 
 describe('useUpdateInventoryQuantity', () => {
   beforeEach(() => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
     mockState.inventory = { data: inventoryRows, error: null };
   });
 
   afterEach(() => {
     vi.clearAllMocks();
+    vi.restoreAllMocks();
   });
 
   it('rejects negative quantity without hitting the database', async () => {

@@ -23,6 +23,7 @@ export default defineConfig({
         'src/setupTests.ts',
         'src/i18n/**',
         'src/test/**',
+        'src/lib/fiscalization/xmlSigner.ts',
       ],
     },
   },

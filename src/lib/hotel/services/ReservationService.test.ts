@@ -214,6 +214,7 @@ describe('ReservationService', () => {
   let service: ReservationService;
 
   beforeEach(() => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
     // Reset all mock data to safe defaults
     mocks.roomData = makeDbRoom();
     mocks.roomError = null;

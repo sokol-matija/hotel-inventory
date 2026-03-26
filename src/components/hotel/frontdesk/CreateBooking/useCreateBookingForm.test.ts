@@ -383,7 +383,10 @@ describe('useCreateBookingForm', () => {
       act(() => result.current.setSelectedRoom(buildRoom({ max_occupancy: 5 })));
       act(() => result.current.addAdult());
       act(() => result.current.setSelectedRoom(room)); // restore tight room
-      const errors = result.current.validateForm();
+      let errors: string[] = [];
+      act(() => {
+        errors = result.current.validateForm();
+      });
       const capacityError = errors.find((e) => e.includes('exceeds room capacity'));
       expect(capacityError).toBeTruthy();
     });
