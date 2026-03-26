@@ -33,7 +33,6 @@ import HotelOrdersModal from './RoomService/HotelOrdersModal';
 import hotelNotification from '../../../lib/notifications';
 import { useHotelTimelineState } from '../../../lib/hooks/useHotelTimelineState';
 import { useReservationActions } from '../../../lib/hooks/useReservationActions';
-import { useSimpleDragCreate, DragCreateSelection } from '../../../lib/hooks/useSimpleDragCreate';
 import SimpleDragCreateButton from './SimpleDragCreateButton';
 // EnhancedDailyViewModal removed — operated on dropped reservation_daily_details table
 import DragCreateOverlay from './DragCreateOverlay';
@@ -45,7 +44,9 @@ import { TimelineHeader } from './Timeline/TimelineHeader';
 import { RoomAvailabilityModal } from './Timeline/RoomAvailabilityModal';
 import { FloorSection } from './Timeline/FloorSection';
 import { RoomOverviewFloorSection } from './Timeline/RoomOverviewFloorSection';
-import { DayAvailability } from './Timeline/types';
+import { useTimelineModals } from './useTimelineModals';
+import { useTimelineDragCreate } from './useTimelineDragCreate';
+import { useTimelineKeyboardShortcuts } from './useTimelineKeyboardShortcuts';
 
 interface HotelTimelineProps {
   isFullscreen?: boolean;
@@ -98,11 +99,6 @@ export default function HotelTimeline({
     [deleteReservationMutation]
   );
 
-  const dragCreate = useSimpleDragCreate();
-  const [dragCreatePreSelectedDates, setDragCreatePreSelectedDates] = useState<{
-    checkIn: Date;
-    checkOut: Date;
-  } | null>(null);
   const timelineRef = useRef<HTMLDivElement>(null);
   const cellRefs = useRef<Map<string, HTMLElement>>(new Map());
 
@@ -160,15 +156,30 @@ export default function HotelTimeline({
     updateReservation,
   });
 
-  const [showHotelOrdersModal, setShowHotelOrdersModal] = useState(false);
-  const [hotelOrdersReservation, setHotelOrdersReservation] = useState<Reservation | null>(null);
+  // Modal state for hotel orders and availability
+  const {
+    showHotelOrdersModal,
+    hotelOrdersReservation,
+    openHotelOrdersModal,
+    closeHotelOrdersModal,
+    showAvailabilityModal,
+    selectedAvailabilityDate,
+    selectedAvailabilityData,
+    openAvailabilityModal,
+    closeAvailabilityModal,
+  } = useTimelineModals();
+
+  // Drag-create state and cell click handler
+  const {
+    dragCreate,
+    dragCreatePreSelectedDates,
+    clearDragCreatePreSelectedDates,
+    handleDragCreateCellClick,
+  } = useTimelineDragCreate({ rooms, handleRoomClick });
+
   // EnhancedDailyViewModal removed — operated on dropped reservation_daily_details table
   void 0; // showExpandedDailyView and expandedReservation state removed
-  const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
-  const [selectedAvailabilityDate, setSelectedAvailabilityDate] = useState<Date | null>(null);
-  const [selectedAvailabilityData, setSelectedAvailabilityData] = useState<DayAvailability | null>(
-    null
-  );
+
   const [virtualRoomsWithReservations, setVirtualRoomsWithReservations] = useState<Room[]>([]);
 
   useEffect(() => {
@@ -192,110 +203,25 @@ export default function HotelTimeline({
     // Intentionally empty — daily view feature removed with reservation_daily_details table
   };
 
-  // Cancel drag-create on Escape
-  const dragCreateActions = dragCreate.actions;
-  const dragCreateIsSelecting = dragCreate.state.isSelecting;
-  useEffect(() => {
-    if (!dragCreateIsSelecting) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') dragCreateActions.cancel();
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [dragCreateIsSelecting, dragCreateActions]);
-
   // Keyboard shortcuts
-  useEffect(() => {
-    let cancelled = false;
-    let removeListener: (() => void) | undefined;
-
-    const initKeyboardShortcuts = async () => {
-      const { KeyboardShortcutService } =
-        await import('../../../lib/hotel/services/KeyboardShortcutService');
-      if (cancelled) return;
-      const shortcutService = KeyboardShortcutService.getInstance();
-      shortcutService.updateContext({
-        isModalOpen: showReservationPopup || showCreateBooking || roomChangeDialog.show,
-        selectedReservations: selectedReservation ? [String(selectedReservation.id)] : [],
-        activeMode: dragCreate.state.isEnabled
-          ? 'drag_create'
-          : isExpansionMode
-            ? 'expand'
-            : isMoveMode
-              ? 'move'
-              : 'normal',
-        currentDate,
-      });
-
-      const handleShortcut = (event: CustomEvent) => {
-        const { action } = event.detail;
-        switch (action) {
-          case 'navigate_prev_day':
-            handleNavigate('PREV');
-            break;
-          case 'navigate_next_day':
-            handleNavigate('NEXT');
-            break;
-          case 'navigate_today':
-            handleNavigate('TODAY');
-            break;
-          case 'toggle_drag_create':
-            if (dragCreate.state.isEnabled) {
-              dragCreate.actions.disable();
-            } else {
-              dragCreate.actions.enable();
-            }
-            break;
-          case 'toggle_expansion':
-            toggleExpansionMode();
-            break;
-          case 'toggle_move':
-            toggleMoveMode();
-            break;
-          case 'escape':
-            exitAllModes();
-            if (showReservationPopup) closeReservationPopup();
-            if (showCreateBooking) closeCreateBooking();
-            if (roomChangeDialog.show) closeRoomChangeDialog();
-            break;
-          case 'move_reservation_left':
-            handleMoveReservationArrow('left');
-            break;
-          case 'move_reservation_right':
-            handleMoveReservationArrow('right');
-            break;
-        }
-      };
-
-      document.addEventListener('hotel-timeline-shortcut', handleShortcut as EventListener);
-      removeListener = () =>
-        document.removeEventListener('hotel-timeline-shortcut', handleShortcut as EventListener);
-    };
-
-    initKeyboardShortcuts();
-    return () => {
-      cancelled = true;
-      removeListener?.();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    dragCreate.state.isEnabled,
+  useTimelineKeyboardShortcuts({
+    dragCreate,
     isExpansionMode,
     isMoveMode,
     showReservationPopup,
     showCreateBooking,
-    roomChangeDialog.show,
+    roomChangeDialog,
     currentDate,
-    closeCreateBooking,
-    closeReservationPopup,
-    closeRoomChangeDialog,
-    dragCreate.actions,
-    exitAllModes,
-    handleNavigate,
     selectedReservation,
+    handleNavigate,
     toggleExpansionMode,
     toggleMoveMode,
-  ]);
+    exitAllModes,
+    closeReservationPopup,
+    closeCreateBooking,
+    closeRoomChangeDialog,
+    handleMoveReservationArrow,
+  });
 
   const handleRoomClickWrapper = (room: Room, reservation?: Reservation) => {
     if (reservation) {
@@ -332,40 +258,9 @@ export default function HotelTimeline({
   }, [selectedReservation, rooms, guests]);
 
   const handleShowDrinksModalWrapper = (reservation: Reservation) => {
-    setHotelOrdersReservation(reservation);
-    setShowHotelOrdersModal(true);
+    openHotelOrdersModal(reservation);
     handleShowDrinksModal(reservation.id); // number
   };
-
-  const handleAvailabilityClick = (date: Date, availabilityData: DayAvailability) => {
-    setSelectedAvailabilityDate(date);
-    setSelectedAvailabilityData(availabilityData);
-    setShowAvailabilityModal(true);
-  };
-
-  const handleDragCreateCellClick = useCallback(
-    (roomId: string, date: Date, isAM: boolean) => {
-      if (!dragCreate.state.isEnabled) return;
-
-      if (!dragCreate.state.isSelecting && !isAM) {
-        dragCreate.actions.startSelection(roomId, date);
-      } else if (dragCreate.state.isSelecting && dragCreate.state.currentSelection && isAM) {
-        const completedSelection = dragCreate.actions.completeSelection(
-          date
-        ) as DragCreateSelection | null;
-        if (completedSelection && completedSelection.checkOutDate) {
-          const dragDates = {
-            checkIn: completedSelection.checkInDate,
-            checkOut: completedSelection.checkOutDate,
-          };
-          setDragCreatePreSelectedDates(dragDates);
-          const room = rooms.find((r) => r.id.toString() === roomId);
-          if (room) handleRoomClick(room);
-        }
-      }
-    },
-    [dragCreate, rooms, handleRoomClick]
-  );
 
   // Shared props passed down to all FloorSection components
   const floorSectionSharedProps = {
@@ -626,7 +521,7 @@ export default function HotelTimeline({
               onNavigate={handleNavigate}
               rooms={rooms}
               reservations={localReservations}
-              onAvailabilityClick={handleAvailabilityClick}
+              onAvailabilityClick={openAvailabilityModal}
             />
 
             <div>
@@ -681,7 +576,7 @@ export default function HotelTimeline({
             onClose={() => {
               closeCreateBooking();
               clearDragCreate();
-              setDragCreatePreSelectedDates(null);
+              clearDragCreatePreSelectedDates();
               dragCreate.actions.disable();
             }}
             room={selectedRoom}
@@ -719,25 +614,17 @@ export default function HotelTimeline({
           <HotelOrdersModal
             reservation={hotelOrdersReservation}
             isOpen={showHotelOrdersModal}
-            onClose={() => {
-              setShowHotelOrdersModal(false);
-              setHotelOrdersReservation(null);
-            }}
+            onClose={closeHotelOrdersModal}
             onOrderComplete={(orderItems, total) => {
               handleDrinksOrderComplete(hotelOrdersReservation, orderItems, total);
-              setShowHotelOrdersModal(false);
-              setHotelOrdersReservation(null);
+              closeHotelOrdersModal();
             }}
           />
         )}
 
         <RoomAvailabilityModal
           isOpen={showAvailabilityModal}
-          onClose={() => {
-            setShowAvailabilityModal(false);
-            setSelectedAvailabilityDate(null);
-            setSelectedAvailabilityData(null);
-          }}
+          onClose={closeAvailabilityModal}
           date={selectedAvailabilityDate}
           availabilityData={selectedAvailabilityData}
         />
