@@ -135,6 +135,8 @@ export default function HotelTimeline({
     exitAllModes,
     clearDragCreate,
     positionContextMenu,
+    setCurrentDate,
+    setOverviewDate,
   } = useHotelTimelineState();
 
   const {
@@ -473,6 +475,16 @@ export default function HotelTimeline({
                   >
                     <ChevronRight className="h-4 w-4" />
                   </Button>
+                  <input
+                    type="date"
+                    value={format(overviewDate, 'yyyy-MM-dd')}
+                    onChange={(e) => {
+                      const d = new Date(e.target.value + 'T00:00:00');
+                      if (!isNaN(d.getTime())) setOverviewDate(d);
+                    }}
+                    className="h-9 rounded-md border border-gray-300 px-2 text-sm"
+                    title="Jump to date"
+                  />
                 </div>
               </div>
 
@@ -519,6 +531,7 @@ export default function HotelTimeline({
             <TimelineHeader
               startDate={currentDate}
               onNavigate={handleNavigate}
+              onDateSelect={setCurrentDate}
               rooms={rooms}
               reservations={localReservations}
               onAvailabilityClick={openAvailabilityModal}
@@ -580,7 +593,7 @@ export default function HotelTimeline({
               dragCreate.actions.disable();
             }}
             room={selectedRoom}
-            currentDate={currentDate}
+            currentDate={overviewDate}
             preSelectedDates={dragCreatePreSelectedDates || dragCreateDates}
           />
         )}

@@ -43,7 +43,21 @@ export function useTimelineDragCreate({
 
   const handleDragCreateCellClick = useCallback(
     (roomId: string, date: Date, isAM: boolean) => {
-      if (!dragCreate.state.isEnabled) return;
+      // When drag-create is NOT enabled, a PM click opens the booking modal
+      // with the clicked date as check-in (quick-create shortcut)
+      if (!dragCreate.state.isEnabled) {
+        if (!isAM) {
+          const checkIn = new Date(date);
+          checkIn.setHours(15, 0, 0, 0);
+          const checkOut = new Date(checkIn);
+          checkOut.setDate(checkOut.getDate() + 2);
+          checkOut.setHours(11, 0, 0, 0);
+          setDragCreatePreSelectedDates({ checkIn, checkOut });
+          const room = rooms.find((r) => r.id.toString() === roomId);
+          if (room) handleRoomClick(room);
+        }
+        return;
+      }
 
       if (!dragCreate.state.isSelecting && !isAM) {
         dragCreate.actions.startSelection(roomId, date);

@@ -47,6 +47,8 @@ interface HotelTimelineState {
 interface HotelTimelineActions {
   handleNavigate: (action: 'PREV' | 'NEXT' | 'TODAY') => void;
   handleOverviewNavigate: (action: 'PREV' | 'NEXT' | 'TODAY') => void;
+  setCurrentDate: (date: Date) => void;
+  setOverviewDate: (date: Date) => void;
   toggleFloor: (floor: number) => void;
   toggleOverviewFloor: (floor: number) => void;
   toggleOverviewPeriod: (period: 'AM' | 'PM') => void;

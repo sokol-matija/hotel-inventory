@@ -124,10 +124,11 @@ export function DroppableDateCell({
 
   const handleClick = (e: React.MouseEvent) => {
     if (hasExistingReservation) return;
-    if (
+    // Allow clicks in both drag-create mode (highlighted cells) and normal mode (PM cells for quick-create)
+    const isDragCreateEnabled =
       shouldHighlightCell &&
-      shouldHighlightCell(room.id.toString(), date, !isSecondHalf) !== 'none'
-    ) {
+      shouldHighlightCell(room.id.toString(), date, !isSecondHalf) !== 'none';
+    if (isDragCreateEnabled || (isSecondHalf && !hasExistingReservation)) {
       e.preventDefault();
       onCellClick?.(room.id.toString(), date, !isSecondHalf);
     }
@@ -172,12 +173,7 @@ export function DroppableDateCell({
       tabIndex={0}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
-          if (
-            !hasExistingReservation &&
-            onCellClick &&
-            shouldHighlightCell &&
-            shouldHighlightCell(room.id.toString(), date, !isSecondHalf) !== 'none'
-          ) {
+          if (!hasExistingReservation && onCellClick && isSecondHalf) {
             onCellClick(room.id.toString(), date, !isSecondHalf);
           }
         }

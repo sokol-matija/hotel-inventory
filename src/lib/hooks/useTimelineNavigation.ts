@@ -24,6 +24,8 @@ export interface TimelineNavigationState {
 export interface TimelineNavigationActions {
   handleNavigate: (action: 'PREV' | 'NEXT' | 'TODAY') => void;
   handleOverviewNavigate: (action: 'PREV' | 'NEXT' | 'TODAY') => void;
+  setCurrentDate: (date: Date) => void;
+  setOverviewDate: (date: Date) => void;
   toggleOverviewPeriod: (period: 'AM' | 'PM') => void;
 }
 
@@ -93,6 +95,8 @@ export function useTimelineNavigation({
     timelineStats,
     handleNavigate,
     handleOverviewNavigate,
+    setCurrentDate,
+    setOverviewDate,
     toggleOverviewPeriod,
   };
 }

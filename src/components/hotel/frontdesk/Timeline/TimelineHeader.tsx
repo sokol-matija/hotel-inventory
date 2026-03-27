@@ -9,6 +9,7 @@ import { DayAvailability } from './types';
 interface TimelineHeaderProps {
   startDate: Date;
   onNavigate: (action: 'PREV' | 'NEXT' | 'TODAY') => void;
+  onDateSelect?: (date: Date) => void;
   rooms: Room[];
   reservations: Reservation[];
   onAvailabilityClick?: (date: Date, availabilityData: DayAvailability) => void;
@@ -19,6 +20,9 @@ function calculateDayAvailability(
   rooms: Room[],
   reservations: Reservation[]
 ): DayAvailability {
+  // Exclude virtual rooms (Floor 5) from availability count
+  const realRooms = rooms.filter((r) => r.floor_number !== 5);
+
   const dateStart = new Date(date);
   dateStart.setHours(0, 0, 0, 0);
   const dateEnd = new Date(date);
@@ -27,30 +31,34 @@ function calculateDayAvailability(
   const occupiedReservations = reservations.filter((reservation) => {
     const checkIn = new Date(reservation.check_in_date);
     const checkOut = new Date(reservation.check_out_date);
-    return checkIn <= dateEnd && checkOut > dateEnd;
+    return checkIn <= dateEnd && checkOut > dateStart;
   });
 
   const occupiedRoomIds = new Set(occupiedReservations.map((r) => r.room_id));
-  const availableRooms = rooms.filter((room) => !occupiedRoomIds.has(room.id));
+  const availableRooms = realRooms.filter((room) => !occupiedRoomIds.has(room.id));
 
   const roomsByType = {
-    standard: rooms.filter((r) => !r.is_premium && r.floor_number <= 2),
-    premium: rooms.filter((r) => r.is_premium && r.floor_number <= 3),
-    suite: rooms.filter((r) => r.floor_number >= 4),
+    standard: realRooms.filter((r) => !r.is_premium && r.floor_number <= 2),
+    premium: realRooms.filter((r) => r.is_premium && r.floor_number <= 3),
+    suite: realRooms.filter((r) => r.floor_number === 4),
   };
 
   const availableByType = {
     standard: availableRooms.filter((r) => !r.is_premium && r.floor_number <= 2),
     premium: availableRooms.filter((r) => r.is_premium && r.floor_number <= 3),
-    suite: availableRooms.filter((r) => r.floor_number >= 4),
+    suite: availableRooms.filter((r) => r.floor_number === 4),
   };
+
+  // Count only real-room occupancy (exclude virtual rooms from occupied count too)
+  const realOccupiedCount = realRooms.filter((r) => occupiedRoomIds.has(r.id)).length;
 
   return {
     date,
-    totalRooms: rooms.length,
+    totalRooms: realRooms.length,
     availableRooms: availableRooms.length,
-    occupiedRooms: occupiedRoomIds.size,
-    occupancyRate: Math.round((occupiedRoomIds.size / rooms.length) * 100),
+    occupiedRooms: realOccupiedCount,
+    occupancyRate:
+      realRooms.length > 0 ? Math.round((realOccupiedCount / realRooms.length) * 100) : 0,
     roomTypes: {
       standard: {
         total: roomsByType.standard.length,
@@ -76,6 +84,7 @@ function calculateDayAvailability(
 export function TimelineHeader({
   startDate,
   onNavigate,
+  onDateSelect,
   rooms,
   reservations,
   onAvailabilityClick,
@@ -112,6 +121,18 @@ export function TimelineHeader({
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
+          {onDateSelect && (
+            <input
+              type="date"
+              value={format(startDate, 'yyyy-MM-dd')}
+              onChange={(e) => {
+                const d = new Date(e.target.value + 'T00:00:00');
+                if (!isNaN(d.getTime())) onDateSelect(d);
+              }}
+              className="h-9 rounded-md border border-gray-300 px-2 text-sm"
+              title="Jump to date"
+            />
+          )}
         </div>
 
         <div className="text-lg font-semibold text-gray-900">
@@ -119,7 +140,9 @@ export function TimelineHeader({
         </div>
 
         <div className="flex items-center space-x-4">
-          <div className="text-sm text-gray-500">Hotel Porec - {rooms.length} Rooms</div>
+          <div className="text-sm text-gray-500">
+            Hotel Porec - {rooms.filter((r) => r.floor_number !== 5).length} Rooms
+          </div>
           <Button
             variant={showFreeRooms ? 'default' : 'outline'}
             size="sm"
