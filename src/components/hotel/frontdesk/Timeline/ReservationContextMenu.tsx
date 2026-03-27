@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { BarChart3, DollarSign, BellRing, FileText, Pencil } from 'lucide-react';
+import { DollarSign, BellRing, FileText, Pencil } from 'lucide-react';
 import { Reservation, ReservationStatus } from '../../../../lib/hotel/types';
 import type { Guest } from '../../../../lib/queries/hooks/useGuests';
 import type { Room } from '../../../../lib/queries/hooks/useRooms';
@@ -17,7 +17,6 @@ interface ReservationContextMenuProps {
   onDeleteReservation?: (id: number) => Promise<void>;
   onEditReservation?: (id: number) => void;
   onShowDrinksModal?: (reservation: Reservation) => void;
-  onShowExpandedDailyView?: (reservation: Reservation) => void;
   /** Show "Mark Clean (NFC)" item — used in room overview panel */
   showMarkClean?: boolean;
   onMarkClean?: (room: Room) => void;
@@ -34,7 +33,6 @@ export function ReservationContextMenu({
   onDeleteReservation,
   onEditReservation,
   onShowDrinksModal,
-  onShowExpandedDailyView,
   showMarkClean,
   onMarkClean,
 }: ReservationContextMenuProps) {
@@ -105,22 +103,6 @@ export function ReservationContextMenu({
           </span>
           <span>Fast Check-in</span>
         </button>
-
-        {/* Expand Day-by-Day View (timeline only) */}
-        {onShowExpandedDailyView && (
-          <button
-            className="flex w-full items-center space-x-3 border-t border-gray-100 px-4 py-2 text-left text-sm text-blue-700 hover:bg-blue-50"
-            onClick={() => {
-              onShowExpandedDailyView(reservation);
-              onClose(true);
-            }}
-          >
-            <span className="text-blue-600">
-              <BarChart3 className="h-4 w-4" />
-            </span>
-            <span>Expand Day-by-Day View</span>
-          </button>
-        )}
 
         {/* Fast Check-out */}
         <button

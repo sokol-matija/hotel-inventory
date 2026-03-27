@@ -181,7 +181,6 @@ export default function HotelTimeline({
   } = useTimelineDragCreate({ rooms, handleRoomClick });
 
   // EnhancedDailyViewModal removed — operated on dropped reservation_daily_details table
-  void 0; // showExpandedDailyView and expandedReservation state removed
 
   // Virtual rooms — fetch on date change and after server-confirmed reservation changes
   const [virtualRoomsWithReservations, setVirtualRoomsWithReservations] = useState<Room[]>([]);
@@ -218,11 +217,6 @@ export default function HotelTimeline({
 
   // ── Edit Reservation Sheet ────────────────────────────────────────────────
   const [editReservationId, setEditReservationId] = useState<number | null>(null);
-
-  // No-op: EnhancedDailyViewModal removed (operated on dropped table)
-  const handleShowExpandedDailyView = (_reservation: Reservation) => {
-    // Intentionally empty — daily view feature removed with reservation_daily_details table
-  };
 
   // Keyboard shortcuts
   useTimelineKeyboardShortcuts({
@@ -304,7 +298,6 @@ export default function HotelTimeline({
     onCellClick: handleDragCreateCellClick,
     shouldHighlightCell: dragCreate.shouldHighlightCell,
     dragCreate,
-    onShowExpandedDailyView: handleShowExpandedDailyView,
     cellRefs: cellRefs.current,
   };
 

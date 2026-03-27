@@ -46,7 +46,6 @@ interface FloorSectionProps {
   shouldHighlightCell?: SimpleDragCreateHook['shouldHighlightCell'];
   onCellClick?: (roomId: string, date: Date, isAM: boolean) => void;
   dragCreate?: SimpleDragCreateHook;
-  onShowExpandedDailyView?: (reservation: Reservation) => void;
   cellRefs?: Map<string, HTMLElement>;
 }
 
@@ -80,7 +79,6 @@ export function FloorSection({
   shouldHighlightCell,
   onCellClick,
   dragCreate,
-  onShowExpandedDailyView,
   cellRefs,
 }: FloorSectionProps) {
   const floorName = floor === 4 ? 'Rooftop Premium' : `Floor ${floor}`;
@@ -156,7 +154,6 @@ export function FloorSection({
               onCellClick={onCellClick}
               shouldHighlightCell={shouldHighlightCell}
               dragCreate={dragCreate}
-              onShowExpandedDailyView={onShowExpandedDailyView}
               cellRefs={cellRefs}
             />
           ))}

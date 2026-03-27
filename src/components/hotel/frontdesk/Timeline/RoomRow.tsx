@@ -45,7 +45,6 @@ interface RoomRowProps {
   onCellClick?: (roomId: string, date: Date, isAM: boolean) => void;
   shouldHighlightCell?: SimpleDragCreateHook['shouldHighlightCell'];
   dragCreate?: SimpleDragCreateHook;
-  onShowExpandedDailyView?: (reservation: Reservation) => void;
   cellRefs?: Map<string, HTMLElement>;
 }
 
@@ -76,7 +75,6 @@ export function RoomRow({
   onCellClick,
   shouldHighlightCell,
   dragCreate,
-  onShowExpandedDailyView,
   cellRefs,
 }: RoomRowProps) {
   const roomReservations = reservations.filter((r) => r.room_id === room.id);
@@ -157,7 +155,6 @@ export function RoomRow({
               onResizeReservation={onResizeReservation}
               onShowDrinksModal={onShowDrinksModal}
               calculateContextMenuPosition={calculateContextMenuPosition}
-              onShowExpandedDailyView={onShowExpandedDailyView}
             />
           );
         })}

@@ -38,7 +38,6 @@ interface ReservationBlockProps {
     menuWidth?: number,
     menuHeight?: number
   ) => { x: number; y: number };
-  onShowExpandedDailyView?: (reservation: Reservation) => void;
   // Legacy props (unused but kept for type compatibility)
   isDragCreateMode?: boolean;
   isDragCreating?: boolean;
@@ -69,7 +68,6 @@ export function ReservationBlock({
   onResizeReservation,
   onShowDrinksModal,
   calculateContextMenuPosition,
-  onShowExpandedDailyView,
 }: ReservationBlockProps) {
   const [contextMenu, setContextMenu] = useState<{ show: boolean; x: number; y: number }>({
     show: false,
@@ -354,7 +352,6 @@ export function ReservationBlock({
           onDeleteReservation={onDeleteReservation}
           onEditReservation={onEditReservation}
           onShowDrinksModal={onShowDrinksModal}
-          onShowExpandedDailyView={onShowExpandedDailyView}
         />
       )}
 
