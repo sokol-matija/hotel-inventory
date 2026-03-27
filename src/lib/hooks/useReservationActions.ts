@@ -267,7 +267,7 @@ export function useReservationActions(
           check_out_date: newCheckOut.toISOString().split('T')[0],
         };
 
-        if (isRoomTypeChange) {
+        if (isRoomTypeChange && !isVirtualToReal) {
           showRoomChangeDialog(reservationId, reservation.room_id, newRoomId);
           return;
         }
