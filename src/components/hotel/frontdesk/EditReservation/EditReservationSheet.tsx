@@ -145,35 +145,66 @@ export function EditReservationSheet({
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="right" className="flex w-full flex-col sm:max-w-[600px]">
+      <SheetContent side="right" className="flex w-full flex-col gap-0 p-0 sm:max-w-[600px]">
         {isLoading || !reservation ? (
           <div className="flex flex-1 items-center justify-center">
             <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
           </div>
         ) : (
           <>
-            <SheetHeader>
+            {/* Header */}
+            <SheetHeader className="border-b bg-gradient-to-b from-white to-gray-50/80 px-6 pt-6 pb-4">
               <div className="flex items-center gap-3">
-                <SheetTitle>
+                <SheetTitle className="text-lg">
                   {t('editRes.title', 'Edit Reservation')} #{reservation.id}
                 </SheetTitle>
-                <Badge className={cn('text-xs', STATUS_COLORS[statusCode])}>{statusCode}</Badge>
+                <Badge
+                  className={cn(
+                    'rounded-full px-2.5 py-0.5 text-xs font-medium capitalize',
+                    STATUS_COLORS[statusCode]
+                  )}
+                >
+                  {statusCode}
+                </Badge>
               </div>
-              <SheetDescription>
+              <SheetDescription className="text-sm">
                 {reservation.guests?.full_name ??
                   `${reservation.guests?.first_name ?? ''} ${reservation.guests?.last_name ?? ''}`.trim()}
               </SheetDescription>
             </SheetHeader>
 
-            <Tabs defaultValue="details" className="mt-4 flex flex-1 flex-col overflow-hidden">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="details">{t('editRes.tabDetails', 'Details')}</TabsTrigger>
-                <TabsTrigger value="guest">{t('editRes.tabGuest', 'Guest')}</TabsTrigger>
-                <TabsTrigger value="notes">{t('editRes.tabNotes', 'Notes')}</TabsTrigger>
-                <TabsTrigger value="charges">{t('editRes.tabCharges', 'Charges')}</TabsTrigger>
-              </TabsList>
+            {/* Tabs */}
+            <Tabs defaultValue="details" className="flex flex-1 flex-col overflow-hidden">
+              <div className="border-b px-6">
+                <TabsList className="h-10 w-full justify-start gap-1 rounded-none border-0 bg-transparent p-0">
+                  <TabsTrigger
+                    value="details"
+                    className="data-[state=active]:border-primary relative rounded-none border-b-2 border-transparent px-3 pt-2 pb-2.5 text-sm font-medium data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+                  >
+                    {t('editRes.tabDetails', 'Details')}
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="guest"
+                    className="data-[state=active]:border-primary relative rounded-none border-b-2 border-transparent px-3 pt-2 pb-2.5 text-sm font-medium data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+                  >
+                    {t('editRes.tabGuest', 'Guest')}
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="notes"
+                    className="data-[state=active]:border-primary relative rounded-none border-b-2 border-transparent px-3 pt-2 pb-2.5 text-sm font-medium data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+                  >
+                    {t('editRes.tabNotes', 'Notes')}
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="charges"
+                    className="data-[state=active]:border-primary relative rounded-none border-b-2 border-transparent px-3 pt-2 pb-2.5 text-sm font-medium data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+                  >
+                    {t('editRes.tabCharges', 'Charges')}
+                  </TabsTrigger>
+                </TabsList>
+              </div>
 
-              <div className="flex-1 overflow-y-auto py-4">
+              <div className="flex-1 overflow-y-auto px-6 py-5">
                 <TabsContent value="details" className="mt-0">
                   <ReservationDetailsTab form={form} reservation={reservation} />
                 </TabsContent>
@@ -189,11 +220,16 @@ export function EditReservationSheet({
               </div>
             </Tabs>
 
-            <SheetFooter className="mt-auto border-t pt-4">
-              <Button variant="outline" onClick={onClose}>
+            {/* Footer */}
+            <SheetFooter className="mt-auto gap-3 border-t bg-gray-50/50 px-6 py-4">
+              <Button variant="outline" className="flex-1" onClick={onClose}>
                 {t('common.cancel', 'Cancel')}
               </Button>
-              <Button onClick={handleSubmit(onSubmit)} disabled={!isDirty || isSubmitting}>
+              <Button
+                className="flex-1"
+                onClick={handleSubmit(onSubmit)}
+                disabled={!isDirty || isSubmitting}
+              >
                 {isSubmitting ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (

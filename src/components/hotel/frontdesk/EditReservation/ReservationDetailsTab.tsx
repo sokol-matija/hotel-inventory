@@ -72,185 +72,238 @@ export function ReservationDetailsTab({ form, reservation }: ReservationDetailsT
   const labelName = reservation.labels?.name ?? null;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {/* Dates */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-1.5">
-          <Label htmlFor="check_in_date">{t('editRes.checkIn', 'Check-in')}</Label>
-          <Input id="check_in_date" type="date" {...register('check_in_date')} />
-          {errors.check_in_date && (
-            <p className="text-sm text-red-500">{errors.check_in_date.message}</p>
-          )}
-        </div>
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-2">
-            <Label htmlFor="check_out_date">{t('editRes.checkOut', 'Check-out')}</Label>
-            {nights > 0 && (
-              <Badge variant="secondary" className="text-xs">
-                {nights} {t('editRes.nights', 'nights')}
-              </Badge>
+      <section className="rounded-xl border bg-white p-4 shadow-sm">
+        <h3 className="mb-3 text-xs font-semibold tracking-wider text-gray-400 uppercase">
+          {t('editRes.dates', 'Stay Dates')}
+        </h3>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="check_in_date" className="text-xs text-gray-500">
+              {t('editRes.checkIn', 'Check-in')}
+            </Label>
+            <Input
+              id="check_in_date"
+              type="date"
+              className="rounded-lg"
+              {...register('check_in_date')}
+            />
+            {errors.check_in_date && (
+              <p className="text-xs text-red-500">{errors.check_in_date.message}</p>
             )}
           </div>
-          <Input id="check_out_date" type="date" {...register('check_out_date')} />
-          {errors.check_out_date && (
-            <p className="text-sm text-red-500">{errors.check_out_date.message}</p>
-          )}
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="check_out_date" className="text-xs text-gray-500">
+                {t('editRes.checkOut', 'Check-out')}
+              </Label>
+              {nights > 0 && (
+                <Badge
+                  variant="secondary"
+                  className="rounded-full px-2 py-0 text-[10px] font-medium"
+                >
+                  {nights} {t('editRes.nights', 'nights')}
+                </Badge>
+              )}
+            </div>
+            <Input
+              id="check_out_date"
+              type="date"
+              className="rounded-lg"
+              {...register('check_out_date')}
+            />
+            {errors.check_out_date && (
+              <p className="text-xs text-red-500">{errors.check_out_date.message}</p>
+            )}
+          </div>
         </div>
-      </div>
+      </section>
 
-      {/* Room */}
-      <div className="space-y-1.5">
-        <Label>{t('editRes.room', 'Room')}</Label>
-        <Select
-          value={String(watch('room_id'))}
-          onValueChange={(val) => setValue('room_id', Number(val), { shouldDirty: true })}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder={t('editRes.selectRoom', 'Select room')} />
-          </SelectTrigger>
-          <SelectContent>
-            {roomsByFloor.map(([floor, floorRooms]) => (
-              <SelectGroup key={floor}>
-                <SelectLabel>
-                  {t('editRes.floor', 'Floor')} {floor}
-                </SelectLabel>
-                {floorRooms.map((room) => (
-                  <SelectItem key={room.id} value={String(room.id)}>
-                    <span className={cn(room.id === reservation.room_id && 'font-semibold')}>
-                      {room.room_number} {room.name_english}
-                    </span>
-                  </SelectItem>
+      {/* Room + Status */}
+      <section className="rounded-xl border bg-white p-4 shadow-sm">
+        <h3 className="mb-3 text-xs font-semibold tracking-wider text-gray-400 uppercase">
+          {t('editRes.roomAndStatus', 'Room & Status')}
+        </h3>
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label className="text-xs text-gray-500">{t('editRes.room', 'Room')}</Label>
+            <Select
+              value={String(watch('room_id'))}
+              onValueChange={(val) => setValue('room_id', Number(val), { shouldDirty: true })}
+            >
+              <SelectTrigger className="rounded-lg">
+                <SelectValue placeholder={t('editRes.selectRoom', 'Select room')} />
+              </SelectTrigger>
+              <SelectContent>
+                {roomsByFloor.map(([floor, floorRooms]) => (
+                  <SelectGroup key={floor}>
+                    <SelectLabel>
+                      {t('editRes.floor', 'Floor')} {floor}
+                    </SelectLabel>
+                    {floorRooms.map((room) => (
+                      <SelectItem key={room.id} value={String(room.id)}>
+                        <span className={cn(room.id === reservation.room_id && 'font-semibold')}>
+                          {room.room_number} {room.name_english}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
                 ))}
-              </SelectGroup>
-            ))}
-          </SelectContent>
-        </Select>
-        {errors.room_id && <p className="text-sm text-red-500">{errors.room_id.message}</p>}
-      </div>
+              </SelectContent>
+            </Select>
+            {errors.room_id && <p className="text-xs text-red-500">{errors.room_id.message}</p>}
+          </div>
 
-      {/* Status + Source */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-1.5">
-          <Label>{t('editRes.status', 'Status')}</Label>
-          <Select
-            value={watch('status')}
-            onValueChange={(val) => setValue('status', val, { shouldDirty: true })}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {STATUSES.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {s}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-gray-500">{t('editRes.status', 'Status')}</Label>
+              <Select
+                value={watch('status')}
+                onValueChange={(val) => setValue('status', val, { shouldDirty: true })}
+              >
+                <SelectTrigger className="rounded-lg capitalize">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {STATUSES.map((s) => (
+                    <SelectItem key={s} value={s} className="capitalize">
+                      {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-gray-500">
+                {t('editRes.source', 'Booking Source')}
+              </Label>
+              <Select
+                value={watch('booking_source') ?? ''}
+                onValueChange={(val) => setValue('booking_source', val, { shouldDirty: true })}
+              >
+                <SelectTrigger className="rounded-lg capitalize">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SOURCES.map((s) => (
+                    <SelectItem key={s} value={s} className="capitalize">
+                      {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </div>
-        <div className="space-y-1.5">
-          <Label>{t('editRes.source', 'Booking Source')}</Label>
-          <Select
-            value={watch('booking_source') ?? ''}
-            onValueChange={(val) => setValue('booking_source', val, { shouldDirty: true })}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {SOURCES.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {s}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+      </section>
 
-      {/* Guest count */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-1.5">
-          <Label htmlFor="adults">{t('editRes.adults', 'Adults')}</Label>
-          <Input
-            id="adults"
-            type="number"
-            min={1}
-            {...register('adults', { valueAsNumber: true })}
-          />
-          {errors.adults && <p className="text-sm text-red-500">{errors.adults.message}</p>}
+      {/* Guest Count */}
+      <section className="rounded-xl border bg-white p-4 shadow-sm">
+        <h3 className="mb-3 text-xs font-semibold tracking-wider text-gray-400 uppercase">
+          {t('editRes.guestCount', 'Guests')}
+        </h3>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="adults" className="text-xs text-gray-500">
+              {t('editRes.adults', 'Adults')}
+            </Label>
+            <Input
+              id="adults"
+              type="number"
+              min={1}
+              className="rounded-lg"
+              {...register('adults', { valueAsNumber: true })}
+            />
+            {errors.adults && <p className="text-xs text-red-500">{errors.adults.message}</p>}
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="children_count" className="text-xs text-gray-500">
+              {t('editRes.children', 'Children')}
+            </Label>
+            <Input
+              id="children_count"
+              type="number"
+              min={0}
+              className="rounded-lg"
+              {...register('children_count', { valueAsNumber: true })}
+            />
+          </div>
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="children_count">{t('editRes.children', 'Children')}</Label>
-          <Input
-            id="children_count"
-            type="number"
-            min={0}
-            {...register('children_count', { valueAsNumber: true })}
-          />
-        </div>
-      </div>
+      </section>
 
       {/* Services */}
-      <div className="space-y-3">
-        <Label className="text-sm font-medium">{t('editRes.services', 'Services')}</Label>
-        <div className="flex items-center justify-between rounded-md border px-3 py-2">
-          <span className="text-sm">{t('editRes.parking', 'Parking required')}</span>
-          <Switch
-            checked={watch('parking_required')}
-            onCheckedChange={(val) => setValue('parking_required', val, { shouldDirty: true })}
-          />
+      <section className="rounded-xl border bg-white p-4 shadow-sm">
+        <h3 className="mb-3 text-xs font-semibold tracking-wider text-gray-400 uppercase">
+          {t('editRes.services', 'Services')}
+        </h3>
+        <div className="divide-y">
+          <div className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
+            <span className="text-sm">{t('editRes.parking', 'Parking required')}</span>
+            <Switch
+              checked={watch('parking_required')}
+              onCheckedChange={(val) => setValue('parking_required', val, { shouldDirty: true })}
+            />
+          </div>
+          <div className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
+            <span className="text-sm">{t('editRes.pets', 'Has pets')}</span>
+            <Switch
+              checked={watch('has_pets')}
+              onCheckedChange={(val) => setValue('has_pets', val, { shouldDirty: true })}
+            />
+          </div>
         </div>
-        <div className="flex items-center justify-between rounded-md border px-3 py-2">
-          <span className="text-sm">{t('editRes.pets', 'Has pets')}</span>
-          <Switch
-            checked={watch('has_pets')}
-            onCheckedChange={(val) => setValue('has_pets', val, { shouldDirty: true })}
-          />
-        </div>
-      </div>
+      </section>
 
       {/* Company billing */}
-      <div className="space-y-3">
-        <Label className="text-sm font-medium">{t('editRes.billing', 'Company Billing')}</Label>
-        <div className="flex items-center justify-between rounded-md border px-3 py-2">
-          <span className="text-sm">{t('editRes.r1Invoice', 'R1 Invoice')}</span>
-          <Switch
-            checked={isR1}
-            onCheckedChange={(val) => {
-              setValue('is_r1', val, { shouldDirty: true });
-              if (!val) setValue('company_id', null, { shouldDirty: true });
-            }}
-          />
+      <section className="rounded-xl border bg-white p-4 shadow-sm">
+        <h3 className="mb-3 text-xs font-semibold tracking-wider text-gray-400 uppercase">
+          {t('editRes.billing', 'Company Billing')}
+        </h3>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm">{t('editRes.r1Invoice', 'R1 Invoice')}</span>
+            <Switch
+              checked={isR1}
+              onCheckedChange={(val) => {
+                setValue('is_r1', val, { shouldDirty: true });
+                if (!val) setValue('company_id', null, { shouldDirty: true });
+              }}
+            />
+          </div>
+          {isR1 && (
+            <Select
+              value={watch('company_id') != null ? String(watch('company_id')) : ''}
+              onValueChange={(val) =>
+                setValue('company_id', val ? Number(val) : null, { shouldDirty: true })
+              }
+            >
+              <SelectTrigger className="rounded-lg">
+                <SelectValue placeholder={t('editRes.selectCompany', 'Select company')} />
+              </SelectTrigger>
+              <SelectContent>
+                {companies.map((c) => (
+                  <SelectItem key={c.id} value={String(c.id)}>
+                    {c.name} ({c.oib})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
-        {isR1 && (
-          <Select
-            value={watch('company_id') != null ? String(watch('company_id')) : ''}
-            onValueChange={(val) =>
-              setValue('company_id', val ? Number(val) : null, { shouldDirty: true })
-            }
-          >
-            <SelectTrigger>
-              <SelectValue placeholder={t('editRes.selectCompany', 'Select company')} />
-            </SelectTrigger>
-            <SelectContent>
-              {companies.map((c) => (
-                <SelectItem key={c.id} value={String(c.id)}>
-                  {c.name} ({c.oib})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
-      </div>
+      </section>
 
       {/* Label */}
-      <div className="space-y-1.5">
-        <Label className="text-sm font-medium">{t('editRes.label', 'Label')}</Label>
-        <p className="text-muted-foreground text-sm">
-          {labelName ?? t('editRes.noLabel', 'No label')}
-        </p>
-      </div>
+      {labelName && (
+        <section className="rounded-xl border bg-white p-4 shadow-sm">
+          <h3 className="mb-2 text-xs font-semibold tracking-wider text-gray-400 uppercase">
+            {t('editRes.label', 'Label')}
+          </h3>
+          <Badge variant="outline" className="rounded-full">
+            {labelName}
+          </Badge>
+        </section>
+      )}
     </div>
   );
 }
