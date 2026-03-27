@@ -135,11 +135,9 @@ export function useCreateCharge() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (charge: Omit<TablesInsert<'reservation_charges'>, 'id'>) => insertCharge(charge),
-    onSettled: (_data, _err, variables) => {
+    onSettled: () => {
       return Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.reservationCharges.byReservation(variables.reservation_id),
-        }),
+        queryClient.invalidateQueries({ queryKey: ['reservationCharges'] }),
         queryClient.invalidateQueries({ queryKey: queryKeys.reservations.all() }),
       ]);
     },
@@ -151,14 +149,8 @@ export function useUpdateCharge() {
   return useMutation({
     mutationFn: ({ id, updates }: { id: number; updates: TablesUpdate<'reservation_charges'> }) =>
       updateCharge(id, updates),
-    onSettled: (_data, _err, variables) => {
-      // Invalidate the reservation charges for the reservation this charge belongs to
-      const reservationId = _data?.reservationId ?? variables.updates.reservation_id;
-      if (reservationId != null) {
-        return queryClient.invalidateQueries({
-          queryKey: queryKeys.reservationCharges.byReservation(reservationId),
-        });
-      }
+    onSettled: () => {
+      return queryClient.invalidateQueries({ queryKey: ['reservationCharges'] });
     },
   });
 }
@@ -167,11 +159,9 @@ export function useDeleteCharge() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id }: { id: number; reservationId: number }) => deleteCharge(id),
-    onSettled: (_data, _err, variables) => {
+    onSettled: () => {
       return Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.reservationCharges.byReservation(variables.reservationId),
-        }),
+        queryClient.invalidateQueries({ queryKey: ['reservationCharges'] }),
         queryClient.invalidateQueries({ queryKey: queryKeys.reservations.all() }),
       ]);
     },
@@ -188,11 +178,9 @@ export function useReplaceCharges() {
       reservationId: number;
       charges: Omit<TablesInsert<'reservation_charges'>, 'id' | 'reservation_id'>[];
     }) => replaceCharges(reservationId, charges),
-    onSettled: (_data, _err, variables) => {
+    onSettled: () => {
       return Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.reservationCharges.byReservation(variables.reservationId),
-        }),
+        queryClient.invalidateQueries({ queryKey: ['reservationCharges'] }),
         queryClient.invalidateQueries({ queryKey: queryKeys.reservations.all() }),
       ]);
     },
