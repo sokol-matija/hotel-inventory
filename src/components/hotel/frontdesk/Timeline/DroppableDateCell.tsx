@@ -1,4 +1,4 @@
-import { format, startOfDay } from 'date-fns';
+import { format, startOfDay, differenceInCalendarDays } from 'date-fns';
 import { useDrop } from 'react-dnd';
 import { Reservation } from '../../../../lib/hotel/types';
 import type { Room } from '../../../../lib/queries/hooks/useRooms';
@@ -53,12 +53,9 @@ export function DroppableDateCell({
   const hasExistingReservation = existingReservations.some((res) => {
     const resCheckInDate = startOfDay(new Date(res.check_in_date));
     const resCheckOutDate = startOfDay(new Date(res.check_out_date));
-    const resStartDay = Math.floor(
-      (resCheckInDate.getTime() - startOfDay(date).getTime()) / (24 * 60 * 60 * 1000)
-    );
-    const resEndDay = Math.floor(
-      (resCheckOutDate.getTime() - startOfDay(date).getTime()) / (24 * 60 * 60 * 1000)
-    );
+    const cellDate = startOfDay(date);
+    const resStartDay = differenceInCalendarDays(resCheckInDate, cellDate);
+    const resEndDay = differenceInCalendarDays(resCheckOutDate, cellDate);
 
     if (res.room_id === room.id && resStartDay <= dayIndex && resEndDay > dayIndex) {
       if (dayIndex === resStartDay && isSecondHalf) return true;
@@ -85,9 +82,7 @@ export function DroppableDateCell({
         if (isAllocationFromFloor5) {
           onMoveReservation(item.reservationId, room.id, item.checkIn, item.checkOut);
         } else {
-          const originalDuration = Math.ceil(
-            (item.checkOut.getTime() - item.checkIn.getTime()) / (24 * 60 * 60 * 1000)
-          );
+          const originalDuration = differenceInCalendarDays(item.checkOut, item.checkIn);
 
           if (isSecondHalf) {
             const newCheckIn = new Date(date);

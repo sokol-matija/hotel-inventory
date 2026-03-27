@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import { addDays, format } from 'date-fns';
+import { addDays, format, differenceInCalendarDays } from 'date-fns';
 import { isRoomAvailable, formatRoomNumber } from '../hotel/calendarUtils';
 import type { Reservation, ReservationUpdateInput } from '../queries/hooks/useReservations';
 import type { Guest } from '../queries/hooks/useGuests';
@@ -446,9 +446,7 @@ export function useReservationActions(
         const guest = guests.find((g) => g.id === reservation.guest_id);
         const newCheckIn = side === 'start' ? newDate : new Date(reservation.check_in_date);
         const newCheckOut = side === 'end' ? newDate : new Date(reservation.check_out_date);
-        const daysDiff = Math.ceil(
-          (newCheckOut.getTime() - newCheckIn.getTime()) / (24 * 60 * 60 * 1000)
-        );
+        const daysDiff = differenceInCalendarDays(newCheckOut, newCheckIn);
 
         if (daysDiff < 1) {
           hotelNotification.error('Invalid Reservation Length', 'Minimum stay is 1 day', 3);

@@ -1,7 +1,7 @@
 // HotelTimelineService - Business logic for hotel timeline operations
 // Handles date navigation, room status calculations, drag operations, and reservation management
 
-import { format, addDays, startOfDay, isSameDay } from 'date-fns';
+import { format, addDays, startOfDay, isSameDay, differenceInCalendarDays } from 'date-fns';
 import { CalendarEvent, Guest, ReservationStatus } from '../types';
 import type { Reservation } from '@/lib/queries/hooks/useReservations';
 import type { Room } from '@/lib/queries/hooks/useRooms';
@@ -174,12 +174,8 @@ export class HotelTimelineService {
     const checkOutDate = startOfDay(new Date(reservation.check_out_date));
     const timelineStart = startOfDay(startDate);
 
-    const startDayIndex = Math.floor(
-      (checkInDate.getTime() - timelineStart.getTime()) / (24 * 60 * 60 * 1000)
-    );
-    const endDayIndex = Math.floor(
-      (checkOutDate.getTime() - timelineStart.getTime()) / (24 * 60 * 60 * 1000)
-    );
+    const startDayIndex = differenceInCalendarDays(checkInDate, timelineStart);
+    const endDayIndex = differenceInCalendarDays(checkOutDate, timelineStart);
 
     const startHalfDayIndex = startDayIndex * 2 + 1; // Second half (PM) = day * 2 + 1
     const endHalfDayIndex = endDayIndex * 2; // First half (AM) = day * 2
@@ -191,9 +187,7 @@ export class HotelTimelineService {
     const gridColumnStart = visibleStartHalfDay + 2; // day 0 PM = column 3
     const gridColumnEnd = visibleEndHalfDay + 3; // +3 because CSS grid end is exclusive
 
-    const reservationDays = Math.ceil(
-      (checkOutDate.getTime() - checkInDate.getTime()) / (24 * 60 * 60 * 1000)
-    );
+    const reservationDays = differenceInCalendarDays(checkOutDate, checkInDate);
 
     return {
       gridColumnStart,

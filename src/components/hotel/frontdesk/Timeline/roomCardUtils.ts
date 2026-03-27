@@ -1,3 +1,4 @@
+import { differenceInCalendarDays } from 'date-fns';
 import type React from 'react';
 
 /** Returns Tailwind border+bg classes for a given reservation status. */
@@ -39,7 +40,5 @@ export function calculateContextMenuPosition(
 
 /** Days remaining until check-out (negative when already checked out). */
 export function calcDaysLeft(checkOutDate: string): number {
-  return Math.ceil(
-    (new Date(checkOutDate).getTime() - new Date().getTime()) / (24 * 60 * 60 * 1000)
-  );
+  return differenceInCalendarDays(new Date(checkOutDate), new Date());
 }

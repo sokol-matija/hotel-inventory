@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { format, addDays, startOfDay } from 'date-fns';
+import { format, addDays, startOfDay, differenceInCalendarDays } from 'date-fns';
 import { useDrag } from 'react-dnd';
 import { gsap } from 'gsap';
 import { Users, Baby, Dog, Move, Plus } from 'lucide-react';
@@ -101,12 +101,8 @@ export function ReservationBlock({
 
   const dragHandleRef = useRef<HTMLDivElement>(null);
 
-  const startDayIndex = Math.floor(
-    (checkInDate.getTime() - timelineStart.getTime()) / (24 * 60 * 60 * 1000)
-  );
-  const endDayIndex = Math.floor(
-    (checkOutDate.getTime() - timelineStart.getTime()) / (24 * 60 * 60 * 1000)
-  );
+  const startDayIndex = differenceInCalendarDays(checkInDate, timelineStart);
+  const endDayIndex = differenceInCalendarDays(checkOutDate, timelineStart);
 
   const startHalfDayIndex = startDayIndex * 2 + 1;
   const endHalfDayIndex = endDayIndex * 2;
@@ -119,9 +115,7 @@ export function ReservationBlock({
   const statusColors = RESERVATION_STATUS_COLORS[status] || RESERVATION_STATUS_COLORS.confirmed;
   const flag = getCountryFlag(guest?.nationality || '');
 
-  const reservationDays = Math.ceil(
-    (checkOutDate.getTime() - checkInDate.getTime()) / (24 * 60 * 60 * 1000)
-  );
+  const reservationDays = differenceInCalendarDays(checkOutDate, checkInDate);
   const isShortReservation = reservationDays <= 2;
 
   const checkInTime = checkInDate.getTime();
@@ -234,9 +228,7 @@ export function ReservationBlock({
           <div className="flex min-w-0 flex-1 flex-col">
             <span className="truncate text-xs font-medium">{guestDisplayName}</span>
             {(() => {
-              const daysLeft = Math.ceil(
-                (checkOutDate.getTime() - new Date().getTime()) / (24 * 60 * 60 * 1000)
-              );
+              const daysLeft = differenceInCalendarDays(checkOutDate, new Date());
               return (
                 <span className="text-xs font-medium text-white">
                   {daysLeft > 0 ? (
