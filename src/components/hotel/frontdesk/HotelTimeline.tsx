@@ -182,32 +182,35 @@ export default function HotelTimeline({
   // EnhancedDailyViewModal removed — operated on dropped reservation_daily_details table
   void 0; // showExpandedDailyView and expandedReservation state removed
 
+  // Virtual rooms — fetch on date change and after server-confirmed reservation changes
   const [virtualRoomsWithReservations, setVirtualRoomsWithReservations] = useState<Room[]>([]);
+  const [virtualRoomsFetchKey, setVirtualRoomsFetchKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
-    virtualRoomService
-      .getVirtualRoomsWithReservations(currentDate)
-      .then(async (rooms) => {
+    Promise.all([
+      virtualRoomService.getVirtualRoomsWithReservations(currentDate),
+      virtualRoomService.getOrCreateEmptyVirtualRoom(currentDate),
+    ])
+      .then(([rooms, emptyRoom]) => {
         if (cancelled) return;
-        // Always add an empty drop-target room so users can drag reservations to Floor 5
-        const emptyRoom = await virtualRoomService.getOrCreateEmptyVirtualRoom(currentDate);
-        if (!cancelled && emptyRoom) {
-          const existingIds = new Set(rooms.map((r) => r.id));
-          if (!existingIds.has(emptyRoom.id)) {
-            setVirtualRoomsWithReservations([...rooms, emptyRoom]);
-          } else {
-            setVirtualRoomsWithReservations(rooms);
-          }
-        } else if (!cancelled) {
-          setVirtualRoomsWithReservations(rooms);
+        if (emptyRoom) {
+          const ids = new Set(rooms.map((r) => r.id));
+          if (!ids.has(emptyRoom.id)) rooms.push(emptyRoom);
         }
+        setVirtualRoomsWithReservations(rooms);
       })
       .catch(console.error);
     return () => {
       cancelled = true;
     };
-  }, [currentDate, localReservations]);
+  }, [currentDate, virtualRoomsFetchKey]);
+
+  // Refetch virtual rooms after TQ reservation data settles (server confirmed)
+  // but NOT on optimistic overrides (which would cause race conditions)
+  useEffect(() => {
+    setVirtualRoomsFetchKey((k) => k + 1);
+  }, [reservations]);
 
   const calculateContextMenuPosition = (e: React.MouseEvent) =>
     positionContextMenu(e.clientX, e.clientY);
