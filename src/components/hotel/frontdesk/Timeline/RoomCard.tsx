@@ -12,7 +12,9 @@ import { getStatusCardColors, calcDaysLeft } from './roomCardUtils';
 // Isolated so the TQ hook stays out of the `.map()` in the parent.
 
 function ReservationTotal({ reservationId }: { reservationId: number }) {
-  const { data: charges = [] } = useReservationCharges(reservationId);
+  const { data: charges = [], isLoading } = useReservationCharges(reservationId);
+  if (isLoading) return <span className="text-xs text-gray-400">…</span>;
+  if (!charges.length) return <span className="text-xs text-gray-400">—</span>;
   const total = charges.reduce((sum, c) => sum + c.total, 0);
   return <span className="text-xs font-bold text-green-600">€{total.toFixed(0)}</span>;
 }

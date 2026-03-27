@@ -13,6 +13,7 @@ import {
   Calendar,
   CheckCircle,
   Pencil,
+  RefreshCw,
 } from 'lucide-react';
 import { Skeleton } from '../../../ui/skeleton';
 import EditChargesPanel from './EditChargesPanel';
@@ -21,10 +22,14 @@ import type { ReservationUpdateInput } from '../../../../lib/queries/hooks/useRe
 import type { Room } from '../../../../lib/queries/hooks/useRooms';
 import { generatePDFInvoice, generateInvoiceNumber } from '../../../../lib/pdfInvoiceGenerator';
 import { useUpdateReservation } from '../../../../lib/queries/hooks/useReservations';
-import { useReservationCharges } from '../../../../lib/queries/hooks/useReservationCharges';
+import {
+  useReservationCharges,
+  useReplaceCharges,
+} from '../../../../lib/queries/hooks/useReservationCharges';
 import hotelNotification from '../../../../lib/notifications';
 import { useCompanies } from '../../../../lib/queries/hooks/useCompanies';
 import { createInvoice as createInvoiceService } from '../../../../lib/hotel/services/InvoiceService';
+import { unifiedPricingService } from '../../../../lib/hotel/services/UnifiedPricingService';
 
 interface PaymentDetailsModalProps {
   isOpen: boolean;
@@ -49,7 +54,54 @@ export default function PaymentDetailsModal({
   const updateReservation = async (id: number, updates: ReservationUpdateInput) => {
     await updateReservationMutation.mutateAsync({ id, updates });
   };
+  const replaceChargesMutation = useReplaceCharges();
+  const [isGeneratingCharges, setIsGeneratingCharges] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  const handleGenerateCharges = async () => {
+    try {
+      setIsGeneratingCharges(true);
+      const adults = reservation.adults ?? 1;
+      const childrenCount = reservation.children_count ?? 0;
+      const guestEntries = [
+        ...Array(adults)
+          .fill(null)
+          .map(() => ({ name: guest.display_name, type: 'adult' as const })),
+        ...Array(childrenCount)
+          .fill(null)
+          .map((_, i) => ({ name: `Child ${i + 1}`, type: 'child' as const })),
+      ];
+      const generated = await unifiedPricingService.generateCharges({
+        roomId: room.id.toString(),
+        checkIn: new Date(reservation.check_in_date),
+        checkOut: new Date(reservation.check_out_date),
+        guests: guestEntries,
+        hasPets: reservation.has_pets ?? false,
+        parkingRequired: reservation.parking_required ?? false,
+      });
+      await replaceChargesMutation.mutateAsync({
+        reservationId: reservation.id as number,
+        charges: generated.map((c) => ({
+          charge_type: c.chargeType,
+          description: c.description,
+          quantity: c.quantity,
+          unit_price: c.unitPrice,
+          total: c.total,
+          vat_rate: c.vatRate ?? 0.13,
+          sort_order: c.sortOrder ?? 0,
+        })),
+      });
+      hotelNotification.success(
+        'Charges Generated',
+        'Price breakdown has been calculated and saved.'
+      );
+    } catch (err) {
+      console.error('Failed to generate charges:', err);
+      hotelNotification.error('Failed', 'Could not calculate charges. Please add them manually.');
+    } finally {
+      setIsGeneratingCharges(false);
+    }
+  };
   const [paymentStatus, setPaymentStatus] = useState(reservation.reservation_statuses?.code ?? '');
   const [isEditMode, setIsEditMode] = useState(false);
 
@@ -266,9 +318,21 @@ export default function PaymentDetailsModal({
                   ))}
                 </div>
               ) : charges.length === 0 ? (
-                <p className="py-4 text-center text-sm text-gray-500">
-                  No charges recorded for this reservation.
-                </p>
+                <div className="flex flex-col items-center gap-3 py-6">
+                  <p className="text-sm text-gray-500">No charges recorded for this reservation.</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleGenerateCharges}
+                    disabled={isGeneratingCharges}
+                    className="flex items-center gap-1.5"
+                  >
+                    <RefreshCw
+                      className={`h-3.5 w-3.5 ${isGeneratingCharges ? 'animate-spin' : ''}`}
+                    />
+                    {isGeneratingCharges ? 'Calculating...' : 'Calculate charges'}
+                  </Button>
+                </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">

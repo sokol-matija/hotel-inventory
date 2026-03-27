@@ -140,7 +140,7 @@ export class SeasonalRateService {
         p_date: stayDate.toISOString().split('T')[0],
       });
 
-      if (error || !data || data.length === 0) {
+      if (error || !data || data.length === 0 || data[0].base_rate == null) {
         console.warn(`No seasonal rate found for room ${roomId} on ${stayDate}, using fallback`);
         return 100.0;
       }

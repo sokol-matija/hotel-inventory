@@ -23,6 +23,16 @@ import { SortState } from '../../../../hooks/useReservationsList';
 import { Button } from '../../../ui/button';
 import { Badge } from '../../../ui/badge';
 import { Card } from '../../../ui/card';
+import { useReservationCharges } from '../../../../lib/queries/hooks/useReservationCharges';
+
+// Inline total cell that fetches charges per reservation
+function ChargesTotal({ reservationId }: { reservationId: number }) {
+  const { data: charges = [], isLoading } = useReservationCharges(reservationId);
+  if (isLoading) return <span className="text-gray-400">...</span>;
+  if (!charges.length) return <span className="text-gray-400">&mdash;</span>;
+  const total = charges.reduce((sum, c) => sum + c.total, 0);
+  return <span>{`\u20AC${total.toFixed(2)}`}</span>;
+}
 
 interface ReservationsTableProps {
   reservations: Reservation[];
@@ -176,7 +186,9 @@ function MobileCard({
         </div>
         <div>
           <span className="text-gray-600">{t('reservationsList.columns.totalAmount')}:</span>
-          <p className="font-medium">&mdash;</p>
+          <p className="font-medium">
+            <ChargesTotal reservationId={reservation.id} />
+          </p>
         </div>
         <div>
           <span className="text-gray-600">{t('reservationsList.columns.paymentStatus')}:</span>
@@ -350,7 +362,9 @@ export default function ReservationsTable({
                   {getStatusBadge(reservation.reservation_statuses?.code ?? 'confirmed')}
                 </td>
                 <td className="px-4 py-4 text-gray-900">{reservation.booking_sources?.code}</td>
-                <td className="px-4 py-4 font-semibold text-gray-900">&mdash;</td>
+                <td className="px-4 py-4 font-semibold text-gray-900">
+                  <ChargesTotal reservationId={reservation.id} />
+                </td>
                 <td className="px-4 py-4">
                   {getPaymentBadge(reservation.reservation_statuses?.code ?? '')}
                 </td>

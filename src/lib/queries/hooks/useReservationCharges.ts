@@ -4,13 +4,15 @@ import { queryKeys } from '../queryKeys';
 import { supabase } from '../../supabase';
 import type { TablesInsert, TablesUpdate } from '../../supabase';
 
-// ─── Query definition ──────────────────────────────────────────────────────────
+// ─── Query builder (must be a function — Supabase builders are mutable) ────────
 
-const chargesQuery = supabase.from('reservation_charges').select('*').order('created_at');
+function buildChargesQuery() {
+  return supabase.from('reservation_charges').select('*').order('created_at');
+}
 
 // ─── Derived types ──────────────────────────────────────────────────────────────
 
-export type ReservationChargeRow = QueryData<typeof chargesQuery>[number];
+export type ReservationChargeRow = QueryData<ReturnType<typeof buildChargesQuery>>[number];
 
 export type ChargeType =
   | 'accommodation'
@@ -60,7 +62,7 @@ function mapChargeFromDB(row: ReservationChargeRow): ReservationCharge {
 // ─── Service functions ─────────────────────────────────────────────────────────
 
 async function fetchCharges(reservationId: number): Promise<ReservationCharge[]> {
-  const { data } = await chargesQuery
+  const { data } = await buildChargesQuery()
     .eq('reservation_id', reservationId)
     .order('sort_order', { ascending: true })
     .order('id', { ascending: true })

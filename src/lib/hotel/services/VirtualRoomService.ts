@@ -213,6 +213,18 @@ export class VirtualRoomService {
         (data.checkOut.getTime() - data.checkIn.getTime()) / (1000 * 60 * 60 * 24)
       );
 
+      // Lookup status_id and booking_source_id
+      const { data: statusRow } = await supabase
+        .from('reservation_statuses')
+        .select('id')
+        .eq('code', 'unallocated')
+        .single();
+      const { data: sourceRow } = await supabase
+        .from('booking_sources')
+        .select('id')
+        .eq('code', 'direct')
+        .single();
+
       // Create reservation
       const { data: reservation, error: reservationError } = await supabase
         .from('reservations')
@@ -225,15 +237,9 @@ export class VirtualRoomService {
           number_of_guests: data.numberOfPeople,
           adults: data.numberOfPeople,
           children_count: 0,
-          status: 'unallocated',
-          booking_source: 'direct',
+          status_id: statusRow?.id,
+          booking_source_id: sourceRow?.id,
           internal_notes: data.notes || '',
-          seasonal_period: 'A',
-          base_room_rate: 0,
-          subtotal: 0,
-          vat_amount: 0,
-          total_amount: 0,
-          payment_status: 'pending',
         })
         .select('id')
         .single();
@@ -284,52 +290,51 @@ export class VirtualRoomService {
         };
       }
 
-      // Get target room for pricing calculation
-      const { data: targetRoom, error: roomError } = await supabase
-        .from('rooms')
-        .select(
-          '*, room_types!room_type_id(code), room_pricing(base_rate, pricing_seasons(code, year_pattern))'
-        )
-        .eq('id', targetRoomId)
+      // Lookup confirmed status_id
+      const { data: confirmedStatus } = await supabase
+        .from('reservation_statuses')
+        .select('id')
+        .eq('code', 'confirmed')
         .single();
-
-      if (roomError || !targetRoom) {
-        console.error('Error fetching target room:', roomError);
-        return {
-          success: false,
-          error: 'Failed to fetch target room: ' + (roomError?.message || 'Not found'),
-        };
-      }
-
-      // Calculate new pricing based on target room
 
       const checkInDate = new Date(existingReservation.check_in_date);
       const checkOutDate = new Date(existingReservation.check_out_date);
 
-      const pricing = await unifiedPricingService.calculateTotal({
+      // Generate line-item charges for the target room
+      const charges = await unifiedPricingService.generateCharges({
         roomId: String(targetRoomId),
         checkIn: checkInDate,
         checkOut: checkOutDate,
-        adults: existingReservation.adults || 1,
-        children: [],
+        guests: [
+          ...Array(existingReservation.adults || 1)
+            .fill(null)
+            .map(() => ({ name: 'Guest', type: 'adult' as const })),
+        ],
         hasPets: existingReservation.has_pets || false,
-        needsParking: existingReservation.parking_required || false,
-        additionalCharges: 0, // additional_charges column removed — charges now in reservation_charges
+        parkingRequired: existingReservation.parking_required || false,
       });
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const updates: any = {
+      // Replace charges in reservation_charges table
+      await supabase.from('reservation_charges').delete().eq('reservation_id', reservationId);
+
+      if (charges.length > 0) {
+        await supabase.from('reservation_charges').insert(
+          charges.map((c) => ({
+            reservation_id: reservationId,
+            charge_type: c.chargeType,
+            description: c.description,
+            quantity: c.quantity,
+            unit_price: c.unitPrice,
+            total: c.total,
+            vat_rate: c.vatRate ?? 0.13,
+            sort_order: c.sortOrder ?? 0,
+          }))
+        );
+      }
+
+      const updates: Record<string, unknown> = {
         room_id: targetRoomId,
-        status: 'confirmed',
-        base_room_rate: pricing.baseRate,
-        subtotal: pricing.subtotal,
-        children_discounts: pricing.totalDiscounts,
-        tourism_tax: pricing.fees.tourism,
-        vat_amount: pricing.fees.vat,
-        pet_fee: pricing.fees.pets,
-        parking_fee: pricing.fees.parking,
-        short_stay_supplement: pricing.fees.shortStay,
-        total_amount: pricing.total,
+        status_id: confirmedStatus?.id,
       };
 
       // If guest data provided, create/update guest

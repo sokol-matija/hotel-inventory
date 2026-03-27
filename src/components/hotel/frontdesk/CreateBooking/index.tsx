@@ -514,14 +514,20 @@ export default function ModernCreateBookingModal({
               </Button>
               <Button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={
+                  isSubmitting || (chargesLoading && !isUnallocated && selectedRoom != null)
+                }
                 className="flex items-center"
                 data-testid="submit-booking"
               >
-                {isSubmitting && (
+                {(isSubmitting || chargesLoading) && (
                   <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                 )}
-                {isSubmitting ? 'Creating Booking...' : 'Create Booking'}
+                {isSubmitting
+                  ? 'Creating Booking...'
+                  : chargesLoading && !isUnallocated && selectedRoom != null
+                    ? 'Calculating price...'
+                    : 'Create Booking'}
               </Button>
             </div>
           </form>
