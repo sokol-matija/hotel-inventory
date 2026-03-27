@@ -27,7 +27,7 @@
 import type { Reservation } from '@/lib/queries/hooks/useReservations';
 import type { Room } from '@/lib/queries/hooks/useRooms';
 import { supabase } from '../../supabase';
-import { startOfDay, endOfDay } from 'date-fns';
+import { startOfDay, endOfDay, format } from 'date-fns';
 
 export interface ConflictResult {
   hasConflict: boolean;
@@ -142,8 +142,8 @@ async function getReservationsByRoomAndDateRange(
       labels!label_id(id, name, color, bg_color)`
     )
     .eq('room_id', roomId)
-    .lt('check_in_date', endDate.toISOString().split('T')[0])
-    .gt('check_out_date', startDate.toISOString().split('T')[0]);
+    .lt('check_in_date', format(endDate, 'yyyy-MM-dd'))
+    .gt('check_out_date', format(startDate, 'yyyy-MM-dd'));
   if (error || !data) return [];
   return data as unknown as Reservation[];
 }

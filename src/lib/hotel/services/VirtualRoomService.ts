@@ -1,6 +1,7 @@
 // VirtualRoomService - Manage virtual Floor 5 rooms for unallocated reservations
 // Handles creation, assignment, and conversion of virtual rooms (501-599)
 
+import { format } from 'date-fns';
 import { supabase } from '../../supabase';
 import { Guest } from '../types';
 import type { Room } from '@/lib/queries/hooks/useRooms';
@@ -82,8 +83,8 @@ export class VirtualRoomService {
   ): Promise<{ success: boolean; roomId?: number; error?: string }> {
     try {
       const { data, error } = await supabase.rpc('get_next_available_virtual_room', {
-        p_check_in: checkIn.toISOString().split('T')[0],
-        p_check_out: checkOut.toISOString().split('T')[0],
+        p_check_in: format(checkIn, 'yyyy-MM-dd'),
+        p_check_out: format(checkOut, 'yyyy-MM-dd'),
       });
 
       if (error) {
@@ -123,8 +124,8 @@ export class VirtualRoomService {
         `
         )
         .eq('floor_number', this.config.VIRTUAL_FLOOR)
-        .lte('reservations.check_in_date', date.toISOString().split('T')[0])
-        .gte('reservations.check_out_date', date.toISOString().split('T')[0]);
+        .lte('reservations.check_in_date', format(date, 'yyyy-MM-dd'))
+        .gte('reservations.check_out_date', format(date, 'yyyy-MM-dd'));
 
       if (excludedIds.length > 0) {
         roomQuery = roomQuery.not('reservations.status_id', 'in', `(${excludedIds.join(',')})`);
@@ -237,8 +238,8 @@ export class VirtualRoomService {
         .insert({
           guest_id: guestId,
           room_id: virtualRoomResult.roomId,
-          check_in_date: data.checkIn.toISOString().split('T')[0],
-          check_out_date: data.checkOut.toISOString().split('T')[0],
+          check_in_date: format(data.checkIn, 'yyyy-MM-dd'),
+          check_out_date: format(data.checkOut, 'yyyy-MM-dd'),
           number_of_guests: data.numberOfPeople,
           adults: adultsCount,
           children_count: data.childrenCount ?? 0,

@@ -27,6 +27,7 @@
  * @since August 2025
  */
 
+import { format } from 'date-fns';
 import type { Reservation, ReservationUpdateInput } from '@/lib/queries/hooks/useReservations';
 
 export interface OptimisticOperation {
@@ -141,8 +142,8 @@ export class OptimisticUpdateService {
 
     const newData: ReservationUpdateInput = {
       room_id: newRoomId,
-      check_in_date: newCheckIn.toISOString().split('T')[0],
-      check_out_date: newCheckOut.toISOString().split('T')[0],
+      check_in_date: format(newCheckIn, 'yyyy-MM-dd'),
+      check_out_date: format(newCheckOut, 'yyyy-MM-dd'),
     };
 
     return this.executeOptimisticUpdate(operationId, {

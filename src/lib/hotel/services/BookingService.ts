@@ -1,4 +1,5 @@
 // BookingService - Booking validation, pricing calculations, and DB operations
+import { format } from 'date-fns';
 import { Guest, GuestChild, ReservationStatus, Company } from '../types';
 import type { Reservation } from '@/lib/queries/hooks/useReservations';
 import type { Room } from '@/lib/queries/hooks/useRooms';
@@ -189,8 +190,8 @@ export async function createFullBooking(
   const reservationData = {
     guest_id: primaryGuestId,
     room_id: roomId,
-    check_in_date: checkInDate.toISOString().split('T')[0],
-    check_out_date: checkOutDate.toISOString().split('T')[0],
+    check_in_date: format(checkInDate, 'yyyy-MM-dd'),
+    check_out_date: format(checkOutDate, 'yyyy-MM-dd'),
     adults: adultsCount,
     children_count: childrenCount,
     number_of_guests: adultsCount + childrenCount,
