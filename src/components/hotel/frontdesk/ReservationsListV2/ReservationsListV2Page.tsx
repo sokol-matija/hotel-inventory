@@ -5,6 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { queryKeys } from '@/lib/queries/queryKeys';
 import ReservationPopup from '@/components/hotel/frontdesk/Reservations/ReservationPopup';
+import { EditReservationSheet } from '@/components/hotel/frontdesk/EditReservation/EditReservationSheet';
 import type { CalendarEvent, ReservationStatus } from '@/lib/hotel/types';
 import type { ReservationListRow } from '@/hooks/useReservationsListQuery';
 import { ReservationsDataTable } from './ReservationsDataTable';
@@ -40,6 +41,7 @@ export default function ReservationsListV2Page() {
 
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const [editReservationId, setEditReservationId] = useState<number | null>(null);
 
   const handleViewDetails = useCallback((row: ReservationListRow) => {
     setSelectedEvent(toCalendarEvent(row));
@@ -74,10 +76,17 @@ export default function ReservationsListV2Page() {
       </div>
 
       {/* Data table */}
-      <ReservationsDataTable onViewDetails={handleViewDetails} />
+      <ReservationsDataTable onViewDetails={handleViewDetails} onEdit={setEditReservationId} />
 
       {/* Reservation popup */}
       <ReservationPopup isOpen={isPopupOpen} onClose={handleClosePopup} event={selectedEvent} />
+
+      {/* Edit reservation sheet */}
+      <EditReservationSheet
+        reservationId={editReservationId}
+        onClose={() => setEditReservationId(null)}
+        onSaved={handleRefresh}
+      />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { MoreHorizontal, Eye, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Eye, Pencil, Trash2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,6 +25,7 @@ const ALL_STATUSES = [
 interface ReservationsRowActionsProps {
   row: ReservationListRow;
   onViewDetails: (row: ReservationListRow) => void;
+  onEdit: (id: number) => void;
   onDelete: (id: number) => void;
   onStatusChange: (id: number, status: string) => void;
   t: TFunction;
@@ -33,6 +34,7 @@ interface ReservationsRowActionsProps {
 export function ReservationsRowActions({
   row,
   onViewDetails,
+  onEdit,
   onDelete,
   onStatusChange,
   t,
@@ -60,6 +62,11 @@ export function ReservationsRowActions({
         <DropdownMenuItem onClick={() => onViewDetails(row)}>
           <Eye className="mr-2 h-4 w-4" />
           {t('reservationsList.actions.viewDetails', 'View Details')}
+        </DropdownMenuItem>
+
+        <DropdownMenuItem onClick={() => onEdit(row.id)}>
+          <Pencil className="mr-2 h-4 w-4" />
+          {t('reservationsList.actions.edit', 'Edit')}
         </DropdownMenuItem>
 
         <DropdownMenuSub>

@@ -32,9 +32,10 @@ import type { ReservationListRow } from '@/hooks/useReservationsListQuery';
 
 interface ReservationsDataTableProps {
   onViewDetails: (row: ReservationListRow) => void;
+  onEdit: (id: number) => void;
 }
 
-export function ReservationsDataTable({ onViewDetails }: ReservationsDataTableProps) {
+export function ReservationsDataTable({ onViewDetails, onEdit }: ReservationsDataTableProps) {
   const { t } = useTranslation();
 
   // ── Table state ─────────────────────────────────────────────────────────────
@@ -139,11 +140,12 @@ export function ReservationsDataTable({ onViewDetails }: ReservationsDataTablePr
     () => ({
       chargeTotals: chargeTotals ?? {},
       onViewDetails,
+      onEdit,
       onDelete: handleDelete,
       onStatusChange: handleStatusChange,
       t,
     }),
-    [chargeTotals, onViewDetails, handleDelete, handleStatusChange, t]
+    [chargeTotals, onViewDetails, onEdit, handleDelete, handleStatusChange, t]
   );
 
   // ── Columns ─────────────────────────────────────────────────────────────────

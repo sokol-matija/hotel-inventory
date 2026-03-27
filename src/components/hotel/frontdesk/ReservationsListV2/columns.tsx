@@ -11,6 +11,7 @@ import type { TFunction } from 'i18next';
 export interface ReservationsTableMeta {
   chargeTotals: Record<number, number>;
   onViewDetails: (row: ReservationListRow) => void;
+  onEdit: (id: number) => void;
   onDelete: (id: number) => void;
   onStatusChange: (id: number, status: string) => void;
   t: TFunction;
@@ -213,6 +214,7 @@ export function getColumns(t: TFunction) {
           <ReservationsRowActions
             row={row.original}
             onViewDetails={meta.onViewDetails}
+            onEdit={meta.onEdit}
             onDelete={meta.onDelete}
             onStatusChange={meta.onStatusChange}
             t={meta.t}
