@@ -147,6 +147,73 @@ export class VirtualRoomService {
   }
 
   /**
+   * Get or create an empty virtual room to use as a drop target.
+   * Returns the first virtual room with no reservations for the given date,
+   * or creates a new one if all are occupied.
+   */
+  public async getOrCreateEmptyVirtualRoom(date: Date): Promise<Room | null> {
+    try {
+      const dateStr = format(date, 'yyyy-MM-dd');
+      // Find a virtual room with no active reservations overlapping this date
+      const { data: allVirtualRooms } = await supabase
+        .from('rooms')
+        .select('*, room_types!room_type_id(code)')
+        .eq('floor_number', this.config.VIRTUAL_FLOOR)
+        .order('room_number');
+
+      if (!allVirtualRooms || allVirtualRooms.length === 0) {
+        // Create first virtual room via RPC
+        const result = await this.getNextAvailableVirtualRoom(date, date);
+        if (!result.success || !result.roomId) return null;
+        const { data: room } = await supabase
+          .from('rooms')
+          .select('*, room_types!room_type_id(code)')
+          .eq('id', result.roomId)
+          .single();
+        return room ? this.transformDatabaseRoomToRoom(room) : null;
+      }
+
+      // Check which rooms have active reservations overlapping this date
+      const { data: excludedStatuses } = await supabase
+        .from('reservation_statuses')
+        .select('id')
+        .in('code', ['cancelled', 'checked-out']);
+      const excludedIds = (excludedStatuses || []).map((s) => s.id);
+
+      const { data: busyRooms } = await supabase
+        .from('reservations')
+        .select('room_id')
+        .in(
+          'room_id',
+          allVirtualRooms.map((r) => r.id)
+        )
+        .not('status_id', 'in', `(${excludedIds.join(',')})`)
+        .lte('check_in_date', dateStr)
+        .gte('check_out_date', dateStr);
+
+      const busyRoomIds = new Set((busyRooms || []).map((r) => r.room_id));
+      const emptyRoom = allVirtualRooms.find((r) => !busyRoomIds.has(r.id));
+
+      if (emptyRoom) {
+        return this.transformDatabaseRoomToRoom(emptyRoom);
+      }
+
+      // All rooms busy — create a new one via RPC
+      const result = await this.getNextAvailableVirtualRoom(date, date);
+      if (!result.success || !result.roomId) return null;
+      const { data: newRoom } = await supabase
+        .from('rooms')
+        .select('*, room_types!room_type_id(code)')
+        .eq('id', result.roomId)
+        .single();
+      return newRoom ? this.transformDatabaseRoomToRoom(newRoom) : null;
+    } catch (error) {
+      console.error('Error getting empty virtual room:', error);
+      return null;
+    }
+  }
+
+  /**
    * Create placeholder guest for unallocated reservation
    */
   private async getOrCreatePlaceholderGuest(temporaryName: string): Promise<number | null> {

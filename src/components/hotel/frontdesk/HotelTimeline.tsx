@@ -188,8 +188,20 @@ export default function HotelTimeline({
     let cancelled = false;
     virtualRoomService
       .getVirtualRoomsWithReservations(currentDate)
-      .then((rooms) => {
-        if (!cancelled) setVirtualRoomsWithReservations(rooms);
+      .then(async (rooms) => {
+        if (cancelled) return;
+        // Always add an empty drop-target room so users can drag reservations to Floor 5
+        const emptyRoom = await virtualRoomService.getOrCreateEmptyVirtualRoom(currentDate);
+        if (!cancelled && emptyRoom) {
+          const existingIds = new Set(rooms.map((r) => r.id));
+          if (!existingIds.has(emptyRoom.id)) {
+            setVirtualRoomsWithReservations([...rooms, emptyRoom]);
+          } else {
+            setVirtualRoomsWithReservations(rooms);
+          }
+        } else if (!cancelled) {
+          setVirtualRoomsWithReservations(rooms);
+        }
       })
       .catch(console.error);
     return () => {
@@ -551,18 +563,16 @@ export default function HotelTimeline({
                   />
                 ))}
 
-              {virtualRoomsWithReservations.length > 0 && (
-                <div className="sticky bottom-0 z-20 border-t-4 border-blue-500 bg-white shadow-2xl dark:bg-gray-900">
-                  <FloorSection
-                    key="timeline-unallocated"
-                    floor={5}
-                    rooms={virtualRoomsWithReservations}
-                    isExpanded={expandedFloors[5]}
-                    onToggle={() => toggleFloor(5)}
-                    {...floorSectionSharedProps}
-                  />
-                </div>
-              )}
+              <div className="sticky bottom-0 z-20 border-t-4 border-blue-500 bg-white shadow-2xl dark:bg-gray-900">
+                <FloorSection
+                  key="timeline-unallocated"
+                  floor={5}
+                  rooms={virtualRoomsWithReservations}
+                  isExpanded={expandedFloors[5]}
+                  onToggle={() => toggleFloor(5)}
+                  {...floorSectionSharedProps}
+                />
+              </div>
             </div>
 
             <DragCreateOverlay
