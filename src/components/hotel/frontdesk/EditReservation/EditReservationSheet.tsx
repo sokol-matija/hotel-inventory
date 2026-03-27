@@ -15,6 +15,8 @@ import {
 } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useReservations, useUpdateReservation } from '@/lib/queries/hooks/useReservations';
+import { useReplaceCharges } from '@/lib/queries/hooks/useReservationCharges';
+import { unifiedPricingService } from '@/lib/hotel/services/UnifiedPricingService';
 import {
   editReservationSchema,
   type EditReservationFormValues,
@@ -50,6 +52,7 @@ export function EditReservationSheet({
   const { t } = useTranslation();
   const { data: reservations = [], isLoading } = useReservations();
   const updateReservation = useUpdateReservation();
+  const replaceCharges = useReplaceCharges();
 
   const reservation = useMemo(
     () => reservations.find((r) => r.id === reservationId) ?? null,
@@ -106,8 +109,9 @@ export function EditReservationSheet({
   }, [reservation, reset]);
 
   const onSubmit = async (values: EditReservationFormValues) => {
-    if (!reservationId) return;
+    if (!reservationId || !reservation) return;
     try {
+      // Save reservation fields
       await updateReservation.mutateAsync({
         id: reservationId,
         updates: {
@@ -127,6 +131,59 @@ export function EditReservationSheet({
           internal_notes: values.internal_notes ?? '',
         },
       });
+
+      // Regenerate charges if pricing-relevant fields changed
+      const pricingChanged =
+        values.check_in_date !== reservation.check_in_date ||
+        values.check_out_date !== reservation.check_out_date ||
+        values.room_id !== reservation.room_id ||
+        values.adults !== reservation.adults ||
+        values.children_count !== (reservation.children_count ?? 0) ||
+        values.has_pets !== (reservation.has_pets ?? false) ||
+        values.parking_required !== (reservation.parking_required ?? false);
+
+      if (pricingChanged) {
+        try {
+          const guestEntries = [
+            ...Array(values.adults)
+              .fill(null)
+              .map(() => ({ name: 'Guest', type: 'adult' as const })),
+            ...Array(values.children_count)
+              .fill(null)
+              .map((_, i) => ({ name: `Child ${i + 1}`, type: 'child' as const })),
+          ];
+          const newCharges = await unifiedPricingService.generateCharges({
+            roomId: String(values.room_id),
+            checkIn: new Date(values.check_in_date),
+            checkOut: new Date(values.check_out_date),
+            guests: guestEntries,
+            hasPets: values.has_pets,
+            parkingRequired: values.parking_required,
+          });
+          await replaceCharges.mutateAsync({
+            reservationId,
+            charges: newCharges.map((c) => ({
+              charge_type: c.chargeType,
+              description: c.description,
+              quantity: c.quantity,
+              unit_price: c.unitPrice,
+              total: c.total,
+              vat_rate: c.vatRate ?? 0.13,
+              sort_order: c.sortOrder ?? 0,
+            })),
+          });
+        } catch (chargeErr) {
+          console.error('Failed to regenerate charges:', chargeErr);
+          hotelNotification.info(
+            t('editRes.chargesWarning', 'Charges Not Updated'),
+            t(
+              'editRes.chargesWarningDesc',
+              'Reservation saved but charges may need manual recalculation.'
+            )
+          );
+        }
+      }
+
       hotelNotification.success(
         t('editRes.saved', 'Reservation Updated'),
         t('editRes.savedDesc', 'Changes have been saved successfully.')
