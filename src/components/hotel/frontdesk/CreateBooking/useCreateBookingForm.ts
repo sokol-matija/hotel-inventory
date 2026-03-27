@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import type { Company } from '@/lib/queries/hooks/useCompanies';
 import { useCompanies } from '@/lib/queries/hooks/useCompanies';
 import type { Guest } from '@/lib/queries/hooks/useGuests';
 import { useCreateFullBooking } from '@/lib/queries/hooks/useReservations';
+import { queryKeys } from '@/lib/queries/queryKeys';
 import {
   sendRoom401BookingNotification,
   ntfyStaffNotify,
@@ -92,6 +94,8 @@ export function useCreateBookingForm({
 }: UseCreateBookingFormParams): UseCreateBookingFormReturn {
   const { data: companies = [] } = useCompanies();
   const createBookingMutation = useCreateFullBooking();
+
+  const queryClient = useQueryClient();
 
   // ── Sub-hooks ──────────────────────────────────────────────────────────────
   const roomSelection = useBookingRoomSelection({ room, unallocatedMode });
@@ -224,13 +228,22 @@ export function useCreateBookingForm({
 
         const result = await virtualRoomService.createUnallocatedReservation({
           temporaryGuestName: temporaryName,
+          guestId: primaryGuest.isExisting ? primaryGuest.existingGuestId : undefined,
           checkIn: checkInDate,
           checkOut: checkOutDate,
           numberOfPeople: bookingGuests.length,
+          childrenCount: childrenCount,
           notes: bookingServices.specialRequests,
+          hasPets: bookingServices.hasPets,
+          parkingRequired: bookingServices.needsParking,
+          companyId: isCompanyBilling && selectedCompanyId ? parseInt(selectedCompanyId) : null,
+          labelId: selectedLabelId || null,
+          isR1: isCompanyBilling,
         });
 
         if (result.success) {
+          queryClient.invalidateQueries({ queryKey: queryKeys.reservations.all() });
+          queryClient.invalidateQueries({ queryKey: queryKeys.rooms.all() });
           hotelNotification.success(
             'Unallocated Reservation Created',
             `Reservation for ${temporaryName} has been created and placed in unallocated queue.`
