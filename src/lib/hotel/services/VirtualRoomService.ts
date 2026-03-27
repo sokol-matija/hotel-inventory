@@ -217,11 +217,6 @@ export class VirtualRoomService {
         };
       }
 
-      // Calculate nights
-      const nights = Math.ceil(
-        (data.checkOut.getTime() - data.checkIn.getTime()) / (1000 * 60 * 60 * 24)
-      );
-
       // Lookup status_id and booking_source_id
       const { data: statusRow } = await supabase
         .from('reservation_statuses')
@@ -244,7 +239,6 @@ export class VirtualRoomService {
           room_id: virtualRoomResult.roomId,
           check_in_date: data.checkIn.toISOString().split('T')[0],
           check_out_date: data.checkOut.toISOString().split('T')[0],
-          number_of_nights: nights,
           number_of_guests: data.numberOfPeople,
           adults: adultsCount,
           children_count: data.childrenCount ?? 0,
