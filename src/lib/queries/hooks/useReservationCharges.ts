@@ -150,7 +150,10 @@ export function useUpdateCharge() {
     mutationFn: ({ id, updates }: { id: number; updates: TablesUpdate<'reservation_charges'> }) =>
       updateCharge(id, updates),
     onSettled: () => {
-      return queryClient.invalidateQueries({ queryKey: ['reservationCharges'] });
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['reservationCharges'] }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.reservations.all() }),
+      ]);
     },
   });
 }
