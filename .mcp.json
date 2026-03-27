@@ -16,7 +16,9 @@
         "git+https://github.com/oraios/serena",
         "serena-mcp-server",
         "--context",
-        "ide-assistant"
+        "claude-code",
+        "--project",
+        "/Users/msokol/Dev/Repos/2-Personal/hotel-inventory"
       ],
       "env": {}
     },

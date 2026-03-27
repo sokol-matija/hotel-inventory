@@ -1,0 +1,24 @@
+# Auto-generated — never read these
+src/routeTree.gen.ts
+src/lib/database.types.ts
+
+# Build artifacts
+dist/
+node_modules/
+.vite/
+.tsbuildinfo
+
+# Lock files
+package-lock.json
+
+# Test artifacts
+coverage/
+playwright-report/
+test-results/
+
+# Claude worktrees
+.claude/worktrees/
+
+# Supabase
+supabase/.branches/
+supabase/.temp/
