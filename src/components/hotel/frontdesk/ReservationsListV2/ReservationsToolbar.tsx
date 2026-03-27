@@ -1,4 +1,4 @@
-import { Search, X } from 'lucide-react';
+import { Search, X, Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -31,6 +31,9 @@ interface ReservationsToolbarProps {
   onSourceFilterChange: (value: string) => void;
   onClearFilters: () => void;
   hasActiveFilters: boolean;
+  selectedCount: number;
+  onBatchDelete: () => void;
+  isBatchDeleting: boolean;
   t: TFunction;
 }
 
@@ -43,6 +46,9 @@ export function ReservationsToolbar({
   onSourceFilterChange,
   onClearFilters,
   hasActiveFilters,
+  selectedCount,
+  onBatchDelete,
+  isBatchDeleting,
   t,
 }: ReservationsToolbarProps) {
   return (
@@ -51,10 +57,7 @@ export function ReservationsToolbar({
       <div className="relative max-w-sm min-w-[200px] flex-1">
         <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
         <Input
-          placeholder={t(
-            'reservationsList.filters.searchPlaceholder',
-            'Search by reference or confirmation...'
-          )}
+          placeholder={t('reservationsList.filters.searchPlaceholder', 'Search guest, room, ID...')}
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           className="pl-9"
@@ -100,6 +103,14 @@ export function ReservationsToolbar({
         <Button variant="ghost" size="sm" onClick={onClearFilters}>
           <X className="mr-1 h-4 w-4" />
           {t('reservationsList.filters.clear', 'Clear')}
+        </Button>
+      )}
+
+      {/* Batch delete */}
+      {selectedCount > 0 && (
+        <Button variant="destructive" size="sm" onClick={onBatchDelete} disabled={isBatchDeleting}>
+          <Trash2 className="mr-1.5 h-4 w-4" />
+          {t('reservationsList.batchDelete', 'Delete')} ({selectedCount})
         </Button>
       )}
     </div>

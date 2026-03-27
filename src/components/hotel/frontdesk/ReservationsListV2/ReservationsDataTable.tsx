@@ -24,6 +24,7 @@ import { useBatchReservationCharges } from '@/hooks/useBatchReservationCharges';
 import {
   useUpdateReservationStatus,
   useDeleteReservation,
+  useBatchDeleteReservations,
 } from '@/lib/queries/hooks/useReservations';
 import { getColumns, type ReservationsTableMeta } from './columns';
 import { ReservationsToolbar } from './ReservationsToolbar';
@@ -101,6 +102,24 @@ export function ReservationsDataTable({ onViewDetails, onEdit }: ReservationsDat
     },
     [deleteReservation]
   );
+
+  const batchDelete = useBatchDeleteReservations();
+  const handleBatchDelete = useCallback(() => {
+    const selectedIds = Object.keys(rowSelection).map(Number).filter(Boolean);
+    if (selectedIds.length === 0) return;
+    const confirmed = window.confirm(
+      t(
+        'reservationsList.confirmBatchDelete',
+        `Delete ${selectedIds.length} reservation(s)? This cannot be undone.`
+      )
+    );
+    if (!confirmed) return;
+    batchDelete.mutate(selectedIds, {
+      onSuccess: () => {
+        setRowSelection({});
+      },
+    });
+  }, [rowSelection, batchDelete, t]);
 
   // ── Toolbar filter values ─────────────────────────────────────────────────
   const statusFilter = (columnFilters.find((f) => f.id === 'status')?.value as string) ?? '';
@@ -185,6 +204,9 @@ export function ReservationsDataTable({ onViewDetails, onEdit }: ReservationsDat
         onSourceFilterChange={handleSourceFilterChange}
         onClearFilters={handleClearFilters}
         hasActiveFilters={hasActiveFilters}
+        selectedCount={Object.keys(rowSelection).length}
+        onBatchDelete={handleBatchDelete}
+        isBatchDeleting={batchDelete.isPending}
         t={t}
       />
 

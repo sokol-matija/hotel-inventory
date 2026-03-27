@@ -311,6 +311,20 @@ export function useDeleteReservation() {
   });
 }
 
+export function useBatchDeleteReservations() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (ids: number[]) => {
+      if (ids.length === 0) return;
+      await supabase.from('reservation_charges').delete().in('reservation_id', ids).throwOnError();
+      await supabase.from('reservations').delete().in('id', ids).throwOnError();
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.reservations.all() });
+    },
+  });
+}
+
 // ─── Create Full Booking (multi-guest with charges and junction tables) ─────────
 
 export { type CreateFullBookingInput };

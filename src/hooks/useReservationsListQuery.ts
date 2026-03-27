@@ -120,10 +120,68 @@ export function useReservationsListQuery(params: ReservationsListParams) {
         }
       }
 
-      // ── Search ──────────────────────────────────────────────────────────────
+      // ── Search (across guests, rooms, booking ref, and reservation ID) ────
       if (params.search.trim()) {
-        const term = `%${params.search.trim()}%`;
-        query = query.or(`booking_reference.ilike.${term},confirmation_number.ilike.${term}`);
+        const term = params.search.trim();
+        const likeTerm = `%${term}%`;
+
+        // Collect matching reservation IDs from multiple sources
+        const matchingIds = new Set<number>();
+        let hasSubResults = false;
+
+        // 1. Search guests by name
+        const { data: matchingGuests } = await supabase
+          .from('guests')
+          .select('id')
+          .or(
+            `first_name.ilike.${likeTerm},last_name.ilike.${likeTerm},full_name.ilike.${likeTerm}`
+          )
+          .limit(200);
+        if (matchingGuests?.length) {
+          const guestIds = matchingGuests.map((g) => g.id);
+          const { data: guestReservations } = await supabase
+            .from('reservations')
+            .select('id')
+            .in('guest_id', guestIds);
+          guestReservations?.forEach((r) => matchingIds.add(r.id));
+          hasSubResults = true;
+        }
+
+        // 2. Search rooms by room_number
+        const { data: matchingRooms } = await supabase
+          .from('rooms')
+          .select('id')
+          .ilike('room_number', likeTerm)
+          .limit(50);
+        if (matchingRooms?.length) {
+          const roomIds = matchingRooms.map((r) => r.id);
+          const { data: roomReservations } = await supabase
+            .from('reservations')
+            .select('id')
+            .in('room_id', roomIds);
+          roomReservations?.forEach((r) => matchingIds.add(r.id));
+          hasSubResults = true;
+        }
+
+        // 3. Search by booking_reference, confirmation_number, or ID
+        const { data: directMatches } = await supabase
+          .from('reservations')
+          .select('id')
+          .or(`booking_reference.ilike.${likeTerm},confirmation_number.ilike.${likeTerm}`);
+        directMatches?.forEach((r) => matchingIds.add(r.id));
+
+        // 4. Search by reservation ID if numeric
+        const numericId = parseInt(term);
+        if (!isNaN(numericId)) {
+          matchingIds.add(numericId);
+        }
+
+        if (matchingIds.size > 0) {
+          query = query.in('id', Array.from(matchingIds));
+        } else if (hasSubResults || directMatches?.length === 0) {
+          // No matches found — force empty result
+          query = query.eq('id', -1);
+        }
       }
 
       // ── Sorting ─────────────────────────────────────────────────────────────
