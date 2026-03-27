@@ -402,6 +402,49 @@ export class VirtualRoomService {
   }
 
   /**
+   * Convert a real reservation back to unallocated
+   * (Move from real room to virtual room on Floor 5)
+   */
+  public async convertToUnallocated(
+    reservationId: number,
+    virtualRoomId: number
+  ): Promise<AllocationResult> {
+    try {
+      const { data: unallocatedStatus } = await supabase
+        .from('reservation_statuses')
+        .select('id')
+        .eq('code', 'unallocated')
+        .single();
+
+      // Remove charges (unallocated reservations have no pricing)
+      await supabase.from('reservation_charges').delete().eq('reservation_id', reservationId);
+
+      // Update reservation to virtual room with unallocated status
+      const { error: updateError } = await supabase
+        .from('reservations')
+        .update({
+          room_id: virtualRoomId,
+          status_id: unallocatedStatus?.id,
+        })
+        .eq('id', reservationId);
+
+      if (updateError) {
+        return {
+          success: false,
+          error: 'Failed to unallocate reservation: ' + updateError.message,
+        };
+      }
+
+      return { success: true, reservationId };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+
+  /**
    * Transform database room to application Room type
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

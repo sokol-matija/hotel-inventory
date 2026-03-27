@@ -223,6 +223,8 @@ export function useReservationActions(
 
         const isVirtualToReal =
           virtualRoomService.isVirtualRoom(oldRoom) && !virtualRoomService.isVirtualRoom(newRoom);
+        const isRealToVirtual =
+          !virtualRoomService.isVirtualRoom(oldRoom) && virtualRoomService.isVirtualRoom(newRoom);
 
         let allocationGuestData: Partial<Guest> | undefined;
 
@@ -274,7 +276,7 @@ export function useReservationActions(
           check_out_date: format(newCheckOut, 'yyyy-MM-dd'),
         };
 
-        if (isRoomTypeChange && !isVirtualToReal) {
+        if (isRoomTypeChange && !isVirtualToReal && !isRealToVirtual) {
           showRoomChangeDialog(reservationId, reservation.room_id, newRoomId);
           return;
         }
@@ -304,6 +306,22 @@ export function useReservationActions(
                 throw new Error(allocationResult.error || 'Allocation failed');
             }
           );
+        } else if (isRealToVirtual) {
+          result = await optimisticService.optimisticUpdateReservation(
+            reservationId,
+            reservation,
+            {
+              room_id: newRoomId,
+              check_in_date: format(newCheckIn, 'yyyy-MM-dd'),
+              check_out_date: format(newCheckOut, 'yyyy-MM-dd'),
+              status: 'unallocated',
+              reservation_statuses: { code: 'unallocated' },
+            } as ReservationUpdateInput,
+            updateReservationInState,
+            async () => {
+              await virtualRoomService.convertToUnallocated(reservationId, newRoomId);
+            }
+          );
         } else {
           result = await optimisticService.optimisticMoveReservation(
             reservationId,
@@ -331,6 +349,12 @@ export function useReservationActions(
           hotelNotification.success(
             'Reservation Allocated!',
             `${guest?.display_name || 'Guest'} allocated to ${formatRoomNumber(newRoom)} • ${newCheckIn.toLocaleDateString()} - ${newCheckOut.toLocaleDateString()}`,
+            5
+          );
+        } else if (isRealToVirtual) {
+          hotelNotification.success(
+            'Reservation Unallocated',
+            `${guest?.display_name || 'Guest'} moved back to unallocated queue`,
             5
           );
         } else {
