@@ -105,7 +105,9 @@ export function ReservationsDataTable({ onViewDetails, onEdit }: ReservationsDat
 
   const batchDelete = useBatchDeleteReservations();
   const handleBatchDelete = useCallback(() => {
-    const selectedIds = Object.keys(rowSelection).map(Number).filter(Boolean);
+    const selectedIds = Object.keys(rowSelection)
+      .map(Number)
+      .filter((id) => !isNaN(id));
     if (selectedIds.length === 0) return;
     const confirmed = window.confirm(
       t(
@@ -175,6 +177,7 @@ export function ReservationsDataTable({ onViewDetails, onEdit }: ReservationsDat
     data: rows,
     columns,
     rowCount,
+    getRowId: (row) => String(row.id),
     state: {
       sorting,
       columnFilters,

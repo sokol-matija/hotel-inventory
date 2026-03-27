@@ -290,6 +290,7 @@ export function useDeleteReservation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: number) => {
+      await supabase.from('reservation_charges').delete().eq('reservation_id', id).throwOnError();
       await supabase.from('reservations').delete().eq('id', id).throwOnError();
     },
 
