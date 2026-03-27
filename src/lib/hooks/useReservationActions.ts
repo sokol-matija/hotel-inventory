@@ -334,6 +334,50 @@ export function useReservationActions(
               await updateReservation(reservationId, updatedReservationData);
             }
           );
+
+          // Regenerate charges after regular room-to-room move
+          if (result.success) {
+            try {
+              const adults = reservation.adults ?? 1;
+              const childrenCount = reservation.children_count ?? 0;
+              const guestEntries = [
+                ...Array(adults)
+                  .fill(null)
+                  .map(() => ({ name: 'Guest', type: 'adult' as const })),
+                ...Array(childrenCount)
+                  .fill(null)
+                  .map((_, i) => ({ name: `Child ${i + 1}`, type: 'child' as const })),
+              ];
+              const newCharges = await unifiedPricingService.generateCharges({
+                roomId: String(newRoomId),
+                checkIn: newCheckIn,
+                checkOut: newCheckOut,
+                guests: guestEntries,
+                hasPets: reservation.has_pets ?? false,
+                parkingRequired: reservation.parking_required ?? false,
+              });
+              await supabase
+                .from('reservation_charges')
+                .delete()
+                .eq('reservation_id', reservationId);
+              if (newCharges.length > 0) {
+                await supabase.from('reservation_charges').insert(
+                  newCharges.map((c) => ({
+                    reservation_id: reservationId,
+                    charge_type: c.chargeType,
+                    description: c.description,
+                    quantity: c.quantity,
+                    unit_price: c.unitPrice,
+                    total: c.total,
+                    vat_rate: c.vatRate ?? 0.13,
+                    sort_order: c.sortOrder ?? 0,
+                  }))
+                );
+              }
+            } catch (chargeErr) {
+              console.error('Failed to regenerate charges after move:', chargeErr);
+            }
+          }
         }
 
         if (!result.success) {
