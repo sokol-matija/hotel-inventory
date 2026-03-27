@@ -47,6 +47,7 @@ import { RoomOverviewFloorSection } from './Timeline/RoomOverviewFloorSection';
 import { useTimelineModals } from './useTimelineModals';
 import { useTimelineDragCreate } from './useTimelineDragCreate';
 import { useTimelineKeyboardShortcuts } from './useTimelineKeyboardShortcuts';
+import { EditReservationSheet } from './EditReservation/EditReservationSheet';
 
 interface HotelTimelineProps {
   isFullscreen?: boolean;
@@ -215,6 +216,9 @@ export default function HotelTimeline({
   const calculateContextMenuPosition = (e: React.MouseEvent) =>
     positionContextMenu(e.clientX, e.clientY);
 
+  // ── Edit Reservation Sheet ────────────────────────────────────────────────
+  const [editReservationId, setEditReservationId] = useState<number | null>(null);
+
   // No-op: EnhancedDailyViewModal removed (operated on dropped table)
   const handleShowExpandedDailyView = (_reservation: Reservation) => {
     // Intentionally empty — daily view feature removed with reservation_daily_details table
@@ -289,6 +293,7 @@ export default function HotelTimeline({
     isFullscreen,
     onUpdateReservationStatus: updateReservationStatus,
     onDeleteReservation: deleteReservation,
+    onEditReservation: setEditReservationId,
     isDragCreateMode: dragCreate.state.isEnabled,
     isDragCreating: dragCreate.state.isSelecting,
     isExpansionMode,
@@ -655,7 +660,10 @@ export default function HotelTimeline({
           availabilityData={selectedAvailabilityData}
         />
 
-        {/* EnhancedDailyViewModal removed — operated on dropped reservation_daily_details table */}
+        <EditReservationSheet
+          reservationId={editReservationId}
+          onClose={() => setEditReservationId(null)}
+        />
       </div>
     </DndProvider>
   );

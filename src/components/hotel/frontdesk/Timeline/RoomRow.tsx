@@ -24,6 +24,7 @@ interface RoomRowProps {
   isFullscreen?: boolean;
   onUpdateReservationStatus?: (id: number, status: ReservationStatus) => Promise<void>;
   onDeleteReservation?: (id: number) => Promise<void>;
+  onEditReservation?: (id: number) => void;
   isDragCreateMode?: boolean;
   isDragCreating?: boolean;
   dragCreateStart?: { roomId: string; dayIndex: number } | null;
@@ -58,6 +59,7 @@ export function RoomRow({
   isFullscreen = false,
   onUpdateReservationStatus,
   onDeleteReservation,
+  onEditReservation,
   isDragCreateMode,
   isDragCreating,
   dragCreateStart,
@@ -149,6 +151,7 @@ export function RoomRow({
               isFullscreen={isFullscreen}
               onUpdateReservationStatus={onUpdateReservationStatus}
               onDeleteReservation={onDeleteReservation}
+              onEditReservation={onEditReservation}
               isExpansionMode={isExpansionMode}
               isMoveMode={isMoveMode}
               onResizeReservation={onResizeReservation}

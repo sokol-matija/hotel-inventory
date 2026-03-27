@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { BarChart3, DollarSign, BellRing, FileText } from 'lucide-react';
+import { BarChart3, DollarSign, BellRing, FileText, Pencil } from 'lucide-react';
 import { Reservation, ReservationStatus } from '../../../../lib/hotel/types';
 import type { Guest } from '../../../../lib/queries/hooks/useGuests';
 import type { Room } from '../../../../lib/queries/hooks/useRooms';
@@ -15,6 +15,7 @@ interface ReservationContextMenuProps {
   onClose: (closedWithAction?: boolean) => void;
   onUpdateReservationStatus?: (id: number, status: ReservationStatus) => Promise<void>;
   onDeleteReservation?: (id: number) => Promise<void>;
+  onEditReservation?: (id: number) => void;
   onShowDrinksModal?: (reservation: Reservation) => void;
   onShowExpandedDailyView?: (reservation: Reservation) => void;
   /** Show "Mark Clean (NFC)" item — used in room overview panel */
@@ -31,6 +32,7 @@ export function ReservationContextMenu({
   onClose,
   onUpdateReservationStatus,
   onDeleteReservation,
+  onEditReservation,
   onShowDrinksModal,
   onShowExpandedDailyView,
   showMarkClean,
@@ -131,6 +133,20 @@ export function ReservationContextMenu({
           </span>
           <span>Fast Check-out</span>
         </button>
+
+        {/* Edit Reservation */}
+        {onEditReservation && (
+          <button
+            className="flex w-full items-center space-x-3 px-4 py-2 text-left text-sm hover:bg-gray-100"
+            onClick={() => {
+              onEditReservation(reservation.id);
+              onClose(true);
+            }}
+          >
+            <Pencil className="h-4 w-4 text-blue-600" />
+            <span>Edit Reservation</span>
+          </button>
+        )}
 
         {/* Add Room Service */}
         {onShowDrinksModal && (

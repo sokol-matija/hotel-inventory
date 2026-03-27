@@ -28,6 +28,7 @@ interface ReservationBlockProps {
   isFullscreen?: boolean;
   onUpdateReservationStatus?: (id: number, status: ReservationStatus) => Promise<void>;
   onDeleteReservation?: (id: number) => Promise<void>;
+  onEditReservation?: (id: number) => void;
   isExpansionMode?: boolean;
   isMoveMode?: boolean;
   onResizeReservation?: (reservationId: number, side: 'start' | 'end', newDate: Date) => void;
@@ -62,6 +63,7 @@ export function ReservationBlock({
   isFullscreen = false,
   onUpdateReservationStatus,
   onDeleteReservation,
+  onEditReservation,
   isExpansionMode = false,
   isMoveMode = false,
   onResizeReservation,
@@ -350,6 +352,7 @@ export function ReservationBlock({
           onClose={handleContextMenuClose}
           onUpdateReservationStatus={onUpdateReservationStatus}
           onDeleteReservation={onDeleteReservation}
+          onEditReservation={onEditReservation}
           onShowDrinksModal={onShowDrinksModal}
           onShowExpandedDailyView={onShowExpandedDailyView}
         />
