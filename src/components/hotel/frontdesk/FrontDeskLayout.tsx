@@ -6,6 +6,7 @@ import { SupabaseHotelProvider } from '../../../lib/hotel/state/SupabaseHotelCon
 import HotelSidebar from '../shared/HotelSidebar';
 import MobileNav from '../../layout/MobileNav';
 import FloatingCreateButton from './FloatingCreateButton';
+import NtfyBell from '../../layout/NtfyBell';
 
 function FrontDeskContent() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -53,6 +54,9 @@ function FrontDeskContent() {
 
       {/* Floating Action Button for creating unallocated reservations */}
       <FloatingCreateButton />
+
+      {/* Notification bell */}
+      <NtfyBell />
     </div>
   );
 }
