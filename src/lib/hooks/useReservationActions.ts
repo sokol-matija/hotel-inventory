@@ -232,14 +232,21 @@ export function useReservationActions(
             hotelNotification.error('Allocation Failed', 'Guest not found for reservation');
             return;
           }
-          allocationGuestData = {
-            first_name: guest.first_name,
-            last_name: guest.last_name,
-            email: guest.email,
-            phone: guest.phone,
-            nationality: guest.nationality,
-            date_of_birth: guest.date_of_birth,
-          };
+          // Only pass guest data for placeholder guests that need replacing.
+          // If an existing real guest was selected during booking, keep them as-is.
+          const isPlaceholderGuest = guest.first_name === 'Unallocated';
+          if (isPlaceholderGuest) {
+            allocationGuestData = {
+              first_name: guest.last_name?.split(' ')[0] || 'Guest',
+              last_name: guest.last_name?.split(' ').slice(1).join(' ') || '',
+              email: guest.email,
+              phone: guest.phone,
+              nationality: guest.nationality,
+              date_of_birth: guest.date_of_birth,
+            };
+          }
+          // If not a placeholder, allocationGuestData stays undefined
+          // and convertToRealReservation will skip guest creation
         }
 
         const reservationsExcludingMoved = localReservations.filter((r) => r.id !== reservationId);
@@ -284,13 +291,14 @@ export function useReservationActions(
               check_in_date: newCheckIn.toISOString().split('T')[0],
               check_out_date: newCheckOut.toISOString().split('T')[0],
               status: 'confirmed',
-            },
+              reservation_statuses: { code: 'confirmed' },
+            } as ReservationUpdateInput,
             updateReservationInState,
             async () => {
               const allocationResult = await virtualRoomService.convertToRealReservation(
                 reservationId,
                 newRoomId,
-                allocationGuestData!
+                allocationGuestData
               );
               if (!allocationResult.success)
                 throw new Error(allocationResult.error || 'Allocation failed');
