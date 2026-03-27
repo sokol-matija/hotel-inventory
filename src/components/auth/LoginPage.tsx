@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader } from '../ui/card';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { supabase } from '@/lib/supabase';
-import { Chrome, Mail, Lock, CheckCircle2, X } from 'lucide-react';
+import { Globe, Mail, Lock, CheckCircle2, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function LoginPage() {
@@ -273,7 +273,7 @@ export default function LoginPage() {
                 variant="outline"
               >
                 <div className="flex items-center space-x-3">
-                  <Chrome className="h-5 w-5 text-blue-600" />
+                  <Globe className="h-5 w-5 text-blue-600" />
                   <span>Continue with Google</span>
                 </div>
               </Button>
