@@ -290,7 +290,8 @@ export function useDeleteReservation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: number) => {
-      await supabase.from('reservation_charges').delete().eq('reservation_id', id).throwOnError();
+      // Delete invoices (NO ACTION FK — not cascaded) before reservation
+      await supabase.from('invoices').delete().eq('reservation_id', id);
       await supabase.from('reservations').delete().eq('id', id).throwOnError();
     },
 
@@ -317,7 +318,9 @@ export function useBatchDeleteReservations() {
   return useMutation({
     mutationFn: async (ids: number[]) => {
       if (ids.length === 0) return;
-      await supabase.from('reservation_charges').delete().in('reservation_id', ids).throwOnError();
+      // Delete invoices (NO ACTION FK — not cascaded) before reservations
+      await supabase.from('invoices').delete().in('reservation_id', ids);
+      // Charges, guest_stays, reservation_guests, guest_children cascade automatically
       await supabase.from('reservations').delete().in('id', ids).throwOnError();
     },
     onSettled: () => {
