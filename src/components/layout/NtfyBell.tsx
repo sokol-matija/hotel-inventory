@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Bell } from 'lucide-react';
+import { Bell, X } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useNtfyMessages } from '@/lib/ntfy/useNtfyMessages';
 import { useNtfySubscription } from '@/lib/ntfy/useNtfySubscription';
@@ -13,19 +13,42 @@ const PRIORITY_COLOR: Record<number, string> = {
   5: 'bg-red-600',
 };
 
-function MessageItem({ msg }: { msg: NtfyMessage }) {
+function MessageItem({
+  msg,
+  isUnread,
+  onDismiss,
+}: {
+  msg: NtfyMessage;
+  isUnread: boolean;
+  onDismiss: (id: string) => void;
+}) {
   const dot = PRIORITY_COLOR[msg.priority ?? 3] ?? PRIORITY_COLOR[3];
   const ago = formatDistanceToNow(new Date(msg.time * 1000), { addSuffix: true });
 
   return (
-    <div className="border-b border-gray-100 px-4 py-3 last:border-0 hover:bg-gray-50">
+    <div
+      className={`border-b border-gray-100 px-4 py-3 transition-colors last:border-0 hover:bg-gray-50 ${isUnread ? 'bg-blue-50 hover:bg-blue-50/80' : ''}`}
+    >
       <div className="flex items-start gap-2">
         <span className={`mt-1.5 h-2 w-2 flex-shrink-0 rounded-full ${dot}`} />
         <div className="min-w-0 flex-1">
-          {msg.title && <p className="truncate text-sm font-medium text-gray-900">{msg.title}</p>}
-          <p className="mt-0.5 text-sm break-words text-gray-700">{msg.message}</p>
+          {msg.title && (
+            <p
+              className={`truncate text-sm font-medium ${isUnread ? 'text-gray-900' : 'text-gray-600'}`}
+            >
+              {msg.title}
+            </p>
+          )}
+          <p className="mt-0.5 text-sm break-words text-gray-600">{msg.message}</p>
           <p className="mt-1 text-xs text-gray-400">{ago}</p>
         </div>
+        <button
+          onClick={() => onDismiss(msg.id)}
+          className="ml-1 flex-shrink-0 rounded p-0.5 text-gray-300 transition-colors hover:text-gray-500"
+          aria-label="Dismiss notification"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
       </div>
     </div>
   );
@@ -35,12 +58,20 @@ export default function NtfyBell() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  const { messages, unreadCount, markAllRead, appendMessage, isLoading } = useNtfyMessages();
+  const {
+    messages,
+    unreadCount,
+    lastReadAt,
+    markAllRead,
+    dismissMessage,
+    clearAll,
+    appendMessage,
+    isLoading,
+  } = useNtfyMessages();
 
   const handleNewMessage = useCallback((msg: NtfyMessage) => appendMessage(msg), [appendMessage]);
   useNtfySubscription(handleNewMessage);
 
-  // Close on outside click
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
@@ -77,9 +108,19 @@ export default function NtfyBell() {
           <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
             <span className="text-sm font-semibold text-gray-900">Notifications</span>
             {messages.length > 0 && (
-              <button onClick={markAllRead} className="text-xs text-blue-600 hover:text-blue-700">
-                Mark all read
-              </button>
+              <div className="flex items-center gap-3">
+                {unreadCount > 0 && (
+                  <button
+                    onClick={markAllRead}
+                    className="text-xs text-blue-600 hover:text-blue-700"
+                  >
+                    Mark all read
+                  </button>
+                )}
+                <button onClick={clearAll} className="text-xs text-gray-400 hover:text-gray-600">
+                  Clear all
+                </button>
+              </div>
             )}
           </div>
 
@@ -95,7 +136,14 @@ export default function NtfyBell() {
                 <p className="text-sm text-gray-400">No notifications</p>
               </div>
             ) : (
-              messages.map((msg) => <MessageItem key={msg.id} msg={msg} />)
+              messages.map((msg) => (
+                <MessageItem
+                  key={msg.id}
+                  msg={msg}
+                  isUnread={msg.time * 1000 > lastReadAt}
+                  onDismiss={dismissMessage}
+                />
+              ))
             )}
           </div>
         </div>
