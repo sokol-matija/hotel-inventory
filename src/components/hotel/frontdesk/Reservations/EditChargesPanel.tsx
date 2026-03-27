@@ -105,31 +105,31 @@ function EditableRow({ charge, reservationId }: EditableRowProps) {
         <Input
           value={draft.description}
           onChange={(e) => handleChange('description', e.target.value)}
-          className="h-8 text-sm"
+          className="h-8 min-w-[120px] text-sm"
           placeholder="Description"
         />
       </td>
-      <td className="w-20 py-1.5 pr-2">
+      <td className="w-16 py-1.5 pr-2">
         <Input
           type="number"
           value={draft.quantity}
           onChange={(e) => handleChange('quantity', e.target.value)}
-          className="h-8 text-right text-sm"
+          className="h-8 w-16 [appearance:textfield] px-1.5 text-center text-sm [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
           min="0"
           step="1"
         />
       </td>
-      <td className="w-28 py-1.5 pr-2">
+      <td className="w-24 py-1.5 pr-2">
         <Input
           type="number"
           value={draft.unitPrice}
           onChange={(e) => handleChange('unitPrice', e.target.value)}
-          className="h-8 text-right text-sm"
+          className="h-8 w-24 [appearance:textfield] px-1.5 text-right text-sm [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
           min="0"
           step="0.01"
         />
       </td>
-      <td className="w-24 py-1.5 pr-2 text-right text-sm font-medium tabular-nums">
+      <td className="w-24 py-1.5 pr-2 text-right text-sm font-medium whitespace-nowrap tabular-nums">
         {formatCurrency(computedTotal)}
       </td>
       <td className="w-20 py-1.5">
@@ -290,10 +290,10 @@ export default function EditChargesPanel({
             <thead>
               <tr className="border-b text-left text-gray-500">
                 <th className="pb-2 font-medium">Description</th>
-                <th className="w-20 pb-2 text-right font-medium">Qty</th>
-                <th className="w-28 pb-2 text-right font-medium">Unit Price</th>
+                <th className="w-16 pb-2 text-center font-medium">Qty</th>
+                <th className="w-24 pb-2 text-right font-medium">Unit Price</th>
                 <th className="w-24 pb-2 text-right font-medium">Total</th>
-                <th className="w-20 pb-2" />
+                <th className="w-18 pb-2" />
               </tr>
             </thead>
             <tbody>
