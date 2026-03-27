@@ -134,7 +134,7 @@ async function fetchReservationsWithFilters(params: QueryParams): Promise<{
     `*,
       reservation_statuses!status_id(code),
       booking_sources!booking_source_id(code),
-      guests!guest_id(id, first_name, last_name, full_name, display_name, email, phone, nationality, has_pets, is_vip, vip_level),
+      guests!guest_id(id, first_name, last_name, full_name, email, phone, nationality, has_pets, is_vip, vip_level),
       labels!label_id(id, name, color, bg_color),
       rooms!room_id(id, room_number, room_types!room_type_id(code))`,
     { count: 'exact' }
@@ -226,7 +226,7 @@ async function fetchReservationsWithFilters(params: QueryParams): Promise<{
       return (
         guest?.first_name?.toLowerCase().includes(searchLower) ||
         guest?.last_name?.toLowerCase().includes(searchLower) ||
-        guest?.display_name?.toLowerCase().includes(searchLower) ||
+        guest?.full_name?.toLowerCase().includes(searchLower) ||
         String(row.id).includes(searchLower) ||
         room?.room_number?.toLowerCase().includes(searchLower)
       );

@@ -299,7 +299,7 @@
     "actions": {
       "all": "Sve akcije",
       "create": "Stvoreno",
-      "update": "Ažurirano", 
+      "update": "Ažurirano",
       "delete": "Obrisano",
       "quantityUpdate": "Promjena količine"
     },
@@ -395,7 +395,6 @@
     "title": "Popis Rezervacija",
     "subtitle": "Sveobuhvatan pregled svih hotelskih rezervacija",
     "searchPlaceholder": "Pretraži po imenu gosta, broju potvrde ili broju sobe...",
-    "filters": "Filteri",
     "allReservations": "Sve Rezervacije",
     "totalReservations": "{{count}} rezervacija",
     "noReservationsFound": "Nema pronađenih rezervacija",
@@ -422,6 +421,7 @@
       "generateInvoice": "Generiraj Račun"
     },
     "filters": {
+      "label": "Filteri",
       "apply": "Primijeni Filtere",
       "clearAll": "Ukloni Sve",
       "status": "Status",

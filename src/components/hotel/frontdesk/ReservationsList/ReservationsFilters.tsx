@@ -107,7 +107,7 @@ export default function ReservationsFilters({
     return (
       <Button variant="outline" onClick={onToggle} className="relative">
         <Filter className="mr-2 h-4 w-4" />
-        {t('reservationsList.filters')}
+        {t('reservationsList.filters.label')}
         {activeFilterCount > 0 && (
           <Badge variant="default" className="ml-2 bg-blue-600">
             {activeFilterCount}

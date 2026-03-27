@@ -190,7 +190,6 @@
     "title": "Reservations List",
     "subtitle": "Comprehensive view of all hotel reservations",
     "searchPlaceholder": "Search by guest name, confirmation #, or room number...",
-    "filters": "Filters",
     "allReservations": "All Reservations",
     "loading": "Loading reservations...",
     "comingSoon": "Reservations Table Coming Soon",
@@ -223,6 +222,7 @@
       "changeStatus": "Change Status"
     },
     "filters": {
+      "label": "Filters",
       "status": "Status",
       "allStatuses": "All Statuses",
       "dateRange": "Date Range",
@@ -370,7 +370,7 @@
       "schedule": {
         "title": "Notification Schedule",
         "thirtyDays": "30 days before expiration - Yellow warning",
-        "sevenDays": "7 days before expiration - Orange warning", 
+        "sevenDays": "7 days before expiration - Orange warning",
         "oneDay": "1 day before expiration - Red critical alert",
         "description": "Notifications are sent daily at 7:00 AM local time"
       }
