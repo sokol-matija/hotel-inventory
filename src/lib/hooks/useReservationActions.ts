@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import { addDays } from 'date-fns';
+import { addDays, format } from 'date-fns';
 import { isRoomAvailable, formatRoomNumber } from '../hotel/calendarUtils';
 import type { Reservation, ReservationUpdateInput } from '../queries/hooks/useReservations';
 import type { Guest } from '../queries/hooks/useGuests';
@@ -270,8 +270,8 @@ export function useReservationActions(
         const isRoomTypeChange = oldRoom.room_types?.code !== newRoom.room_types?.code;
         const updatedReservationData: ReservationUpdateInput = {
           room_id: newRoomId,
-          check_in_date: newCheckIn.toISOString().split('T')[0],
-          check_out_date: newCheckOut.toISOString().split('T')[0],
+          check_in_date: format(newCheckIn, 'yyyy-MM-dd'),
+          check_out_date: format(newCheckOut, 'yyyy-MM-dd'),
         };
 
         if (isRoomTypeChange && !isVirtualToReal) {
@@ -288,8 +288,8 @@ export function useReservationActions(
             reservation,
             {
               room_id: newRoomId,
-              check_in_date: newCheckIn.toISOString().split('T')[0],
-              check_out_date: newCheckOut.toISOString().split('T')[0],
+              check_in_date: format(newCheckIn, 'yyyy-MM-dd'),
+              check_out_date: format(newCheckOut, 'yyyy-MM-dd'),
               status: 'confirmed',
               reservation_statuses: { code: 'confirmed' },
             } as ReservationUpdateInput,
@@ -479,8 +479,8 @@ export function useReservationActions(
         }
 
         const updatedData: ReservationUpdateInput = {
-          check_in_date: newCheckIn.toISOString().split('T')[0],
-          check_out_date: newCheckOut.toISOString().split('T')[0],
+          check_in_date: format(newCheckIn, 'yyyy-MM-dd'),
+          check_out_date: format(newCheckOut, 'yyyy-MM-dd'),
         };
 
         const optimisticService = OptimisticUpdateService.getInstance();
