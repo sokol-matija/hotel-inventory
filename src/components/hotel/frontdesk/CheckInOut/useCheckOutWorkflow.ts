@@ -10,6 +10,7 @@ import {
 } from '@/lib/queries/hooks/useReservations';
 import { useReservationCharges } from '@/lib/queries/hooks/useReservationCharges';
 import hotelNotification from '@/lib/notifications';
+import { ntfyStaffNotify } from '@/lib/ntfy';
 import { createInvoice as createInvoiceService } from '@/lib/hotel/services/InvoiceService';
 
 export interface CheckOutStep {
@@ -206,6 +207,13 @@ export function useCheckOutWorkflow(
           'Payment Processed & Invoice Created',
           `Payment marked as paid for ${guest?.display_name}. Invoice ${invoice.invoiceNumber} created and available in Finance module.`,
           5000
+        );
+
+        void ntfyStaffNotify(
+          `Check-Out — Room ${room?.room_number ?? '?'}`,
+          `${guest?.display_name ?? 'Guest'} checked out · Invoice ${invoice.invoiceNumber}`,
+          'default',
+          'hotel,checkout,payment'
         );
       } catch (invoiceError) {
         console.error('Failed to generate invoice:', invoiceError);

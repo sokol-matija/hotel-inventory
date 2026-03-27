@@ -5,6 +5,7 @@ export {
   MOBILE_TOPIC,
   STAFF_TOPIC,
   sendRoom401BookingNotification,
+  ntfyStaffNotify,
 } from './ntfyClient';
 export type { BookingNotificationData } from './ntfyClient';
 export type { NtfyMessage, NtfyPublishOptions } from './types';

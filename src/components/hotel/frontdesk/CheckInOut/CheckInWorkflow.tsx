@@ -25,6 +25,7 @@ import { useUpdateReservationStatus } from '../../../../lib/queries/hooks/useRes
 import { useRooms } from '../../../../lib/queries/hooks/useRooms';
 import { useGuests } from '../../../../lib/queries/hooks/useGuests';
 import { HotelEmailService } from '../../../../lib/emailService';
+import { ntfyStaffNotify } from '../../../../lib/ntfy';
 // Removed static HOTEL_POREC_ROOMS import - now using dynamic rooms from context
 
 interface CheckInWorkflowProps {
@@ -165,6 +166,13 @@ export default function CheckInWorkflow({ isOpen, onClose, reservation }: CheckI
 
       // Update reservation status to checked-in
       await updateReservationStatus(reservation.id, 'checked-in');
+
+      void ntfyStaffNotify(
+        `Check-In — Room ${room?.room_number ?? '?'}`,
+        `${guest?.display_name ?? 'Guest'} has checked in`,
+        'default',
+        'hotel,checkin'
+      );
 
       // Send welcome email
       const emailResult = await HotelEmailService.sendWelcomeEmail(

@@ -3,7 +3,11 @@ import type { Company } from '@/lib/queries/hooks/useCompanies';
 import { useCompanies } from '@/lib/queries/hooks/useCompanies';
 import type { Guest } from '@/lib/queries/hooks/useGuests';
 import { useCreateFullBooking } from '@/lib/queries/hooks/useReservations';
-import { sendRoom401BookingNotification, type BookingNotificationData } from '@/lib/ntfy';
+import {
+  sendRoom401BookingNotification,
+  ntfyStaffNotify,
+  type BookingNotificationData,
+} from '@/lib/ntfy';
 import { virtualRoomService } from '@/lib/hotel/services/VirtualRoomService';
 import hotelNotification from '@/lib/notifications';
 import type { ReservationCharge } from '@/lib/hotel/types';
@@ -290,6 +294,13 @@ export function useCreateBookingForm({
           `and ${bookingGuests.length - 1} other guest${bookingGuests.length > 2 ? 's' : ''} ` +
           `(${adultsCount} adult${adultsCount !== 1 ? 's' : ''}, ${childrenCount} child${childrenCount !== 1 ? 'ren' : ''}) ` +
           `in Room ${selectedRoom!.room_number} has been created.`
+      );
+
+      void ntfyStaffNotify(
+        `New Booking — Room ${selectedRoom!.room_number}`,
+        `${primaryGuest.firstName} ${primaryGuest.lastName} · ${numberOfNights} night${numberOfNights !== 1 ? 's' : ''} · Check-in ${checkInDate.toLocaleDateString('hr-HR', { day: 'numeric', month: 'short' })}`,
+        'default',
+        'hotel,booking'
       );
 
       if (selectedRoom!.room_number === '401') {

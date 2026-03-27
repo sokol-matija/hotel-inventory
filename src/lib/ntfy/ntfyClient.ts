@@ -46,6 +46,22 @@ export function ntfySubscribeSSE(topic: string, onMessage: (msg: NtfyMessage) =>
   return () => es.close();
 }
 
+// ── Staff bell helper ────────────────────────────────────────────────────────
+
+/** Fire-and-forget publish to STAFF_TOPIC. Never throws — safe to call without await. */
+export async function ntfyStaffNotify(
+  title: string,
+  message: string,
+  priority: NtfyPublishOptions['priority'] = 'default',
+  tags?: string
+): Promise<void> {
+  try {
+    await ntfyPublish({ topic: STAFF_TOPIC, title, message, priority, tags });
+  } catch {
+    // intentionally swallowed — notifications must never block the UI
+  }
+}
+
 // ── Booking helpers (kept DRY — single publish call) ────────────────────────
 
 export interface BookingNotificationData {
