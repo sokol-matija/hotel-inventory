@@ -381,8 +381,8 @@ const FiscalizationTestPage: React.FC = () => {
                   <pre className="text-sm whitespace-pre-wrap">{xmlPreview}</pre>
                 </div>
                 <div className="mt-2 rounded border border-blue-200 bg-blue-50 p-2 text-sm text-blue-700">
-                  ℹ️ This XML follows Croatian Tax Authority specifications with validated Hotel
-                  Porec business data (POSL1, Register 2)
+                  This XML follows Croatian Tax Authority specifications with validated Hotel Porec
+                  business data (POSL1, Register 2)
                 </div>
               </div>
             )}
@@ -437,7 +437,7 @@ const FiscalizationTestPage: React.FC = () => {
                           )}
 
                           <div className="mt-2 rounded border border-green-200 bg-green-50 p-2 text-sm text-green-700">
-                            ✅ Successfully fiscalized with Croatian Tax Authority TEST environment
+                            Successfully fiscalized with Croatian Tax Authority TEST environment
                           </div>
                         </div>
                       )}

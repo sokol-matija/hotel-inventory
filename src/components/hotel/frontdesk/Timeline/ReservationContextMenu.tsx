@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { BarChart3, DollarSign } from 'lucide-react';
+import { BarChart3, DollarSign, BellRing, FileText } from 'lucide-react';
 import { Reservation, ReservationStatus } from '../../../../lib/hotel/types';
 import type { Guest } from '../../../../lib/queries/hooks/useGuests';
 import type { Room } from '../../../../lib/queries/hooks/useRooms';
@@ -141,7 +141,7 @@ export function ReservationContextMenu({
               onClose(true);
             }}
           >
-            <span className="text-green-600">🛎️</span>
+            <BellRing className="h-4 w-4 text-green-600" />
             <span>Add Room Service to Bill</span>
           </button>
         )}
@@ -170,7 +170,7 @@ export function ReservationContextMenu({
           className="flex w-full items-center space-x-3 px-4 py-2 text-left text-sm hover:bg-gray-100"
           onClick={() => onClose(true)}
         >
-          <span className="text-purple-600">📄</span>
+          <FileText className="h-4 w-4 text-purple-600" />
           <span>Create Invoice</span>
         </button>
 

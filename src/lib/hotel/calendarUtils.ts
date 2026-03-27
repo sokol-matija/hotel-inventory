@@ -72,7 +72,7 @@ export function reservationToCalendarEvent(
   // Create title based on status
   let title: string;
   if (status === 'room-closure') {
-    title = `🔧 Maintenance`;
+    title = `Maintenance`;
   } else {
     title = `${guestName}`;
     if (reservation.number_of_guests && reservation.number_of_guests > 1) {

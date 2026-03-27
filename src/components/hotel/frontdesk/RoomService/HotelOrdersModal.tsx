@@ -6,7 +6,7 @@ import { Button } from '../../../ui/button';
 import { Input } from '../../../ui/input';
 import { Label } from '../../../ui/label';
 import { Badge } from '../../../ui/badge';
-import { ShoppingCart, Plus, Minus, Search, DollarSign } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, Search, DollarSign, BellRing } from 'lucide-react';
 import { Reservation } from '../../../../lib/hotel/types';
 import { formatRoomNumber } from '../../../../lib/hotel/calendarUtils';
 import { useRooms } from '../../../../lib/queries/hooks/useRooms';
@@ -164,7 +164,9 @@ export default function HotelOrdersModal({
         {/* Header */}
         <div className="flex items-center justify-between border-b bg-gradient-to-r from-blue-500 to-blue-600 p-6 text-white">
           <div>
-            <h2 className="flex items-center text-xl font-semibold">🛎️ Room Service Order</h2>
+            <h2 className="flex items-center gap-2 text-xl font-semibold">
+              <BellRing className="h-5 w-5" /> Room Service Order
+            </h2>
             <p className="text-sm text-blue-100">
               Room {room ? formatRoomNumber(room) : String(reservation.room_id)} •{' '}
               {guestDisplayName}

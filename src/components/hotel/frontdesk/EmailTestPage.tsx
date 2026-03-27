@@ -13,6 +13,20 @@ import {
   Loader2,
   Globe,
   Phone,
+  Hotel,
+  UtensilsCrossed,
+  ParkingCircle,
+  Palmtree,
+  Heart,
+  PartyPopper,
+  FileText,
+  Camera,
+  Sun,
+  Target,
+  CalendarDays,
+  Palette,
+  Smartphone,
+  DollarSign,
 } from 'lucide-react';
 import { useEmailTestState } from '../../../lib/hooks/useEmailTestState';
 import { MOBILE_TOPIC } from '../../../lib/ntfy';
@@ -165,7 +179,7 @@ export default function EmailTestPage() {
                   htmlFor="email-address"
                   className="mb-2 block text-sm font-medium text-gray-700"
                 >
-                  📧 Send to Email Address:
+                  <Mail className="mr-1 inline h-4 w-4" /> Send to Email Address:
                 </label>
                 <Input
                   id="email-address"
@@ -182,7 +196,9 @@ export default function EmailTestPage() {
 
               {/* Email Type Selection */}
               <div>
-                <p className="mb-2 block text-sm font-medium text-gray-700">📝 Email Type:</p>
+                <p className="mb-2 block text-sm font-medium text-gray-700">
+                  <FileText className="mr-1 inline h-4 w-4" /> Email Type:
+                </p>
                 <div className="grid grid-cols-1 gap-2">
                   {getEmailTypes().map((type) => (
                     <button
@@ -272,17 +288,15 @@ export default function EmailTestPage() {
                       : 'bg-red-50 text-red-800'
                   }`}
                 >
-                  <p className="font-medium">
-                    {lastEmailResult.success ? '✅ Success!' : '❌ Failed'}
-                  </p>
+                  <p className="font-medium">{lastEmailResult.success ? 'Success!' : 'Failed'}</p>
                   <p className="mt-1 text-sm">{lastEmailResult.message}</p>
                 </div>
 
                 {lastEmailResult.success && (
                   <div className="mt-4 rounded-lg bg-blue-50 p-3">
                     <p className="text-sm text-blue-800">
-                      📧 Check your email inbox at <strong>{emailAddress}</strong> for the{' '}
-                      {selectedEmailType} email!
+                      <Mail className="mr-1 inline h-4 w-4" /> Check your email inbox at{' '}
+                      <strong>{emailAddress}</strong> for the {selectedEmailType} email!
                     </p>
                   </div>
                 )}
@@ -303,7 +317,7 @@ export default function EmailTestPage() {
                 {selectedEmailType === 'welcome' && (
                   <>
                     <div className="flex items-center space-x-2">
-                      <span className="text-lg">🏨</span>
+                      <Hotel className="h-4 w-4 text-gray-400" />
                       <span>Hotel Porec logo and branding</span>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -315,15 +329,15 @@ export default function EmailTestPage() {
                       <span>Check-in: 2:00 PM - 11:00 PM</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <span className="text-lg">🍽️</span>
+                      <UtensilsCrossed className="h-4 w-4 text-gray-400" />
                       <span>Breakfast: 7:00 AM - 10:30 AM</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <span className="text-lg">🅿️</span>
+                      <ParkingCircle className="h-4 w-4 text-gray-400" />
                       <span>Parking: €7/night</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <span className="text-lg">🏖️</span>
+                      <Palmtree className="h-4 w-4 text-gray-400" />
                       <span>Poreč attractions & recommendations</span>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -336,19 +350,19 @@ export default function EmailTestPage() {
                 {selectedEmailType === 'thankyou' && (
                   <>
                     <div className="flex items-center space-x-2">
-                      <span className="text-lg">🙏</span>
+                      <Heart className="h-4 w-4 text-gray-400" />
                       <span>Thank you message for completed stay</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <span className="text-lg">🎉</span>
+                      <PartyPopper className="h-4 w-4 text-gray-400" />
                       <span>15% discount offer for 2025 bookings</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <span className="text-lg">📝</span>
+                      <FileText className="h-4 w-4 text-gray-400" />
                       <span>Review request and feedback form</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <span className="text-lg">📸</span>
+                      <Camera className="h-4 w-4 text-gray-400" />
                       <span>Social media sharing encouragement</span>
                     </div>
                   </>
@@ -357,19 +371,19 @@ export default function EmailTestPage() {
                 {selectedEmailType === 'reminder' && (
                   <>
                     <div className="flex items-center space-x-2">
-                      <span className="text-lg">🌞</span>
+                      <Sun className="h-4 w-4 text-gray-400" />
                       <span>Summer season invitation</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <span className="text-lg">🎯</span>
+                      <Target className="h-4 w-4 text-gray-400" />
                       <span>Early bird discounts (up to 20% off)</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <span className="text-lg">🏖️</span>
+                      <Palmtree className="h-4 w-4 text-gray-400" />
                       <span>Seasonal activities and attractions</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <span className="text-lg">🗓️</span>
+                      <CalendarDays className="h-4 w-4 text-gray-400" />
                       <span>Best time to visit recommendations</span>
                     </div>
                   </>
@@ -380,7 +394,7 @@ export default function EmailTestPage() {
                   <span>Hotel contact: +385 (0)52 451 611</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span className="text-lg">🎨</span>
+                  <Palette className="h-4 w-4 text-gray-400" />
                   <span>Beautiful mosaic background design</span>
                 </div>
               </div>
@@ -399,7 +413,9 @@ export default function EmailTestPage() {
           <CardContent className="space-y-4">
             <div className="space-y-3 text-sm">
               <div className="rounded-lg bg-blue-50 p-3">
-                <p className="font-medium text-blue-900">📱 Mobile Setup Required</p>
+                <p className="flex items-center gap-1 font-medium text-blue-900">
+                  <Smartphone className="h-4 w-4" /> Mobile Setup Required
+                </p>
                 <p className="mt-1 text-blue-700">
                   Install the ntfy app and subscribe to:{' '}
                   <code className="rounded bg-white px-1 font-mono">{MOBILE_TOPIC}</code>
@@ -408,15 +424,15 @@ export default function EmailTestPage() {
 
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
-                  <span className="text-lg">🏨</span>
+                  <Hotel className="h-4 w-4 text-gray-400" />
                   <span>Test Room 401 booking notification</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span className="text-lg">📱</span>
+                  <Smartphone className="h-4 w-4 text-gray-400" />
                   <span>Push notification to subscribed devices</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span className="text-lg">💰</span>
+                  <DollarSign className="h-4 w-4 text-gray-400" />
                   <span>Includes guest, dates, and pricing info</span>
                 </div>
               </div>
@@ -465,7 +481,8 @@ export default function EmailTestPage() {
                 {lastNotificationResult.success && (
                   <div className="mt-4 rounded-lg bg-purple-50 p-3">
                     <p className="text-sm text-purple-800">
-                      📱 Check your phone for the Room 401 booking notification!
+                      <Smartphone className="mr-1 inline h-4 w-4" /> Check your phone for the Room
+                      401 booking notification!
                     </p>
                   </div>
                 )}

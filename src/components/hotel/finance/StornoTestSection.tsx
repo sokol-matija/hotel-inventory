@@ -144,7 +144,7 @@ const StornoTestSection: React.FC<StornoTestSectionProps> = ({ fiscalizationResu
                 </Select>
                 {successfulInvoices.length === 0 && (
                   <p className="mt-1 text-sm text-orange-600">
-                    ⚠️ No successfully fiscalized invoices available. Submit a test invoice first.
+                    No successfully fiscalized invoices available. Submit a test invoice first.
                   </p>
                 )}
               </div>
@@ -294,8 +294,7 @@ const StornoTestSection: React.FC<StornoTestSectionProps> = ({ fiscalizationResu
                         )}
 
                         <div className="mt-2 rounded border border-green-200 bg-green-50 p-2 text-sm text-green-700">
-                          ✅ Storno successfully processed by Croatian Tax Authority TEST
-                          environment
+                          Storno successfully processed by Croatian Tax Authority TEST environment
                         </div>
                       </div>
                     )}

@@ -25,15 +25,15 @@ export default function PrinterTestPage() {
       // Test basic browser printing capability
       if (typeof window.print === 'function') {
         setIsConnected(true);
-        addTestResult('✅ Browser printing available');
-        addTestResult('✅ Windows WinPrint compatibility detected');
+        addTestResult('[OK] Browser printing available');
+        addTestResult('[OK] Windows WinPrint compatibility detected');
       } else {
         setIsConnected(false);
-        addTestResult('❌ Browser printing not available');
+        addTestResult('[FAIL] Browser printing not available');
       }
     } catch (error) {
       setIsConnected(false);
-      addTestResult(`❌ Connection test failed: ${error}`);
+      addTestResult(`[FAIL] Connection test failed: ${error}`);
     } finally {
       setIsPrinting(false);
     }
@@ -46,12 +46,12 @@ export default function PrinterTestPage() {
     try {
       const success = await printTestReceipt();
       if (success) {
-        addTestResult('✅ Simple test receipt sent to printer');
+        addTestResult('[OK] Simple test receipt sent to printer');
       } else {
-        addTestResult('❌ Failed to print simple test receipt');
+        addTestResult('[FAIL] Failed to print simple test receipt');
       }
     } catch (error) {
-      addTestResult(`❌ Print error: ${error}`);
+      addTestResult(`[FAIL] Print error: ${error}`);
     } finally {
       setIsPrinting(false);
     }
@@ -119,12 +119,12 @@ export default function PrinterTestPage() {
       });
 
       if (success) {
-        addTestResult('✅ Fiscal test receipt sent to printer');
+        addTestResult('[OK] Fiscal test receipt sent to printer');
       } else {
-        addTestResult('❌ Failed to print fiscal test receipt');
+        addTestResult('[FAIL] Failed to print fiscal test receipt');
       }
     } catch (error) {
-      addTestResult(`❌ Fiscal print error: ${error}`);
+      addTestResult(`[FAIL] Fiscal print error: ${error}`);
     } finally {
       setIsPrinting(false);
     }

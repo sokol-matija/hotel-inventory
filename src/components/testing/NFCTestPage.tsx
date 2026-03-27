@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { simulateNFCTap, generateNFCUri, batchTestNFCTaps, NFCTestResult } from '@/utils/nfcTest';
 import { supabase } from '@/lib/supabase';
-import { CheckCircle2, Loader2, Copy, Smartphone } from 'lucide-react';
+import { CheckCircle2, Loader2, Copy, Smartphone, Tag } from 'lucide-react';
 
 interface RoomStatus {
   id: string;
@@ -138,7 +138,9 @@ export const NFCTestPage = () => {
     <div className="mx-auto max-w-6xl space-y-6 p-6">
       {/* Header */}
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold">🏷️ NFC Room Cleaning Test</h1>
+        <h1 className="flex items-center gap-2 text-3xl font-bold">
+          <Tag className="h-7 w-7" /> NFC Room Cleaning Test
+        </h1>
         <p className="text-gray-600">
           Simulate NFC tag taps and test the room cleaning indicator system
         </p>
@@ -227,7 +229,7 @@ export const NFCTestPage = () => {
                       <div className="flex items-center gap-3">
                         <span className="font-semibold">Room {room.room_number}</span>
                         <Badge variant={room.is_clean ? 'default' : 'destructive'}>
-                          {room.is_clean ? '✅ Clean' : '❌ Dirty'}
+                          {room.is_clean ? 'Clean' : 'Dirty'}
                         </Badge>
                         {result && (
                           <Badge variant={result.success ? 'default' : 'destructive'}>
@@ -323,7 +325,9 @@ export const NFCTestPage = () => {
       {/* Physical NFC Tag Instructions */}
       <Card>
         <CardHeader>
-          <CardTitle>📱 How to Setup Physical NFC Tags</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Smartphone className="h-5 w-5" /> How to Setup Physical NFC Tags
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-3 text-sm">
@@ -339,11 +343,10 @@ export const NFCTestPage = () => {
               <p className="text-gray-600">Install "NFC Tools" app (free):</p>
               <ul className="mt-1 ml-4 space-y-1">
                 <li>
-                  📱 iOS: <code className="rounded bg-gray-100 px-2 py-1">Apple App Store</code>
+                  iOS: <code className="rounded bg-gray-100 px-2 py-1">Apple App Store</code>
                 </li>
                 <li>
-                  🤖 Android:{' '}
-                  <code className="rounded bg-gray-100 px-2 py-1">Google Play Store</code>
+                  Android: <code className="rounded bg-gray-100 px-2 py-1">Google Play Store</code>
                 </li>
               </ul>
             </div>

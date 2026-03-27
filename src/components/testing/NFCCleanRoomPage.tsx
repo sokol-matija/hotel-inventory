@@ -6,7 +6,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSearch } from '@tanstack/react-router';
-import { CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Loader2, Hotel, MapPin, Link, Tag } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 
@@ -68,11 +68,11 @@ export const NFCCleanRoomPage = () => {
 
       // Show toast notification on the NFC page
       if (data.success) {
-        toast.success('✅ Success', {
+        toast.success('Success', {
           description: `Room ${data.roomNumber} has been marked as clean!`,
         });
       } else {
-        toast.error('❌ Error', {
+        toast.error('Error', {
           description: data.error || 'Could not mark room as clean',
         });
       }
@@ -87,7 +87,7 @@ export const NFCCleanRoomPage = () => {
       });
 
       // Show error toast notification
-      toast.error('❌ Error', { description: errorMessage });
+      toast.error('Error', { description: errorMessage });
     } finally {
       setIsLoading(false);
     }
@@ -112,7 +112,7 @@ export const NFCCleanRoomPage = () => {
           <Card className="border-green-200 bg-green-50 shadow-xl">
             <CardHeader className="pb-3 text-center">
               <CheckCircle2 className="mx-auto mb-3 h-16 w-16 text-green-600" />
-              <CardTitle className="text-2xl text-green-700">Success! ✅</CardTitle>
+              <CardTitle className="text-2xl text-green-700">Success!</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center gap-2 rounded border border-green-200 bg-white p-3">
@@ -125,7 +125,7 @@ export const NFCCleanRoomPage = () => {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Status:</span>
-                  <span className="font-semibold text-green-600">✅ Clean</span>
+                  <span className="font-semibold text-green-600">Clean</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Time:</span>
@@ -136,7 +136,8 @@ export const NFCCleanRoomPage = () => {
               </div>
 
               <div className="rounded border border-green-200 bg-green-100 p-3 text-sm text-green-800">
-                🏨 The front desk has been notified! Room is now ready for the next guest.
+                <Hotel className="mr-1 inline h-4 w-4" /> The front desk has been notified! Room is
+                now ready for the next guest.
               </div>
 
               <button
@@ -154,7 +155,7 @@ export const NFCCleanRoomPage = () => {
           <Card className="border-red-200 bg-red-50 shadow-xl">
             <CardHeader className="pb-3 text-center">
               <AlertCircle className="mx-auto mb-3 h-16 w-16 text-red-600" />
-              <CardTitle className="text-2xl text-red-700">Error ❌</CardTitle>
+              <CardTitle className="text-2xl text-red-700">Error</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center gap-2 rounded border border-red-200 bg-white p-3">
@@ -165,13 +166,19 @@ export const NFCCleanRoomPage = () => {
               </div>
 
               <div className="rounded border border-red-200 bg-red-100 p-3 text-sm text-red-800">
-                <p>❌ Could not mark room as clean</p>
+                <p>Could not mark room as clean</p>
                 {result?.error && <p className="mt-1 text-xs">{result.error}</p>}
               </div>
 
               <div className="space-y-2 text-xs text-gray-600">
-                <p>📍 Please try again or contact management</p>
-                <p>🔗 Room ID: {(searchParams as { roomId?: string }).roomId || 'Not provided'}</p>
+                <p>
+                  <MapPin className="mr-1 inline h-3.5 w-3.5" /> Please try again or contact
+                  management
+                </p>
+                <p>
+                  <Link className="mr-1 inline h-3.5 w-3.5" /> Room ID:{' '}
+                  {(searchParams as { roomId?: string }).roomId || 'Not provided'}
+                </p>
               </div>
 
               <button
@@ -186,7 +193,9 @@ export const NFCCleanRoomPage = () => {
 
         {/* Info Footer */}
         <div className="mt-6 text-center text-xs text-gray-500">
-          <p>🏷️ NFC Room Cleaning System</p>
+          <p className="flex items-center justify-center gap-1">
+            <Tag className="h-3.5 w-3.5" /> NFC Room Cleaning System
+          </p>
           <p>Tap sticker to mark room as clean</p>
         </div>
       </div>
