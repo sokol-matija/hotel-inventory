@@ -210,7 +210,7 @@ export function useCheckOutWorkflow(
         );
 
         void ntfyStaffNotify(
-          `Check-Out — Room ${room?.room_number ?? '?'}`,
+          `Check-Out - Room ${room?.room_number ?? '?'}`,
           `${guest?.display_name ?? 'Guest'} checked out · Invoice ${invoice.invoiceNumber}`,
           'default',
           'hotel,checkout,payment'

@@ -297,7 +297,7 @@ export function useCreateBookingForm({
       );
 
       void ntfyStaffNotify(
-        `New Booking — Room ${selectedRoom!.room_number}`,
+        `New Booking - Room ${selectedRoom!.room_number}`,
         `${primaryGuest.firstName} ${primaryGuest.lastName} · ${numberOfNights} night${numberOfNights !== 1 ? 's' : ''} · Check-in ${checkInDate.toLocaleDateString('hr-HR', { day: 'numeric', month: 'short' })}`,
         'default',
         'hotel,booking'

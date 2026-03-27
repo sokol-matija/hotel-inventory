@@ -209,7 +209,7 @@ export default function GuestAutocomplete({
                         <div className="mt-1 flex items-center space-x-3 text-xs text-gray-600">
                           <span>{guest.email}</span>
                           <span>{guest.phone ? formatPhoneNumber(guest.phone) : 'No phone'}</span>
-                          <span>🌍 {guest.nationality}</span>
+                          <span>{guest.nationality}</span>
                         </div>
                       </div>
                     </div>

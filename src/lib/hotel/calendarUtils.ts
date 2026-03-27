@@ -366,7 +366,7 @@ export function generateDateRange(startDate: Date, days: number): Date[] {
 
 // Format room number for display
 export function formatRoomNumber(room: { room_number: string; is_premium: boolean }): string {
-  return room.is_premium ? `⭐ ${room.room_number}` : room.room_number;
+  return room.room_number;
 }
 
 // Get room type display name

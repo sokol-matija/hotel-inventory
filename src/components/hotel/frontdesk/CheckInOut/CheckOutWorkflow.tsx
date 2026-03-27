@@ -282,7 +282,13 @@ export default function CheckOutWorkflow({ isOpen, onClose, reservation }: Check
                             </div>
                             <p className="text-sm text-gray-600">{step.description}</p>
                           </div>
-                          <div className="text-2xl">{step.completed ? '✅' : '⭕'}</div>
+                          <div>
+                            {step.completed ? (
+                              <CheckCircle className="h-6 w-6 text-green-600" />
+                            ) : (
+                              <div className="h-6 w-6 rounded-full border-2 border-gray-300" />
+                            )}
+                          </div>
                         </button>
                       );
                     })}

@@ -26,6 +26,9 @@ import {
   Printer,
   Download,
   Building2,
+  CheckCircle,
+  AlertTriangle,
+  Wrench,
 } from 'lucide-react';
 import { CalendarEvent, Company } from '../../../../lib/hotel/types';
 import type { Reservation } from '../../../../lib/queries/hooks/useReservations';
@@ -236,7 +239,11 @@ const GuestCard = ({
               Send Reminder
             </Button>
           </div>
-          {!guest.email && <p className="mt-2 text-sm text-red-600">⚠️ No email address on file</p>}
+          {!guest.email && (
+            <p className="mt-2 flex items-center gap-1 text-sm text-red-600">
+              <X className="h-3.5 w-3.5" /> No email address on file
+            </p>
+          )}
         </div>
       )}
     </CardContent>
@@ -315,24 +322,32 @@ const FiscalCard = ({
           Email Fiscal Receipt
         </Button>
       </div>
-      <div className="mt-3 text-sm text-gray-600">
-        <p>
-          🧾 <strong>Fiscal Invoice:</strong> Croatian Tax Authority compliant PDF with QR code and
-          JIR
+      <div className="mt-3 space-y-1 text-sm text-gray-600">
+        <p className="flex items-center gap-1.5">
+          <Receipt className="h-3.5 w-3.5 text-gray-500" />
+          <strong>Fiscal Invoice:</strong> Croatian Tax Authority compliant PDF with QR code and JIR
         </p>
-        <p className="mt-1">
-          🖨️ <strong>Thermal Receipt:</strong> 80mm format for receipt printers with fiscal data
+        <p className="flex items-center gap-1.5">
+          <Printer className="h-3.5 w-3.5 text-gray-500" />
+          <strong>Thermal Receipt:</strong> 80mm format for receipt printers with fiscal data
         </p>
-        <p className="mt-1">
-          📧 <strong>Email Receipt:</strong> Send professional fiscal invoice to guest automatically
+        <p className="flex items-center gap-1.5">
+          <Mail className="h-3.5 w-3.5 text-gray-500" />
+          <strong>Email Receipt:</strong> Send professional fiscal invoice to guest automatically
         </p>
         {fiscalData && (
           <div className="mt-2 rounded-lg bg-green-50 p-2">
-            <p className="font-medium text-green-800">✅ Fiscalized with Croatian Tax Authority</p>
+            <p className="flex items-center gap-1 font-medium text-green-800">
+              <CheckCircle className="h-4 w-4" /> Fiscalized with Croatian Tax Authority
+            </p>
             <p className="text-xs text-green-700">JIR: {fiscalData.jir}</p>
           </div>
         )}
-        {!guestEmail && <p className="mt-2 text-red-600">⚠️ No email address on file for guest</p>}
+        {!guestEmail && (
+          <p className="mt-2 flex items-center gap-1 text-red-600">
+            <AlertTriangle className="h-3.5 w-3.5" /> No email address on file for guest
+          </p>
+        )}
       </div>
     </CardContent>
   </Card>
@@ -509,7 +524,8 @@ export default function ReservationPopup({
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2">
-              <span>🔧 Room {room.room_number} - Maintenance</span>
+              <Wrench className="h-5 w-5 text-yellow-600" />
+              <span>Room {room.room_number} - Maintenance</span>
               <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
                 Out of Service
               </Badge>

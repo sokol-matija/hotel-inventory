@@ -168,7 +168,7 @@ export default function CheckInWorkflow({ isOpen, onClose, reservation }: CheckI
       await updateReservationStatus(reservation.id, 'checked-in');
 
       void ntfyStaffNotify(
-        `Check-In — Room ${room?.room_number ?? '?'}`,
+        `Check-In - Room ${room?.room_number ?? '?'}`,
         `${guest?.display_name ?? 'Guest'} has checked in`,
         'default',
         'hotel,checkin'
@@ -264,7 +264,7 @@ export default function CheckInWorkflow({ isOpen, onClose, reservation }: CheckI
                     {guest.email} • {guest.phone}
                   </div>
                   <div className="text-sm text-gray-600">
-                    🌍 {guest.nationality} • {(guest.preferred_language ?? 'en').toUpperCase()}
+                    {guest.nationality} • {(guest.preferred_language ?? 'en').toUpperCase()}
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -381,7 +381,13 @@ export default function CheckInWorkflow({ isOpen, onClose, reservation }: CheckI
                         </div>
                         <p className="text-sm text-gray-600">{step.description}</p>
                       </div>
-                      <div className="text-2xl">{step.completed ? '✅' : '⭕'}</div>
+                      <div>
+                        {step.completed ? (
+                          <CheckCircle className="h-6 w-6 text-green-600" />
+                        ) : (
+                          <div className="h-6 w-6 rounded-full border-2 border-gray-300" />
+                        )}
+                      </div>
                     </button>
                   );
                 })}
