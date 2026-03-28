@@ -2,7 +2,8 @@ import { format, startOfDay, differenceInCalendarDays } from 'date-fns';
 import { useDrop } from 'react-dnd';
 import { Reservation } from '../../../../lib/hotel/types';
 import type { Room } from '../../../../lib/queries/hooks/useRooms';
-import { ItemTypes, DragItem, SimpleDragCreateHook } from './types';
+import { ItemTypes, DragItem } from './types';
+import type { CellHighlight } from '../useTimelineDragCreate';
 
 const EMPTY_RESERVATIONS: Reservation[] = [];
 
@@ -19,18 +20,10 @@ interface DroppableDateCellProps {
     newCheckOut: Date
   ) => void;
   existingReservations?: Reservation[];
-  isDragCreateMode?: boolean;
-  isDragCreating?: boolean;
-  dragCreateStart?: { roomId: string; dayIndex: number } | null;
-  dragCreateEnd?: { roomId: string; dayIndex: number } | null;
-  dragCreatePreview?: { roomId: string; startDay: number; endDay: number } | null;
-  onDragCreateStart?: (roomId: string, halfDayIndex: number) => void;
-  onDragCreateMove?: (roomId: string, halfDayIndex: number) => void;
-  onDragCreateEnd?: (roomId: string, halfDayIndex: number) => void;
   onCellClick?: (roomId: string, date: Date, isAM: boolean) => void;
-  shouldHighlightCell?: SimpleDragCreateHook['shouldHighlightCell'];
-  dragCreate?: SimpleDragCreateHook;
-  cellRefs?: Map<string, HTMLElement>;
+  onCellHover?: (roomId: string, date: Date) => void;
+  shouldHighlightCell?: (roomId: string, date: Date, isAM: boolean) => CellHighlight;
+  dragNightCount?: number | null;
 }
 
 export function DroppableDateCell({
@@ -41,14 +34,14 @@ export function DroppableDateCell({
   date,
   onMoveReservation,
   existingReservations = EMPTY_RESERVATIONS,
-  isDragCreating,
-  dragCreatePreview,
   onCellClick,
+  onCellHover,
   shouldHighlightCell,
-  dragCreate,
-  cellRefs,
+  dragNightCount,
 }: DroppableDateCellProps) {
   const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+  const isAM = !isSecondHalf;
+  const roomIdStr = room.id.toString();
 
   const hasExistingReservation = existingReservations.some((res) => {
     const resCheckInDate = startOfDay(new Date(res.check_in_date));
@@ -64,14 +57,6 @@ export function DroppableDateCell({
     }
     return false;
   });
-
-  const isInDragPreview =
-    dragCreatePreview &&
-    dragCreatePreview.roomId === room.id.toString() &&
-    isDragCreating &&
-    ((dayIndex === dragCreatePreview.startDay && isSecondHalf) ||
-      (dayIndex > dragCreatePreview.startDay && dayIndex < dragCreatePreview.endDay) ||
-      (dayIndex === dragCreatePreview.endDay && !isSecondHalf));
 
   const [{ isOver, canDrop }, drop] = useDrop(
     () => ({
@@ -117,75 +102,57 @@ export function DroppableDateCell({
     [room, dayIndex, halfDayIndex, isSecondHalf, date, onMoveReservation, hasExistingReservation]
   );
 
+  // Compute highlight once per render
+  const highlight = shouldHighlightCell
+    ? shouldHighlightCell(roomIdStr, date, isAM)
+    : ('none' as const);
+
   const handleClick = (e: React.MouseEvent) => {
     if (hasExistingReservation) return;
-    // Allow clicks in both drag-create mode (highlighted cells) and normal mode (PM cells for quick-create)
-    const isDragCreateEnabled =
-      shouldHighlightCell &&
-      shouldHighlightCell(room.id.toString(), date, !isSecondHalf) !== 'none';
-    if (isDragCreateEnabled || (isSecondHalf && !hasExistingReservation)) {
+    if (highlight !== 'none' || (isSecondHalf && !hasExistingReservation)) {
       e.preventDefault();
-      onCellClick?.(room.id.toString(), date, !isSecondHalf);
+      onCellClick?.(roomIdStr, date, isAM);
     }
   };
 
-  const getSimpleDragCreateStyle = () => {
-    if (!shouldHighlightCell) return '';
-    const highlightType = shouldHighlightCell(room.id.toString(), date, !isSecondHalf);
-    switch (highlightType) {
-      case 'selectable':
-        return !isSecondHalf
-          ? 'bg-gradient-to-br from-emerald-50 to-emerald-100 border-2 border-emerald-400 cursor-pointer hover:from-emerald-100 hover:to-emerald-200 hover:shadow-lg hover:shadow-emerald-200/50 transition-all duration-200'
-          : 'bg-gradient-to-br from-sky-50 to-sky-100 border-2 border-sky-400 cursor-pointer hover:from-sky-100 hover:to-sky-200 hover:shadow-lg hover:shadow-sky-200/50 transition-all duration-200';
-      case 'preview':
-        return 'bg-gradient-to-r from-blue-50 via-blue-100 to-blue-50 border border-blue-300 opacity-80';
-      default:
-        return '';
-    }
+  const highlightStyle: Record<CellHighlight, string> = {
+    start:
+      'bg-blue-500 ring-2 ring-blue-400/70 ring-offset-1 shadow-md shadow-blue-400/30 cursor-default transition-all duration-150',
+    preview:
+      'bg-blue-400/35 border-y border-blue-300/40 cursor-default transition-colors duration-100',
+    selectable: isSecondHalf
+      ? 'cursor-pointer border border-dashed border-blue-300/50 bg-blue-50/40 hover:bg-blue-100 hover:border-blue-400 transition-all duration-150'
+      : 'cursor-pointer border border-dashed border-emerald-300/50 bg-emerald-50/40 hover:bg-emerald-100 hover:border-emerald-400 transition-all duration-150',
+    none: '',
   };
 
-  const handleMouseEnter = () => {
-    if (dragCreate?.actions?.setHoverPreview && dragCreate?.state?.isSelecting) {
-      dragCreate.actions.setHoverPreview(room.id.toString(), date, !isSecondHalf);
-    }
-  };
-
-  const handleMouseLeave = () => {
-    if (dragCreate?.actions?.clearHoverPreview && dragCreate?.state?.isSelecting) {
-      dragCreate.actions.clearHoverPreview();
-    }
-  };
-
-  const cellKey = `${room.id}-${date.toISOString().split('T')[0]}-${isSecondHalf ? 'PM' : 'AM'}`;
+  const showNightBadge = highlight === 'start' && dragNightCount != null && dragNightCount > 0;
 
   return (
     <div
       ref={(el) => {
         drop(el);
-        if (el && cellRefs) cellRefs.set(cellKey, el);
       }}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           if (!hasExistingReservation && onCellClick && isSecondHalf) {
-            onCellClick(room.id.toString(), date, !isSecondHalf);
+            onCellClick(roomIdStr, date, isAM);
           }
         }
       }}
       className={`relative h-12 border-r border-gray-200 transition-all duration-200 ${
-        getSimpleDragCreateStyle() ||
-        (isInDragPreview
-          ? 'border-2 border-blue-400 bg-blue-200'
-          : isOver && canDrop
-            ? 'border-2 border-green-400 bg-green-100'
-            : isOver && !canDrop
-              ? 'border-2 border-red-400 bg-red-100'
-              : isWeekend
-                ? 'bg-orange-50/20'
-                : isSecondHalf
-                  ? 'bg-green-50/20 hover:bg-green-50/40'
-                  : 'bg-red-50/20 hover:bg-red-50/40')
+        highlightStyle[highlight] ||
+        (isOver && canDrop
+          ? 'border-2 border-green-400 bg-green-100'
+          : isOver && !canDrop
+            ? 'border-2 border-red-400 bg-red-100'
+            : isWeekend
+              ? 'bg-orange-50/20'
+              : isSecondHalf
+                ? 'bg-green-50/20 hover:bg-green-50/40'
+                : 'bg-red-50/20 hover:bg-red-50/40')
       }`}
       title={
         canDrop
@@ -195,9 +162,17 @@ export function DroppableDateCell({
             : 'Check-out zone (AM) - Drop to move reservation end'
       }
       onClick={handleClick}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
+      onMouseEnter={() => onCellHover?.(roomIdStr, date)}
     >
+      {/* Night count badge on start cell */}
+      {showNightBadge && (
+        <div className="absolute -top-3 left-1/2 z-20 -translate-x-1/2">
+          <div className="rounded-full bg-blue-600 px-2 py-0.5 text-[10px] font-bold whitespace-nowrap text-white shadow-lg shadow-blue-500/30">
+            {dragNightCount} {dragNightCount === 1 ? 'night' : 'nights'}
+          </div>
+        </div>
+      )}
+
       {isOver && canDrop && (
         <div
           className={`absolute inset-0 ${isSecondHalf ? 'border-2 border-green-400 bg-green-200' : 'border-2 border-red-400 bg-red-200'} flex items-center justify-center border-dashed`}

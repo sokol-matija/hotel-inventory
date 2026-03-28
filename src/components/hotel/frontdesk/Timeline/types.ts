@@ -32,28 +32,6 @@ export interface DragItem {
   reservation: Reservation;
 }
 
-export interface SimpleDragCreateHook {
-  state: {
-    isEnabled: boolean;
-    isSelecting: boolean;
-    currentSelection?: { roomId: string; checkInDate: Date } | null;
-  };
-  actions: {
-    enable: () => void;
-    disable: () => void;
-    startSelection: (roomId: string, checkInDate: Date) => void;
-    completeSelection: (checkOutDate: Date) => { checkInDate: Date; checkOutDate: Date } | null;
-    cancel: () => void;
-    setHoverPreview: (roomId: string, hoverDate: Date, isAM: boolean) => void;
-    clearHoverPreview: () => void;
-  };
-  shouldHighlightCell: (
-    roomId: string,
-    date: Date,
-    isAM: boolean
-  ) => 'selectable' | 'preview' | 'hover-preview' | 'none';
-}
-
 export const ItemTypes = {
   RESERVATION: 'reservation',
 } as const;

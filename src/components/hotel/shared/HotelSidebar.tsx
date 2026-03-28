@@ -33,7 +33,7 @@ const frontDeskSidebarItems = [
   },
   {
     key: 'reservationsList',
-    path: '/hotel/front-desk/reservations-list-v2',
+    path: '/hotel/front-desk/reservations-list',
     icon: List,
     label: 'Reservations List',
   },

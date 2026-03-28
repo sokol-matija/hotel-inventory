@@ -5,7 +5,7 @@ import type { Guest } from '../../../../lib/queries/hooks/useGuests';
 import type { Room } from '../../../../lib/queries/hooks/useRooms';
 import { Badge } from '../../../ui/badge';
 import { RoomRow } from './RoomRow';
-import { SimpleDragCreateHook } from './types';
+import type { CellHighlight } from '../useTimelineDragCreate';
 
 interface FloorSectionProps {
   floor: number;
@@ -26,14 +26,6 @@ interface FloorSectionProps {
   onUpdateReservationStatus?: (id: number, status: ReservationStatus) => Promise<void>;
   onDeleteReservation?: (id: number) => Promise<void>;
   onEditReservation?: (id: number) => void;
-  isDragCreateMode?: boolean;
-  isDragCreating?: boolean;
-  dragCreateStart?: { roomId: string; dayIndex: number } | null;
-  dragCreateEnd?: { roomId: string; dayIndex: number } | null;
-  dragCreatePreview?: { roomId: string; startDay: number; endDay: number } | null;
-  onDragCreateStart?: (roomId: string, halfDayIndex: number) => void;
-  onDragCreateMove?: (roomId: string, halfDayIndex: number) => void;
-  onDragCreateEnd?: (roomId: string, halfDayIndex: number) => void;
   isExpansionMode?: boolean;
   onResizeReservation?: (reservationId: number, side: 'start' | 'end', newDate: Date) => void;
   onShowDrinksModal?: (reservation: Reservation) => void;
@@ -43,10 +35,10 @@ interface FloorSectionProps {
     menuHeight?: number
   ) => { x: number; y: number };
   isMoveMode?: boolean;
-  shouldHighlightCell?: SimpleDragCreateHook['shouldHighlightCell'];
   onCellClick?: (roomId: string, date: Date, isAM: boolean) => void;
-  dragCreate?: SimpleDragCreateHook;
-  cellRefs?: Map<string, HTMLElement>;
+  onCellHover?: (roomId: string, date: Date) => void;
+  shouldHighlightCell?: (roomId: string, date: Date, isAM: boolean) => CellHighlight;
+  dragNightCount?: number | null;
 }
 
 export function FloorSection({
@@ -63,23 +55,15 @@ export function FloorSection({
   onUpdateReservationStatus,
   onDeleteReservation,
   onEditReservation,
-  isDragCreateMode,
-  isDragCreating,
-  dragCreateStart,
-  dragCreateEnd,
-  dragCreatePreview,
-  onDragCreateStart,
-  onDragCreateMove,
-  onDragCreateEnd,
   isExpansionMode,
   onResizeReservation,
   onShowDrinksModal,
   calculateContextMenuPosition,
   isMoveMode,
-  shouldHighlightCell,
   onCellClick,
-  dragCreate,
-  cellRefs,
+  onCellHover,
+  shouldHighlightCell,
+  dragNightCount,
 }: FloorSectionProps) {
   const floorName = floor === 4 ? 'Rooftop Premium' : `Floor ${floor}`;
   const today = new Date();
@@ -138,23 +122,15 @@ export function FloorSection({
               onUpdateReservationStatus={onUpdateReservationStatus}
               onDeleteReservation={onDeleteReservation}
               onEditReservation={onEditReservation}
-              isDragCreateMode={isDragCreateMode}
-              isDragCreating={isDragCreating}
-              dragCreateStart={dragCreateStart}
-              dragCreateEnd={dragCreateEnd}
-              dragCreatePreview={dragCreatePreview}
-              onDragCreateStart={onDragCreateStart}
-              onDragCreateMove={onDragCreateMove}
-              onDragCreateEnd={onDragCreateEnd}
               isExpansionMode={isExpansionMode}
               isMoveMode={isMoveMode}
               onResizeReservation={onResizeReservation}
               onShowDrinksModal={onShowDrinksModal}
               calculateContextMenuPosition={calculateContextMenuPosition}
               onCellClick={onCellClick}
+              onCellHover={onCellHover}
               shouldHighlightCell={shouldHighlightCell}
-              dragCreate={dragCreate}
-              cellRefs={cellRefs}
+              dragNightCount={dragNightCount}
             />
           ))}
         </div>

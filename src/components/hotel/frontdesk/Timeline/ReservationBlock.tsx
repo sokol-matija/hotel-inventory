@@ -11,7 +11,7 @@ import { RESERVATION_STATUS_COLORS } from '../../../../lib/hotel/calendarUtils';
 import { getCountryFlag } from '../../../../lib/hotel/countryFlags';
 import LabelBadge from '../../shared/LabelBadge';
 import { ReservationContextMenu } from './ReservationContextMenu';
-import { ItemTypes, SimpleDragCreateHook } from './types';
+import { ItemTypes } from './types';
 
 interface ReservationBlockProps {
   reservation: Reservation;
@@ -38,18 +38,6 @@ interface ReservationBlockProps {
     menuWidth?: number,
     menuHeight?: number
   ) => { x: number; y: number };
-  // Legacy props (unused but kept for type compatibility)
-  isDragCreateMode?: boolean;
-  isDragCreating?: boolean;
-  dragCreateStart?: unknown;
-  dragCreateEnd?: unknown;
-  dragCreatePreview?: unknown;
-  onDragCreateStart?: unknown;
-  onDragCreateMove?: unknown;
-  onDragCreateEnd?: unknown;
-  onCellClick?: unknown;
-  shouldHighlightCell?: SimpleDragCreateHook['shouldHighlightCell'];
-  dragCreate?: SimpleDragCreateHook;
 }
 
 export function ReservationBlock({

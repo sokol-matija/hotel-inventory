@@ -1,10 +1,12 @@
 import { useEffect } from 'react';
 import type { Reservation } from '../../../lib/hotel/types';
 import type { RoomChangeDialog } from '../../../lib/hotel/services/HotelTimelineService';
-import { useSimpleDragCreate } from '../../../lib/hooks/useSimpleDragCreate';
 
 export interface UseTimelineKeyboardShortcutsParams {
-  dragCreate: ReturnType<typeof useSimpleDragCreate>;
+  dragCreate: {
+    state: { isEnabled: boolean };
+    actions: { enable: () => void; disable: () => void };
+  };
   isExpansionMode: boolean;
   isMoveMode: boolean;
   showReservationPopup: boolean;
@@ -89,6 +91,7 @@ export function useTimelineKeyboardShortcuts({
             break;
           case 'escape':
             exitAllModes();
+            dragCreate.actions.disable();
             if (showReservationPopup) closeReservationPopup();
             if (showCreateBooking) closeCreateBooking();
             if (roomChangeDialog.show) closeRoomChangeDialog();

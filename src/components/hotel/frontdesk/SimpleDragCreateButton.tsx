@@ -1,43 +1,34 @@
-/**
- * Simple Drag Create Button
- *
- * A basic button for enabling/disabling drag-to-create mode
- */
-
 import React from 'react';
 import { Button } from '../../ui/button';
-import { MousePointer2 } from 'lucide-react';
-import { SimpleDragCreateState } from '../../../lib/hooks/useSimpleDragCreate';
+import { MousePointer2, Plus } from 'lucide-react';
 
 interface SimpleDragCreateButtonProps {
-  state: SimpleDragCreateState;
+  state: { isEnabled: boolean; isSelecting: boolean };
   onToggle: () => void;
 }
 
 const SimpleDragCreateButton: React.FC<SimpleDragCreateButtonProps> = ({ state, onToggle }) => {
-  const getButtonText = () => {
-    if (!state.isEnabled) return 'Drag to Create';
-    if (state.isSelecting) return 'Select Check-out (AM)';
-    if (state.currentSelection && !state.currentSelection.checkOutDate)
-      return 'Select Check-out (AM)';
-    return 'Drag Create Active';
-  };
-
-  const getButtonVariant = () => {
-    return state.isEnabled ? 'default' : 'outline';
-  };
-
   return (
     <Button
-      variant={getButtonVariant()}
+      variant={state.isEnabled ? 'default' : 'outline'}
       onClick={onToggle}
-      className="transition-all duration-200"
+      className={`gap-2 transition-all duration-200 ${
+        state.isEnabled
+          ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/25 hover:bg-blue-700'
+          : 'hover:border-blue-300 hover:bg-blue-50'
+      }`}
       title={
-        state.isEnabled ? 'Click to disable drag-create mode' : 'Click to enable drag-create mode'
+        state.isEnabled
+          ? 'Click to disable drag-create mode (Esc)'
+          : 'Click PM then AM to create a reservation'
       }
     >
-      <MousePointer2 className="mr-2 h-4 w-4" />
-      {getButtonText()}
+      {state.isEnabled ? <Plus className="h-4 w-4" /> : <MousePointer2 className="h-4 w-4" />}
+      {!state.isEnabled
+        ? 'Drag to Create'
+        : state.isSelecting
+          ? 'Click AM to set check-out'
+          : 'Click PM to set check-in'}
     </Button>
   );
 };

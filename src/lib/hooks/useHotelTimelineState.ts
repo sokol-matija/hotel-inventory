@@ -23,12 +23,6 @@ interface HotelTimelineState {
   showCreateBooking: boolean;
   roomChangeDialog: import('../hotel/services/HotelTimelineService').RoomChangeDialog;
   drinkModal: import('../hotel/services/HotelTimelineService').DrinkModalState;
-  isDragCreateMode: boolean;
-  isDragCreating: boolean;
-  dragCreateStart: import('../hotel/services/HotelTimelineService').DragCreateState | null;
-  dragCreateEnd: import('../hotel/services/HotelTimelineService').DragCreateState | null;
-  dragCreatePreview: import('../hotel/services/HotelTimelineService').DragCreatePreview | null;
-  dragCreateDates: { checkIn: Date; checkOut: Date } | null;
   isExpansionMode: boolean;
   isMoveMode: boolean;
   overviewPeriod: 'AM' | 'PM';
@@ -60,14 +54,9 @@ interface HotelTimelineActions {
   closeRoomChangeDialog: () => void;
   handleShowDrinksModal: (reservationId: number) => void;
   closeDrinksModal: () => void;
-  toggleDragCreateMode: () => void;
   toggleExpansionMode: () => void;
   toggleMoveMode: () => void;
   exitAllModes: () => void;
-  handleDragCreateStart: (roomId: string, dayIndex: number) => void;
-  handleDragCreateMove: (roomId: string, dayIndex: number) => void;
-  handleDragCreateEnd: () => void;
-  clearDragCreate: () => void;
   positionContextMenu: (x: number, y: number) => { x: number; y: number };
   validateReservationMove: (
     reservation: Reservation,
@@ -83,10 +72,7 @@ export function useHotelTimelineState(): HotelTimelineState & HotelTimelineActio
   const navigation = useTimelineNavigation({ reservations, rooms, timelineService });
   const floors = useFloorExpansion();
   const selection = useTimelineSelectionState();
-  const modes = useTimelineInteractionModes({
-    currentDate: navigation.currentDate,
-    timelineService,
-  });
+  const modes = useTimelineInteractionModes();
 
   const roomsByFloor = useMemo(
     () => timelineService.getRoomsByFloor(rooms),

@@ -7,7 +7,7 @@ import { Badge } from '../../../ui/badge';
 import { TimelineCleaningIndicator } from '../TimelineCleaningIndicator';
 import { ReservationBlock } from './ReservationBlock';
 import { DroppableDateCell } from './DroppableDateCell';
-import { SimpleDragCreateHook } from './types';
+import type { CellHighlight } from '../useTimelineDragCreate';
 
 interface RoomRowProps {
   room: Room;
@@ -25,14 +25,6 @@ interface RoomRowProps {
   onUpdateReservationStatus?: (id: number, status: ReservationStatus) => Promise<void>;
   onDeleteReservation?: (id: number) => Promise<void>;
   onEditReservation?: (id: number) => void;
-  isDragCreateMode?: boolean;
-  isDragCreating?: boolean;
-  dragCreateStart?: { roomId: string; dayIndex: number } | null;
-  dragCreateEnd?: { roomId: string; dayIndex: number } | null;
-  dragCreatePreview?: { roomId: string; startDay: number; endDay: number } | null;
-  onDragCreateStart?: (roomId: string, halfDayIndex: number) => void;
-  onDragCreateMove?: (roomId: string, halfDayIndex: number) => void;
-  onDragCreateEnd?: (roomId: string, halfDayIndex: number) => void;
   isExpansionMode?: boolean;
   onResizeReservation?: (reservationId: number, side: 'start' | 'end', newDate: Date) => void;
   onShowDrinksModal?: (reservation: Reservation) => void;
@@ -43,9 +35,9 @@ interface RoomRowProps {
   ) => { x: number; y: number };
   isMoveMode?: boolean;
   onCellClick?: (roomId: string, date: Date, isAM: boolean) => void;
-  shouldHighlightCell?: SimpleDragCreateHook['shouldHighlightCell'];
-  dragCreate?: SimpleDragCreateHook;
-  cellRefs?: Map<string, HTMLElement>;
+  onCellHover?: (roomId: string, date: Date) => void;
+  shouldHighlightCell?: (roomId: string, date: Date, isAM: boolean) => CellHighlight;
+  dragNightCount?: number | null;
 }
 
 export function RoomRow({
@@ -59,23 +51,15 @@ export function RoomRow({
   onUpdateReservationStatus,
   onDeleteReservation,
   onEditReservation,
-  isDragCreateMode,
-  isDragCreating,
-  dragCreateStart,
-  dragCreateEnd,
-  dragCreatePreview,
-  onDragCreateStart,
-  onDragCreateMove,
-  onDragCreateEnd,
   isExpansionMode,
   onResizeReservation,
   onShowDrinksModal,
   calculateContextMenuPosition,
   isMoveMode,
   onCellClick,
+  onCellHover,
   shouldHighlightCell,
-  dragCreate,
-  cellRefs,
+  dragNightCount,
 }: RoomRowProps) {
   const roomReservations = reservations.filter((r) => r.room_id === room.id);
 
@@ -112,18 +96,10 @@ export function RoomRow({
               date={cellDate}
               onMoveReservation={onMoveReservation}
               existingReservations={reservations}
-              isDragCreateMode={isDragCreateMode}
-              isDragCreating={isDragCreating}
-              dragCreateStart={dragCreateStart}
-              dragCreateEnd={dragCreateEnd}
-              dragCreatePreview={dragCreatePreview}
-              onDragCreateStart={onDragCreateStart}
-              onDragCreateMove={onDragCreateMove}
-              onDragCreateEnd={onDragCreateEnd}
               onCellClick={onCellClick}
+              onCellHover={onCellHover}
               shouldHighlightCell={shouldHighlightCell}
-              dragCreate={dragCreate}
-              cellRefs={cellRefs}
+              dragNightCount={dragNightCount}
             />
           );
         })}

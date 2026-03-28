@@ -34,8 +34,6 @@ import hotelNotification from '../../../lib/notifications';
 import { useHotelTimelineState } from '../../../lib/hooks/useHotelTimelineState';
 import { useReservationActions } from '../../../lib/hooks/useReservationActions';
 import SimpleDragCreateButton from './SimpleDragCreateButton';
-// EnhancedDailyViewModal removed — operated on dropped reservation_daily_details table
-import DragCreateOverlay from './DragCreateOverlay';
 import { virtualRoomService } from '../../../lib/hotel/services/VirtualRoomService';
 // unifiedPricingService removed — pricing now handled via reservation_charges
 import { Button } from '../../ui/button';
@@ -101,7 +99,6 @@ export default function HotelTimeline({
   );
 
   const timelineRef = useRef<HTMLDivElement>(null);
-  const cellRefs = useRef<Map<string, HTMLElement>>(new Map());
 
   const {
     currentDate,
@@ -113,7 +110,6 @@ export default function HotelTimeline({
     selectedRoom,
     showCreateBooking,
     roomChangeDialog,
-    dragCreateDates,
     isExpansionMode,
     isMoveMode,
     overviewPeriod,
@@ -134,7 +130,6 @@ export default function HotelTimeline({
     toggleExpansionMode,
     toggleMoveMode,
     exitAllModes,
-    clearDragCreate,
     positionContextMenu,
     setCurrentDate,
     setOverviewDate,
@@ -173,12 +168,7 @@ export default function HotelTimeline({
   } = useTimelineModals();
 
   // Drag-create state and cell click handler
-  const {
-    dragCreate,
-    dragCreatePreSelectedDates,
-    clearDragCreatePreSelectedDates,
-    handleDragCreateCellClick,
-  } = useTimelineDragCreate({ rooms, handleRoomClick });
+  const dragCreate = useTimelineDragCreate({ rooms, handleRoomClick });
 
   // EnhancedDailyViewModal removed — operated on dropped reservation_daily_details table
 
@@ -288,17 +278,15 @@ export default function HotelTimeline({
     onUpdateReservationStatus: updateReservationStatus,
     onDeleteReservation: deleteReservation,
     onEditReservation: setEditReservationId,
-    isDragCreateMode: dragCreate.state.isEnabled,
-    isDragCreating: dragCreate.state.isSelecting,
     isExpansionMode,
     isMoveMode,
     onResizeReservation: handleResizeReservation,
     onShowDrinksModal: handleShowDrinksModalWrapper,
     calculateContextMenuPosition,
-    onCellClick: handleDragCreateCellClick,
+    onCellClick: dragCreate.handleCellClick,
+    onCellHover: dragCreate.handleCellHover,
     shouldHighlightCell: dragCreate.shouldHighlightCell,
-    dragCreate,
-    cellRefs: cellRefs.current,
+    dragNightCount: dragCreate.nightCount,
   };
 
   return (
@@ -308,33 +296,45 @@ export default function HotelTimeline({
           {/* Mode status banner */}
           {(dragCreate.state.isEnabled || isExpansionMode || isMoveMode) && (
             <div
-              className={`px-4 py-2 text-sm font-medium text-white ${dragCreate.state.isEnabled ? 'bg-blue-600' : isExpansionMode ? 'bg-green-600' : 'bg-purple-600'}`}
+              className={`px-4 py-2 text-sm font-medium text-white/95 ${
+                dragCreate.state.isEnabled
+                  ? 'bg-gradient-to-r from-blue-600 to-blue-500'
+                  : isExpansionMode
+                    ? 'bg-gradient-to-r from-green-600 to-green-500'
+                    : 'bg-gradient-to-r from-purple-600 to-purple-500'
+              }`}
             >
-              <div className="flex items-center justify-center space-x-2">
+              <div className="flex items-center justify-center gap-2">
                 {dragCreate.state.isEnabled && (
                   <>
-                    <MousePointer2 className="h-4 w-4" />
+                    <MousePointer2 className="h-4 w-4 shrink-0" />
                     <span>
-                      Drag Create Mode: Click PM slots to start, AM slots to finish creating
-                      reservations
+                      {dragCreate.state.isSelecting
+                        ? dragCreate.nightCount
+                          ? `${dragCreate.nightCount} ${dragCreate.nightCount === 1 ? 'night' : 'nights'} — click AM to confirm`
+                          : 'Hover to preview, click an AM cell to set check-out'
+                        : 'Click a PM cell to set check-in'}
+                    </span>
+                    <span className="ml-1 rounded bg-white/15 px-1.5 py-0.5 text-xs font-normal tracking-wide">
+                      Esc to exit
                     </span>
                   </>
                 )}
                 {isExpansionMode && (
                   <>
-                    <ArrowLeftRight className="h-4 w-4" />
-                    <span>
-                      Expansion Mode: Use resize controls (← →) on reservations to extend or shorten
-                      stays
+                    <ArrowLeftRight className="h-4 w-4 shrink-0" />
+                    <span>Use resize controls on reservations to extend or shorten stays</span>
+                    <span className="ml-1 rounded bg-white/15 px-1.5 py-0.5 text-xs font-normal tracking-wide">
+                      Esc to exit
                     </span>
                   </>
                 )}
                 {isMoveMode && (
                   <>
-                    <Move className="h-4 w-4" />
-                    <span>
-                      Move Mode: Drag reservations or use arrow controls to move between rooms and
-                      dates
+                    <Move className="h-4 w-4 shrink-0" />
+                    <span>Drag reservations or use arrows to move between rooms and dates</span>
+                    <span className="ml-1 rounded bg-white/15 px-1.5 py-0.5 text-xs font-normal tracking-wide">
+                      Esc to exit
                     </span>
                   </>
                 )}
@@ -575,12 +575,6 @@ export default function HotelTimeline({
                 />
               </div>
             </div>
-
-            <DragCreateOverlay
-              dragCreateState={dragCreate.state}
-              timelineRef={timelineRef}
-              cellRefs={cellRefs.current}
-            />
           </div>
         </div>
 
@@ -599,13 +593,12 @@ export default function HotelTimeline({
             isOpen={showCreateBooking}
             onClose={() => {
               closeCreateBooking();
-              clearDragCreate();
-              clearDragCreatePreSelectedDates();
+              dragCreate.clearPreSelectedDates();
               dragCreate.actions.disable();
             }}
             room={selectedRoom}
             currentDate={overviewDate}
-            preSelectedDates={dragCreatePreSelectedDates || dragCreateDates}
+            preSelectedDates={dragCreate.preSelectedDates}
           />
         )}
 
