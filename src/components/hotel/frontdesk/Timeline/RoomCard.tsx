@@ -80,12 +80,11 @@ export function RoomCard({
       }
     >
       {isOccupied && reservation?.labels && (
-        <div className="absolute top-0 right-0 z-10">
+        <div className="absolute top-2 right-2 z-10">
           <LabelBadge
             label={reservation.labels}
             alwaysExpanded={showFullLabelText}
             expandDirection="left"
-            semiCircle={true}
           />
         </div>
       )}
