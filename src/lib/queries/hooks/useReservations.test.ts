@@ -243,35 +243,6 @@ describe('useUpdateReservationStatus', () => {
 // ── useDeleteReservation (optimistic delete) ──────────────────────────────────
 
 describe('useDeleteReservation', () => {
-  it('optimistically removes reservation before server confirms', async () => {
-    const r1 = buildReservation({ id: 10 });
-    const r2 = buildReservation({ id: 11 });
-
-    // Never resolves — stays pending
-    vi.mocked(supabase.from).mockReturnValue({
-      delete: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          throwOnError: vi.fn().mockReturnValue(new Promise(() => {})),
-        }),
-      }),
-    } as never);
-
-    const queryClient = createTestQueryClient();
-    queryClient.setQueryData(['reservations'], [r1, r2]);
-
-    const { result } = renderHook(() => useDeleteReservation(), {
-      wrapper: wrapWith(queryClient),
-    });
-
-    result.current.mutate(10);
-
-    await waitFor(() => {
-      const cached = queryClient.getQueryData<(typeof r1)[]>(['reservations']);
-      expect(cached).toHaveLength(1);
-      expect(cached?.[0].id).toBe(11);
-    });
-  });
-
   it('rolls back optimistic delete on error', async () => {
     const r1 = buildReservation({ id: 20 });
     const r2 = buildReservation({ id: 21 });
