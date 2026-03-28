@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
-import { Hotel, CreditCard, Package, ArrowRight } from 'lucide-react';
+import { Hotel, CreditCard, Package, Settings, ArrowRight } from 'lucide-react';
 
 interface ModuleCardProps {
   title: string;
@@ -85,6 +85,14 @@ export default function ModuleSelector() {
       icon: <Package className="h-6 w-6" />,
       available: true,
       onClick: () => navigate({ to: '/dashboard' }),
+    },
+    {
+      key: 'admin',
+      title: 'Admin',
+      description: 'System testing, printer, email and fiscalization tools',
+      icon: <Settings className="h-6 w-6" />,
+      available: true,
+      onClick: () => navigate({ to: '/hotel/admin' }),
     },
   ];
 

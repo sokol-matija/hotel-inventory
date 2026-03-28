@@ -21,6 +21,7 @@ import {
   Coffee,
   Printer,
   List,
+  FlaskConical,
 } from 'lucide-react';
 
 // Hotel Front Desk specific navigation items
@@ -68,22 +69,38 @@ const frontDeskSidebarItems = [
     label: 'Pricing Management',
   },
   {
-    key: 'printertest',
-    path: '/hotel/front-desk/printer-test',
-    icon: Printer,
-    label: 'Printer Test',
-  },
-  {
     key: 'reports',
     path: '/hotel/front-desk/reports',
     icon: FileText,
     label: 'Reports',
   },
+];
+
+// Hotel Admin specific navigation items
+const adminSidebarItems = [
+  {
+    key: 'testing',
+    path: '/hotel/admin',
+    icon: FlaskConical,
+    label: 'System Testing',
+  },
+  {
+    key: 'printerTest',
+    path: '/hotel/admin/printer-test',
+    icon: Printer,
+    label: 'Printer Test',
+  },
   {
     key: 'emailTest',
-    path: '/hotel/front-desk/email-test',
+    path: '/hotel/admin/email-test',
     icon: Mail,
     label: 'Email Test',
+  },
+  {
+    key: 'fiscalizationTest',
+    path: '/hotel/admin/fiscalization-test',
+    icon: Shield,
+    label: 'Fiscalization Test',
   },
 ];
 
@@ -107,12 +124,6 @@ const financeSidebarItems = [
     icon: Shield,
     label: 'Fiscal Compliance',
   },
-  {
-    key: 'fiscalizationTest',
-    path: '/hotel/finance/fiscalization-test',
-    icon: Shield,
-    label: 'Croatian Fiscalization',
-  },
 ];
 
 export default function HotelSidebar() {
@@ -125,13 +136,30 @@ export default function HotelSidebar() {
 
   // Determine current module based on path
   const isFinanceModule = location.pathname.startsWith('/hotel/finance');
+  const isAdminModule = location.pathname.startsWith('/hotel/admin');
 
   // Get appropriate sidebar items and module info
-  const sidebarItems = isFinanceModule ? financeSidebarItems : frontDeskSidebarItems;
-  const moduleTitle = isFinanceModule ? 'Finance' : 'Front Desk';
-  const moduleSubtitle = isFinanceModule ? 'Croatian e-računi & Finance' : 'Hotel Management';
-  const userRole = isFinanceModule ? 'Finance Manager' : 'Front Desk Staff';
-  const logoClickPath = isFinanceModule ? '/hotel/finance' : '/hotel/front-desk';
+  const sidebarItems = isAdminModule
+    ? adminSidebarItems
+    : isFinanceModule
+      ? financeSidebarItems
+      : frontDeskSidebarItems;
+  const moduleTitle = isAdminModule ? 'Admin' : isFinanceModule ? 'Finance' : 'Front Desk';
+  const moduleSubtitle = isAdminModule
+    ? 'System Administration'
+    : isFinanceModule
+      ? 'Croatian e-računi & Finance'
+      : 'Hotel Management';
+  const userRole = isAdminModule
+    ? 'Administrator'
+    : isFinanceModule
+      ? 'Finance Manager'
+      : 'Front Desk Staff';
+  const logoClickPath = isAdminModule
+    ? '/hotel/admin'
+    : isFinanceModule
+      ? '/hotel/finance'
+      : '/hotel/front-desk';
 
   return (
     <div className="relative flex h-screen w-64 flex-col overflow-hidden border-r border-gray-200 bg-white">
@@ -176,7 +204,8 @@ export default function HotelSidebar() {
             const isActive =
               location.pathname === item.path ||
               (item.path === '/hotel/front-desk' && location.pathname === '/hotel/front-desk') ||
-              (item.path === '/hotel/finance' && location.pathname === '/hotel/finance');
+              (item.path === '/hotel/finance' && location.pathname === '/hotel/finance') ||
+              (item.path === '/hotel/admin' && location.pathname === '/hotel/admin');
 
             return (
               <Link
