@@ -40,6 +40,8 @@ example/
 p12 cert/87246357068.49208351934.A.1.p12
 .certificates/
 .env.fiscal
+.env.e2e
+.playwright-cli/
 
 *.png
 !public/*.png
