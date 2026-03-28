@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { QueryData } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
@@ -129,6 +129,33 @@ export function useRoomsByFloor() {
   }, [rooms]);
 
   return { roomsByFloor, ...rest };
+}
+
+/** Toggle a single room's is_clean flag. */
+export function useSetRoomClean() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ roomId, isClean }: { roomId: number; isClean: boolean }) => {
+      const { error } = await supabase.from('rooms').update({ is_clean: isClean }).eq('id', roomId);
+      if (error) throw error;
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.rooms.all() }),
+  });
+}
+
+/** Set is_clean on all active rooms at once. */
+export function useSetAllRoomsClean() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (isClean: boolean) => {
+      const { error } = await supabase
+        .from('rooms')
+        .update({ is_clean: isClean })
+        .eq('is_active', true);
+      if (error) throw error;
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.rooms.all() }),
+  });
 }
 
 /** Derived view: rooms keyed by id (number). Shares the same query as useRooms(). */

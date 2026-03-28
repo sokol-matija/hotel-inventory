@@ -7,7 +7,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { supabase } from '@/lib/supabase';
-import { RefreshCw, CheckCircle2, XCircle, Clock, Info, Loader2 } from 'lucide-react';
+import { useRooms, useSetRoomClean, useSetAllRoomsClean } from '@/lib/queries/hooks/useRooms';
+import {
+  RefreshCw,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  Info,
+  Loader2,
+  Sparkles,
+  Trash2,
+} from 'lucide-react';
 
 interface ResetResult {
   success: boolean;
@@ -31,7 +41,10 @@ export const AdminTestingPage = () => {
   const [recentLogs, setRecentLogs] = useState<RoomCleaningLog[]>([]);
   const [isLoadingLogs, setIsLoadingLogs] = useState(true);
 
-  // Load recent reset logs on mount
+  const { data: rooms = [], isLoading: isLoadingRooms } = useRooms();
+  const setRoomClean = useSetRoomClean();
+  const setAllRoomsClean = useSetAllRoomsClean();
+
   useEffect(() => {
     loadRecentLogs();
   }, []);
@@ -44,7 +57,6 @@ export const AdminTestingPage = () => {
         .select('*')
         .order('executed_at', { ascending: false })
         .limit(10);
-
       if (error) throw error;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       setRecentLogs((data || []) as any);
@@ -58,25 +70,16 @@ export const AdminTestingPage = () => {
   const handleResetRoomCleaning = async () => {
     setIsResetting(true);
     setLastResult(null);
-
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      if (!supabaseUrl || !supabaseAnonKey) throw new Error('Missing Supabase configuration');
 
-      if (!supabaseUrl || !supabaseAnonKey) {
-        throw new Error('Missing Supabase configuration');
-      }
-
-      // Get the current user's session for authentication
       const {
         data: { session },
       } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not authenticated');
 
-      if (!session) {
-        throw new Error('Not authenticated');
-      }
-
-      // Call the Edge Function
       const response = await fetch(`${supabaseUrl}/functions/v1/reset-room-cleaning`, {
         method: 'POST',
         headers: {
@@ -87,10 +90,7 @@ export const AdminTestingPage = () => {
       });
 
       const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to reset room cleaning');
-      }
+      if (!response.ok) throw new Error(result.error || 'Failed to reset room cleaning');
 
       setLastResult({
         success: true,
@@ -99,8 +99,6 @@ export const AdminTestingPage = () => {
         executionTime: result.executionTime,
         triggerSource: result.triggerSource,
       });
-
-      // Reload logs to show the new entry
       setTimeout(() => loadRecentLogs(), 500);
     } catch (error) {
       console.error('Reset failed:', error);
@@ -113,19 +111,17 @@ export const AdminTestingPage = () => {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('en-US', {
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleString('en-US', {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
     });
-  };
 
   return (
     <div className="container mx-auto space-y-6 py-8">
-      {/* Header */}
       <div>
         <h1 className="mb-2 text-3xl font-bold">Admin Testing</h1>
         <p className="text-gray-600 dark:text-gray-400">
@@ -133,7 +129,77 @@ export const AdminTestingPage = () => {
         </p>
       </div>
 
-      {/* Room Cleaning Reset Section */}
+      {/* Per-Room Clean Status */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5" />
+                Room Cleaning Status
+              </CardTitle>
+              <CardDescription className="mt-1">
+                Toggle clean/dirty per room or bulk update all
+              </CardDescription>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 border-green-300 text-green-700 hover:bg-green-50"
+                disabled={setAllRoomsClean.isPending}
+                onClick={() => setAllRoomsClean.mutate(true)}
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                All Clean
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 border-red-300 text-red-700 hover:bg-red-50"
+                disabled={setAllRoomsClean.isPending}
+                onClick={() => setAllRoomsClean.mutate(false)}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                All Dirty
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isLoadingRooms ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
+              {rooms.map((room) => (
+                <button
+                  key={room.id}
+                  onClick={() => setRoomClean.mutate({ roomId: room.id, isClean: !room.is_clean })}
+                  disabled={setRoomClean.isPending && setRoomClean.variables?.roomId === room.id}
+                  className={`flex flex-col items-center rounded-lg border-2 p-3 text-sm font-medium transition-colors ${
+                    room.is_clean
+                      ? 'border-green-300 bg-green-50 text-green-800 hover:bg-green-100'
+                      : 'border-red-300 bg-red-50 text-red-800 hover:bg-red-100'
+                  }`}
+                >
+                  {setRoomClean.isPending && setRoomClean.variables?.roomId === room.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : room.is_clean ? (
+                    <Sparkles className="h-4 w-4" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
+                  <span className="mt-1">{room.room_number}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Daily Room Cleaning Reset */}
       <Card className="border-blue-200 dark:border-blue-900">
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -153,7 +219,6 @@ export const AdminTestingPage = () => {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Info Alert */}
           <Alert>
             <Info className="h-4 w-4" />
             <AlertTitle>What does this do?</AlertTitle>
@@ -163,7 +228,6 @@ export const AdminTestingPage = () => {
             </AlertDescription>
           </Alert>
 
-          {/* Manual Trigger Button */}
           <div className="flex items-center gap-4">
             <Button
               onClick={handleResetRoomCleaning}
@@ -188,7 +252,6 @@ export const AdminTestingPage = () => {
             </p>
           </div>
 
-          {/* Last Result */}
           {lastResult && (
             <Alert
               variant={lastResult.success ? 'default' : 'destructive'}
@@ -277,14 +340,6 @@ export const AdminTestingPage = () => {
             </div>
           )}
         </CardContent>
-      </Card>
-
-      {/* Future Testing Functions Placeholder */}
-      <Card className="border-dashed">
-        <CardHeader>
-          <CardTitle className="text-gray-400">Future Testing Functions</CardTitle>
-          <CardDescription>Additional admin testing tools will appear here</CardDescription>
-        </CardHeader>
       </Card>
     </div>
   );
