@@ -104,7 +104,6 @@ export default function EmailTestPage() {
                     variant={badge.type === 'vip' ? 'default' : 'outline'}
                     className="text-xs"
                   >
-                    <span className="mr-1">{badge.icon}</span>
                     {badge.label}
                   </Badge>
                 ))}
@@ -235,8 +234,8 @@ export default function EmailTestPage() {
                             : 'border-gray-200 hover:border-gray-300'
                         }`}
                       >
-                        <div className="text-lg">{lang.flag}</div>
-                        <div className="text-xs font-medium">{lang.value.toUpperCase()}</div>
+                        <div className="text-xs font-medium">{lang.flag}</div>
+                        <div className="text-xs text-gray-500">{lang.label}</div>
                       </button>
                     ))}
                   </div>

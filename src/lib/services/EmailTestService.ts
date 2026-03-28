@@ -247,9 +247,9 @@ export class EmailTestService {
    */
   getEmailLanguages(): Array<{ value: EmailLanguage; label: string; flag: string }> {
     return [
-      { value: 'en', label: '🇬🇧 English', flag: '🇬🇧' },
-      { value: 'de', label: '🇩🇪 Deutsch', flag: '🇩🇪' },
-      { value: 'it', label: '🇮🇹 Italiano', flag: '🇮🇹' },
+      { value: 'en', label: 'English', flag: 'EN' },
+      { value: 'de', label: 'Deutsch', flag: 'DE' },
+      { value: 'it', label: 'Italiano', flag: 'IT' },
     ];
   }
 
@@ -299,11 +299,11 @@ export class EmailTestService {
     const badges: Array<{ type: 'pet' | 'vip' | 'children'; label: string; icon: string }> = [];
 
     if (guest.has_pets) {
-      badges.push({ type: 'pet', label: 'Has Pet', icon: '❤️' });
+      badges.push({ type: 'pet', label: 'Has Pet', icon: '' });
     }
 
     if (guest.is_vip) {
-      badges.push({ type: 'vip', label: 'VIP Guest', icon: '⭐' });
+      badges.push({ type: 'vip', label: 'VIP Guest', icon: '' });
     }
 
     // Note: children are stored in guest_children table, not directly on Guest
