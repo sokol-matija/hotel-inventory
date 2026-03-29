@@ -350,9 +350,12 @@ export class OptimisticUpdateService {
     operations.forEach((op) => {
       if (op.status === 'rolled_back') {
         stats.rolledBack++;
-      } else if (op.status in stats) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (stats as any)[op.status]++;
+      } else if (op.status === 'pending') {
+        stats.pending++;
+      } else if (op.status === 'success') {
+        stats.success++;
+      } else if (op.status === 'failed') {
+        stats.failed++;
       }
       if (op.timestamp < stats.oldestOperation || stats.oldestOperation === 0) {
         stats.oldestOperation = op.timestamp;

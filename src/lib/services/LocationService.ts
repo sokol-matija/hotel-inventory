@@ -102,15 +102,14 @@ export class LocationService {
       if (inventoryError) throw inventoryError;
 
       // Sort the inventory data by display_order to ensure correct ordering
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const sortedInventory = this.sortInventoryByDisplayOrder((inventoryData || []) as any);
+      const sortedInventory = this.sortInventoryByDisplayOrder(
+        (inventoryData || []) as unknown as InventoryItem[]
+      );
 
       return {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        location: locationData as any,
+        location: locationData as unknown as Location,
         inventory: sortedInventory,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any;
+      };
     } catch (error) {
       console.error('Error fetching location data:', error);
       throw new Error('Failed to load location data');

@@ -60,8 +60,7 @@ export function useCheckOutWorkflow(
   const { data: rooms = [] } = useRooms();
   const { data: guests = [] } = useGuests();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const addPayment = async (_payment: any) => {
+  const addPayment = async (_payment: unknown) => {
     // Payment management not yet implemented — payments table integration pending
     console.warn('addPayment: not yet connected to DB');
   };

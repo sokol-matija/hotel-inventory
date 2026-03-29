@@ -37,17 +37,25 @@ export async function getFoodAndBeverageItems(): Promise<InventoryItem[]> {
       items?.map((item) => {
         const totalStock = item.inventory?.reduce((sum, inv) => sum + (inv.quantity || 0), 0) || 0;
 
+        const cat = item.category as unknown as {
+          id: number;
+          name: string;
+          requires_expiration: boolean;
+        };
+        const inventoryArr = item.inventory as unknown as Array<{
+          location_id: number;
+          quantity: number | null;
+          expiration_date: string | null;
+          location: { name: string } | null;
+        }> | null;
         return {
           id: item.id,
           name: item.name,
           description: item.description ?? undefined,
           category: {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            id: (item.category as any).id,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            name: (item.category as any).name,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            requires_expiration: (item.category as any).requires_expiration,
+            id: cat.id,
+            name: cat.name,
+            requires_expiration: cat.requires_expiration,
           },
           unit: item.unit ?? '',
           price: item.price || 0,
@@ -55,10 +63,9 @@ export async function getFoodAndBeverageItems(): Promise<InventoryItem[]> {
           is_active: item.is_active ?? false,
           totalStock,
           locations:
-            item.inventory?.map((inv) => ({
+            inventoryArr?.map((inv) => ({
               locationId: inv.location_id,
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              locationName: (inv.location as any)?.name || 'Unknown',
+              locationName: inv.location?.name || 'Unknown',
               quantity: inv.quantity || 0,
               expiration_date: inv.expiration_date ?? undefined,
             })) || [],

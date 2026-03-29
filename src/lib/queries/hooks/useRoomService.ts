@@ -59,25 +59,27 @@ export interface FoodAndBeverageItem {
 
 // ─── Mapping helpers ───────────────────────────────────────────────────────────
 
-function mapToFoodAndBeverageItem(item: RawFoodAndBeverageItem): FoodAndBeverageItem {
-  const totalStock =
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (item.inventory as any[])?.reduce(
-      (sum: number, inv: { quantity: number | null }) => sum + (inv.quantity || 0),
-      0
-    ) || 0;
+type CategoryJoin = { id: number; name: string; requires_expiration: boolean };
+type InventoryJoin = {
+  location_id: number;
+  quantity: number | null;
+  expiration_date: string | null;
+  location: { id: number; name: string } | null;
+};
 
+function mapToFoodAndBeverageItem(item: RawFoodAndBeverageItem): FoodAndBeverageItem {
+  const inventoryArr = item.inventory as unknown as InventoryJoin[] | null;
+  const totalStock = inventoryArr?.reduce((sum, inv) => sum + (inv.quantity || 0), 0) || 0;
+
+  const cat = item.category as unknown as CategoryJoin;
   return {
     id: item.id,
     name: item.name,
     description: item.description ?? undefined,
     category: {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      id: (item.category as any).id,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      name: (item.category as any).name,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      requires_expiration: (item.category as any).requires_expiration,
+      id: cat.id,
+      name: cat.name,
+      requires_expiration: cat.requires_expiration,
     },
     unit: item.unit ?? '',
     price: item.price || 0,
@@ -85,8 +87,7 @@ function mapToFoodAndBeverageItem(item: RawFoodAndBeverageItem): FoodAndBeverage
     is_active: item.is_active ?? false,
     totalStock,
     locations:
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (item.inventory as any[])?.map((inv: any) => ({
+      inventoryArr?.map((inv) => ({
         locationId: inv.location_id,
         locationName: inv.location?.name || 'Unknown',
         quantity: inv.quantity || 0,
@@ -161,44 +162,39 @@ export interface FridgeInventoryItem {
   availableStock: number;
 }
 
+type FridgeInventoryJoin = {
+  id: number;
+  location_id: number;
+  quantity: number;
+  expiration_date: string | null;
+  location: { id: number; name: string; is_refrigerated: boolean } | null;
+};
+
 function mapFridgeItem(item: RawFridgeItem): FridgeInventoryItem | null {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const allInventory = (item.inventory as any[]) ?? [];
+  const allInventory = (item.inventory as unknown as FridgeInventoryJoin[]) ?? [];
   const fridgeInventory = allInventory.filter(
-    (inv: { location?: { is_refrigerated?: boolean }; quantity: number }) =>
-      inv.location?.is_refrigerated && inv.quantity > 0
+    (inv) => inv.location?.is_refrigerated && inv.quantity > 0
   );
   if (fridgeInventory.length === 0) return null;
-  const totalStock = fridgeInventory.reduce(
-    (sum: number, inv: { quantity: number }) => sum + inv.quantity,
-    0
-  );
+  const totalStock = fridgeInventory.reduce((sum, inv) => sum + inv.quantity, 0);
   return {
     id: item.id,
     name: item.name,
     description: item.description,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    category: item.category as any,
+    category: item.category as unknown as CategoryJoin,
     unit: item.unit ?? '',
     price: item.price ?? 0,
     minimum_stock: item.minimum_stock ?? 0,
     is_active: item.is_active ?? false,
-    inventory: fridgeInventory.map(
-      (inv: {
-        id: number;
-        location_id: number;
-        quantity: number;
-        expiration_date?: string | null;
-        location: { id: number; name: string };
-      }) => ({
-        id: inv.id,
-        location_id: inv.location_id,
-        quantity: inv.quantity,
-        originalQuantity: inv.quantity,
-        expiration_date: inv.expiration_date,
-        location: inv.location,
-      })
-    ),
+    inventory: fridgeInventory.map((inv) => ({
+      id: inv.id,
+      location_id: inv.location_id,
+      quantity: inv.quantity,
+      originalQuantity: inv.quantity,
+      expiration_date: inv.expiration_date,
+      // location is guaranteed non-null here because we filtered on inv.location?.is_refrigerated above
+      location: inv.location!,
+    })),
     totalStock,
     availableStock: totalStock,
   };

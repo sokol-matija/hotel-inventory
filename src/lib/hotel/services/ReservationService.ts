@@ -20,8 +20,7 @@ export interface ReservationData {
   reservation: Reservation;
   guest: Guest;
   room: Room;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  statusColors: any;
+  statusColors: { backgroundColor: string; borderColor: string; textColor: string; label: string };
   isMaintenanceReservation: boolean;
 }
 

@@ -182,8 +182,7 @@ export interface Payment {
   exchangeRate?: number;
   originalAmount?: number;
   originalCurrency?: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  gatewayResponse?: any;
+  gatewayResponse?: Record<string, unknown>;
 
   // Refund support
   isRefund?: boolean;
@@ -273,8 +272,7 @@ export interface RevenueAnalytics {
   fiscalSubmissions: number;
 
   // Time series data
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  periods: any[];
+  periods: Record<string, unknown>[];
 }
 
 // Company type lives in useCompanies.ts — re-exported at top of this file.

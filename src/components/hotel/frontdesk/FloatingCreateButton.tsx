@@ -43,8 +43,7 @@ export default function FloatingCreateButton({ onClick }: FloatingCreateButtonPr
         <ModernCreateBookingModal
           isOpen={isModalOpen}
           onClose={handleCloseModal}
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          room={null as any} // We'll modify ModernCreateBookingModal to handle null room
+          room={null}
           allowRoomSelection={true}
           unallocatedMode={true}
         />

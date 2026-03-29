@@ -167,8 +167,8 @@ export class UnifiedPricingService {
 
     if (roomError) throw roomError;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const roomTypeName: string = (room.room_types as any)?.name || '';
+    const roomTypeName: string =
+      (room.room_types as unknown as { name?: string } | null)?.name || '';
     const isApartment =
       room.room_number === '401' || roomTypeName.toLowerCase().includes('apartment');
     const roomName = `Room ${room.room_number}`;
@@ -487,8 +487,7 @@ export class UnifiedPricingService {
     children: GuestChild[],
     numberOfNights: number,
     checkInDate: Date,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    services: any,
+    services: { parkingSpots?: number; hasPets?: boolean; towelRentals?: number },
     _isApartment: boolean
   ) {
     const tourismTaxRate = this.getTourismTaxRate(checkInDate);

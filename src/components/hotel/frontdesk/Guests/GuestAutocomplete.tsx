@@ -7,7 +7,7 @@ import { Guest } from '../../../../lib/queries/hooks/useGuests';
 import { useGuests } from '../../../../lib/queries/hooks/useGuests';
 
 interface GuestAutocompleteProps {
-  onGuestSelect: (guest: Guest) => void;
+  onGuestSelect: (guest: Guest | null) => void;
   onCreateNew: () => void;
   placeholder?: string;
   selectedGuest?: Guest | null;
@@ -80,8 +80,7 @@ export default function GuestAutocomplete({
 
   const handleClearSelection = () => {
     setSearchQuery('');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onGuestSelect(null as any);
+    onGuestSelect(null);
     inputRef.current?.focus();
   };
 

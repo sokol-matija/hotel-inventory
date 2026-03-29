@@ -120,12 +120,7 @@ export class LabelService {
         bg_color: labelData.bg_color || randomColor.bg,
       };
 
-      const { data, error } = await supabase
-        .from('labels')
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .insert(insertData as any)
-        .select()
-        .single();
+      const { data, error } = await supabase.from('labels').insert(insertData).select().single();
 
       if (error) {
         // Check for unique constraint violation
@@ -205,8 +200,7 @@ export class LabelService {
    */
   async updateLabel(labelId: string, updates: LabelUpdate): Promise<Label> {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const updateData: any = {};
+      const updateData: Record<string, string> = {};
 
       if (updates.name) {
         // Normalize name
@@ -271,14 +265,13 @@ export class LabelService {
    * @param data - Raw database data
    * @returns Label object
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private mapLabel(data: any): Label {
+  private mapLabel(data: Record<string, unknown>): Label {
     return {
       id: data.id,
       hotel_id: data.hotel_id,
       name: data.name,
-      color: data.color || '#000000',
-      bg_color: data.bg_color || '#FFFFFF',
+      color: (data.color as string) || '#000000',
+      bg_color: (data.bg_color as string) || '#FFFFFF',
       created_at: data.created_at,
       updated_at: data.updated_at,
     } as unknown as Label;
@@ -289,8 +282,7 @@ export class LabelService {
    * @param data - Array of raw database data
    * @returns Array of Label objects
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private mapLabels(data: any[]): Label[] {
+  private mapLabels(data: Record<string, unknown>[]): Label[] {
     return data.map((item) => this.mapLabel(item));
   }
 }

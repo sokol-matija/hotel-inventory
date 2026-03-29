@@ -9,8 +9,7 @@ import { HOTEL_ID } from '../constants';
 
 export type RealtimeEventType = 'INSERT' | 'UPDATE' | 'DELETE';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export interface RealtimePayload<T = any> {
+export interface RealtimePayload<T = unknown> {
   eventType: RealtimeEventType;
   new: T | null;
   old: T | null;

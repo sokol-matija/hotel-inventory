@@ -101,7 +101,7 @@ function mapInvoiceReservation(row: InvoiceRow): Partial<Reservation> {
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- InvoiceRow columns don't map 1:1 to Invoice (vat_amount, tourism_tax missing from DB type)
 function mapRowToInvoice(row: any): Invoice {
   return {
     id: row.id,

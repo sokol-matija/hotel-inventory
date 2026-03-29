@@ -58,25 +58,27 @@ export interface AvailableOrderItem {
 
 // ─── Mapping helpers ───────────────────────────────────────────────────────────
 
-function mapToAvailableOrderItem(item: RawOrderItem): AvailableOrderItem {
-  const totalStock =
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (item.inventory as any[])?.reduce(
-      (sum: number, inv: { quantity: number | null }) => sum + (inv.quantity || 0),
-      0
-    ) || 0;
+type CategoryJoin = { id: number; name: string; requires_expiration: boolean };
+type InventoryJoin = {
+  location_id: number;
+  quantity: number | null;
+  expiration_date: string | null;
+  location: { id: number; name: string } | null;
+};
 
+function mapToAvailableOrderItem(item: RawOrderItem): AvailableOrderItem {
+  const inventoryArr = item.inventory as unknown as InventoryJoin[] | null;
+  const totalStock = inventoryArr?.reduce((sum, inv) => sum + (inv.quantity || 0), 0) || 0;
+
+  const cat = item.category as unknown as CategoryJoin;
   return {
     id: item.id,
     name: item.name,
     description: item.description ?? undefined,
     category: {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      id: (item.category as any).id,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      name: (item.category as any).name,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      requires_expiration: (item.category as any).requires_expiration,
+      id: cat.id,
+      name: cat.name,
+      requires_expiration: cat.requires_expiration,
     },
     unit: item.unit ?? '',
     price: item.price || 0,
@@ -84,8 +86,7 @@ function mapToAvailableOrderItem(item: RawOrderItem): AvailableOrderItem {
     is_active: item.is_active ?? false,
     totalStock,
     locations:
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (item.inventory as any[])?.map((inv: any) => ({
+      inventoryArr?.map((inv) => ({
         locationId: inv.location_id,
         locationName: inv.location?.name || 'Unknown',
         quantity: inv.quantity || 0,

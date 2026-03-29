@@ -157,10 +157,9 @@ export class SeasonalRateService {
         if (!tierError && tierData) {
           const seasonCode = data[0].season_code?.toLowerCase();
           const discountKey = `seasonal_rate_${seasonCode}`;
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const discountValue = (tierData as any)[discountKey];
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          if ((tierData as any).is_percentage_discount && discountValue) {
+          const tierRecord = tierData as unknown as Record<string, unknown>;
+          const discountValue = tierRecord[discountKey];
+          if (tierRecord.is_percentage_discount && discountValue) {
             finalRate = finalRate * (1 - Number(discountValue));
           }
         }

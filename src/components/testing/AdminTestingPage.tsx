@@ -31,8 +31,8 @@ interface ResetResult {
 interface RoomCleaningLog {
   id: number;
   rooms_reset: number;
-  executed_at: string;
-  triggered_by: string;
+  executed_at: string | null;
+  triggered_by: string | null;
 }
 
 export const AdminTestingPage = () => {
@@ -58,8 +58,7 @@ export const AdminTestingPage = () => {
         .order('executed_at', { ascending: false })
         .limit(10);
       if (error) throw error;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setRecentLogs((data || []) as any);
+      setRecentLogs((data || []) as RoomCleaningLog[]);
     } catch (error) {
       console.error('Failed to load logs:', error);
     } finally {
@@ -326,7 +325,9 @@ export const AdminTestingPage = () => {
                       <p className="text-sm font-medium">
                         {log.rooms_reset} room{log.rooms_reset !== 1 ? 's' : ''} reset
                       </p>
-                      <p className="text-xs text-gray-500">{formatDate(log.executed_at)}</p>
+                      <p className="text-xs text-gray-500">
+                        {log.executed_at ? formatDate(log.executed_at) : 'Unknown'}
+                      </p>
                     </div>
                   </div>
                   <Badge

@@ -19,18 +19,42 @@ import {
   Zap,
 } from 'lucide-react';
 
+interface ConnectionResult {
+  success: boolean;
+  message: string;
+  timestamp: string;
+  warnings?: string[];
+  status?: { environment: string; oib: string };
+}
+
+interface SubmissionResult {
+  success: boolean;
+  error?: string;
+  jir?: string;
+  zki?: string;
+  fiscalReceiptUrl?: string;
+  timestamp: Date;
+  invoiceId: number;
+  invoiceNumber: string;
+  submittedAt: string;
+  [key: string]: unknown; // allow extra fields from fiscal service
+}
+
 const FiscalizationTestPage: React.FC = () => {
   const { data: invoices = [] } = useInvoices();
   const [isConnecting, setIsConnecting] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [connectionResult, setConnectionResult] = useState<any>(null);
+  const [connectionResult, setConnectionResult] = useState<ConnectionResult | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [submissionResults, setSubmissionResults] = useState<any[]>([]);
+  const [submissionResults, setSubmissionResults] = useState<SubmissionResult[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<number | ''>('');
   const [xmlPreview, setXmlPreview] = useState<string>('');
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [serviceStatus, setServiceStatus] = useState<any>(null);
+  const [serviceStatus, setServiceStatus] = useState<{
+    environment: string;
+    oib: string;
+    certificateConfigured: boolean;
+    validationErrors: string[];
+    recommendations: string[];
+  } | null>(null);
 
   const fiscalizationService = FiscalizationService.getInstance();
 
@@ -117,12 +141,15 @@ const FiscalizationTestPage: React.FC = () => {
       setSubmissionResults((prev) => [
         ...prev,
         {
-          ...result,
+          success: result.success,
+          jir: result.jir,
+          zki: result.zki,
+          error: result.error,
+          timestamp: result.timestamp,
           invoiceId,
           invoiceNumber: invoice.invoiceNumber,
           submittedAt: new Date().toISOString(),
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } as any,
+        },
       ]);
     } catch (error) {
       setSubmissionResults((prev) => [
@@ -134,8 +161,7 @@ const FiscalizationTestPage: React.FC = () => {
           invoiceId,
           invoiceNumber: invoice.invoiceNumber,
           submittedAt: new Date().toISOString(),
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } as any,
+        },
       ]);
     } finally {
       setIsSubmitting(false);
@@ -210,11 +236,11 @@ const FiscalizationTestPage: React.FC = () => {
             </div>
           </div>
 
-          {serviceStatus?.validationErrors?.length > 0 && (
+          {serviceStatus && serviceStatus.validationErrors.length > 0 && (
             <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3">
               <h4 className="mb-2 text-sm font-medium text-red-800">Configuration Issues:</h4>
               <ul className="space-y-1 text-sm text-red-700">
-                {serviceStatus.validationErrors.map((error: string) => (
+                {serviceStatus.validationErrors.map((error) => (
                   <li key={error}>• {error}</li>
                 ))}
               </ul>

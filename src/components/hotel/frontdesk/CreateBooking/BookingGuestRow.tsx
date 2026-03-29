@@ -68,7 +68,9 @@ export function BookingGuestRow({
         <div className="mb-3">
           <Label className="text-sm">Or select existing guest</Label>
           <GuestAutocomplete
-            onGuestSelect={(selectedGuest) => onSelectExisting(selectedGuest, index)}
+            onGuestSelect={(selectedGuest) =>
+              selectedGuest && onSelectExisting(selectedGuest, index)
+            }
             onCreateNew={() => {}}
             selectedGuest={null}
             placeholder="Search existing guests..."
