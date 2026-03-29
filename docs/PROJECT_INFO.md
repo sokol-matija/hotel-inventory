@@ -1,229 +1,120 @@
 # Hotel Porec - Project Information
 
-## 🗂️ Supabase Configuration
-
-### **Project Details**
+## Supabase Configuration
 
 **Project ID:** `gkbpthurkucotikjefra`
-
 **Project URL:** `https://gkbpthurkucotikjefra.supabase.co`
-
 **Database URL:** `db.gkbpthurkucotikjefra.supabase.co`
+
+> There is no local Supabase instance. All development targets the production project.
 
 ---
 
-## 📦 Supabase Storage Buckets
+## Environment Variables
 
-### **email-assets** (Public)
-Storage for email template assets.
+```bash
+# .env.local (Vite uses VITE_ prefix, not REACT_APP_)
+VITE_SUPABASE_URL=https://gkbpthurkucotikjefra.supabase.co
+VITE_SUPABASE_ANON_KEY=[your-anon-key]
+```
 
-**Files:**
+---
+
+## Tech Stack
+
+| Layer | Tech |
+|---|---|
+| Framework | React 19 + TypeScript |
+| Build | Vite 6 |
+| Routing | TanStack Router v1 (file-based, codegen) |
+| Data fetching | TanStack Query v5 |
+| Auth / DB | Supabase (PostgreSQL + Auth + Realtime + Edge Functions) |
+| Global state | Zustand v5 (auth only) |
+| Styling | Tailwind CSS v4 + shadcn/ui |
+| Forms | react-hook-form v7 + zod v4 |
+| Tests | Vitest v4 + Testing Library + Playwright |
+| i18n | i18next (Croatian, German, English) |
+
+---
+
+## Supabase Storage Buckets
+
+### email-assets (Public)
 - `LOGO1-hires.png` - Hotel Porec logo
 - `mozaik_gp1 copy-2.png` - Mozaik background image
 
-**Public URLs:**
-```
-Logo: https://gkbpthurkucotikjefra.supabase.co/storage/v1/object/public/email-assets/LOGO1-hires.png
-
-Background: https://gkbpthurkucotikjefra.supabase.co/storage/v1/object/public/email-assets/mozaik_gp1%20copy-2.png
-```
-
-### **hotel-assets** (Public)
-Legacy storage bucket for hotel assets.
-
-**Files:**
+### hotel-assets (Public)
 - `LOGO1-hires.png`
 - `mozaik_gp1_copy.png`
 
 ---
 
-## 🔑 Environment Variables
+## Edge Functions
 
-### **Development (.env.local)**
+| Function | Purpose |
+|---|---|
+| `fiscalize-invoice` | Croatian fiscal e-invoice generation (e-Racuni) |
+| `send-email` | Email sending service (Resend) |
+| `daily-notifications` | Daily notification cron job |
+
+---
+
+## Database Tables (30 tables)
+
+| Domain | Tables |
+|---|---|
+| Auth | `user_roles`, `user_profiles`, `audit_logs` |
+| Hotel/Rooms | `hotels`, `room_types`, `rooms`, `room_cleaning_reset_log` |
+| Pricing | `pricing_seasons`, `pricing_tiers`, `room_pricing`, `booking_sources`, `labels` |
+| Guests | `guests`, `guest_children`, `companies` |
+| Reservations | `reservation_statuses`, `reservations`, `reservation_guests`, `reservation_daily_details`, `guest_stays`, `daily_guest_services` |
+| Financials | `reservation_charges`, `invoices`, `payments`, `fiscal_records`, `room_service_orders` |
+| Inventory | `categories`, `items`, `locations`, `inventory` |
+
+See `schema_diagram.md` for full ER diagrams.
+
+---
+
+## Authentication
+
+- Google OAuth + email/password via Supabase Auth
+- Sessions persisted in localStorage with auto-refresh
+- Role-based access: admin, reception, kitchen, housekeeping, bookkeeping
+- Auth state managed by Zustand store (`src/stores/authStore.ts`)
+
+---
+
+## Development
+
 ```bash
-REACT_APP_SUPABASE_URL=https://gkbpthurkucotikjefra.supabase.co
-REACT_APP_SUPABASE_ANON_KEY=[your-anon-key]
-REACT_APP_FISCAL_FORCE_TEST=true
-```
-
-### **Production**
-```bash
-REACT_APP_SUPABASE_URL=https://gkbpthurkucotikjefra.supabase.co
-REACT_APP_SUPABASE_ANON_KEY=[your-anon-key]
-REACT_APP_FISCAL_FORCE_TEST=false
+npm run dev          # Dev server (Vite, hot reload)
+npm run build        # Production build (output: dist/)
+npm test             # Run Vitest
+npm run test:e2e     # Run Playwright
+npm run validate:fast # Full validation pipeline
 ```
 
 ---
 
-## 📧 Email Template Configuration
+## Deployment
 
-### **Confirmation Email**
-
-**Location:** Supabase Dashboard → Authentication → Email Templates → "Confirm signup"
-
-**Template File:** `docs/supabase-email-template.html`
-
-**Images Used:**
-- Logo: From `email-assets` bucket
-- Background: From `email-assets` bucket (Outlook only)
-
-**Redirect URL:** `http://localhost:3000/onboarding` (dev)
-
----
-
-## 🔐 Authentication Configuration
-
-### **Allowed Redirect URLs**
-```
-http://localhost:3000/onboarding
-http://localhost:3000/hotel/module-selector
-https://your-production-domain.com/onboarding
-https://your-production-domain.com/hotel/module-selector
-```
-
-### **Site URL**
-```
-Development: http://localhost:3000
-Production: https://your-production-domain.com
-```
-
----
-
-## 🗄️ Database Tables
-
-### **Authentication & Users**
-- `user_roles` - Role definitions (admin, reception, kitchen, housekeeping, bookkeeping)
-- `user_profiles` - User role assignments
-
-### **Hotel Management**
-- `hotels`
-- `rooms`
-- `room_types`
-- `guests`
-- `reservations`
-- `reservation_guests` (junction table)
-
-### **Finance**
-- `invoices`
-- `invoice_items`
-- `fiscal_responses`
-
----
-
-## ⚙️ Edge Functions
-
-### **fiscalize-invoice**
-**URL:** `https://gkbpthurkucotikjefra.supabase.co/functions/v1/fiscalize-invoice`
-
-**Purpose:** Croatian fiscal e-invoice generation
-
-### **send-email**
-**URL:** `https://gkbpthurkucotikjefra.supabase.co/functions/v1/send-email`
-
-**Purpose:** Email sending service
-
-### **daily-notifications**
-**URL:** `https://gkbpthurkucotikjefra.supabase.co/functions/v1/daily-notifications`
-
-**Purpose:** Daily notification cron job
-
-### **phobs-webhook**
-**URL:** `https://gkbpthurkucotikjefra.supabase.co/functions/v1/phobs-webhook`
-
-**Purpose:** Phobs Channel Manager webhook handler
-
----
-
-## 🎨 Branding Assets
-
-### **Logo**
-- **File:** `LOGO1-hires.png`
-- **Dimensions:** 192x128px (display size)
-- **Format:** PNG with transparency
-- **Location:** `/public/LOGO1-hires.png`
-
-### **Background Images**
-- `mozaik_gp1.png` - Login screen background
-- `mozaik_gp1 copy-2.png` - Email template background
-- `zemlja_gp_copy.png` - Module selector background
-
-### **Color Palette**
-- **Primary Gradient:** Blue (`#2563eb`) → Purple (`#7c3aed`)
-- **Background Gradient:** Blue-50 (`#eff6ff`) → Indigo-100 (`#e0e7ff`)
-- **Success Green:** `#22c55e` → `#16a34a`
-- **Warning Amber:** `#fef3c7` background, `#f59e0b` border
-
----
-
-## 🚀 Deployment
-
-### **Current Status**
-- Development: `localhost:3000`
-- Production: Not yet deployed
-
-### **Recommended Deployment**
-- **Platform:** Vercel / Netlify
+- **Platform:** Vercel
 - **Build Command:** `npm run build`
-- **Output Directory:** `build`
-- **Environment Variables:** Set in platform dashboard
+- **Output Directory:** `dist`
+- **Environment Variables:** Set in Vercel dashboard
 
 ---
 
-## 📝 Key Features
-
-### **Implemented**
-- ✅ User authentication (email/password + Google OAuth)
-- ✅ Role-based access control (5 roles)
-- ✅ Admin password protection (`Hp247@$&`)
-- ✅ Email confirmation with custom branded template
-- ✅ Role selection on first login
-- ✅ Module-based navigation
-- ✅ Croatian fiscal integration
-- ✅ Phobs Channel Manager integration
-- ✅ Multi-language support (EN, DE, HR, IT)
-
-### **Current Development**
-- Email template matching login screen design
-- Terms of Service integration
-- Enhanced user onboarding flow
-
----
-
-## 🔧 Development
-
-### **Local Development**
-```bash
-npm start
-# Runs on http://localhost:3000
-```
-
-### **Build**
-```bash
-npm run build
-# Creates production build in /build
-```
-
-### **Test**
-```bash
-npm test
-# Runs test suite
-```
-
----
-
-## 📞 Contact Information
+## Contact Information
 
 **Hotel Porec**
-- Address: 52440 Poreč, Croatia
+- Address: 52440 Porec, Croatia
 - Phone: +385(0)52/451 611
 - Email: hotelporec@pu.t-com.hr
 - Website: www.hotelporec.com
 
-**Developer**
-- Name: Matija Sokol
-- Client: Mara
+**Developer:** Matija Sokol
 
 ---
 
-**Last Updated:** October 20, 2025
-**Version:** 1.0
+**Last Updated:** 2026-03-29

@@ -6,66 +6,134 @@ icon: 'flask'
 
 ## Testing Stack
 
-- **Jest**: Unit and integration tests
-- **React Testing Library**: Component testing
-- **Supabase Local**: Database testing
+- **Vitest v4**: Unit and integration tests (not Jest)
+- **React Testing Library**: Component behavior testing
+- **Playwright**: End-to-end tests (`e2e/` directory)
+
+<Note>
+There is no local Supabase instance. All development targets the production Supabase project (`gkbpthurkucotikjefra`). Tests mock Supabase at the module boundary.
+</Note>
 
 ## Running Tests
 
 ```bash
-# Run all tests
+# Run all unit/integration tests
 npm test
 
 # Watch mode
 npm test -- --watch
 
-# Coverage report
-npm test -- --coverage
+# Run e2e tests (Playwright)
+npm run test:e2e
+
+# Full validation (typecheck + lint + tests + build)
+npm run validate:fast
 ```
+
+## Test File Conventions
+
+Test files live **next to the source file** (flat, co-located):
+
+```
+src/lib/queries/hooks/useReservations.ts
+src/lib/queries/hooks/useReservations.test.ts
+src/lib/hotel/services/ConflictDetectionService.ts
+src/lib/hotel/services/ConflictDetectionService.test.ts
+```
+
+Naming conventions:
+- `*.test.ts` — Unit tests
+- `*.integration.test.ts` — Integration tests (TQ hooks + mocked Supabase)
+- `e2e/*.spec.ts` — End-to-end tests (Playwright)
 
 ## Writing Tests
 
-### Component Tests
+### TanStack Query Hook Tests
+
+Always use `createWrapper()` with a fresh `QueryClient` per test and `retry: false`:
 
 ```typescript
-import { render, screen } from '@testing-library/react';
-import { ReservationCard } from './ReservationCard';
+import { renderHook, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-test('displays reservation details', () => {
-  const reservation = {
-    id: '1',
-    guestName: 'John Doe',
-    roomNumber: '101'
-  };
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return ({ children }) => (
+    <QueryClientProvider client={queryClient}>
+      {children}
+    </QueryClientProvider>
+  );
+}
 
-  render(<ReservationCard reservation={reservation} />);
+vi.mock('@/lib/supabase', () => ({
+  supabase: {
+    from: vi.fn(() => ({
+      select: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      throwOnError: vi.fn().mockResolvedValue({ data: mockData }),
+    })),
+  },
+}));
 
-  expect(screen.getByText('John Doe')).toBeInTheDocument();
-  expect(screen.getByText('Room 101')).toBeInTheDocument();
+test('useReservations returns data', async () => {
+  const { result } = renderHook(() => useReservations(), {
+    wrapper: createWrapper(),
+  });
+  await waitFor(() => expect(result.current.isSuccess).toBe(true));
+  expect(result.current.data).toHaveLength(2);
 });
 ```
 
-### Service Tests
+### Component Tests
+
+Use `userEvent.setup()` (v14 async API):
 
 ```typescript
-describe('ReservationService', () => {
-  it('creates reservation with valid data', async () => {
-    const service = new ReservationService();
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
-    const reservation = await service.createReservation({
-      roomId: '1',
-      guestId: '1',
-      checkIn: new Date('2025-06-15'),
-      checkOut: new Date('2025-06-20')
-    });
+test('clicking check-in button changes status', async () => {
+  const user = userEvent.setup();
+  render(<RoomCard room={mockRoom} reservation={mockReservation} />);
 
-    expect(reservation).toBeDefined();
-    expect(reservation.id).toBeTruthy();
+  await user.click(screen.getByRole('button', { name: /check in/i }));
+
+  expect(mockMutation).toHaveBeenCalledWith({
+    id: 1,
+    status: 'checked-in',
   });
 });
 ```
 
----
+### Service Tests (Pure Logic)
 
-**Coverage Target**: 80%+
-**CI/CD**: Tests run on all PRs
+Service tests don't need React wrappers — they test business logic directly:
+
+```typescript
+import { SeasonalRateService } from './SeasonalRateService';
+
+describe('SeasonalRateService', () => {
+  const service = new SeasonalRateService();
+
+  it('returns season D for July', () => {
+    expect(service.getSeasonalPeriod(new Date('2026-07-15'))).toBe('D');
+  });
+
+  it('splits cross-season stays into blocks', () => {
+    const blocks = service.buildSeasonBlocks(new Date('2026-06-29'), 5);
+    expect(blocks).toHaveLength(2);
+    expect(blocks[0].season).toBe('C');
+    expect(blocks[1].season).toBe('D');
+  });
+});
+```
+
+## Testing Rules
+
+- Mock Supabase at the module boundary: `vi.mock('@/lib/supabase', ...)`
+- Never mock inside hooks — mock the data source
+- Test behavior, not implementation — no assertions on internal state or CSS classes
+- Never test shadcn/ui components — tested upstream
+- `vitest.config.ts` is separate from `vite.config.ts`
