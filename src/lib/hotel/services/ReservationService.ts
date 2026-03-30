@@ -15,6 +15,8 @@ import {
 } from '../../pdfInvoiceGenerator';
 import { FiscalizationService } from '../../fiscalization/FiscalizationService';
 import { supabase } from '../../supabase';
+import type { ReservationCharge } from '@/lib/queries/hooks/useReservationCharges';
+import { mapChargeFromDB } from '@/lib/queries/hooks/useReservationCharges';
 
 export interface ReservationData {
   reservation: Reservation;
@@ -203,16 +205,38 @@ export class ReservationService {
       }
 
       // Derive totalAmount/vatAmount from reservation_charges
-      const { data: charges } = await supabase
+      const { data: chargeRows } = await supabase
         .from('reservation_charges')
-        .select('total, vat_rate')
+        .select('*')
         .eq('reservation_id', reservation.id);
 
-      const totalAmount = (charges ?? []).reduce((sum, c) => sum + c.total, 0);
-      const vatAmount = (charges ?? []).reduce((sum, c) => {
-        const rate = c.vat_rate ?? 13;
-        return sum + c.total - c.total / (1 + rate / 100);
+      const mappedCharges: ReservationCharge[] = (chargeRows ?? []).map(mapChargeFromDB);
+
+      const totalAmount = mappedCharges.reduce((sum, c) => sum + c.total, 0);
+      const vatAmount = mappedCharges.reduce((sum, c) => {
+        const rate = c.vatRate ?? 0.13;
+        return sum + c.total - c.total / (1 + rate);
       }, 0);
+
+      // Build fiscal line items from charges, with fallback for empty charges
+      const fiscalItems =
+        mappedCharges.length > 0
+          ? mappedCharges.map((c) => ({
+              name: c.description,
+              quantity: c.quantity,
+              unitPrice: c.unitPrice,
+              vatRate: Math.round((c.vatRate ?? 0.13) * 100), // decimal (0.13) -> percentage (13)
+              totalAmount: c.total,
+            }))
+          : [
+              {
+                name: `Room ${room.room_number} - ${room.name_english}`,
+                quantity: reservation.number_of_nights ?? 1,
+                unitPrice: totalAmount / (reservation.number_of_nights ?? 1),
+                vatRate: 13,
+                totalAmount,
+              },
+            ];
 
       // Prepare fiscal invoice data
       const fiscalInvoiceData = {
@@ -220,15 +244,7 @@ export class ReservationService {
         dateTime: new Date(),
         totalAmount,
         vatAmount,
-        items: [
-          {
-            name: `Room ${room.room_number} - ${room.name_english}`,
-            quantity: reservation.number_of_nights ?? 1,
-            unitPrice: 0, // Phase 9 migration
-            vatRate: 13, // Croatian accommodation VAT rate (since 2018)
-            totalAmount,
-          },
-        ],
+        items: fiscalItems,
         paymentMethod: 'CARD' as const,
       };
 
@@ -271,6 +287,7 @@ export class ReservationService {
           zki: fiscalData.zki,
           qrCodeData: fiscalData.qrCodeData,
           company, // Pass company data for R1 billing
+          charges: mappedCharges,
         });
 
         hotelNotification.success(
@@ -355,6 +372,14 @@ export class ReservationService {
     }
 
     try {
+      // Fetch charges for thermal receipt line items
+      const { data: chargeRows } = await supabase
+        .from('reservation_charges')
+        .select('*')
+        .eq('reservation_id', reservation.id);
+
+      const mappedCharges: ReservationCharge[] = (chargeRows ?? []).map(mapChargeFromDB);
+
       const invoiceNumber = generateInvoiceNumber(reservation);
       await generateThermalReceipt({
         reservation,
@@ -365,6 +390,7 @@ export class ReservationService {
         jir: fiscalData.jir,
         zki: fiscalData.zki!,
         qrCodeData: fiscalData.qrCodeData!,
+        charges: mappedCharges,
       });
 
       hotelNotification.success(

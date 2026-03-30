@@ -42,7 +42,7 @@ export interface ReservationCharge {
 
 // ─── Mapping helpers ──────────────────────────────────────────────────────────
 
-function mapChargeFromDB(row: ReservationChargeRow): ReservationCharge {
+export function mapChargeFromDB(row: ReservationChargeRow): ReservationCharge {
   return {
     id: row.id,
     reservationId: row.reservation_id,

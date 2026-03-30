@@ -162,7 +162,7 @@ export async function generatePDFInvoice(data: InvoiceData): Promise<void> {
 
   // Compute grand total from charges
   const grandTotal =
-    charges && charges.length > 0 ? charges.reduce((sum, c) => sum + c.total, 0) : 0; // TODO: Phase 9 — derive from reservation_charges
+    charges && charges.length > 0 ? charges.reduce((sum, c) => sum + c.total, 0) : 0;
 
   // Generate the table
   autoTable(doc, {
@@ -380,7 +380,7 @@ export async function generateThermalReceipt(
 
   // Grand total from charges
   const grandTotal2 =
-    charges && charges.length > 0 ? charges.reduce((sum, c) => sum + c.total, 0) : 0; // TODO: Phase 9 — derive from reservation_charges
+    charges && charges.length > 0 ? charges.reduce((sum, c) => sum + c.total, 0) : 0;
 
   receipt += line + '\n';
   receipt += `TOTAL:           €${grandTotal2.toFixed(2)}\n`;

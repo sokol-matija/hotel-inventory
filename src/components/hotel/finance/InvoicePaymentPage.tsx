@@ -37,6 +37,8 @@ import {
 import { generatePDFInvoice } from '../../../lib/pdfInvoiceGenerator';
 import hotelNotification from '../../../lib/notifications';
 import { useCompanies } from '../../../lib/queries/hooks/useCompanies';
+import { supabase } from '../../../lib/supabase';
+import { mapChargeFromDB } from '../../../lib/queries/hooks/useReservationCharges';
 
 export default function InvoicePaymentPage() {
   const { data: invoices = [], isLoading: invoicesLoading, isError: invoicesError } = useInvoices();
@@ -129,8 +131,16 @@ export default function InvoicePaymentPage() {
           ? companies.find((c) => c.id === Number(reservation.company_id))
           : undefined;
 
+      // Fetch line-item charges for the PDF
+      const { data: chargeRows } = await supabase
+        .from('reservation_charges')
+        .select('*')
+        .eq('reservation_id', reservation.id);
+
+      const charges = (chargeRows ?? []).map(mapChargeFromDB);
+
       // Generate PDF with EXISTING fiscal data (never regenerate JIR/ZKI)
-      generatePDFInvoice({
+      await generatePDFInvoice({
         reservation,
         guest,
         room,
@@ -140,6 +150,7 @@ export default function InvoicePaymentPage() {
         zki: invoice.fiscalData?.zki,
         qrCodeData: invoice.fiscalData?.qrCodeData,
         company, // Pass company data for R1 billing
+        charges,
       });
 
       const invoiceType = company ? 'R1 Company Invoice' : 'Invoice';
