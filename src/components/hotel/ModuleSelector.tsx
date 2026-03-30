@@ -173,7 +173,6 @@ export default function ModuleSelector() {
               icon={module.icon}
               onClick={module.onClick}
               available={module.available}
-              priority={module.priority}
               external={module.external}
             />
           ))}

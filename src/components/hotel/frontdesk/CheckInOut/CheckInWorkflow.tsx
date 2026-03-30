@@ -217,7 +217,10 @@ export default function CheckInWorkflow({ isOpen, onClose, reservation }: CheckI
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+      <DialogContent
+        className="max-h-[90vh] max-w-3xl overflow-y-auto"
+        aria-describedby={undefined}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-3">
             <LogIn className="h-6 w-6 text-green-600" />

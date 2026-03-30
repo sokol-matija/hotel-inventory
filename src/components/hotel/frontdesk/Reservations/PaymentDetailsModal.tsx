@@ -223,7 +223,10 @@ export default function PaymentDetailsModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+      <DialogContent
+        className="max-h-[90vh] max-w-3xl overflow-y-auto"
+        aria-describedby={undefined}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <Calculator className="h-5 w-5" />
