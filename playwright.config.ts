@@ -13,9 +13,9 @@ export default defineConfig({
 
   use: {
     baseURL: 'http://localhost:5173',
-    trace: 'on-first-retry',
-    screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    trace: process.env.CI ? 'on-first-retry' : 'on',
+    screenshot: process.env.CI ? 'only-on-failure' : 'on',
+    video: process.env.CI ? 'retain-on-failure' : 'retain-on-failure',
   },
 
   projects: [
