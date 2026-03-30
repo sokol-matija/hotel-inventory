@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   notifyError: vi.fn(),
   notifyInfo: vi.fn(),
   notifyWarning: vi.fn(),
+  generateCharges: vi.fn().mockResolvedValue([]),
 }));
 
 vi.mock('@/lib/supabase', () => ({
@@ -50,6 +51,12 @@ vi.mock('@/lib/hotel/services/VirtualRoomService', () => ({
     isVirtualRoom: mocks.isVirtualRoom,
     convertToRealReservation: mocks.convertToRealReservation,
     getVirtualRoomsWithReservations: vi.fn().mockResolvedValue([]),
+  },
+}));
+
+vi.mock('@/lib/hotel/services/UnifiedPricingService', () => ({
+  unifiedPricingService: {
+    generateCharges: mocks.generateCharges,
   },
 }));
 

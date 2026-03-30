@@ -11,7 +11,7 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/setupTests.ts'],
-    exclude: ['**/node_modules/**', '**/.claude/worktrees/**', 'supabase/functions/**'],
+    exclude: ['**/node_modules/**', '**/.claude/worktrees/**', 'supabase/functions/**', 'e2e/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],

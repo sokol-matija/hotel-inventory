@@ -371,20 +371,20 @@ describe('useCreateBookingForm', () => {
       expect(errors).toContain('Please select a room');
     });
 
-    it('errors when guests exceed room max_occupancy', () => {
+    it('errors when guests exceed room max_occupancy', async () => {
       const room = buildRoom({ max_occupancy: 1 });
       const { result } = renderHook(() => useCreateBookingForm(makeParams({ room })), {
         wrapper: createWrapper(),
       });
       const guestId = result.current.bookingGuests[0].id;
-      act(() => result.current.updateGuest(guestId, 'firstName', 'John'));
-      act(() => result.current.updateGuest(guestId, 'lastName', 'Doe'));
+      await act(async () => result.current.updateGuest(guestId, 'firstName', 'John'));
+      await act(async () => result.current.updateGuest(guestId, 'lastName', 'Doe'));
       // Force a second guest without going through addAdult (which is blocked by max)
-      act(() => result.current.setSelectedRoom(buildRoom({ max_occupancy: 5 })));
-      act(() => result.current.addAdult());
-      act(() => result.current.setSelectedRoom(room)); // restore tight room
+      await act(async () => result.current.setSelectedRoom(buildRoom({ max_occupancy: 5 })));
+      await act(async () => result.current.addAdult());
+      await act(async () => result.current.setSelectedRoom(room)); // restore tight room
       let errors: string[] = [];
-      act(() => {
+      await act(async () => {
         errors = result.current.validateForm();
       });
       const capacityError = errors.find((e) => e.includes('exceeds room capacity'));
