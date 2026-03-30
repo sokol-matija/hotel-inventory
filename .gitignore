@@ -102,3 +102,11 @@ CLAUDE.md
 .claude/worktrees/
 
 deno.lock
+/after-room-click.yaml
+
+# Untracked assets & subprojects
+*.jpg
+hotel-frontend/
+public/hotel-site/
+public/mozaik/
+docs/plans/
