@@ -2,7 +2,7 @@ import { screen, render, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import React from 'react';
-import GuestProfileModal from './GuestProfileModal';
+import GuestProfileModal from '.';
 import { buildGuest } from '@/test/utils';
 import type { Guest } from '@/lib/queries/hooks/useGuests';
 
