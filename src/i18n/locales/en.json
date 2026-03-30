@@ -29,7 +29,11 @@
     "expiration": "Exp: {{date}}",
     "lowStockLabel": "Low Stock",
     "expiresSoon": "Expires Soon",
-    "checkDate": "Check Date"
+    "checkDate": "Check Date",
+    "guestInfoPage": "Guest Info",
+    "guestInfoPageDescription": "QR code landing page",
+    "hotelWebsite": "Hotel Website",
+    "hotelWebsiteDescription": "Public hotel frontend"
   },
   "locations": {
     "title": "Locations",

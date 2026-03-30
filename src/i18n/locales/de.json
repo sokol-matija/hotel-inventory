@@ -27,7 +27,11 @@
     "expiration": "Ablauf: {{date}}",
     "lowStockLabel": "Niedriger Bestand",
     "expiresSoon": "Läuft bald ab",
-    "checkDate": "Datum prüfen"
+    "checkDate": "Datum prüfen",
+    "guestInfoPage": "Gästeinfo",
+    "guestInfoPageDescription": "QR-Code Landingpage",
+    "hotelWebsite": "Hotel-Webseite",
+    "hotelWebsiteDescription": "Öffentliche Hotel-Webseite"
   },
   "locations": {
     "title": "Standorte",
@@ -129,7 +133,7 @@
   "auth": {
     "login": "Anmelden",
     "logout": "Abmelden",
-    "signIn": "Anmelden", 
+    "signIn": "Anmelden",
     "signOut": "Abmelden",
     "loginTitle": "Willkommen zum Hotel-Inventar",
     "loginDescription": "Melden Sie sich an, um Ihr Hotel-Inventarsystem zu verwalten",

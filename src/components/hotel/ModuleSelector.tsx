@@ -2,7 +2,16 @@ import React from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
-import { Hotel, CreditCard, Package, Settings, ArrowRight } from 'lucide-react';
+import {
+  Hotel,
+  CreditCard,
+  Package,
+  Settings,
+  ArrowRight,
+  QrCode,
+  ExternalLink,
+  Globe,
+} from 'lucide-react';
 
 interface ModuleCardProps {
   title: string;
@@ -11,9 +20,18 @@ interface ModuleCardProps {
   onClick: () => void;
   available: boolean;
   priority?: string;
+  external?: boolean;
 }
 
-function ModuleCard({ title, description, icon, onClick, available, priority }: ModuleCardProps) {
+function ModuleCard({
+  title,
+  description,
+  icon,
+  onClick,
+  available,
+  priority,
+  external,
+}: ModuleCardProps) {
   return (
     <Card
       className={`relative cursor-pointer transition-all duration-300 ${
@@ -46,7 +64,11 @@ function ModuleCard({ title, description, icon, onClick, available, priority }: 
           {available ? (
             <Button variant="outline" size="sm" className="group">
               Open
-              <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+              {external ? (
+                <ExternalLink className="ml-2 h-4 w-4" />
+              ) : (
+                <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+              )}
             </Button>
           ) : (
             <span className="text-sm text-gray-400">Coming Soon</span>
@@ -67,7 +89,6 @@ export default function ModuleSelector() {
       description: 'Interactive calendar, reservations, and guest management',
       icon: <Hotel className="h-6 w-6" />,
       available: true,
-      priority: 'Priority 1',
       onClick: () => navigate({ to: '/hotel/front-desk' }),
     },
     {
@@ -93,6 +114,24 @@ export default function ModuleSelector() {
       icon: <Settings className="h-6 w-6" />,
       available: true,
       onClick: () => navigate({ to: '/hotel/admin' }),
+    },
+    {
+      key: 'guestInfo',
+      title: 'Guest Info',
+      description: 'QR code landing page with hotel info for guests',
+      icon: <QrCode className="h-6 w-6" />,
+      available: true,
+      external: true,
+      onClick: () => window.open('https://hotel-porec-qr.vercel.app/en', '_blank'),
+    },
+    {
+      key: 'hotelWebsite',
+      title: 'Hotel Website',
+      description: 'Public hotel frontend website',
+      icon: <Globe className="h-6 w-6" />,
+      available: true,
+      external: true,
+      onClick: () => window.open('https://hotel-frontend-gamma.vercel.app', '_blank'),
     },
   ];
 
@@ -135,6 +174,7 @@ export default function ModuleSelector() {
               onClick={module.onClick}
               available={module.available}
               priority={module.priority}
+              external={module.external}
             />
           ))}
         </div>

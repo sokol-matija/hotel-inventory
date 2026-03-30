@@ -30,7 +30,11 @@
     "expiration": "Ist: {{date}}",
     "lowStockLabel": "Malo zaliha",
     "expiresSoon": "Uskoro istječe",
-    "checkDate": "Provjeri datum"
+    "checkDate": "Provjeri datum",
+    "guestInfoPage": "Info za goste",
+    "guestInfoPageDescription": "QR kod stranica za goste",
+    "hotelWebsite": "Web stranica hotela",
+    "hotelWebsiteDescription": "Javna web stranica hotela"
   },
   "locations": {
     "title": "Lokacije",

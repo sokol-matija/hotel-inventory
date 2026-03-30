@@ -14,6 +14,9 @@ import {
   Warehouse,
   Plus,
   Minus,
+  QrCode,
+  ExternalLink,
+  Globe,
 } from 'lucide-react';
 import {
   useInventoryWithDetails,
@@ -140,7 +143,7 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-6">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-6 lg:gap-6">
         <Card
           className="cursor-pointer border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100 transition-shadow hover:shadow-md"
           onClick={() => handleCardClick('total')}
@@ -204,6 +207,42 @@ export default function Dashboard() {
           <CardContent>
             <div className="text-xl font-bold text-green-900 lg:text-2xl">{stats.locations}</div>
             <p className="text-xs text-green-600">{t('dashboard.storageLocations')}</p>
+          </CardContent>
+        </Card>
+
+        <Card
+          className="cursor-pointer border-indigo-200 bg-gradient-to-br from-indigo-50 to-indigo-100 transition-shadow hover:shadow-md"
+          onClick={() => window.open('https://hotel-porec-qr.vercel.app/en', '_blank')}
+        >
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-xs font-medium text-indigo-800 lg:text-sm">
+              {t('dashboard.guestInfoPage')}
+            </CardTitle>
+            <QrCode className="h-3 w-3 text-indigo-600 lg:h-4 lg:w-4" />
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-1 text-xl font-bold text-indigo-900 lg:text-2xl">
+              <ExternalLink className="h-4 w-4 lg:h-5 lg:w-5" />
+            </div>
+            <p className="text-xs text-indigo-600">{t('dashboard.guestInfoPageDescription')}</p>
+          </CardContent>
+        </Card>
+
+        <Card
+          className="cursor-pointer border-teal-200 bg-gradient-to-br from-teal-50 to-teal-100 transition-shadow hover:shadow-md"
+          onClick={() => window.open('https://hotel-frontend-gamma.vercel.app', '_blank')}
+        >
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-xs font-medium text-teal-800 lg:text-sm">
+              {t('dashboard.hotelWebsite')}
+            </CardTitle>
+            <Globe className="h-3 w-3 text-teal-600 lg:h-4 lg:w-4" />
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-1 text-xl font-bold text-teal-900 lg:text-2xl">
+              <ExternalLink className="h-4 w-4 lg:h-5 lg:w-5" />
+            </div>
+            <p className="text-xs text-teal-600">{t('dashboard.hotelWebsiteDescription')}</p>
           </CardContent>
         </Card>
       </div>
