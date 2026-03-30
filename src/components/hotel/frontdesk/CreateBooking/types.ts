@@ -1,5 +1,3 @@
-import type { GuestChild } from '@/lib/hotel/types';
-
 export interface BookingGuest {
   /** Temporary client-side id, e.g. `new-${Date.now()}-${Math.random()}` */
   id: string;
@@ -22,7 +20,6 @@ export interface BookingGuest {
   isVip: boolean;
   vipLevel: number;
 
-  children: GuestChild[];
   totalStays: number;
   createdAt: Date;
   updatedAt: Date;

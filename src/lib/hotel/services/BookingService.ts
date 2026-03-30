@@ -1,6 +1,6 @@
 // BookingService - Booking validation, pricing calculations, and DB operations
 import { format } from 'date-fns';
-import { Guest, GuestChild, ReservationStatus, Company } from '../types';
+import { Guest, ReservationStatus, Company } from '../types';
 import type { Reservation } from '@/lib/queries/hooks/useReservations';
 import type { Room } from '@/lib/queries/hooks/useRooms';
 import { supabase } from '@/lib/supabase';
@@ -23,7 +23,6 @@ export interface BookingData {
   checkIn?: Date;
   checkOut?: Date;
   adults?: number;
-  children?: GuestChild[];
   specialRequests?: string;
   hasPets?: boolean;
   needsParking?: boolean;

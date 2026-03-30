@@ -186,7 +186,7 @@ export class EmailTestService {
         adults: testData.reservation.adults,
         children: testData.reservation.children_count ?? 0,
         bookingSource: testData.reservation.booking_sources?.code ?? 'direct',
-        totalAmount: 0, // TODO Phase 9: derive from reservation_charges
+        totalAmount: undefined, // Test notifications use synthetic data; omits price line
       };
 
       const success = await sendRoom401BookingNotification(notificationData);

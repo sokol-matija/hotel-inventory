@@ -1,0 +1,192 @@
+/* Hotel Notification Container */
+.hotel-notification-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+}
+
+@media (max-width: 768px) {
+  .hotel-notification-container {
+    bottom: 10px;
+    right: 10px;
+    left: 10px;
+  }
+}
+
+/* Hotel Notification Card - Light Theme */
+.hotel-notification {
+  width: 380px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 12px;
+  box-shadow:
+    0 10px 40px rgba(0, 0, 0, 0.1),
+    0 4px 12px rgba(0, 0, 0, 0.05);
+  position: relative;
+  pointer-events: auto;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-left: 4px solid #10b981;
+  margin-bottom: 12px;
+}
+
+@media (max-width: 768px) {
+  .hotel-notification {
+    width: 100%;
+    max-width: 360px;
+    margin: 0 auto 12px auto;
+  }
+}
+
+/* Hotel Notification Content */
+.hotel-notification-content {
+  display: flex;
+  padding: 16px 20px;
+  align-items: flex-start;
+  width: 100%;
+  position: relative;
+}
+
+.hotel-notification-icon {
+  width: 24px;
+  height: 24px;
+  color: #10b981;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.hotel-notification-text {
+  flex-grow: 1;
+  margin-right: 12px;
+}
+
+.hotel-notification-content h3 {
+  margin: 0 0 4px 0;
+  font-size: 15px;
+  color: #1f2937;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.hotel-notification-content p {
+  margin: 0;
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+/* Close Button */
+.hotel-notification-close {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.hotel-notification-close:hover {
+  color: #6b7280;
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Progress Bar */
+.hotel-notification-progress {
+  height: 3px;
+  width: 100%;
+  background-color: rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+}
+
+.hotel-notification-progress-bar {
+  height: 100%;
+  width: 100%;
+  background-color: #10b981;
+  transform-origin: left center;
+  transform: scaleX(0);
+}
+
+/* Success notification styles */
+.hotel-notification.success {
+  border-left-color: #10b981;
+}
+
+.hotel-notification.success .hotel-notification-icon {
+  color: #10b981;
+}
+
+.hotel-notification.success .hotel-notification-progress-bar {
+  background-color: #10b981;
+}
+
+/* Error notification styles */
+.hotel-notification.error {
+  border-left-color: #ef4444;
+}
+
+.hotel-notification.error .hotel-notification-icon {
+  color: #ef4444;
+}
+
+.hotel-notification.error .hotel-notification-progress-bar {
+  background-color: #ef4444;
+}
+
+/* Info notification styles */
+.hotel-notification.info {
+  border-left-color: #3b82f6;
+}
+
+.hotel-notification.info .hotel-notification-icon {
+  color: #3b82f6;
+}
+
+.hotel-notification.info .hotel-notification-progress-bar {
+  background-color: #3b82f6;
+}
+
+/* Warning notification styles */
+.hotel-notification.warning {
+  border-left-color: #f59e0b;
+}
+
+.hotel-notification.warning .hotel-notification-icon {
+  color: #f59e0b;
+}
+
+.hotel-notification.warning .hotel-notification-progress-bar {
+  background-color: #f59e0b;
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+  .hotel-notification {
+    width: 100%;
+    margin: 0 0 12px 0;
+  }
+
+  .hotel-notification-content {
+    padding: 14px 16px;
+  }
+
+  .hotel-notification-content h3 {
+    font-size: 14px;
+  }
+
+  .hotel-notification-content p {
+    font-size: 13px;
+  }
+}

@@ -314,7 +314,8 @@ export function getCalendarStatistics(
   reservations: Reservation[],
   rooms: Room[],
   startDate: Date,
-  endDate: Date
+  endDate: Date,
+  chargeTotals?: Record<number, number>
 ): {
   totalReservations: number;
   occupancyRate: number;
@@ -344,8 +345,10 @@ export function getCalendarStatistics(
 
   const occupancyRate = totalRoomNights > 0 ? (occupiedRoomNights / totalRoomNights) * 100 : 0;
 
-  // TODO: Phase 9 — derive from reservation_charges once all consumers migrated
-  const revenueProjection = 0;
+  const revenueProjection = reservationsInRange.reduce(
+    (sum, r) => sum + (chargeTotals?.[r.id] ?? 0),
+    0
+  );
 
   return {
     totalReservations: reservationsInRange.length,

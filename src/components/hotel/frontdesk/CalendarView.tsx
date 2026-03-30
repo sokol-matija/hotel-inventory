@@ -5,6 +5,7 @@ import { Users, Home, TrendingUp, DollarSign } from 'lucide-react';
 import { RESERVATION_STATUS_COLORS } from '../../../lib/hotel/calendarUtils';
 import { useReservations } from '../../../lib/queries/hooks/useReservations';
 import { useRooms } from '../../../lib/queries/hooks/useRooms';
+import { useBatchReservationCharges } from '@/hooks/useBatchReservationCharges';
 import { Reservation } from '../../../lib/hotel/types';
 import HotelTimeline from './HotelTimeline';
 
@@ -33,8 +34,9 @@ function HotelOverviewStats({ reservations }: { reservations: Reservation[] }) {
   const todayCheckIns = reservations.filter(
     (reservation) => new Date(reservation.check_in_date).toDateString() === today.toDateString()
   );
-  // TODO: Phase 9 — derive from reservation_charges once all consumers migrated
-  const todayRevenue = todayCheckIns.reduce((_sum, _reservation) => _sum + 0, 0);
+  const todayCheckInIds = todayCheckIns.map((r) => r.id);
+  const { data: chargeTotals = {} } = useBatchReservationCharges(todayCheckInIds);
+  const todayRevenue = todayCheckIns.reduce((sum, r) => sum + (chargeTotals[r.id] ?? 0), 0);
 
   return (
     <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-4">

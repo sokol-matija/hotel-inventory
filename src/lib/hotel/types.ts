@@ -45,13 +45,6 @@ export interface Hotel {
 // Room interface moved to src/lib/queries/hooks/useRooms.ts (TQ v5 pattern).
 // Import Room from '@/lib/queries/hooks/useRooms' — NOT from here.
 
-/** @deprecated Children are stored in guest_children table, not in Guest object. */
-export interface GuestChild {
-  name: string;
-  dateOfBirth: Date;
-  age: number; // Calculated for discount purposes
-}
-
 // Guest interface moved to src/lib/queries/hooks/useGuests.ts (TQ v5 pattern).
 // Re-exported here for backward compatibility.
 import type { Guest } from '@/lib/queries/hooks/useGuests';
@@ -69,34 +62,6 @@ export interface RoomServiceItem {
 
 // Reservation type lives in useReservations.ts — re-exported at top of this file.
 // Label types live in useLabels.ts — re-exported at top of this file.
-
-/**
- * @deprecated Will be removed once all pricing consumers migrate to ReservationCharge.
- * Kept temporarily so UnifiedPricingService and PDF generator compile during the phased migration.
- */
-export interface PricingCalculation {
-  baseRate: number;
-  numberOfNights: number;
-  seasonalPeriod: SeasonalPeriod;
-  subtotal: number;
-  discounts: {
-    children0to3: number;
-    children3to7: number;
-    children7to14: number;
-    longStay: number;
-  };
-  totalDiscounts: number;
-  fees: {
-    tourism: number;
-    vat: number;
-    pets: number;
-    parking: number;
-    shortStay: number;
-    additional: number;
-  };
-  totalFees: number;
-  total: number;
-}
 
 // Seasonal period definitions for 2025
 export interface SeasonalPeriodDefinition {
