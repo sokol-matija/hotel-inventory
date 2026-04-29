@@ -1,0 +1,105 @@
+wing: hotel_inventory
+rooms:
+- name: qr_frontend
+  description: Files from qr-frontend/
+  keywords:
+  - qr_frontend
+  - qr-frontend
+- name: migrations
+  description: Files from migrations/
+  keywords:
+  - migrations
+  - migrations
+- name: tasks
+  description: Files from tasks/
+  keywords:
+  - tasks
+  - tasks
+- name: hotel_frontend
+  description: Files from hotel-frontend/
+  keywords:
+  - hotel_frontend
+  - hotel-frontend
+- name: images
+  description: Files from images/
+  keywords:
+  - images
+  - images
+- name: p12_cert
+  description: Files from p12 cert/
+  keywords:
+  - p12_cert
+  - p12 cert
+- name: documentation
+  description: Files from docs/
+  keywords:
+  - documentation
+  - docs
+- name: playwright
+  description: Files from playwright/
+  keywords:
+  - playwright
+  - playwright
+- name: qr_code
+  description: Files from qr-code/
+  keywords:
+  - qr_code
+  - qr-code
+- name: supabase
+  description: Files from supabase/
+  keywords:
+  - supabase
+  - supabase
+- name: public
+  description: Files from public/
+  keywords:
+  - public
+  - public
+- name: logs
+  description: Files from logs/
+  keywords:
+  - logs
+  - logs
+- name: scripts
+  description: Files from scripts/
+  keywords:
+  - scripts
+  - scripts
+- name: playwright_report
+  description: Files from playwright-report/
+  keywords:
+  - playwright_report
+  - playwright-report
+- name: test_results
+  description: Files from test-results/
+  keywords:
+  - test_results
+  - test-results
+- name: e2e
+  description: Files from e2e/
+  keywords:
+  - e2e
+  - e2e
+- name: src
+  description: Files from src/
+  keywords:
+  - src
+  - src
+- name: testing
+  description: Files from test/
+  keywords:
+  - testing
+  - test
+- name: frontend
+  description: Files from components/
+  keywords:
+  - frontend
+  - components
+- name: backend
+  description: Files from routes/
+  keywords:
+  - backend
+  - routes
+- name: general
+  description: Files that don't fit other rooms
+  keywords: []
