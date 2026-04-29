@@ -550,26 +550,31 @@ describe('ReservationBlock', () => {
 
   describe('days remaining calculation', () => {
     it('renders days remaining text until checkout', () => {
-      // Create a reservation within the timeline window (2026-04-01)
-      // that checks out in 3 days from the timeline start
-      const futureRes = buildReservation({
-        check_in_date: '2026-04-01',
-        check_out_date: '2026-04-04',
-      });
+      // Pin "now" before checkout so daysLeft > 0 ("Checked out" otherwise)
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-04-01T12:00:00'));
 
-      render(
-        <ReservationBlock
-          reservation={futureRes}
-          guest={baseGuest}
-          room={baseRoom}
-          startDate={timelineStart}
-          onReservationClick={mockOnClick}
-        />
-      );
+      try {
+        const futureRes = buildReservation({
+          check_in_date: '2026-04-01',
+          check_out_date: '2026-04-04',
+        });
 
-      // Should render days or day text
-      const block = screen.getByRole('button');
-      expect(block.textContent).toMatch(/day|days/i);
+        render(
+          <ReservationBlock
+            reservation={futureRes}
+            guest={baseGuest}
+            room={baseRoom}
+            startDate={timelineStart}
+            onReservationClick={mockOnClick}
+          />
+        );
+
+        const block = screen.getByRole('button');
+        expect(block.textContent).toMatch(/day|days/i);
+      } finally {
+        vi.useRealTimers();
+      }
     });
   });
 });
