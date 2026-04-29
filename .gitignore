@@ -110,3 +110,6 @@ hotel-frontend/
 public/hotel-site/
 public/mozaik/
 docs/plans/
+
+# graphify knowledge graph (solo - regenerate locally)
+graphify-out/

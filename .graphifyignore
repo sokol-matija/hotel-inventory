@@ -1,0 +1,13 @@
+node_modules/
+dist/
+build/
+coverage/
+.next/
+.vercel/
+e2e/test-results/
+playwright-report/
+src/routeTree.gen.ts
+src/lib/database.types.ts
+*.generated.ts
+public/video/
+graphify-out/
