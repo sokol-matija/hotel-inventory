@@ -8,20 +8,6 @@
       ],
       "env": {}
     },
-    "serena": {
-      "type": "stdio",
-      "command": "uvx",
-      "args": [
-        "--from",
-        "git+https://github.com/oraios/serena",
-        "serena-mcp-server",
-        "--context",
-        "claude-code",
-        "--project",
-        "/Users/msokol/Dev/Repos/2-Personal/hotel-inventory"
-      ],
-      "env": {}
-    },
     "browsermcp": {
       "type": "stdio",
       "command": "npx",
