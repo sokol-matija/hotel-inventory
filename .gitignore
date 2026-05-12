@@ -113,3 +113,6 @@ docs/plans/
 
 # graphify knowledge graph (solo - regenerate locally)
 graphify-out/
+
+# Local MCP config — contains access tokens
+.mcp.json
